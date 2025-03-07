@@ -1,9 +1,8 @@
-
 import { useState, useRef, useEffect } from 'react';
 import { motion, PanInfo } from 'framer-motion';
 import { Heart, X, Info, MapPin, Calendar } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/hooks/use-sonner";
 
 export interface Pet {
   id: string;
