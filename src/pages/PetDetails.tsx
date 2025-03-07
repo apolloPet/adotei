@@ -1,201 +1,247 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Heart, Share2, MapPin } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from '@/hooks/use-sonner';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Heart, ArrowLeft, MapPin, Calendar, Activity, AlertCircle } from "lucide-react";
+import { toast } from "@/hooks/use-sonner";
 
-// Mock data for a single pet
-const mockPet = {
-  id: '1',
-  name: 'Luna',
-  images: [
-    'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?ixlib=rb-1.2.1&auto=format&fit=crop&w=1027&q=80',
-    'https://images.unsplash.com/photo-1573865526739-10659fec78a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1015&q=80',
-    'https://images.unsplash.com/photo-1511044568932-338cba0ad803?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80',
-  ],
-  age: '2 anos',
-  gender: 'female',
-  size: 'medium',
-  breed: 'Siamês',
-  species: 'cat',
-  description: 'Luna é uma gata dócil e brincalhona que adora receber carinho. Ela é sociável com pessoas e outros animais. Prefere ambientes mais calmos e gosta de se aquecer ao sol.',
-  location: 'São Paulo, SP',
-  shelter: 'Abrigo Amigos dos Gatos',
-  traits: ['Dócil', 'Brincalhona', 'Sociável', 'Castrada', 'Vacinada'],
-  healthInfo: 'Castrada, vacinada e com check-up veterinário recente.',
-  adoptionRequirements: 'Apartamento telado, comprometimento com castração e visita prévia ao abrigo.',
-};
+// Mock data for the pet details
+const mockPets = [
+  {
+    id: "1",
+    name: "Luna",
+    type: "Gato",
+    breed: "Siamês",
+    age: "2 anos",
+    gender: "Fêmea",
+    size: "Médio",
+    description: "Luna é uma gata siamesa muito dócil e carinhosa. Adora brincar com bolinhas e dormir no colo. Já está castrada e com todas as vacinas em dia.",
+    images: [
+      "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1027&q=80",
+      "https://images.unsplash.com/photo-1573865526739-10659fec78a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=830&q=80",
+      "https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1170&q=80"
+    ],
+    location: "ONG Amigos dos Animais - São Paulo, SP",
+    distance: "5 km",
+    characteristics: ["Dócil", "Castrada", "Vacinada", "Indoor"],
+    medicalInfo: "Castrada e vacinada. Testada negativo para FIV e FeLV.",
+    requirements: ["Tela nas janelas", "Ambiente calmo", "Sem outros gatos"],
+    adoptionProcess: "Entrevista, visita ao lar e assinatura de termo de adoção responsável."
+  },
+  {
+    id: "2",
+    name: "Max",
+    type: "Cachorro",
+    breed: "Labrador",
+    age: "3 anos",
+    gender: "Macho",
+    size: "Grande",
+    description: "Max é um labrador muito brincalhão e amoroso. Adora correr e brincar ao ar livre. Já está castrado e com todas as vacinas em dia.",
+    images: [
+      "https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1074&q=80",
+      "https://images.unsplash.com/photo-1587300003388-59208cc962cb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1170&q=80",
+      "https://images.unsplash.com/photo-1598133894008-61f7fdb8cc3a?ixlib=rb-1.2.1&auto=format&fit=crop&w=776&q=80"
+    ],
+    location: "ONG Patinhas Carentes - São Paulo, SP",
+    distance: "12 km",
+    characteristics: ["Brincalhão", "Castrado", "Vacinado", "Adora crianças"],
+    medicalInfo: "Castrado e vacinado. Tratado para vermes recentemente.",
+    requirements: ["Espaço para brincar", "Passeios diários", "Lar sem gatos"],
+    adoptionProcess: "Entrevista, visita ao lar e assinatura de termo de adoção responsável. Taxa de adoção de R$100 para cobrir custos médicos."
+  }
+];
 
 const PetDetails = () => {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [pet, setPet] = useState(mockPet);
+  const [pet, setPet] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   
-  // In a real app, this would fetch data from an API
   useEffect(() => {
-    // Fetch pet details by ID
-    console.log(`Fetching details for pet ID: ${id}`);
-    // For now, we'll use mock data
+    // Simulating API call to get pet details
+    setTimeout(() => {
+      const foundPet = mockPets.find(pet => pet.id === id);
+      if (foundPet) {
+        setPet(foundPet);
+      }
+      setLoading(false);
+    }, 500);
   }, [id]);
-
-  const handleLike = () => {
-    toast(`Você deu match com ${pet.name}! 💖`, {
-      description: "A ONG será notificada do seu interesse.",
+  
+  const handleLikeClick = () => {
+    toast.success("Você demonstrou interesse neste pet!", {
+      description: "A ONG será notificada e entrará em contato."
     });
+    
+    console.log(`Liked pet with ID: ${id}`);
   };
-
-  const handleShare = () => {
-    // In a real app, this would open a share dialog
-    navigator.clipboard.writeText(window.location.href);
-    toast("Link copiado!", { description: "Agora você pode compartilhar este pet." });
-  };
-
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % pet.images.length);
-  };
-
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + pet.images.length) % pet.images.length);
-  };
-
-  return (
-    <div className="container mx-auto max-w-4xl pb-16">
-      {/* Back button and actions */}
-      <div className="flex items-center justify-between py-4">
-        <Link to="/browse" className="flex items-center text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-5 w-5 mr-1" />
-          <span>Voltar</span>
+  
+  if (loading) {
+    return (
+      <div className="container mx-auto p-4 flex justify-center items-center min-h-[50vh]">
+        <p className="text-lg">Carregando detalhes do pet...</p>
+      </div>
+    );
+  }
+  
+  if (!pet) {
+    return (
+      <div className="container mx-auto p-4 flex flex-col items-center justify-center min-h-[50vh]">
+        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Pet não encontrado</h2>
+        <p className="text-muted-foreground mb-6">O pet que você está procurando não existe ou foi removido.</p>
+        <Link to="/browse">
+          <Button>Ver outros pets disponíveis</Button>
         </Link>
-        
-        <div className="flex space-x-2">
-          <Button variant="outline" size="icon" onClick={handleShare}>
-            <Share2 className="h-5 w-5" />
-          </Button>
-          <Button variant="outline" size="icon" className="text-pet-pink" onClick={handleLike}>
-            <Heart className="h-5 w-5 fill-pet-pink" />
-          </Button>
-        </div>
+      </div>
+    );
+  }
+  
+  const nextImage = () => {
+    setCurrentImageIndex(prevIndex => 
+      prevIndex === pet.images.length - 1 ? 0 : prevIndex + 1
+    );
+  };
+  
+  const prevImage = () => {
+    setCurrentImageIndex(prevIndex => 
+      prevIndex === 0 ? pet.images.length - 1 : prevIndex - 1
+    );
+  };
+  
+  return (
+    <div className="container mx-auto p-4 pb-16">
+      <div className="mb-4">
+        <Link to="/browse" className="inline-flex items-center text-primary hover:underline">
+          <ArrowLeft className="h-4 w-4 mr-1" />
+          Voltar para a busca
+        </Link>
       </div>
       
-      {/* Pet images */}
-      <div className="relative aspect-[4/3] rounded-2xl overflow-hidden mb-6">
-        <img 
-          src={pet.images[currentImageIndex]} 
-          alt={pet.name} 
-          className="w-full h-full object-cover"
-        />
-        
-        {/* Image navigation */}
-        <button 
-          onClick={prevImage}
-          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center"
-          aria-label="Previous image"
-        >
-          &lt;
-        </button>
-        <button 
-          onClick={nextImage}
-          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/30 hover:bg-black/50 text-white w-10 h-10 rounded-full flex items-center justify-center"
-          aria-label="Next image"
-        >
-          &gt;
-        </button>
-        
-        {/* Image indicators */}
-        <div className="absolute bottom-3 left-0 right-0 flex justify-center space-x-1">
-          {pet.images.map((_, index) => (
-            <div 
-              key={index}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                index === currentImageIndex ? 'bg-white w-6' : 'bg-white/50'
-              }`}
-              onClick={() => setCurrentImageIndex(index)}
-            />
-          ))}
-        </div>
-      </div>
-      
-      {/* Pet details */}
-      <div className="space-y-6">
-        <div>
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold">{pet.name}</h1>
-            <Badge className={`${
-              pet.species === 'dog' ? 'bg-pet-blue' : 'bg-pet-pink'
-            } text-white border-none px-3 py-1`}>
-              {pet.species === 'dog' ? 'Cachorro' : 'Gato'}
-            </Badge>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Image gallery */}
+        <div className="relative rounded-lg overflow-hidden aspect-square bg-muted">
+          <img
+            src={pet.images[currentImageIndex]}
+            alt={`Foto de ${pet.name}`}
+            className="w-full h-full object-cover"
+          />
           
-          <div className="flex items-center mt-1 text-muted-foreground">
-            <MapPin className="h-4 w-4 mr-1" />
-            <span>{pet.location}</span>
-          </div>
-          
-          <div className="flex flex-wrap gap-2 mt-4">
-            <Badge variant="outline">{pet.age}</Badge>
-            <Badge variant="outline">{pet.gender === 'male' ? 'Macho' : 'Fêmea'}</Badge>
-            <Badge variant="outline">
-              {pet.size === 'small' ? 'Pequeno' : pet.size === 'medium' ? 'Médio' : 'Grande'}
-            </Badge>
-            <Badge variant="outline">{pet.breed}</Badge>
-          </div>
-        </div>
-        
-        <Separator />
-        
-        <Tabs defaultValue="about">
-          <TabsList className="grid grid-cols-3 mb-6">
-            <TabsTrigger value="about">Sobre</TabsTrigger>
-            <TabsTrigger value="health">Saúde</TabsTrigger>
-            <TabsTrigger value="requirements">Requisitos</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="about" className="space-y-4">
-            <div>
-              <h3 className="text-lg font-medium mb-2">Sobre {pet.name}</h3>
-              <p className="text-muted-foreground">{pet.description}</p>
+          {pet.images.length > 1 && (
+            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+              {pet.images.map((_, index) => (
+                <button
+                  key={index}
+                  className={`w-2 h-2 rounded-full ${
+                    index === currentImageIndex ? "bg-white" : "bg-white/50"
+                  }`}
+                  onClick={() => setCurrentImageIndex(index)}
+                />
+              ))}
             </div>
-            
+          )}
+          
+          {pet.images.length > 1 && (
+            <>
+              <button
+                onClick={prevImage}
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 flex items-center justify-center text-white hover:bg-black/50"
+              >
+                &lt;
+              </button>
+              <button
+                onClick={nextImage}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 flex items-center justify-center text-white hover:bg-black/50"
+              >
+                &gt;
+              </button>
+            </>
+          )}
+        </div>
+        
+        {/* Pet details */}
+        <div>
+          <div className="flex justify-between items-start mb-4">
             <div>
-              <h3 className="text-lg font-medium mb-2">Características</h3>
-              <div className="flex flex-wrap gap-2">
-                {pet.traits.map((trait, index) => (
-                  <Badge key={index} variant="secondary">{trait}</Badge>
-                ))}
+              <h1 className="text-3xl font-bold">{pet.name}</h1>
+              <div className="flex items-center mt-1 text-muted-foreground">
+                <Badge variant="outline" className="mr-2">{pet.type}</Badge>
+                <span className="mr-2">•</span>
+                <span>{pet.breed}</span>
+                <span className="mx-2">•</span>
+                <span>{pet.age}</span>
               </div>
             </div>
             
-            <div>
-              <h3 className="text-lg font-medium mb-2">Abrigo</h3>
-              <p className="text-muted-foreground">{pet.shelter}</p>
-            </div>
-          </TabsContent>
+            <Button onClick={handleLikeClick} size="icon" className="h-10 w-10 rounded-full">
+              <Heart className="h-5 w-5" />
+            </Button>
+          </div>
           
-          <TabsContent value="health" className="space-y-4">
-            <div>
-              <h3 className="text-lg font-medium mb-2">Informações de Saúde</h3>
-              <p className="text-muted-foreground">{pet.healthInfo}</p>
-            </div>
-          </TabsContent>
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <p className="mb-4">{pet.description}</p>
+              
+              <div className="flex items-center text-sm text-muted-foreground mb-2">
+                <MapPin className="h-4 w-4 mr-2" />
+                <span>{pet.location}</span>
+                <span className="mx-2">•</span>
+                <span>{pet.distance}</span>
+              </div>
+            </CardContent>
+          </Card>
           
-          <TabsContent value="requirements" className="space-y-4">
-            <div>
-              <h3 className="text-lg font-medium mb-2">Requisitos para Adoção</h3>
-              <p className="text-muted-foreground">{pet.adoptionRequirements}</p>
-            </div>
-          </TabsContent>
-        </Tabs>
-        
-        <div className="pt-4">
-          <Button className="w-full" size="lg" onClick={handleLike}>
-            <Heart className="h-5 w-5 mr-2" />
-            Quero adotar {pet.name}
-          </Button>
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Características</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {pet.characteristics.map((trait: string, index: number) => (
+                  <Badge key={index} variant="secondary">{trait}</Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Informações Médicas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>{pet.medicalInfo}</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Requisitos para Adoção</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="list-disc pl-5 space-y-1">
+                {pet.requirements.map((req: string, index: number) => (
+                  <li key={index}>{req}</li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Processo de Adoção</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p>{pet.adoptionProcess}</p>
+            </CardContent>
+            <CardFooter>
+              <Button onClick={handleLikeClick} className="w-full">
+                <Heart className="h-5 w-5 mr-2" />
+                Quero Adotar
+              </Button>
+            </CardFooter>
+          </Card>
         </div>
       </div>
     </div>
