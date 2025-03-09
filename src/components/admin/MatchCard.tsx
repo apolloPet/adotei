@@ -4,8 +4,9 @@ import { Card, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Check, X, MessageCircle } from "lucide-react";
+import { Check, X, MessageCircle, CreditCard } from "lucide-react";
 import { toast } from "@/hooks/use-sonner";
+import { Link } from "react-router-dom";
 
 export interface Match {
   id: string;
@@ -22,6 +23,7 @@ export interface Match {
   };
   matchDate: string;
   status: 'pending' | 'approved' | 'rejected';
+  paymentStatus?: 'pending' | 'completed';
 }
 
 interface MatchCardProps {
@@ -55,6 +57,11 @@ const MatchCard = ({ match, onApprove, onReject, formatDate }: MatchCardProps) =
                   {match.status === 'pending' ? 'Pendente' : 
                    match.status === 'approved' ? 'Aprovado' : 'Rejeitado'}
                 </Badge>
+                {match.status === 'approved' && (
+                  <Badge variant={match.paymentStatus === 'completed' ? 'default' : 'outline'} className="text-xs bg-green-600">
+                    {match.paymentStatus === 'completed' ? 'Pago' : 'Aguardando pagamento'}
+                  </Badge>
+                )}
               </div>
               
               <p className="text-sm text-muted-foreground">
@@ -156,7 +163,7 @@ const MatchCard = ({ match, onApprove, onReject, formatDate }: MatchCardProps) =
       )}
       
       {match.status === 'approved' && (
-        <CardFooter className="bg-muted/30 flex justify-end py-3 px-4">
+        <CardFooter className="bg-muted/30 flex justify-between py-3 px-4">
           <Button 
             variant="outline" 
             size="sm"
@@ -167,6 +174,20 @@ const MatchCard = ({ match, onApprove, onReject, formatDate }: MatchCardProps) =
             <MessageCircle className="h-4 w-4 mr-1" />
             Contatar via WhatsApp
           </Button>
+          
+          {(match.paymentStatus !== 'completed') && (
+            <Button 
+              variant="default" 
+              size="sm"
+              className="bg-green-600 hover:bg-green-700"
+              asChild
+            >
+              <Link to={`/payment/${match.id}`}>
+                <CreditCard className="h-4 w-4 mr-1" />
+                Pagar Taxa de Adoção
+              </Link>
+            </Button>
+          )}
         </CardFooter>
       )}
     </Card>

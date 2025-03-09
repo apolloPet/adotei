@@ -12,6 +12,7 @@ import About from "./pages/About";
 import HowItWorks from "./pages/HowItWorks";
 import AdminLogin from "./components/AdminLogin";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import PaymentProcess from "./pages/PaymentProcess";
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/payment/:matchId" element={<PaymentProcess />} />
           <Route path="/admin" element={
             <AdminProtectedRoute>
               <AdminPanel />
