@@ -6,6 +6,9 @@ import { toast } from "@/hooks/use-sonner";
 import { mockMatches, formatDate } from './admin/MockData';
 import { Match } from './admin/MatchCard';
 import AdminTabs, { PaymentSettingsType } from './admin/AdminTabs';
+import { useNavigate } from 'react-router-dom';
+import { Button } from './ui/button';
+import { LogOut } from 'lucide-react';
 
 const AdminPanel = () => {
   const [matches, setMatches] = useState<Match[]>(mockMatches);
@@ -17,6 +20,7 @@ const AdminPanel = () => {
     contractText: 'Eu, adotante, me comprometo a cuidar do animal adotado, fornecendo abrigo, alimentação adequada, cuidados veterinários e carinho. Concordo em permitir visitas de acompanhamento pelo período estabelecido e em não abandonar ou maltratar o animal sob quaisquer circunstâncias. Entendo que o animal é um ser senciente e merece respeito e amor.',
     followUpPeriod: 90
   });
+  const navigate = useNavigate();
 
   const handleApprove = (id: string) => {
     setMatches(prev => 
@@ -44,13 +48,32 @@ const AdminPanel = () => {
 
   const handleSaveSettings = (newSettings: PaymentSettingsType) => {
     setSettings(newSettings);
+    toast.success("Configurações salvas com sucesso!", {
+      description: "As novas configurações foram aplicadas."
+    });
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("isAdmin");
+    toast.success("Logout realizado com sucesso");
+    navigate("/");
   };
 
   return (
     <Card className="w-full">
-      <CardHeader>
-        <CardTitle className="text-2xl">Painel Administrativo</CardTitle>
-        <CardDescription>Gerencie solicitações de adoção</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle className="text-2xl">Painel Administrativo</CardTitle>
+          <CardDescription>Gerencie solicitações de adoção</CardDescription>
+        </div>
+        <Button 
+          variant="outline" 
+          className="flex items-center gap-1"
+          onClick={handleLogout}
+        >
+          <LogOut className="h-4 w-4" />
+          Logout
+        </Button>
       </CardHeader>
       
       <CardContent>

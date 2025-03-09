@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Menu, X, Heart, User, PawPrint, ShieldAlert } from 'lucide-react';
+import { Menu, X, Heart, User, PawPrint, ShieldAlert, LogIn, LogOut, KeyRound, Settings } from 'lucide-react';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -35,6 +35,7 @@ const Header = () => {
   const handleLogout = () => {
     localStorage.removeItem("isAdmin");
     setIsAdmin(false);
+    toast.success("Logout realizado com sucesso");
     navigate("/");
   };
 
@@ -83,20 +84,38 @@ const Header = () => {
         <div className="hidden md:flex items-center space-x-4">
           {isAdmin ? (
             <>
-              <Button variant="ghost" size="sm" className="rounded-full px-4" onClick={handleLogout}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="rounded-full px-4 flex items-center gap-1" 
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4" />
                 Sair
               </Button>
               <Link to="/admin">
-                <Button variant="default" size="sm" className="rounded-full px-4 bg-primary">
-                  Painel Admin
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="rounded-full px-4 flex items-center gap-1 bg-primary"
+                >
+                  <Settings className="h-4 w-4" />
+                  Configurações
                 </Button>
               </Link>
             </>
           ) : (
             <>
               <Link to="/login">
-                <Button variant="ghost" size="sm" className="rounded-full px-4">
+                <Button variant="ghost" size="sm" className="rounded-full px-4 flex items-center gap-1">
+                  <LogIn className="h-4 w-4" />
                   Entrar
+                </Button>
+              </Link>
+              <Link to="/admin-login">
+                <Button variant="outline" size="sm" className="rounded-full px-4 flex items-center gap-1">
+                  <KeyRound className="h-4 w-4" />
+                  Acesso Admin
                 </Button>
               </Link>
               <Link to="/register">
@@ -166,30 +185,38 @@ const Header = () => {
             <div className="flex flex-col space-y-3 px-4">
               {isAdmin ? (
                 <>
-                  <Button variant="outline" className="w-full justify-start" onClick={handleLogout}>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start flex items-center gap-2" 
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="h-5 w-5" />
                     Sair
                   </Button>
                   <Link to="/admin" onClick={closeMenu}>
-                    <Button variant="default" className="w-full justify-start">
-                      Painel Admin
+                    <Button variant="default" className="w-full justify-start flex items-center gap-2">
+                      <Settings className="h-5 w-5" />
+                      Configurações
                     </Button>
                   </Link>
                 </>
               ) : (
                 <>
                   <Link to="/login" onClick={closeMenu}>
-                    <Button variant="outline" className="w-full justify-start">
+                    <Button variant="outline" className="w-full justify-start flex items-center gap-2">
+                      <LogIn className="h-5 w-5" />
                       Entrar
+                    </Button>
+                  </Link>
+                  <Link to="/admin-login" onClick={closeMenu}>
+                    <Button variant="secondary" className="w-full justify-start flex items-center gap-2">
+                      <KeyRound className="h-5 w-5" />
+                      Acesso Administrativo
                     </Button>
                   </Link>
                   <Link to="/register" onClick={closeMenu}>
                     <Button variant="default" className="w-full justify-start">
                       Cadastrar
-                    </Button>
-                  </Link>
-                  <Link to="/admin-login" onClick={closeMenu}>
-                    <Button variant="link" className="w-full justify-start text-muted-foreground">
-                      Acesso Administrativo
                     </Button>
                   </Link>
                 </>

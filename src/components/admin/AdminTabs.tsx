@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import TabContent from './TabContent';
 import PaymentSettings from './PaymentSettings';
 import { Match } from './MatchCard';
+import { Settings } from 'lucide-react';
 
 interface AdminTabsProps {
   matches: Match[];
@@ -46,7 +47,10 @@ const AdminTabs = ({
         </TabsTrigger>
         <TabsTrigger value="approved">Aprovados</TabsTrigger>
         <TabsTrigger value="rejected">Rejeitados</TabsTrigger>
-        <TabsTrigger value="settings">Configurações</TabsTrigger>
+        <TabsTrigger value="settings" className="flex items-center gap-1">
+          <Settings className="h-4 w-4" />
+          Parâmetros
+        </TabsTrigger>
       </TabsList>
       
       <TabsContent value="pending">

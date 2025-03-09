@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-sonner";
 import Header from "@/components/Header";
+import { KeyRound, ShieldAlert } from 'lucide-react';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -51,8 +52,11 @@ const AdminLogin = () => {
       <div className="container mx-auto px-4 pt-32 pb-16 flex justify-center">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold">Acesso Administrativo</CardTitle>
-            <CardDescription>
+            <div className="flex items-center justify-center mb-4">
+              <ShieldAlert className="h-12 w-12 text-primary" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-center">Acesso Administrativo</CardTitle>
+            <CardDescription className="text-center">
               Entre com suas credenciais de administrador
             </CardDescription>
           </CardHeader>
@@ -83,7 +87,12 @@ const AdminLogin = () => {
                 />
               </div>
               
-              <Button type="submit" className="w-full" disabled={isLoading}>
+              <Button 
+                type="submit" 
+                className="w-full flex items-center justify-center gap-2"
+                disabled={isLoading}
+              >
+                <KeyRound className="h-4 w-4" />
                 {isLoading ? "Processando..." : "Entrar como Administrador"}
               </Button>
             </form>
