@@ -8,6 +8,10 @@ import PetDetails from "./pages/PetDetails";
 import UserRegistration from "./components/UserRegistration";
 import Login from "./components/Login";
 import AdminPanel from "./components/AdminPanel";
+import About from "./pages/About";
+import HowItWorks from "./pages/HowItWorks";
+import AdminLogin from "./components/AdminLogin";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 function App() {
   return (
@@ -19,7 +23,14 @@ function App() {
           <Route path="/pet/:id" element={<PetDetails />} />
           <Route path="/register" element={<UserRegistration />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
+          <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/admin" element={
+            <AdminProtectedRoute>
+              <AdminPanel />
+            </AdminProtectedRoute>
+          } />
         </Routes>
       </Router>
       <Toaster position="top-right" />

@@ -1,26 +1,42 @@
 
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Menu, X, Heart, User, PawPrint } from 'lucide-react';
+import { Menu, X, Heart, User, PawPrint, ShieldAlert } from 'lucide-react';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
 
+    // Verifica status de admin no localStorage (apenas para demonstração)
+    const checkAdminStatus = () => {
+      const adminStatus = localStorage.getItem("isAdmin") === "true";
+      setIsAdmin(adminStatus);
+    };
+
     window.addEventListener('scroll', handleScroll);
+    checkAdminStatus();
+    
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [location.pathname]); // Re-verifica ao mudar de página
 
   const closeMenu = () => setIsMobileMenuOpen(false);
 
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = () => {
+    localStorage.removeItem("isAdmin");
+    setIsAdmin(false);
+    navigate("/");
+  };
 
   return (
     <header 
@@ -53,19 +69,43 @@ const Header = () => {
           >
             Sobre Nós
           </Link>
+          {isAdmin && (
+            <Link 
+              to="/admin" 
+              className={`font-medium text-primary transition-colors flex items-center gap-1 ${isActive('/admin') ? 'underline' : ''}`}
+            >
+              <ShieldAlert className="h-4 w-4" />
+              Admin
+            </Link>
+          )}
         </nav>
 
         <div className="hidden md:flex items-center space-x-4">
-          <Link to="/login">
-            <Button variant="ghost" size="sm" className="rounded-full px-4">
-              Entrar
-            </Button>
-          </Link>
-          <Link to="/register">
-            <Button variant="default" size="sm" className="rounded-full px-4">
-              Cadastrar
-            </Button>
-          </Link>
+          {isAdmin ? (
+            <>
+              <Button variant="ghost" size="sm" className="rounded-full px-4" onClick={handleLogout}>
+                Sair
+              </Button>
+              <Link to="/admin">
+                <Button variant="default" size="sm" className="rounded-full px-4 bg-primary">
+                  Painel Admin
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="ghost" size="sm" className="rounded-full px-4">
+                  Entrar
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button variant="default" size="sm" className="rounded-full px-4">
+                  Cadastrar
+                </Button>
+              </Link>
+            </>
+          )}
         </div>
 
         <button 
@@ -110,19 +150,50 @@ const Header = () => {
               <span className="font-medium">Sobre Nós</span>
             </Link>
             
+            {isAdmin && (
+              <Link 
+                to="/admin" 
+                className="flex items-center space-x-2 px-4 py-3 rounded-lg bg-secondary/80 text-primary transition-colors"
+                onClick={closeMenu}
+              >
+                <ShieldAlert className="h-5 w-5" />
+                <span className="font-medium">Painel Admin</span>
+              </Link>
+            )}
+            
             <div className="border-t border-border my-4"></div>
             
             <div className="flex flex-col space-y-3 px-4">
-              <Link to="/login" onClick={closeMenu}>
-                <Button variant="outline" className="w-full justify-start">
-                  Entrar
-                </Button>
-              </Link>
-              <Link to="/register" onClick={closeMenu}>
-                <Button variant="default" className="w-full justify-start">
-                  Cadastrar
-                </Button>
-              </Link>
+              {isAdmin ? (
+                <>
+                  <Button variant="outline" className="w-full justify-start" onClick={handleLogout}>
+                    Sair
+                  </Button>
+                  <Link to="/admin" onClick={closeMenu}>
+                    <Button variant="default" className="w-full justify-start">
+                      Painel Admin
+                    </Button>
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" onClick={closeMenu}>
+                    <Button variant="outline" className="w-full justify-start">
+                      Entrar
+                    </Button>
+                  </Link>
+                  <Link to="/register" onClick={closeMenu}>
+                    <Button variant="default" className="w-full justify-start">
+                      Cadastrar
+                    </Button>
+                  </Link>
+                  <Link to="/admin-login" onClick={closeMenu}>
+                    <Button variant="link" className="w-full justify-start text-muted-foreground">
+                      Acesso Administrativo
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
