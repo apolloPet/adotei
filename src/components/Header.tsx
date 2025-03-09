@@ -1,8 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Menu, X, Heart, User, PawPrint, ShieldAlert, LogIn, LogOut, KeyRound, Settings } from 'lucide-react';
+import { toast } from "@/hooks/use-sonner";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
