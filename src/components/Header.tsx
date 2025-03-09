@@ -1,8 +1,12 @@
+
 import { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { Menu, X, Heart, User, PawPrint, ShieldAlert, LogIn, LogOut, KeyRound, Settings } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from "@/hooks/use-sonner";
+import Logo from './header/Logo';
+import DesktopNav from './header/DesktopNav';
+import DesktopAuthMenu from './header/DesktopAuthMenu';
+import MobileMenu from './header/MobileMenu';
+import MobileMenuToggle from './header/MobileMenuToggle';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -30,14 +34,14 @@ const Header = () => {
 
   const closeMenu = () => setIsMobileMenuOpen(false);
 
-  const isActive = (path: string) => location.pathname === path;
-
   const handleLogout = () => {
     localStorage.removeItem("isAdmin");
     setIsAdmin(false);
     toast.success("Logout realizado com sucesso");
     navigate("/");
   };
+
+  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
   return (
     <header 
@@ -46,185 +50,19 @@ const Header = () => {
       }`}
     >
       <div className="container mx-auto px-4 flex justify-between items-center">
-        <Link to="/" className="flex items-center space-x-2 transition-transform hover:scale-105">
-          <PawPrint className="h-8 w-8 text-primary" />
-          <span className="font-bold text-xl tracking-tight">PetMatch</span>
-        </Link>
-
-        <nav className="hidden md:flex items-center space-x-8">
-          <Link 
-            to="/browse" 
-            className={`font-medium hover:text-primary transition-colors ${isActive('/browse') ? 'text-primary' : ''}`}
-          >
-            Encontrar Pets
-          </Link>
-          <Link 
-            to="/how-it-works" 
-            className={`font-medium hover:text-primary transition-colors ${isActive('/how-it-works') ? 'text-primary' : ''}`}
-          >
-            Como Funciona
-          </Link>
-          <Link 
-            to="/about" 
-            className={`font-medium hover:text-primary transition-colors ${isActive('/about') ? 'text-primary' : ''}`}
-          >
-            Sobre Nós
-          </Link>
-          {isAdmin && (
-            <Link 
-              to="/admin" 
-              className={`font-medium text-primary transition-colors flex items-center gap-1 ${isActive('/admin') ? 'underline' : ''}`}
-            >
-              <ShieldAlert className="h-4 w-4" />
-              Admin
-            </Link>
-          )}
-        </nav>
-
-        <div className="hidden md:flex items-center space-x-4">
-          {isAdmin ? (
-            <>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="rounded-full px-4 flex items-center gap-1" 
-                onClick={handleLogout}
-              >
-                <LogOut className="h-4 w-4" />
-                Sair
-              </Button>
-              <Link to="/admin">
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="rounded-full px-4 flex items-center gap-1 bg-primary"
-                >
-                  <Settings className="h-4 w-4" />
-                  Configurações
-                </Button>
-              </Link>
-            </>
-          ) : (
-            <>
-              <Link to="/login">
-                <Button variant="ghost" size="sm" className="rounded-full px-4 flex items-center gap-1">
-                  <LogIn className="h-4 w-4" />
-                  Entrar
-                </Button>
-              </Link>
-              <Link to="/admin-login">
-                <Button variant="outline" size="sm" className="rounded-full px-4 flex items-center gap-1">
-                  <KeyRound className="h-4 w-4" />
-                  Acesso Admin
-                </Button>
-              </Link>
-              <Link to="/register">
-                <Button variant="default" size="sm" className="rounded-full px-4">
-                  Cadastrar
-                </Button>
-              </Link>
-            </>
-          )}
-        </div>
-
-        <button 
-          className="md:hidden text-foreground"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          aria-label={isMobileMenuOpen ? "Fechar menu" : "Abrir menu"}
-        >
-          {isMobileMenuOpen ? (
-            <X className="h-6 w-6" />
-          ) : (
-            <Menu className="h-6 w-6" />
-          )}
-        </button>
+        <Logo />
+        <DesktopNav isAdmin={isAdmin} />
+        <DesktopAuthMenu isAdmin={isAdmin} handleLogout={handleLogout} />
+        <MobileMenuToggle isOpen={isMobileMenuOpen} onClick={toggleMobileMenu} />
       </div>
 
       {/* Mobile menu */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-40 bg-background animate-fade-in pt-20">
-          <div className="container mx-auto px-4 py-8 flex flex-col space-y-6">
-            <Link 
-              to="/browse" 
-              className="flex items-center space-x-2 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
-              onClick={closeMenu}
-            >
-              <Heart className="h-5 w-5 text-primary" />
-              <span className="font-medium">Encontrar Pets</span>
-            </Link>
-            <Link 
-              to="/how-it-works" 
-              className="flex items-center space-x-2 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
-              onClick={closeMenu}
-            >
-              <PawPrint className="h-5 w-5 text-primary" />
-              <span className="font-medium">Como Funciona</span>
-            </Link>
-            <Link 
-              to="/about" 
-              className="flex items-center space-x-2 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
-              onClick={closeMenu}
-            >
-              <User className="h-5 w-5 text-primary" />
-              <span className="font-medium">Sobre Nós</span>
-            </Link>
-            
-            {isAdmin && (
-              <Link 
-                to="/admin" 
-                className="flex items-center space-x-2 px-4 py-3 rounded-lg bg-secondary/80 text-primary transition-colors"
-                onClick={closeMenu}
-              >
-                <ShieldAlert className="h-5 w-5" />
-                <span className="font-medium">Painel Admin</span>
-              </Link>
-            )}
-            
-            <div className="border-t border-border my-4"></div>
-            
-            <div className="flex flex-col space-y-3 px-4">
-              {isAdmin ? (
-                <>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start flex items-center gap-2" 
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="h-5 w-5" />
-                    Sair
-                  </Button>
-                  <Link to="/admin" onClick={closeMenu}>
-                    <Button variant="default" className="w-full justify-start flex items-center gap-2">
-                      <Settings className="h-5 w-5" />
-                      Configurações
-                    </Button>
-                  </Link>
-                </>
-              ) : (
-                <>
-                  <Link to="/login" onClick={closeMenu}>
-                    <Button variant="outline" className="w-full justify-start flex items-center gap-2">
-                      <LogIn className="h-5 w-5" />
-                      Entrar
-                    </Button>
-                  </Link>
-                  <Link to="/admin-login" onClick={closeMenu}>
-                    <Button variant="secondary" className="w-full justify-start flex items-center gap-2">
-                      <KeyRound className="h-5 w-5" />
-                      Acesso Administrativo
-                    </Button>
-                  </Link>
-                  <Link to="/register" onClick={closeMenu}>
-                    <Button variant="default" className="w-full justify-start">
-                      Cadastrar
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <MobileMenu 
+        isOpen={isMobileMenuOpen} 
+        isAdmin={isAdmin} 
+        onClose={closeMenu} 
+        onLogout={handleLogout}
+      />
     </header>
   );
 };
