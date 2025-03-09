@@ -1,7 +1,7 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -29,14 +29,32 @@ const mockAdoptions = [
   },
 ];
 
+// Mock admin settings
+const mockSettings = {
+  adoptionFee: 120,
+  ngoPercentage: 90,
+  platformPercentage: 10,
+  pixKey: "ong@example.com",
+  contractText: "Eu, adotante, me comprometo a cuidar do animal adotado, fornecendo abrigo, alimentação adequada, cuidados veterinários e carinho. Concordo em permitir visitas de acompanhamento pelo período estabelecido e em não abandonar ou maltratar o animal sob quaisquer circunstâncias. Entendo que o animal é um ser senciente e merece respeito e amor.",
+  followUpPeriod: 90
+};
+
 const PaymentProcess = () => {
   const { matchId } = useParams();
   const navigate = useNavigate();
   const [isPaymentComplete, setIsPaymentComplete] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [settings, setSettings] = useState(mockSettings);
   
   // Find adoption details
   const adoption = mockAdoptions.find(a => a.id === matchId);
+  
+  // Mock API call to get admin settings
+  useEffect(() => {
+    // In a real app, this would be an API call
+    // For now, we'll just use the mock data
+    setSettings(mockSettings);
+  }, []);
   
   if (!adoption) {
     return (
@@ -49,8 +67,8 @@ const PaymentProcess = () => {
     );
   }
   
-  const ngoAmount = adoption.fee * 0.9; // 90% for NGO
-  const platformFee = adoption.fee * 0.1; // 10% for platform
+  const ngoAmount = adoption.fee * (settings.ngoPercentage / 100); 
+  const platformFee = adoption.fee * (settings.platformPercentage / 100);
   
   const handlePaymentSuccess = () => {
     setIsProcessing(true);
@@ -114,14 +132,14 @@ const PaymentProcess = () => {
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span className="flex items-center">
                     <Percent className="h-4 w-4 mr-1 inline" />
-                    Destinado à ONG (90%)
+                    Destinado à ONG ({settings.ngoPercentage}%)
                   </span>
                   <span>R$ {ngoAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span className="flex items-center">
                     <Percent className="h-4 w-4 mr-1 inline" />
-                    Taxa de plataforma (10%)
+                    Taxa de plataforma ({settings.platformPercentage}%)
                   </span>
                   <span>R$ {platformFee.toFixed(2)}</span>
                 </div>
@@ -142,6 +160,9 @@ const PaymentProcess = () => {
                   amount={adoption.fee} 
                   onSuccess={handlePaymentSuccess}
                   isProcessing={isProcessing}
+                  pixKey={settings.pixKey}
+                  contractText={settings.contractText}
+                  followUpPeriod={settings.followUpPeriod}
                 />
               )}
             </CardContent>
@@ -171,7 +192,7 @@ const PaymentProcess = () => {
                   Como o valor é dividido?
                 </h4>
                 <p className="text-muted-foreground">
-                  90% do valor vai diretamente para a ONG responsável pelo pet, e 10% ajuda a manter nossa plataforma funcionando.
+                  {settings.ngoPercentage}% do valor vai diretamente para a ONG responsável pelo pet, e {settings.platformPercentage}% ajuda a manter nossa plataforma funcionando.
                 </p>
               </div>
               

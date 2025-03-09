@@ -2,6 +2,7 @@
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import TabContent from './TabContent';
+import PaymentSettings from './PaymentSettings';
 import { Match } from './MatchCard';
 
 interface AdminTabsProps {
@@ -9,14 +10,32 @@ interface AdminTabsProps {
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
   formatDate: (date: string) => string;
+  settings: PaymentSettingsType;
+  onSaveSettings: (settings: PaymentSettingsType) => void;
 }
 
-const AdminTabs = ({ matches, onApprove, onReject, formatDate }: AdminTabsProps) => {
+export interface PaymentSettingsType {
+  adoptionFee: number;
+  ngoPercentage: number;
+  platformPercentage: number;
+  pixKey: string;
+  contractText: string;
+  followUpPeriod: number;
+}
+
+const AdminTabs = ({ 
+  matches, 
+  onApprove, 
+  onReject, 
+  formatDate, 
+  settings,
+  onSaveSettings
+}: AdminTabsProps) => {
   const pendingMatches = matches.filter(match => match.status === 'pending');
   
   return (
     <>
-      <TabsList className="grid grid-cols-3 mb-6">
+      <TabsList className="grid grid-cols-4 mb-6">
         <TabsTrigger value="pending" className="relative">
           Pendentes
           {pendingMatches.length > 0 && (
@@ -27,6 +46,7 @@ const AdminTabs = ({ matches, onApprove, onReject, formatDate }: AdminTabsProps)
         </TabsTrigger>
         <TabsTrigger value="approved">Aprovados</TabsTrigger>
         <TabsTrigger value="rejected">Rejeitados</TabsTrigger>
+        <TabsTrigger value="settings">Configurações</TabsTrigger>
       </TabsList>
       
       <TabsContent value="pending">
@@ -56,6 +76,13 @@ const AdminTabs = ({ matches, onApprove, onReject, formatDate }: AdminTabsProps)
           onReject={onReject} 
           formatDate={formatDate}
           type="rejected"
+        />
+      </TabsContent>
+      
+      <TabsContent value="settings">
+        <PaymentSettings 
+          settings={settings}
+          onSave={onSaveSettings}
         />
       </TabsContent>
     </>

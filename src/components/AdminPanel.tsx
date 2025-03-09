@@ -5,10 +5,18 @@ import { Tabs } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-sonner";
 import { mockMatches, formatDate } from './admin/MockData';
 import { Match } from './admin/MatchCard';
-import AdminTabs from './admin/AdminTabs';
+import AdminTabs, { PaymentSettingsType } from './admin/AdminTabs';
 
 const AdminPanel = () => {
   const [matches, setMatches] = useState<Match[]>(mockMatches);
+  const [settings, setSettings] = useState<PaymentSettingsType>({
+    adoptionFee: 120,
+    ngoPercentage: 90,
+    platformPercentage: 10,
+    pixKey: 'ong@example.com',
+    contractText: 'Eu, adotante, me comprometo a cuidar do animal adotado, fornecendo abrigo, alimentação adequada, cuidados veterinários e carinho. Concordo em permitir visitas de acompanhamento pelo período estabelecido e em não abandonar ou maltratar o animal sob quaisquer circunstâncias. Entendo que o animal é um ser senciente e merece respeito e amor.',
+    followUpPeriod: 90
+  });
 
   const handleApprove = (id: string) => {
     setMatches(prev => 
@@ -34,6 +42,10 @@ const AdminPanel = () => {
     });
   };
 
+  const handleSaveSettings = (newSettings: PaymentSettingsType) => {
+    setSettings(newSettings);
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -48,6 +60,8 @@ const AdminPanel = () => {
             onApprove={handleApprove}
             onReject={handleReject}
             formatDate={formatDate}
+            settings={settings}
+            onSaveSettings={handleSaveSettings}
           />
         </Tabs>
       </CardContent>
