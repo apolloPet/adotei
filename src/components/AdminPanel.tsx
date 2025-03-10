@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs } from "@/components/ui/tabs";
@@ -64,7 +63,7 @@ const AdminPanel = () => {
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-2xl">Painel Administrativo</CardTitle>
-          <CardDescription>Gerencie solicitações de adoção e cadastre animais</CardDescription>
+          <CardDescription>Gerencie solicitações de adoção, usuários e administradores</CardDescription>
         </div>
         <Button 
           variant="outline" 

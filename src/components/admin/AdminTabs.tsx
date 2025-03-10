@@ -4,8 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import TabContent from './TabContent';
 import PaymentSettings from './PaymentSettings';
 import { Match } from './MatchCard';
-import { Settings, PawPrint } from 'lucide-react';
+import { Settings, PawPrint, Users, Shield } from 'lucide-react';
 import AnimalRegistrationForm from './AnimalRegistrationForm';
+import UsersList from './UsersList';
+import AdminUserManagement from './AdminUserManagement';
 
 interface AdminTabsProps {
   matches: Match[];
@@ -37,7 +39,7 @@ const AdminTabs = ({
   
   return (
     <>
-      <TabsList className="grid grid-cols-5 mb-6">
+      <TabsList className="grid grid-cols-7 mb-6">
         <TabsTrigger value="pending" className="relative">
           Pendentes
           {pendingMatches.length > 0 && (
@@ -51,6 +53,14 @@ const AdminTabs = ({
         <TabsTrigger value="register-animal" className="flex items-center gap-1">
           <PawPrint className="h-4 w-4" />
           Cadastrar Animal
+        </TabsTrigger>
+        <TabsTrigger value="users-list" className="flex items-center gap-1">
+          <Users className="h-4 w-4" />
+          Usuários
+        </TabsTrigger>
+        <TabsTrigger value="admin-management" className="flex items-center gap-1">
+          <Shield className="h-4 w-4" />
+          Administradores
         </TabsTrigger>
         <TabsTrigger value="settings" className="flex items-center gap-1">
           <Settings className="h-4 w-4" />
@@ -90,6 +100,14 @@ const AdminTabs = ({
       
       <TabsContent value="register-animal">
         <AnimalRegistrationForm />
+      </TabsContent>
+
+      <TabsContent value="users-list">
+        <UsersList />
+      </TabsContent>
+      
+      <TabsContent value="admin-management">
+        <AdminUserManagement />
       </TabsContent>
       
       <TabsContent value="settings">
