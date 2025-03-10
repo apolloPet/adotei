@@ -64,7 +64,7 @@ const AdminPanel = () => {
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="text-2xl">Painel Administrativo</CardTitle>
-          <CardDescription>Gerencie solicitações de adoção</CardDescription>
+          <CardDescription>Gerencie solicitações de adoção e cadastre animais</CardDescription>
         </div>
         <Button 
           variant="outline" 

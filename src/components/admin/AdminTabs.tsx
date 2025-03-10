@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import TabContent from './TabContent';
 import PaymentSettings from './PaymentSettings';
 import { Match } from './MatchCard';
-import { Settings } from 'lucide-react';
+import { Settings, PawPrint } from 'lucide-react';
+import AnimalRegistrationForm from './AnimalRegistrationForm';
 
 interface AdminTabsProps {
   matches: Match[];
@@ -36,7 +37,7 @@ const AdminTabs = ({
   
   return (
     <>
-      <TabsList className="grid grid-cols-4 mb-6">
+      <TabsList className="grid grid-cols-5 mb-6">
         <TabsTrigger value="pending" className="relative">
           Pendentes
           {pendingMatches.length > 0 && (
@@ -47,6 +48,10 @@ const AdminTabs = ({
         </TabsTrigger>
         <TabsTrigger value="approved">Aprovados</TabsTrigger>
         <TabsTrigger value="rejected">Rejeitados</TabsTrigger>
+        <TabsTrigger value="register-animal" className="flex items-center gap-1">
+          <PawPrint className="h-4 w-4" />
+          Cadastrar Animal
+        </TabsTrigger>
         <TabsTrigger value="settings" className="flex items-center gap-1">
           <Settings className="h-4 w-4" />
           Parâmetros
@@ -81,6 +86,10 @@ const AdminTabs = ({
           formatDate={formatDate}
           type="rejected"
         />
+      </TabsContent>
+      
+      <TabsContent value="register-animal">
+        <AnimalRegistrationForm />
       </TabsContent>
       
       <TabsContent value="settings">
