@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +22,11 @@ const UserRegistration = () => {
     email: '',
     password: '',
     phone: '',
+    cep: '',
+    street: '',
+    number: '',
+    neighborhood: '',
+    city: '',
     address: '',
     housingType: 'apartment',
     hasChildren: false,
@@ -31,6 +37,7 @@ const UserRegistration = () => {
     workSchedule: '',
     acceptTerms: false,
   });
+  const [isLoadingCep, setIsLoadingCep] = useState(false);
 
   const steps: RegistrationStep[] = [
     {
@@ -58,11 +65,56 @@ const UserRegistration = () => {
     }));
   };
 
+  const handleCepLookup = async () => {
+    const cep = formData.cep.replace(/\D/g, '');
+    if (cep.length !== 8) {
+      toast.error("CEP inválido", {
+        description: "Por favor, digite um CEP válido com 8 números."
+      });
+      return;
+    }
+
+    setIsLoadingCep(true);
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await response.json();
+      
+      if (data.erro) {
+        toast.error("CEP não encontrado", {
+          description: "Não foi possível encontrar o endereço para este CEP."
+        });
+        return;
+      }
+      
+      updateFormData('street', data.logradouro || '');
+      updateFormData('neighborhood', data.bairro || '');
+      updateFormData('city', data.localidade || '');
+      
+      toast.success("Endereço encontrado!", {
+        description: "Os campos de endereço foram preenchidos automaticamente."
+      });
+    } catch (error) {
+      toast.error("Erro ao buscar CEP", {
+        description: "Houve um problema ao buscar o endereço. Tente novamente."
+      });
+    } finally {
+      setIsLoadingCep(false);
+    }
+  };
+
   const handleNextStep = () => {
     if (step === 0) {
       // Validate personal info
       if (!formData.name || !formData.email || !formData.password || !formData.phone) {
         toast.error("Por favor preencha todos os campos obrigatórios");
+        return;
+      }
+    }
+    
+    if (step === 1) {
+      // Validate address
+      if (!formData.cep || !formData.street || !formData.number || !formData.neighborhood || !formData.city) {
+        toast.error("Por favor preencha todos os campos de endereço");
         return;
       }
     }
@@ -168,12 +220,64 @@ const UserRegistration = () => {
         {step === 1 && (
           <div className="space-y-4 animate-fade-in">
             <div className="space-y-2">
-              <Label htmlFor="address">Endereço</Label>
+              <Label htmlFor="cep">CEP</Label>
+              <div className="flex space-x-2">
+                <Input 
+                  id="cep" 
+                  placeholder="00000-000" 
+                  value={formData.cep}
+                  onChange={(e) => updateFormData('cep', e.target.value)}
+                  className="flex-1"
+                />
+                <Button 
+                  variant="secondary" 
+                  onClick={handleCepLookup}
+                  disabled={isLoadingCep}
+                >
+                  {isLoadingCep ? "Buscando..." : "Buscar"}
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="street">Rua</Label>
               <Input 
-                id="address" 
-                placeholder="Seu endereço completo" 
-                value={formData.address}
-                onChange={(e) => updateFormData('address', e.target.value)}
+                id="street" 
+                placeholder="Nome da rua" 
+                value={formData.street}
+                onChange={(e) => updateFormData('street', e.target.value)}
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="number">Número</Label>
+                <Input 
+                  id="number" 
+                  placeholder="123" 
+                  value={formData.number}
+                  onChange={(e) => updateFormData('number', e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="neighborhood">Bairro</Label>
+                <Input 
+                  id="neighborhood" 
+                  placeholder="Nome do bairro" 
+                  value={formData.neighborhood}
+                  onChange={(e) => updateFormData('neighborhood', e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="city">Cidade</Label>
+              <Input 
+                id="city" 
+                placeholder="Nome da cidade" 
+                value={formData.city}
+                onChange={(e) => updateFormData('city', e.target.value)}
               />
             </div>
             
@@ -296,7 +400,10 @@ const UserRegistration = () => {
               <div>
                 <h4 className="text-sm font-medium">Moradia</h4>
                 <div className="text-sm mt-1 space-y-1">
-                  <p><span className="text-muted-foreground">Endereço:</span> {formData.address}</p>
+                  <p>
+                    <span className="text-muted-foreground">Endereço:</span> 
+                    {formData.street}, {formData.number} - {formData.neighborhood}, {formData.city} (CEP: {formData.cep})
+                  </p>
                   <p>
                     <span className="text-muted-foreground">Tipo de moradia:</span> 
                     {formData.housingType === 'apartment' ? 'Apartamento' : 
