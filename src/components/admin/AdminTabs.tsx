@@ -1,11 +1,12 @@
-import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import TabContent from './TabContent';
 import PaymentSettings from './PaymentSettings';
 import { Match } from './MatchCard';
 import { Settings, Users, PawPrint, Shield } from 'lucide-react';
 import AnimalRegistrationForm from './animal-registration';
-import UsersList from './UsersList';
+import { UsersList } from './users';
 import AdminUserManagement from './AdminUserManagement';
 import AdoptionManagement from './AdoptionManagement';
 
