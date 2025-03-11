@@ -8,7 +8,7 @@ import PetDetails from "./pages/PetDetails";
 import UserRegistration from "./components/UserRegistration";
 import Login from "./components/Login";
 import AdminPanel from "./components/AdminPanel";
-import About from "./pages/About";
+import PetMatch from "./pages/PetMatch";
 import Institution from "./pages/Institution";
 import HowItWorks from "./pages/HowItWorks";
 import AdminLogin from "./components/AdminLogin";
@@ -25,7 +25,7 @@ function App() {
           <Route path="/pet/:id" element={<PetDetails />} />
           <Route path="/register" element={<UserRegistration />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/about" element={<About />} />
+          <Route path="/petmatch" element={<PetMatch />} />
           <Route path="/institution" element={<Institution />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/admin-login" element={<AdminLogin />} />

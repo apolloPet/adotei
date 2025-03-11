@@ -16,6 +16,7 @@ interface AdminTabsProps {
   formatDate: (date: string) => string;
   settings: PaymentSettingsType;
   onSaveSettings: (settings: PaymentSettingsType) => void;
+  activeTab?: string;
 }
 
 export interface PaymentSettingsType {
@@ -33,7 +34,8 @@ const AdminTabs = ({
   onReject, 
   formatDate, 
   settings,
-  onSaveSettings
+  onSaveSettings,
+  activeTab = "pending"
 }: AdminTabsProps) => {
   const pendingMatches = matches.filter(match => match.status === 'pending');
   
@@ -63,7 +65,7 @@ const AdminTabs = ({
           Administradores
         </TabsTrigger>
         <TabsTrigger value="settings" className="flex items-center gap-1">
-          <Settings className="h-4 w-4" />
+          <Settings className="h-4 w-5" />
           Parâmetros
         </TabsTrigger>
       </TabsList>

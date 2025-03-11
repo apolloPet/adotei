@@ -1,7 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Heart, User, PawPrint, ShieldAlert, LogIn, LogOut, KeyRound, Settings } from 'lucide-react';
+import { Heart, User, PawPrint, ShieldAlert, LogIn, LogOut, KeyRound, Settings, Building2 } from 'lucide-react';
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -33,12 +33,20 @@ const MobileMenu = ({ isOpen, isAdmin, onClose, onLogout }: MobileMenuProps) => 
           <span className="font-medium">Como Funciona</span>
         </Link>
         <Link 
-          to="/about" 
+          to="/petmatch" 
+          className="flex items-center space-x-2 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
+          onClick={onClose}
+        >
+          <Building2 className="h-5 w-5 text-primary" />
+          <span className="font-medium">PetMatch</span>
+        </Link>
+        <Link 
+          to="/institution" 
           className="flex items-center space-x-2 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
           onClick={onClose}
         >
           <User className="h-5 w-5 text-primary" />
-          <span className="font-medium">Sobre Nós</span>
+          <span className="font-medium">ONG Parceira</span>
         </Link>
         
         {isAdmin && (

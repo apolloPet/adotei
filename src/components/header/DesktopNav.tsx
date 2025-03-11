@@ -25,10 +25,16 @@ const DesktopNav = ({ isAdmin }: DesktopNavProps) => {
         Como Funciona
       </Link>
       <Link 
-        to="/about" 
-        className={`font-medium hover:text-primary transition-colors ${isActive('/about') ? 'text-primary' : ''}`}
+        to="/petmatch" 
+        className={`font-medium hover:text-primary transition-colors ${isActive('/petmatch') ? 'text-primary' : ''}`}
       >
-        Sobre Nós
+        PetMatch
+      </Link>
+      <Link 
+        to="/institution" 
+        className={`font-medium hover:text-primary transition-colors ${isActive('/institution') ? 'text-primary' : ''}`}
+      >
+        ONG Parceira
       </Link>
       {isAdmin && (
         <Link 
