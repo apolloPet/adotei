@@ -9,6 +9,7 @@ import UserRegistration from "./components/UserRegistration";
 import Login from "./components/Login";
 import AdminPanel from "./components/AdminPanel";
 import About from "./pages/About";
+import Institution from "./pages/Institution";
 import HowItWorks from "./pages/HowItWorks";
 import AdminLogin from "./components/AdminLogin";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
@@ -25,6 +26,7 @@ function App() {
           <Route path="/register" element={<UserRegistration />} />
           <Route path="/login" element={<Login />} />
           <Route path="/about" element={<About />} />
+          <Route path="/institution" element={<Institution />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/payment/:matchId" element={<PaymentProcess />} />

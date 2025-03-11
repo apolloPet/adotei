@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-sonner";
 import { Upload, X } from "lucide-react";
 
@@ -22,6 +23,7 @@ interface AnimalFormData {
   location: string;
   characteristics: string[];
   requirements: string[];
+  responsibleId: string;
 }
 
 const defaultFormData: AnimalFormData = {
@@ -35,11 +37,21 @@ const defaultFormData: AnimalFormData = {
   medicalInfo: '',
   location: '',
   characteristics: [],
-  requirements: []
+  requirements: [],
+  responsibleId: ''
 };
 
 const commonCharacteristics = ['Dócil', 'Castrado', 'Vacinado', 'Sociável', 'Brincalhão', 'Calmo', 'Independente'];
 const commonRequirements = ['Tela nas janelas', 'Ambiente calmo', 'Passeios diários', 'Visitas de acompanhamento', 'Sem outros animais'];
+
+// Mock staff members for the dropdown
+const staffMembers = [
+  { id: "staff-1", name: "Mariana Silva" },
+  { id: "staff-2", name: "Lucas Pereira" },
+  { id: "staff-3", name: "Camila Santos" },
+  { id: "staff-4", name: "Rafael Oliveira" },
+  { id: "staff-5", name: "Juliana Costa" }
+];
 
 const AnimalRegistrationForm = () => {
   const [formData, setFormData] = useState<AnimalFormData>(defaultFormData);
@@ -106,6 +118,13 @@ const AnimalRegistrationForm = () => {
       }));
       setCustomRequirement('');
     }
+  };
+
+  const handleResponsibleChange = (value: string) => {
+    setFormData({
+      ...formData,
+      responsibleId: value
+    });
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -297,16 +316,40 @@ const AnimalRegistrationForm = () => {
             />
           </div>
           
-          <div className="space-y-2">
-            <Label htmlFor="location">Localização do Animal*</Label>
-            <Input 
-              id="location" 
-              name="location" 
-              value={formData.location} 
-              onChange={handleInputChange} 
-              placeholder="Ex: ONG Amigos dos Animais - São Paulo, SP" 
-              required 
-            />
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="location">Localização do Animal*</Label>
+              <Input 
+                id="location" 
+                name="location" 
+                value={formData.location} 
+                onChange={handleInputChange} 
+                placeholder="Ex: ONG Amigos dos Animais - São Paulo, SP" 
+                required 
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="responsible">Responsável na ONG</Label>
+              <Select 
+                value={formData.responsibleId} 
+                onValueChange={handleResponsibleChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  {staffMembers.map(staff => (
+                    <SelectItem key={staff.id} value={staff.id}>
+                      {staff.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                O responsável receberá notificações sobre o processo de adoção.
+              </p>
+            </div>
           </div>
           
           <div className="space-y-4">

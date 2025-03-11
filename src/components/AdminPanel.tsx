@@ -1,10 +1,12 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-sonner";
 import { mockMatches, formatDate } from './admin/MockData';
 import { Match } from './admin/MatchCard';
 import AdminTabs, { PaymentSettingsType } from './admin/AdminTabs';
+import AdoptionManagement from './admin/AdoptionManagement';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { LogOut } from 'lucide-react';
@@ -76,15 +78,53 @@ const AdminPanel = () => {
       </CardHeader>
       
       <CardContent>
-        <Tabs defaultValue="pending" className="w-full">
-          <AdminTabs 
-            matches={matches}
-            onApprove={handleApprove}
-            onReject={handleReject}
-            formatDate={formatDate}
-            settings={settings}
-            onSaveSettings={handleSaveSettings}
-          />
+        <Tabs defaultValue="adoption" className="w-full">
+          <TabsList className="w-full mb-6">
+            <TabsTrigger value="adoption">Processo de Adoção</TabsTrigger>
+            <TabsTrigger value="matches">Matches</TabsTrigger>
+            <TabsTrigger value="users">Usuários</TabsTrigger>
+            <TabsTrigger value="settings">Configurações</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="adoption">
+            <AdoptionManagement />
+          </TabsContent>
+          
+          <TabsContent value="matches">
+            <AdminTabs 
+              matches={matches}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              formatDate={formatDate}
+              settings={settings}
+              onSaveSettings={handleSaveSettings}
+              activeTab="pending"
+            />
+          </TabsContent>
+          
+          <TabsContent value="users">
+            <AdminTabs 
+              matches={matches}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              formatDate={formatDate}
+              settings={settings}
+              onSaveSettings={handleSaveSettings}
+              activeTab="users"
+            />
+          </TabsContent>
+          
+          <TabsContent value="settings">
+            <AdminTabs 
+              matches={matches}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              formatDate={formatDate}
+              settings={settings}
+              onSaveSettings={handleSaveSettings}
+              activeTab="settings"
+            />
+          </TabsContent>
         </Tabs>
       </CardContent>
     </Card>
