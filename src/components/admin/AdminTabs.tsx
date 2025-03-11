@@ -5,7 +5,7 @@ import TabContent from './TabContent';
 import PaymentSettings from './PaymentSettings';
 import { Match } from './MatchCard';
 import { Settings, PawPrint, Users, Shield } from 'lucide-react';
-import AnimalRegistrationForm from './AnimalRegistrationForm';
+import AnimalRegistrationForm from './animal-registration';
 import UsersList from './UsersList';
 import AdminUserManagement from './AdminUserManagement';
 
