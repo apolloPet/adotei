@@ -1,13 +1,13 @@
-
 import { TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import TabContent from './TabContent';
 import PaymentSettings from './PaymentSettings';
 import { Match } from './MatchCard';
-import { Settings, PawPrint, Users, Shield } from 'lucide-react';
+import { Settings, Users, PawPrint, Shield } from 'lucide-react';
 import AnimalRegistrationForm from './animal-registration';
 import UsersList from './UsersList';
 import AdminUserManagement from './AdminUserManagement';
+import AdoptionManagement from './AdoptionManagement';
 
 interface AdminTabsProps {
   matches: Match[];
@@ -41,82 +41,106 @@ const AdminTabs = ({
   
   return (
     <>
-      <TabsList className="grid grid-cols-7 mb-6">
-        <TabsTrigger value="pending" className="relative">
-          Pendentes
+      <TabsList className="grid grid-cols-4 mb-6">
+        <TabsTrigger value="adoption">Processo de Adoção</TabsTrigger>
+        <TabsTrigger value="matches" className="relative">
+          Matches
           {pendingMatches.length > 0 && (
             <Badge className="absolute -top-1 -right-1 bg-primary text-white h-5 min-w-5 flex items-center justify-center p-0 text-xs">
               {pendingMatches.length}
             </Badge>
           )}
         </TabsTrigger>
-        <TabsTrigger value="approved">Aprovados</TabsTrigger>
-        <TabsTrigger value="rejected">Rejeitados</TabsTrigger>
-        <TabsTrigger value="register-animal" className="flex items-center gap-1">
-          <PawPrint className="h-4 w-4" />
-          Cadastrar Animal
-        </TabsTrigger>
-        <TabsTrigger value="users-list" className="flex items-center gap-1">
+        <TabsTrigger value="users" className="flex items-center gap-1">
           <Users className="h-4 w-4" />
           Usuários
         </TabsTrigger>
-        <TabsTrigger value="admin-management" className="flex items-center gap-1">
-          <Shield className="h-4 w-4" />
-          Administradores
-        </TabsTrigger>
         <TabsTrigger value="settings" className="flex items-center gap-1">
-          <Settings className="h-4 w-5" />
-          Parâmetros
+          <Settings className="h-4 w-4" />
+          Configurações
         </TabsTrigger>
       </TabsList>
       
-      <TabsContent value="pending">
-        <TabContent 
-          matches={matches} 
-          onApprove={onApprove} 
-          onReject={onReject} 
-          formatDate={formatDate}
-          type="pending"
-        />
+      {/* Adoption Process Tab */}
+      <TabsContent value="adoption">
+        <AdoptionManagement />
       </TabsContent>
       
-      <TabsContent value="approved">
-        <TabContent 
-          matches={matches} 
-          onApprove={onApprove} 
-          onReject={onReject} 
-          formatDate={formatDate}
-          type="approved"
-        />
-      </TabsContent>
-      
-      <TabsContent value="rejected">
-        <TabContent 
-          matches={matches} 
-          onApprove={onApprove} 
-          onReject={onReject} 
-          formatDate={formatDate}
-          type="rejected"
-        />
-      </TabsContent>
-      
-      <TabsContent value="register-animal">
-        <AnimalRegistrationForm />
+      {/* Matches Tab with nested tabs */}
+      <TabsContent value="matches">
+        <Tabs defaultValue="pending" className="w-full">
+          <TabsList className="w-full mb-4">
+            <TabsTrigger value="pending">Pendentes</TabsTrigger>
+            <TabsTrigger value="approved">Aprovados</TabsTrigger>
+            <TabsTrigger value="rejected">Rejeitados</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="pending">
+            <TabContent 
+              matches={matches} 
+              onApprove={onApprove} 
+              onReject={onReject} 
+              formatDate={formatDate}
+              type="pending"
+            />
+          </TabsContent>
+          
+          <TabsContent value="approved">
+            <TabContent 
+              matches={matches} 
+              onApprove={onApprove} 
+              onReject={onReject} 
+              formatDate={formatDate}
+              type="approved"
+            />
+          </TabsContent>
+          
+          <TabsContent value="rejected">
+            <TabContent 
+              matches={matches} 
+              onApprove={onApprove} 
+              onReject={onReject} 
+              formatDate={formatDate}
+              type="rejected"
+            />
+          </TabsContent>
+        </Tabs>
       </TabsContent>
 
-      <TabsContent value="users-list">
+      {/* Users Tab */}
+      <TabsContent value="users">
         <UsersList />
       </TabsContent>
       
-      <TabsContent value="admin-management">
-        <AdminUserManagement />
-      </TabsContent>
-      
+      {/* Settings Tab with nested tabs */}
       <TabsContent value="settings">
-        <PaymentSettings 
-          settings={settings}
-          onSave={onSaveSettings}
-        />
+        <Tabs defaultValue="parameters" className="w-full">
+          <TabsList className="w-full mb-4">
+            <TabsTrigger value="parameters">Parâmetros</TabsTrigger>
+            <TabsTrigger value="administrators">Administradores</TabsTrigger>
+            <TabsTrigger value="admin-users">Usuários Admin</TabsTrigger>
+            <TabsTrigger value="register-animal">Cadastrar Animais</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="parameters">
+            <PaymentSettings 
+              settings={settings}
+              onSave={onSaveSettings}
+            />
+          </TabsContent>
+          
+          <TabsContent value="administrators">
+            <AdminUserManagement />
+          </TabsContent>
+          
+           <TabsContent value="admin-users">
+            <AdminUserManagement />
+          </TabsContent>
+          
+          <TabsContent value="register-animal">
+            <AnimalRegistrationForm />
+          </TabsContent>
+        </Tabs>
       </TabsContent>
     </>
   );
