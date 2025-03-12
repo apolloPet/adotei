@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Header from "@/components/Header";
 import Footer from "@/components/home/Footer";
-import { Building2, Mail, Instagram, Globe } from 'lucide-react';
+import { Building2, Mail, Instagram, Globe, Heart } from 'lucide-react';
 
 const PetMatch = () => {
   return (
@@ -34,10 +34,12 @@ const PetMatch = () => {
             </section>
             
             <section className="flex flex-col md:flex-row gap-6 items-center">
-              <div className="w-full md:w-1/2 h-64 bg-muted rounded-lg overflow-hidden">
-                <div className="w-full h-full flex items-center justify-center bg-primary/5">
-                  <span className="text-xl font-medium text-primary">Logo da Empresa</span>
-                </div>
+              <div className="w-full md:w-1/2 h-64 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                <img 
+                  src="/lovable-uploads/4bfa2ce9-d3d8-41a2-b975-ee63a683739f.png" 
+                  alt="Tech Animal Logo" 
+                  className="w-4/5 h-auto object-contain"
+                />
               </div>
               <div className="w-full md:w-1/2 space-y-4">
                 <h2 className="text-2xl font-bold text-primary">Nossa Missão</h2>
@@ -57,7 +59,18 @@ const PetMatch = () => {
                 <li><span className="font-semibold">Responsabilidade</span>: Promovemos a adoção consciente e o bem-estar animal em primeiro lugar.</li>
                 <li><span className="font-semibold">Colaboração</span>: Trabalhamos em parceria com ONGs, clínicas veterinárias e voluntários.</li>
                 <li><span className="font-semibold">Impacto social</span>: Medimos nosso sucesso pelo número de vidas animais transformadas.</li>
+                <li><span className="font-semibold">Liderança</span>: Lideramos pelo exemplo e buscamos ser referência no setor.</li>
               </ul>
+            </section>
+            
+            <section className="bg-primary/5 p-6 rounded-lg">
+              <h2 className="text-2xl font-bold text-primary mb-3">Nosso Lema</h2>
+              <div className="flex items-center gap-4">
+                <Heart className="h-10 w-10 text-primary flex-shrink-0" />
+                <p className="text-lg italic">
+                  "Não lute apenas para ter grandes clientes. Trabalhe para conquistar bons e fiéis amigos."
+                </p>
+              </div>
             </section>
             
             <section>
