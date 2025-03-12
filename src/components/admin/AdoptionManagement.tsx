@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdoptionStages, { AdoptionStage, adoptionStages } from '../adoption/AdoptionStages';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Edit, MapPin, UserCheck } from 'lucide-react';
+import { Calendar, Clock, Edit, MapPin, MessageSquare, UserCheck } from 'lucide-react';
 import { 
   Dialog, 
   DialogClose, 
@@ -19,6 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-sonner';
+import { sendWhatsAppMessage, generateAdoptionStageMessage } from '@/utils/whatsappUtils';
 
 // Types for adoption matches
 export interface AdoptionMatch {
@@ -156,21 +156,74 @@ const AdoptionManagement = () => {
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
   const [scheduleNotes, setScheduleNotes] = useState("");
+  const [showNotifyDialog, setShowNotifyDialog] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState("");
 
   const handleStageChange = (matchId: string, newStage: AdoptionStage) => {
-    setMatches(prevMatches => 
-      prevMatches.map(match => 
-        match.id === matchId 
-          ? { 
-              ...match, 
-              currentStage: newStage, 
-              updatedAt: new Date().toISOString() 
-            } 
-          : match
-      )
-    );
+    // Find the match first
+    const match = matches.find(m => m.id === matchId);
     
-    toast.success(`Estágio atualizado para ${adoptionStages.find(stage => stage.id === newStage)?.label}`);
+    if (match) {
+      // Update the match in state
+      setMatches(prevMatches => 
+        prevMatches.map(m => 
+          m.id === matchId 
+            ? { 
+                ...m, 
+                currentStage: newStage, 
+                updatedAt: new Date().toISOString() 
+              } 
+            : m
+        )
+      );
+      
+      // Generate automatic message for notification
+      const autoMessage = generateAdoptionStageMessage(match.petName, newStage);
+      setNotificationMessage(autoMessage);
+      
+      // Set the selected match for notification
+      setSelectedMatch(match);
+      setShowNotifyDialog(true);
+      
+      toast.success(`Estágio atualizado para ${adoptionStages.find(stage => stage.id === newStage)?.label}`);
+    }
+  };
+
+  const handleSendNotification = () => {
+    if (!selectedMatch || !notificationMessage) {
+      toast.error("Não foi possível enviar a notificação. Faltam informações.");
+      return;
+    }
+
+    try {
+      // Send the WhatsApp message
+      sendWhatsAppMessage(selectedMatch.userPhone, notificationMessage);
+      
+      // Update notes to include the sent notification
+      const timestamp = new Date().toLocaleString('pt-BR');
+      const updatedNotes = `${selectedMatch.notes}\n\n[${timestamp}] Notificação enviada via WhatsApp: "${notificationMessage}"`;
+      
+      setMatches(prevMatches => 
+        prevMatches.map(match => 
+          match.id === selectedMatch.id 
+            ? { 
+                ...match, 
+                notes: updatedNotes
+              } 
+            : match
+        )
+      );
+      
+      toast.success("Notificação enviada com sucesso!");
+      
+      // Reset form
+      setNotificationMessage("");
+      setSelectedMatch(null);
+      setShowNotifyDialog(false);
+    } catch (error) {
+      console.error("Erro ao enviar notificação:", error);
+      toast.error("Erro ao enviar notificação. Tente novamente.");
+    }
   };
 
   const handleScheduleVisit = () => {
@@ -252,6 +305,24 @@ const AdoptionManagement = () => {
     toast.success("Adoção concluída com sucesso!");
   };
 
+  const handleCompleteAdoption = (matchId: string) => {
+    // Find the match first
+    const match = matches.find(m => m.id === matchId);
+    
+    if (match) {
+      // Update to completed status
+      completeAdoption(matchId);
+      
+      // Generate automatic message for completion notification
+      const autoMessage = generateAdoptionStageMessage(match.petName, "completed");
+      setNotificationMessage(autoMessage);
+      
+      // Set the selected match for notification
+      setSelectedMatch(match);
+      setShowNotifyDialog(true);
+    }
+  };
+
   const getStageLabel = (stage: AdoptionStage) => {
     return adoptionStages.find(s => s.id === stage)?.label || stage;
   };
@@ -311,7 +382,7 @@ const AdoptionManagement = () => {
                     onStageChange={handleStageChange}
                     onScheduleVisit={(match) => setSelectedMatch(match)}
                     onScheduleHomeInspection={(match) => setSelectedMatch(match)}
-                    onCompleteAdoption={completeAdoption}
+                    onCompleteAdoption={handleCompleteAdoption}
                     getStageLabel={getStageLabel}
                     getStageColor={getStageColor}
                     formatDate={formatDate}
@@ -336,7 +407,7 @@ const AdoptionManagement = () => {
                       onStageChange={handleStageChange}
                       onScheduleVisit={(match) => setSelectedMatch(match)}
                       onScheduleHomeInspection={(match) => setSelectedMatch(match)}
-                      onCompleteAdoption={completeAdoption}
+                      onCompleteAdoption={handleCompleteAdoption}
                       getStageLabel={getStageLabel}
                       getStageColor={getStageColor}
                       formatDate={formatDate}
@@ -508,6 +579,58 @@ const AdoptionManagement = () => {
               <DialogClose asChild>
                 <Button onClick={handleScheduleHomeInspection}>Agendar</Button>
               </DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {/* WhatsApp Notification Dialog */}
+        <Dialog open={showNotifyDialog} onOpenChange={setShowNotifyDialog}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Enviar Notificação</DialogTitle>
+              <DialogDescription>
+                Envie uma notificação por WhatsApp para o adotante
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedMatch && (
+              <div className="py-4 space-y-4">
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={selectedMatch.petImage} 
+                    alt={selectedMatch.petName}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                  <div>
+                    <p className="font-medium">{selectedMatch.petName}</p>
+                    <p className="text-sm text-muted-foreground">Para: {selectedMatch.userName}</p>
+                    <p className="text-xs text-muted-foreground">{selectedMatch.userPhone}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label htmlFor="notification-message" className="text-sm font-medium">
+                    Mensagem
+                  </label>
+                  <Textarea
+                    id="notification-message"
+                    placeholder="Digite a mensagem para o adotante..."
+                    value={notificationMessage}
+                    onChange={(e) => setNotificationMessage(e.target.value)}
+                    rows={5}
+                  />
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button variant="outline">Cancelar</Button>
+              </DialogClose>
+              <Button onClick={handleSendNotification} className="flex items-center gap-1">
+                <MessageSquare className="h-4 w-4" />
+                Enviar WhatsApp
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
