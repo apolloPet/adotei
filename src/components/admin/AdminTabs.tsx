@@ -1,4 +1,3 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import TabContent from './TabContent';
@@ -27,6 +26,7 @@ export interface PaymentSettingsType {
   pixKey: string;
   contractText: string;
   followUpPeriod: number;
+  companyBankInfo?: string;
 }
 
 const AdminTabs = ({ 

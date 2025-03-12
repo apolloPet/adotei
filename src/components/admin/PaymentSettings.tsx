@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PaymentSettingsType } from './AdminTabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { DollarSign, Percent, CreditCard, FileText, Clock } from "lucide-react";
+import { DollarSign, Percent, CreditCard, FileText, Clock, Building2 } from "lucide-react";
 import { toast } from "@/hooks/use-sonner";
 
 interface PaymentSettingsProps {
@@ -22,6 +21,7 @@ const PaymentSettings = ({ settings, onSave }: PaymentSettingsProps) => {
   const [pixKey, setPixKey] = useState(settings.pixKey);
   const [contractText, setContractText] = useState(settings.contractText);
   const [followUpPeriod, setFollowUpPeriod] = useState(settings.followUpPeriod.toString());
+  const [companyBankInfo, setCompanyBankInfo] = useState(settings.companyBankInfo || '');
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,12 +44,13 @@ const PaymentSettings = ({ settings, onSave }: PaymentSettingsProps) => {
       platformPercentage: platformPercent,
       pixKey,
       contractText,
-      followUpPeriod: parseInt(followUpPeriod)
+      followUpPeriod: parseInt(followUpPeriod),
+      companyBankInfo
     });
     
     toast.success("Configurações salvas com sucesso!");
   };
-  
+
   return (
     <div className="space-y-6">
       <Card>
@@ -59,7 +60,7 @@ const PaymentSettings = ({ settings, onSave }: PaymentSettingsProps) => {
             Configurações de Pagamento
           </CardTitle>
           <CardDescription>
-            Configure os valores e percentuais para taxas de adoção
+            Configure os valores, percentuais e dados bancários para taxas de adoção
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -126,20 +127,39 @@ const PaymentSettings = ({ settings, onSave }: PaymentSettingsProps) => {
             
             <Separator className="my-4" />
             
-            <div className="space-y-2">
-              <Label htmlFor="pixKey" className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />
-                Chave PIX da ONG
-              </Label>
-              <Input
-                id="pixKey"
-                placeholder="CPF, CNPJ, email ou chave aleatória"
-                value={pixKey}
-                onChange={(e) => setPixKey(e.target.value)}
-              />
-              <p className="text-sm text-muted-foreground">
-                Esta chave será usada para transferências via PIX para a ONG.
-              </p>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="companyBankInfo" className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4" />
+                  Dados Bancários da Empresa
+                </Label>
+                <Textarea
+                  id="companyBankInfo"
+                  placeholder="Digite os dados bancários da empresa para transferências automáticas..."
+                  value={companyBankInfo}
+                  onChange={(e) => setCompanyBankInfo(e.target.value)}
+                  rows={4}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Estas informações serão usadas para transferências automáticas da porcentagem da plataforma.
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="pixKey" className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Chave PIX da ONG
+                </Label>
+                <Input
+                  id="pixKey"
+                  placeholder="CPF, CNPJ, email ou chave aleatória"
+                  value={pixKey}
+                  onChange={(e) => setPixKey(e.target.value)}
+                />
+                <p className="text-sm text-muted-foreground">
+                  Esta chave será usada para transferências via PIX para a ONG.
+                </p>
+              </div>
             </div>
             
             <Separator className="my-4" />
