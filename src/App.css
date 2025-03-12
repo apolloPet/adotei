@@ -19,6 +19,17 @@
   filter: drop-shadow(0 0 2em rgba(63, 61, 145, 0.6));
 }
 
+/* Override some headlines to specifically use lowercase for a more accessible feel */
+h1, h2, h3, h4, h5, h6 {
+  text-transform: lowercase;
+  font-family: 'Montserrat Alternates', system-ui, sans-serif;
+}
+
+/* Use Kanit for banners and promotional content */
+.banner, .promo-text, .cta-text {
+  font-family: 'Kanit', system-ui, sans-serif;
+}
+
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);

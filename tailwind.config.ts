@@ -20,8 +20,9 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				sans: ['SF Pro Display', 'system-ui', 'sans-serif'],
+				sans: ['Kanit', 'system-ui', 'sans-serif'],
 				serif: ['Georgia', 'serif'],
+				heading: ['"Montserrat Alternates"', 'system-ui', 'sans-serif'],
 			},
 			colors: {
 				border: 'hsl(var(--border))',
