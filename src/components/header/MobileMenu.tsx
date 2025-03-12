@@ -6,24 +6,27 @@ import { Heart, User, PawPrint, ShieldAlert, LogIn, LogOut, KeyRound, Settings, 
 interface MobileMenuProps {
   isOpen: boolean;
   isAdmin: boolean;
+  isLoggedIn: boolean;
   onClose: () => void;
   onLogout: () => void;
 }
 
-const MobileMenu = ({ isOpen, isAdmin, onClose, onLogout }: MobileMenuProps) => {
+const MobileMenu = ({ isOpen, isAdmin, isLoggedIn, onClose, onLogout }: MobileMenuProps) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-40 bg-background animate-fade-in pt-20">
       <div className="container mx-auto px-4 py-8 flex flex-col space-y-6">
-        <Link 
-          to="/browse" 
-          className="flex items-center space-x-2 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
-          onClick={onClose}
-        >
-          <Heart className="h-5 w-5 text-primary" />
-          <span className="font-medium">Encontrar Pets</span>
-        </Link>
+        {isLoggedIn && (
+          <Link 
+            to="/browse" 
+            className="flex items-center space-x-2 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
+            onClick={onClose}
+          >
+            <Heart className="h-5 w-5 text-primary" />
+            <span className="font-medium">Encontrar Pets</span>
+          </Link>
+        )}
         <Link 
           to="/how-it-works" 
           className="flex items-center space-x-2 px-4 py-3 rounded-lg hover:bg-secondary transition-colors"
@@ -63,7 +66,7 @@ const MobileMenu = ({ isOpen, isAdmin, onClose, onLogout }: MobileMenuProps) => 
         <div className="border-t border-border my-4"></div>
         
         <div className="flex flex-col space-y-3 px-4">
-          {isAdmin ? (
+          {isAdmin || isLoggedIn ? (
             <>
               <Button 
                 variant="outline" 
@@ -73,12 +76,14 @@ const MobileMenu = ({ isOpen, isAdmin, onClose, onLogout }: MobileMenuProps) => 
                 <LogOut className="h-5 w-5" />
                 Sair
               </Button>
-              <Link to="/admin" onClick={onClose}>
-                <Button variant="default" className="w-full justify-start flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Configurações
-                </Button>
-              </Link>
+              {isAdmin && (
+                <Link to="/admin" onClick={onClose}>
+                  <Button variant="default" className="w-full justify-start flex items-center gap-2">
+                    <Settings className="h-5 w-5" />
+                    Configurações
+                  </Button>
+                </Link>
+              )}
             </>
           ) : (
             <>

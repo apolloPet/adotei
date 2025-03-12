@@ -9,9 +9,12 @@ interface DesktopAuthMenuProps {
 }
 
 const DesktopAuthMenu = ({ isAdmin, handleLogout }: DesktopAuthMenuProps) => {
+  // Check if user is logged in (either as admin or regular user)
+  const isLoggedIn = isAdmin || localStorage.getItem("isLoggedIn") === "true";
+
   return (
     <div className="hidden md:flex items-center space-x-4">
-      {isAdmin ? (
+      {isLoggedIn ? (
         <>
           <Button 
             variant="ghost" 
@@ -22,16 +25,18 @@ const DesktopAuthMenu = ({ isAdmin, handleLogout }: DesktopAuthMenuProps) => {
             <LogOut className="h-4 w-4" />
             Sair
           </Button>
-          <Link to="/admin">
-            <Button 
-              variant="default" 
-              size="sm" 
-              className="rounded-full px-4 flex items-center gap-1 bg-primary"
-            >
-              <Settings className="h-4 w-4" />
-              Configurações
-            </Button>
-          </Link>
+          {isAdmin && (
+            <Link to="/admin">
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="rounded-full px-4 flex items-center gap-1 bg-primary"
+              >
+                <Settings className="h-4 w-4" />
+                Configurações
+              </Button>
+            </Link>
+          )}
         </>
       ) : (
         <>

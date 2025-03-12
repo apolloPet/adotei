@@ -4,20 +4,23 @@ import { ShieldAlert } from 'lucide-react';
 
 interface DesktopNavProps {
   isAdmin: boolean;
+  isLoggedIn: boolean;
 }
 
-const DesktopNav = ({ isAdmin }: DesktopNavProps) => {
+const DesktopNav = ({ isAdmin, isLoggedIn }: DesktopNavProps) => {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
 
   return (
     <nav className="hidden md:flex items-center space-x-8">
-      <Link 
-        to="/browse" 
-        className={`font-medium hover:text-primary transition-colors ${isActive('/browse') ? 'text-primary' : ''}`}
-      >
-        Encontrar Pets
-      </Link>
+      {isLoggedIn && (
+        <Link 
+          to="/browse" 
+          className={`font-medium hover:text-primary transition-colors ${isActive('/browse') ? 'text-primary' : ''}`}
+        >
+          Encontrar Pets
+        </Link>
+      )}
       <Link 
         to="/how-it-works" 
         className={`font-medium hover:text-primary transition-colors ${isActive('/how-it-works') ? 'text-primary' : ''}`}

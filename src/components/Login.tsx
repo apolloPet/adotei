@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const navigate = useNavigate();
   
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,13 +25,14 @@ const Login = () => {
     // In a real app, this would call an authentication API
     console.log("Login attempt with:", { email, password, rememberMe });
     
+    // Set logged in status in localStorage
+    localStorage.setItem("isLoggedIn", "true");
+    
     // For demo purposes, we'll just show a success message and redirect
     toast.success("Login realizado com sucesso!");
     
-    // Simulating a redirect after successful login
-    setTimeout(() => {
-      window.location.href = "/browse";
-    }, 1500);
+    // Redirect after successful login
+    navigate("/browse");
   };
   
   return (

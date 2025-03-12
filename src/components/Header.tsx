@@ -12,6 +12,7 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -20,14 +21,16 @@ const Header = () => {
       setIsScrolled(window.scrollY > 10);
     };
 
-    // Verifica status de admin no localStorage (apenas para demonstração)
-    const checkAdminStatus = () => {
+    // Verifica status de admin e login no localStorage (apenas para demonstração)
+    const checkUserStatus = () => {
       const adminStatus = localStorage.getItem("isAdmin") === "true";
+      const loginStatus = localStorage.getItem("isLoggedIn") === "true";
       setIsAdmin(adminStatus);
+      setIsLoggedIn(loginStatus);
     };
 
     window.addEventListener('scroll', handleScroll);
-    checkAdminStatus();
+    checkUserStatus();
     
     return () => window.removeEventListener('scroll', handleScroll);
   }, [location.pathname]); // Re-verifica ao mudar de página
@@ -36,7 +39,9 @@ const Header = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("isAdmin");
+    localStorage.removeItem("isLoggedIn");
     setIsAdmin(false);
+    setIsLoggedIn(false);
     toast.success("Logout realizado com sucesso");
     navigate("/");
   };
@@ -51,7 +56,7 @@ const Header = () => {
     >
       <div className="container mx-auto px-4 flex justify-between items-center">
         <Logo />
-        <DesktopNav isAdmin={isAdmin} />
+        <DesktopNav isAdmin={isAdmin} isLoggedIn={isLoggedIn} />
         <DesktopAuthMenu isAdmin={isAdmin} handleLogout={handleLogout} />
         <MobileMenuToggle isOpen={isMobileMenuOpen} onClick={toggleMobileMenu} />
       </div>
@@ -59,7 +64,8 @@ const Header = () => {
       {/* Mobile menu */}
       <MobileMenu 
         isOpen={isMobileMenuOpen} 
-        isAdmin={isAdmin} 
+        isAdmin={isAdmin}
+        isLoggedIn={isLoggedIn} 
         onClose={closeMenu} 
         onLogout={handleLogout}
       />
