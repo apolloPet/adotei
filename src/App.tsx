@@ -30,6 +30,10 @@ function App() {
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/payment/:matchId" element={<PaymentProcess />} />
+          <Route path="/register-tech-partner" element={<Index />} />
+          <Route path="/register-vet-partner" element={<Index />} />
+          <Route path="/register-ngo-partner" element={<Index />} />
+          <Route path="/contact" element={<Index />} />
           <Route path="/admin" element={
             <AdminProtectedRoute>
               <AdminPanel />
