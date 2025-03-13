@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -8,12 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Mail, Building2, Users, HandShake } from 'lucide-react';
+import { Mail, Building2, Users, Handshake } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-// Define form schema
 const partnerFormSchema = z.object({
   companyName: z.string().min(2, { message: 'Nome da empresa é obrigatório' }),
   contactName: z.string().min(2, { message: 'Nome do contato é obrigatório' }),
@@ -44,7 +42,6 @@ const statusOptions = [
   { value: 'declined', label: 'Recusado' }
 ];
 
-// Mock data for demonstration
 const mockPartnerRequests: PartnerRequestCardProps[] = [
   {
     id: '1',
@@ -186,7 +183,7 @@ const PartnershipInterest = () => {
     <Tabs defaultValue="overview" className="w-full space-y-6">
       <TabsList className="w-full mb-6">
         <TabsTrigger value="overview" className="flex items-center gap-1">
-          <HandShake className="h-4 w-4" />
+          <Handshake className="h-4 w-4" />
           Visão Geral
         </TabsTrigger>
         <TabsTrigger value="registration" className="flex items-center gap-1">
@@ -269,7 +266,7 @@ const PartnershipInterest = () => {
                 
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-full bg-primary/10 text-primary">
-                    <HandShake className="h-5 w-5" />
+                    <Handshake className="h-5 w-5" />
                   </div>
                   <div>
                     <h4 className="font-medium">Oportunidades de Negócio</h4>

@@ -1,10 +1,9 @@
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import TabContent from './TabContent';
 import PaymentSettings from './PaymentSettings';
 import { Match } from './MatchCard';
-import { Settings, Users, PawPrint, Shield, Puzzle } from 'lucide-react';
+import { Settings, Users, PawPrint, Shield, Puzzle, Handshake } from 'lucide-react';
 import AnimalRegistrationForm from './animal-registration';
 import { UsersList } from './users';
 import AdminUserManagement from './AdminUserManagement';
@@ -68,12 +67,10 @@ const AdminTabs = ({
         </TabsTrigger>
       </TabsList>
       
-      {/* Adoption Process Tab */}
       <TabsContent value="adoption">
         <AdoptionManagement />
       </TabsContent>
       
-      {/* Matches Tab with nested tabs */}
       <TabsContent value="matches">
         <Tabs defaultValue="pending" className="w-full">
           <TabsList className="w-full mb-4">
@@ -113,13 +110,11 @@ const AdminTabs = ({
           </TabsContent>
         </Tabs>
       </TabsContent>
-
-      {/* Users Tab */}
+      
       <TabsContent value="users">
         <UsersList />
       </TabsContent>
       
-      {/* Settings Tab with nested tabs */}
       <TabsContent value="settings">
         <Tabs defaultValue="parameters" className="w-full">
           <TabsList className="w-full mb-4">
@@ -145,7 +140,6 @@ const AdminTabs = ({
         </Tabs>
       </TabsContent>
       
-      {/* Partnership Interest Tab */}
       <TabsContent value="partnership">
         <PartnershipInterest />
       </TabsContent>
