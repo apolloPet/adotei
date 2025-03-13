@@ -4,11 +4,12 @@ import { Badge } from "@/components/ui/badge";
 import TabContent from './TabContent';
 import PaymentSettings from './PaymentSettings';
 import { Match } from './MatchCard';
-import { Settings, Users, PawPrint, Shield } from 'lucide-react';
+import { Settings, Users, PawPrint, Shield, Puzzle } from 'lucide-react';
 import AnimalRegistrationForm from './animal-registration';
 import { UsersList } from './users';
 import AdminUserManagement from './AdminUserManagement';
 import AdoptionManagement from './AdoptionManagement';
+import PartnershipInterest from './PartnershipInterest';
 
 interface AdminTabsProps {
   matches: Match[];
@@ -43,7 +44,7 @@ const AdminTabs = ({
   
   return (
     <>
-      <TabsList className="grid grid-cols-4 mb-6">
+      <TabsList className="grid grid-cols-5 mb-6">
         <TabsTrigger value="adoption">Processo de Adoção</TabsTrigger>
         <TabsTrigger value="matches" className="relative">
           Matches
@@ -60,6 +61,10 @@ const AdminTabs = ({
         <TabsTrigger value="settings" className="flex items-center gap-1">
           <Settings className="h-4 w-4" />
           Configurações
+        </TabsTrigger>
+        <TabsTrigger value="partnership" className="flex items-center gap-1">
+          <Puzzle className="h-4 w-4" />
+          Faça Parte
         </TabsTrigger>
       </TabsList>
       
@@ -138,6 +143,11 @@ const AdminTabs = ({
             <AnimalRegistrationForm />
           </TabsContent>
         </Tabs>
+      </TabsContent>
+      
+      {/* Partnership Interest Tab */}
+      <TabsContent value="partnership">
+        <PartnershipInterest />
       </TabsContent>
     </>
   );
