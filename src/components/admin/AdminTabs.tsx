@@ -1,3 +1,4 @@
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import TabContent from './TabContent';
@@ -119,7 +120,6 @@ const AdminTabs = ({
           <TabsList className="w-full mb-4">
             <TabsTrigger value="parameters">Parâmetros</TabsTrigger>
             <TabsTrigger value="administrators">Administradores</TabsTrigger>
-            <TabsTrigger value="admin-users">Usuários Admin</TabsTrigger>
             <TabsTrigger value="register-animal">Cadastrar Animais</TabsTrigger>
           </TabsList>
           
@@ -131,10 +131,6 @@ const AdminTabs = ({
           </TabsContent>
           
           <TabsContent value="administrators">
-            <AdminUserManagement />
-          </TabsContent>
-          
-           <TabsContent value="admin-users">
             <AdminUserManagement />
           </TabsContent>
           
