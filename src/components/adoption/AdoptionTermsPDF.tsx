@@ -14,6 +14,8 @@ interface AdoptionTermsPDFProps {
   followUpPeriod: number;
   adoptionDate: Date;
   contractText: string;
+  ngoBankDetails?: string;
+  adoptionFee?: number;
 }
 
 const AdoptionTermsPDF = ({
@@ -24,7 +26,9 @@ const AdoptionTermsPDF = ({
   adopterAddress = "",
   followUpPeriod = 90,
   adoptionDate = new Date(),
-  contractText = ""
+  contractText = "",
+  ngoBankDetails = "",
+  adoptionFee = 0
 }: AdoptionTermsPDFProps) => {
   
   const generatePDF = () => {
@@ -32,9 +36,7 @@ const AdoptionTermsPDF = ({
     // For this example, we'll create a text blob and download it
     const formattedDate = format(adoptionDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
     
-    const defaultContractText = `Eu, ${adopterName}, inscrito(a) sob o documento ${adopterDocument}, residente em ${adopterAddress}, me comprometo a cuidar do animal ${petName} adotado, fornecendo abrigo, alimentação adequada, cuidados veterinários e carinho. Concordo em permitir visitas de acompanhamento pelo período de ${followUpPeriod} dias estabelecido e em não abandonar ou maltratar o animal sob quaisquer circunstâncias. Entendo que o animal é um ser s
-
-enciente e merece respeito e amor.`;
+    const defaultContractText = `Eu, ${adopterName}, inscrito(a) sob o documento ${adopterDocument}, residente em ${adopterAddress}, me comprometo a cuidar do animal ${petName} adotado, fornecendo abrigo, alimentação adequada, cuidados veterinários e carinho. Concordo em permitir visitas de acompanhamento pelo período de ${followUpPeriod} dias estabelecido e em não abandonar ou maltratar o animal sob quaisquer circunstâncias. Entendo que o animal é um ser senciente e merece respeito e amor.`;
     
     const fullText = contractText || defaultContractText;
     
@@ -54,6 +56,14 @@ Tipo: ${petType}
 
 TERMOS DE ADOÇÃO:
 ${fullText}
+
+${ngoBankDetails ? `DADOS BANCÁRIOS PARA CONTRIBUIÇÃO:
+${ngoBankDetails}
+` : ''}
+
+${adoptionFee > 0 ? `CONTRIBUIÇÃO PARA ADOÇÃO: 
+R$ ${adoptionFee.toFixed(2)}
+` : ''}
 
 VISITAS DE ACOMPANHAMENTO:
 O adotante concorda com visitas periódicas da equipe da ONG durante os próximos ${followUpPeriod} dias para verificação do bem-estar do animal.
