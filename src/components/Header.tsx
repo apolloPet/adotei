@@ -6,7 +6,6 @@ import Logo from './header/Logo';
 import DesktopNav from './header/DesktopNav';
 import DesktopAuthMenu from './header/DesktopAuthMenu';
 import MobileMenu from './header/MobileMenu';
-import MobileMenuToggle from './header/MobileMenuToggle';
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -94,19 +93,17 @@ const Header = ({
           onLogout={handleLogout}
         />
         <div className="md:hidden">
-          <MobileMenuToggle onClick={toggleMobileMenu} />
+          <MobileMenu 
+            isOpen={isMobileMenuOpen} 
+            isAdmin={isAdmin}
+            isLoggedIn={isLoggedIn} 
+            onClose={closeMenu} 
+            onLogin={handleLogin}
+            onLogout={handleLogout}
+            onClick={toggleMobileMenu}
+          />
         </div>
       </div>
-
-      {/* Mobile menu */}
-      <MobileMenu 
-        isOpen={isMobileMenuOpen} 
-        isAdmin={isAdmin}
-        isLoggedIn={isLoggedIn} 
-        onClose={closeMenu} 
-        onLogin={handleLogin}
-        onLogout={handleLogout}
-      />
     </header>
   );
 };

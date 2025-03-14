@@ -20,6 +20,7 @@ interface MobileMenuProps {
   onLogout: () => void;
   isOpen?: boolean;
   onClose?: () => void;
+  onClick?: () => void;
 }
 
 const MobileMenu = ({ 
@@ -28,12 +29,13 @@ const MobileMenu = ({
   onLogin, 
   onLogout,
   isOpen,
-  onClose
+  onClose,
+  onClick
 }: MobileMenuProps) => {
   return (
     <Sheet open={isOpen} onOpenChange={open => !open && onClose?.()}>
       <SheetTrigger asChild>
-        <MobileMenuToggle />
+        <MobileMenuToggle onClick={onClick} />
       </SheetTrigger>
       <SheetContent side="right" className="flex flex-col justify-between">
         <div className="pt-6">
