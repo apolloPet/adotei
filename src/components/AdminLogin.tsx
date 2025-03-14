@@ -9,7 +9,7 @@ import { toast } from "@/hooks/use-sonner";
 import Header from "@/components/Header";
 import { KeyRound, ShieldAlert } from 'lucide-react';
 
-const AdminLogin = () => {
+const AdminLogin = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -29,8 +29,10 @@ const AdminLogin = () => {
       // Em uma aplicação real, isso seria uma chamada API segura
       // Esta é apenas uma simulação para fins de demonstração
       if (email === "admin@petmatch.com" && password === "admin123") {
-        // Salva o status de admin no localStorage (apenas para demonstração)
-        localStorage.setItem("isAdmin", "true");
+        // Call the onLogin prop to update the app state
+        if (onLogin) {
+          onLogin();
+        }
         
         toast.success("Login administrativo realizado com sucesso!");
         navigate("/admin");

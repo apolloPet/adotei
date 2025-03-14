@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface AdminProtectedRouteProps {
   isAdmin: boolean;
@@ -11,11 +11,15 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
   isAdmin, 
   children 
 }) => {
-  if (!isAdmin) {
-    return <Navigate to="/admin-login" replace />;
-  }
+  const navigate = useNavigate();
   
-  return <>{children}</>;
+  useEffect(() => {
+    if (!isAdmin) {
+      navigate('/admin-login', { replace: true });
+    }
+  }, [isAdmin, navigate]);
+  
+  return isAdmin ? <>{children}</> : null;
 };
 
 export default AdminProtectedRoute;

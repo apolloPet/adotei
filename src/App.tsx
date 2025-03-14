@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import './App.css';
 import Header from './components/Header';
 import Index from './pages/Index';
@@ -23,17 +23,21 @@ import { AdminPanelProps } from './components/AdminPanelProps';
 
 // Protected route component
 const ProtectedRoute = ({ isAuthenticated, children }: { isAuthenticated: boolean, children: React.ReactNode }) => {
-  if (!isAuthenticated) {
-    // Redirect to login
-    window.location.href = '/login';
-    return null;
-  }
-  return <>{children}</>;
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/login');
+    }
+  }, [isAuthenticated, navigate]);
+  
+  return isAuthenticated ? <>{children}</> : null;
 };
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
 
   // Check if user is already logged in from localStorage on mount
   useEffect(() => {
@@ -59,6 +63,7 @@ function App() {
     setIsAdmin(false);
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("isAdmin");
+    navigate('/');
   };
 
   const handleAdminLogin = () => {
