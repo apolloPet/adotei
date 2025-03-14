@@ -12,9 +12,10 @@ const MobileMenuToggle = React.forwardRef<HTMLButtonElement, MobileMenuTogglePro
     return (
       <button 
         ref={ref}
-        className="md:hidden text-foreground"
+        className="md:hidden text-foreground p-2 focus:outline-none"
         onClick={onClick}
         aria-label="Toggle mobile menu"
+        type="button"
       >
         <Menu className="h-6 w-6" />
       </button>

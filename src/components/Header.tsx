@@ -67,6 +67,7 @@ const Header = ({
     localStorage.removeItem("isLoggedIn");
     setIsAdmin(false);
     setIsLoggedIn(false);
+    setIsMobileMenuOpen(false);
     
     if (propsOnLogout) {
       propsOnLogout();
@@ -77,6 +78,7 @@ const Header = ({
   };
 
   const handleLogin = () => {
+    setIsMobileMenuOpen(false);
     if (propsOnLogin) {
       propsOnLogin();
     } else {

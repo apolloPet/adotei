@@ -9,7 +9,8 @@ import {
   Building2, 
   User, 
   LogIn, 
-  Mail 
+  Mail,
+  LogOut 
 } from 'lucide-react';
 import { Button } from "../ui/button";
 
@@ -32,6 +33,18 @@ const MobileMenu = ({
   onClose,
   onClick
 }: MobileMenuProps) => {
+  const handleLogin = () => {
+    if (onLogin) {
+      onLogin();
+    }
+    onClose?.();
+  };
+
+  const handleLogout = () => {
+    onLogout();
+    onClose?.();
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={open => !open && onClose?.()}>
       <SheetTrigger asChild>
@@ -98,15 +111,16 @@ const MobileMenu = ({
         <div className="pb-8">
           {isLoggedIn ? (
             <Button 
-              onClick={onLogout}
-              className="w-full"
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center"
             >
+              <LogOut className="h-4 w-4 mr-2" />
               Sair
             </Button>
           ) : (
             <Button 
-              onClick={onLogin}
-              className="w-full"
+              onClick={handleLogin}
+              className="w-full flex items-center justify-center"
             >
               <LogIn className="h-4 w-4 mr-2" />
               Entrar
