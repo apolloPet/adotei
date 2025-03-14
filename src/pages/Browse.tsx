@@ -1,9 +1,9 @@
-
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Filter, RefreshCw } from 'lucide-react';
 import Header from "@/components/Header";
-import PetCard, { Pet } from "@/components/PetCard";
+import PetCard from "@/components/PetCard";
+import { Pet } from "@/components/pet/types";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
