@@ -20,6 +20,7 @@ import Institution from './pages/Institution';
 import Contact from './pages/Contact';
 import { AdminLoginProps } from './components/AdminLoginProps';
 import { AdminPanelProps } from './components/AdminPanelProps';
+import { toast } from '@/hooks/use-sonner';
 
 // Protected route component
 const ProtectedRoute = ({ isAuthenticated, children }: { isAuthenticated: boolean, children: React.ReactNode }) => {
@@ -41,21 +42,25 @@ function App() {
 
   // Check if user is already logged in from localStorage on mount
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-    const isAdminUser = localStorage.getItem("isAdmin") === "true";
+    const checkLoginStatus = () => {
+      const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+      const isAdminUser = localStorage.getItem("isAdmin") === "true";
+      
+      setIsAuthenticated(isLoggedIn);
+      setIsAdmin(isAdminUser);
+    };
     
-    if (isLoggedIn) {
-      setIsAuthenticated(true);
-    }
+    checkLoginStatus();
     
-    if (isAdminUser) {
-      setIsAdmin(true);
-    }
+    // Re-check login status when storage changes
+    window.addEventListener('storage', checkLoginStatus);
+    return () => window.removeEventListener('storage', checkLoginStatus);
   }, []);
 
   const handleLogin = () => {
     setIsAuthenticated(true);
     localStorage.setItem("isLoggedIn", "true");
+    toast.success("Login realizado com sucesso");
   };
 
   const handleLogout = () => {
@@ -63,6 +68,7 @@ function App() {
     setIsAdmin(false);
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("isAdmin");
+    toast.success("Logout realizado com sucesso");
     navigate('/');
   };
 
@@ -71,6 +77,7 @@ function App() {
     setIsAuthenticated(true);
     localStorage.setItem("isAdmin", "true");
     localStorage.setItem("isLoggedIn", "true");
+    toast.success("Login de administrador realizado com sucesso");
   };
 
   // Cast the components to accept our props

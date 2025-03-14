@@ -26,18 +26,27 @@ const Header = ({
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Update authentication state when props change
+  // Check login state on component mount and route changes
   useEffect(() => {
-    if (propsIsAdmin !== undefined || propsIsAuthenticated !== undefined) {
-      setIsAdmin(propsIsAdmin || false);
-      setIsLoggedIn(propsIsAuthenticated || false);
-    } else {
-      const adminStatus = localStorage.getItem("isAdmin") === "true";
+    const checkLoginStatus = () => {
       const loginStatus = localStorage.getItem("isLoggedIn") === "true";
-      setIsAdmin(adminStatus);
+      const adminStatus = localStorage.getItem("isAdmin") === "true";
+      
       setIsLoggedIn(loginStatus);
+      setIsAdmin(adminStatus);
+    };
+    
+    checkLoginStatus();
+    
+    // Also check when props change
+    if (propsIsAuthenticated !== undefined) {
+      setIsLoggedIn(propsIsAuthenticated);
     }
-  }, [propsIsAdmin, propsIsAuthenticated, location.pathname]);
+    
+    if (propsIsAdmin !== undefined) {
+      setIsAdmin(propsIsAdmin);
+    }
+  }, [propsIsAuthenticated, propsIsAdmin, location.pathname]);
 
   // Handle scroll events
   useEffect(() => {
@@ -58,31 +67,17 @@ const Header = ({
 
   const closeMenu = () => setIsMobileMenuOpen(false);
 
-  // Garantir que o estado é atualizado quando o localStorage muda
-  useEffect(() => {
-    const checkLoginStatus = () => {
-      const adminStatus = localStorage.getItem("isAdmin") === "true";
-      const loginStatus = localStorage.getItem("isLoggedIn") === "true";
-      setIsAdmin(adminStatus);
-      setIsLoggedIn(loginStatus);
-    };
-
-    // Verificar ao montar o componente
-    checkLoginStatus();
-
-    // Verificar quando a rota muda
-    return () => {
-      checkLoginStatus();
-    };
-  }, [location.pathname]);
-
   const handleLogout = () => {
+    // Clear localStorage
     localStorage.removeItem("isAdmin");
     localStorage.removeItem("isLoggedIn");
+    
+    // Update local state
     setIsAdmin(false);
     setIsLoggedIn(false);
     setIsMobileMenuOpen(false);
     
+    // Call props callback if provided
     if (propsOnLogout) {
       propsOnLogout();
     } else {

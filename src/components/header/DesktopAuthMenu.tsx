@@ -2,6 +2,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { LogIn, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { toast } from "@/hooks/use-sonner";
 
 interface DesktopAuthMenuProps {
   isAdmin?: boolean;
@@ -26,12 +27,16 @@ const DesktopAuthMenu = ({
   };
 
   const handleLogout = () => {
-    // Limpar o estado de login no localStorage
+    // Clear login state in localStorage
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("isAdmin");
     
+    // Call the callback if provided
     if (onLogout) {
       onLogout();
+    } else {
+      toast.success("Logout realizado com sucesso");
+      navigate('/');
     }
   };
   
