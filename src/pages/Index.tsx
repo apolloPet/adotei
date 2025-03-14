@@ -1,6 +1,4 @@
-
 import { useState, useEffect } from 'react';
-import Header from "@/components/Header";
 import HeroSection from "@/components/home/HeroSection";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
 import BenefitsSection from "@/components/home/BenefitsSection";
@@ -51,7 +49,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
       <HeroSection />
       <HowItWorksSection isVisible={isVisible.howItWorks} />
       <BenefitsSection isVisible={isVisible.benefits} />

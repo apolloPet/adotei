@@ -61,7 +61,7 @@ const AdminPanel = () => {
   };
 
   return (
-    <div className="container py-8 max-w-6xl mx-auto">
+    <div className="container py-12 max-w-6xl mx-auto mt-16">
       <Card className="w-full">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -78,7 +78,7 @@ const AdminPanel = () => {
           </Button>
         </CardHeader>
         
-        <CardContent>
+        <CardContent className="pt-6">
           <Tabs defaultValue="adoption" className="w-full">
             <TabsList className="w-full mb-6">
               <TabsTrigger value="adoption">Processo de Adoção</TabsTrigger>
