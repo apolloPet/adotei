@@ -17,9 +17,10 @@ const Login = ({ onLogin }: LoginProps = {}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
@@ -27,22 +28,34 @@ const Login = ({ onLogin }: LoginProps = {}) => {
       return;
     }
     
-    // In a real app, this would call an authentication API
-    console.log("Login attempt with:", { email, password, rememberMe });
-    
-    // Set logged in status in localStorage
-    localStorage.setItem("isLoggedIn", "true");
-    
-    // Call the onLogin callback if provided
-    if (onLogin) {
-      onLogin();
+    try {
+      setIsLoading(true);
+      
+      // In a real app, this would call an authentication API
+      console.log("Login attempt with:", { email, password, rememberMe });
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Set logged in status in localStorage
+      localStorage.setItem("isLoggedIn", "true");
+      
+      // Call the onLogin callback if provided
+      if (onLogin) {
+        onLogin();
+      }
+      
+      // For demo purposes, we'll just show a success message and redirect
+      toast.success("Login realizado com sucesso!");
+      
+      // Redirect after successful login
+      navigate("/browse");
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.error("Erro ao fazer login. Por favor, tente novamente.");
+    } finally {
+      setIsLoading(false);
     }
-    
-    // For demo purposes, we'll just show a success message and redirect
-    toast.success("Login realizado com sucesso!");
-    
-    // Redirect after successful login
-    navigate("/browse");
   };
   
   return (
@@ -72,6 +85,7 @@ const Login = ({ onLogin }: LoginProps = {}) => {
                 placeholder="seu.email@exemplo.com" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isLoading}
                 required
               />
             </div>
@@ -89,6 +103,7 @@ const Login = ({ onLogin }: LoginProps = {}) => {
                 placeholder="••••••••" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
                 required
               />
             </div>
@@ -98,12 +113,13 @@ const Login = ({ onLogin }: LoginProps = {}) => {
                 id="remember-me" 
                 checked={rememberMe}
                 onCheckedChange={(checked) => setRememberMe(checked === true)}
+                disabled={isLoading}
               />
               <Label htmlFor="remember-me" className="text-sm">Lembrar de mim</Label>
             </div>
             
-            <Button type="submit" className="w-full">
-              Entrar
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
         </CardContent>

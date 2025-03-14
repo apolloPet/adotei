@@ -27,27 +27,38 @@ const Header = ({
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Update authentication state when props change
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-
-    // Update from props when they change
     setIsAdmin(propsIsAdmin || false);
     setIsLoggedIn(propsIsAuthenticated || false);
+  }, [propsIsAdmin, propsIsAuthenticated]);
 
-    // Verify status from localStorage if not provided via props
+  // Check localStorage for auth status when not provided via props
+  useEffect(() => {
     if (propsIsAdmin === undefined || propsIsAuthenticated === undefined) {
       const adminStatus = localStorage.getItem("isAdmin") === "true";
       const loginStatus = localStorage.getItem("isLoggedIn") === "true";
       setIsAdmin(adminStatus);
       setIsLoggedIn(loginStatus);
     }
+  }, [propsIsAdmin, propsIsAuthenticated]);
+
+  // Handle scroll events
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
 
     window.addEventListener('scroll', handleScroll);
     
+    // Clean up the event listener on component unmount
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [location.pathname, propsIsAdmin, propsIsAuthenticated]);
+  }, []);
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
 
   const closeMenu = () => setIsMobileMenuOpen(false);
 
