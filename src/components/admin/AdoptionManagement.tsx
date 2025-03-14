@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdoptionStages, { AdoptionStage, adoptionStages } from '../adoption/AdoptionStages';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, Edit, MapPin, MessageSquare, UserCheck } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Edit, MapPin, MessageSquare, UserCheck } from 'lucide-react';
 import { 
   Dialog, 
   DialogClose, 
@@ -19,6 +20,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/hooks/use-sonner';
 import { sendWhatsAppMessage, generateAdoptionStageMessage } from '@/utils/whatsappUtils';
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format, isValid } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 // Types for adoption matches
 export interface AdoptionMatch {
@@ -153,7 +159,7 @@ const formatDate = (dateString: string) => {
 const AdoptionManagement = () => {
   const [matches, setMatches] = useState<AdoptionMatch[]>(mockAdoptionMatches);
   const [selectedMatch, setSelectedMatch] = useState<AdoptionMatch | null>(null);
-  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleDate, setScheduleDate] = useState<Date | undefined>(undefined);
   const [scheduleTime, setScheduleTime] = useState("");
   const [scheduleNotes, setScheduleNotes] = useState("");
   const [showNotifyDialog, setShowNotifyDialog] = useState(false);
@@ -227,14 +233,23 @@ const AdoptionManagement = () => {
   };
 
   const handleScheduleVisit = () => {
-    if (!selectedMatch || !scheduleDate || !scheduleTime) {
-      toast.error("Por favor, preencha todos os campos");
+    if (!selectedMatch || !scheduleDate) {
+      toast.error("Por favor, selecione uma data para a visita");
       return;
     }
 
+    if (!scheduleTime) {
+      toast.error("Por favor, informe um horário para a visita");
+      return;
+    }
+
+    // Format the date for better readability
+    const formattedDate = format(scheduleDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+
     // Update the match notes with the schedule information
-    const updatedNotes = `${selectedMatch.notes}\n\nVisita agendada para ${scheduleDate} às ${scheduleTime}. ${scheduleNotes}`;
+    const updatedNotes = `${selectedMatch.notes}\n\nVisita agendada para ${formattedDate} às ${scheduleTime}. ${scheduleNotes}`;
     
+    // Update the match in the state
     setMatches(prevMatches => 
       prevMatches.map(match => 
         match.id === selectedMatch.id 
@@ -248,24 +263,39 @@ const AdoptionManagement = () => {
       )
     );
     
+    // Update notification message with the scheduled date
+    const autoMessage = `Olá ${selectedMatch.userName}! Gostaríamos de agendar uma visita para que você conheça ${selectedMatch.petName}. A data sugerida é ${formattedDate} às ${scheduleTime}. Por favor, confirme se esta data é conveniente para você. Obrigado!`;
+    setNotificationMessage(autoMessage);
+    
+    // Show notification dialog to send WhatsApp message
+    setShowNotifyDialog(true);
+    
     toast.success("Visita agendada com sucesso!");
     
-    // Reset form
-    setScheduleDate("");
+    // Reset date and time inputs
+    setScheduleDate(undefined);
     setScheduleTime("");
     setScheduleNotes("");
-    setSelectedMatch(null);
   };
 
   const handleScheduleHomeInspection = () => {
-    if (!selectedMatch || !scheduleDate || !scheduleTime) {
-      toast.error("Por favor, preencha todos os campos");
+    if (!selectedMatch || !scheduleDate) {
+      toast.error("Por favor, selecione uma data para a inspeção");
       return;
     }
 
+    if (!scheduleTime) {
+      toast.error("Por favor, informe um horário para a inspeção");
+      return;
+    }
+
+    // Format the date for better readability
+    const formattedDate = format(scheduleDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+
     // Update the match notes with the home inspection information
-    const updatedNotes = `${selectedMatch.notes}\n\nInspeção domiciliar agendada para ${scheduleDate} às ${scheduleTime}. ${scheduleNotes}`;
+    const updatedNotes = `${selectedMatch.notes}\n\nInspeção domiciliar agendada para ${formattedDate} às ${scheduleTime}. ${scheduleNotes}`;
     
+    // Update the match in the state
     setMatches(prevMatches => 
       prevMatches.map(match => 
         match.id === selectedMatch.id 
@@ -279,13 +309,19 @@ const AdoptionManagement = () => {
       )
     );
     
+    // Update notification message with the scheduled date
+    const autoMessage = `Olá ${selectedMatch.userName}! Gostaríamos de agendar uma visita à sua residência para verificar as condições para ${selectedMatch.petName}. A data sugerida é ${formattedDate} às ${scheduleTime}. Por favor, confirme se esta data é conveniente para você. Obrigado!`;
+    setNotificationMessage(autoMessage);
+    
+    // Show notification dialog to send WhatsApp message
+    setShowNotifyDialog(true);
+    
     toast.success("Inspeção domiciliar agendada com sucesso!");
     
-    // Reset form
-    setScheduleDate("");
+    // Reset date and time inputs
+    setScheduleDate(undefined);
     setScheduleTime("");
     setScheduleNotes("");
-    setSelectedMatch(null);
   };
 
   const completeAdoption = (matchId: string) => {
@@ -451,30 +487,50 @@ const AdoptionManagement = () => {
                 </div>
                 
                 <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <label htmlFor="date" className="text-sm font-medium">
-                        Data
-                      </label>
-                      <Input
-                        id="date"
-                        type="date"
-                        value={scheduleDate}
-                        onChange={(e) => setScheduleDate(e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label htmlFor="time" className="text-sm font-medium">
-                        Horário
-                      </label>
-                      <Input
-                        id="time"
-                        type="time"
-                        value={scheduleTime}
-                        onChange={(e) => setScheduleTime(e.target.value)}
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <label htmlFor="date" className="text-sm font-medium">
+                      Data
+                    </label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !scheduleDate && "text-muted-foreground"
+                          )}
+                          id="date"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {scheduleDate ? (
+                            format(scheduleDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                          ) : (
+                            <span>Selecione uma data</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={scheduleDate}
+                          onSelect={setScheduleDate}
+                          locale={ptBR}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="time" className="text-sm font-medium">
+                      Horário
+                    </label>
+                    <Input
+                      id="time"
+                      type="time"
+                      value={scheduleTime}
+                      onChange={(e) => setScheduleTime(e.target.value)}
+                    />
                   </div>
                   
                   <div className="space-y-2">
@@ -531,30 +587,50 @@ const AdoptionManagement = () => {
                 </div>
                 
                 <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <label htmlFor="inspection-date" className="text-sm font-medium">
-                        Data
-                      </label>
-                      <Input
-                        id="inspection-date"
-                        type="date"
-                        value={scheduleDate}
-                        onChange={(e) => setScheduleDate(e.target.value)}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label htmlFor="inspection-time" className="text-sm font-medium">
-                        Horário
-                      </label>
-                      <Input
-                        id="inspection-time"
-                        type="time"
-                        value={scheduleTime}
-                        onChange={(e) => setScheduleTime(e.target.value)}
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <label htmlFor="inspection-date" className="text-sm font-medium">
+                      Data
+                    </label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !scheduleDate && "text-muted-foreground"
+                          )}
+                          id="inspection-date"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {scheduleDate ? (
+                            format(scheduleDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                          ) : (
+                            <span>Selecione uma data</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={scheduleDate}
+                          onSelect={setScheduleDate}
+                          locale={ptBR}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label htmlFor="inspection-time" className="text-sm font-medium">
+                      Horário
+                    </label>
+                    <Input
+                      id="inspection-time"
+                      type="time"
+                      value={scheduleTime}
+                      onChange={(e) => setScheduleTime(e.target.value)}
+                    />
                   </div>
                   
                   <div className="space-y-2">
