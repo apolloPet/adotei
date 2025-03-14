@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,7 @@ const mockAdoptions = [
     shelter: "ONG Amigos dos Animais",
     fee: 120,
     status: 'pending',
+    userName: "Maria Silva" // Added userName property
   },
   {
     id: "2",
@@ -25,6 +27,7 @@ const mockAdoptions = [
     shelter: "ONG Patinhas Carentes",
     fee: 150,
     status: 'pending',
+    userName: "João Pereira" // Added userName property
   },
 ];
 
