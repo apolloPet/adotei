@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import './App.css';
@@ -34,15 +35,21 @@ function App() {
 
   const handleLogin = () => {
     setIsAuthenticated(true);
+    localStorage.setItem("isLoggedIn", "true");
   };
 
   const handleLogout = () => {
     setIsAuthenticated(false);
     setIsAdmin(false);
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("isAdmin");
   };
 
   const handleAdminLogin = () => {
     setIsAdmin(true);
+    setIsAuthenticated(true);
+    localStorage.setItem("isAdmin", "true");
+    localStorage.setItem("isLoggedIn", "true");
   };
 
   return (
@@ -79,8 +86,8 @@ function App() {
           <Route
             path="/admin"
             element={
-              <AdminProtectedRoute isAuthenticated={isAdmin}>
-                <AdminPanel handleLogout={handleLogout} />
+              <AdminProtectedRoute isAdmin={isAdmin}>
+                <AdminPanel onLogout={handleLogout} />
               </AdminProtectedRoute>
             }
           />

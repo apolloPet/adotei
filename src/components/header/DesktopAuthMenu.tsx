@@ -1,62 +1,52 @@
 
-import { Link } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, KeyRound, Settings } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { LogIn, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface DesktopAuthMenuProps {
-  isAdmin: boolean;
-  handleLogout: () => void;
+  isAdmin?: boolean;
+  isLoggedIn?: boolean;
+  onLogin?: () => void;
+  onLogout?: () => void;
 }
 
-const DesktopAuthMenu = ({ isAdmin, handleLogout }: DesktopAuthMenuProps) => {
-  // Check if user is logged in (either as admin or regular user)
-  const isLoggedIn = isAdmin || localStorage.getItem("isLoggedIn") === "true";
+const DesktopAuthMenu = ({ 
+  isLoggedIn = false, 
+  onLogin, 
+  onLogout 
+}: DesktopAuthMenuProps) => {
+  const navigate = useNavigate();
 
+  const handleLogin = () => {
+    if (onLogin) {
+      onLogin();
+    } else {
+      navigate('/login');
+    }
+  };
+
+  const handleLogout = () => {
+    if (onLogout) {
+      onLogout();
+    }
+  };
+  
   return (
     <div className="hidden md:flex items-center space-x-4">
       {isLoggedIn ? (
-        <>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="rounded-full px-4 flex items-center gap-1" 
-            onClick={handleLogout}
-          >
-            <LogOut className="h-4 w-4" />
-            Sair
-          </Button>
-          {isAdmin && (
-            <Link to="/admin">
-              <Button 
-                variant="default" 
-                size="sm" 
-                className="rounded-full px-4 flex items-center gap-1 bg-primary"
-              >
-                <Settings className="h-4 w-4" />
-                Configurações
-              </Button>
-            </Link>
-          )}
-        </>
+        <Button variant="outline" onClick={handleLogout} size="sm">
+          <LogOut className="h-4 w-4 mr-2" />
+          Sair
+        </Button>
       ) : (
         <>
-          <Link to="/login">
-            <Button variant="ghost" size="sm" className="rounded-full px-4 flex items-center gap-1">
-              <LogIn className="h-4 w-4" />
-              Entrar
-            </Button>
-          </Link>
-          <Link to="/admin-login">
-            <Button variant="outline" size="sm" className="rounded-full px-4 flex items-center gap-1">
-              <KeyRound className="h-4 w-4" />
-              Acesso Admin
-            </Button>
-          </Link>
-          <Link to="/register">
-            <Button variant="default" size="sm" className="rounded-full px-4">
-              Cadastrar
-            </Button>
-          </Link>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/register">Cadastrar</Link>
+          </Button>
+          <Button onClick={handleLogin} size="sm">
+            <LogIn className="h-4 w-4 mr-2" />
+            Entrar
+          </Button>
         </>
       )}
     </div>

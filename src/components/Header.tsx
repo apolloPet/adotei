@@ -8,11 +8,23 @@ import DesktopAuthMenu from './header/DesktopAuthMenu';
 import MobileMenu from './header/MobileMenu';
 import MobileMenuToggle from './header/MobileMenuToggle';
 
-const Header = () => {
+interface HeaderProps {
+  isAuthenticated?: boolean;
+  isAdmin?: boolean;
+  onLogin?: () => void;
+  onLogout?: () => void;
+}
+
+const Header = ({ 
+  isAuthenticated: propsIsAuthenticated,
+  isAdmin: propsIsAdmin,
+  onLogin: propsOnLogin,
+  onLogout: propsOnLogout
+}: HeaderProps = {}) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(propsIsAdmin || false);
+  const [isLoggedIn, setIsLoggedIn] = useState(propsIsAuthenticated || false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -21,19 +33,22 @@ const Header = () => {
       setIsScrolled(window.scrollY > 10);
     };
 
-    // Verifica status de admin e login no localStorage (apenas para demonstração)
-    const checkUserStatus = () => {
+    // Update from props when they change
+    setIsAdmin(propsIsAdmin || false);
+    setIsLoggedIn(propsIsAuthenticated || false);
+
+    // Verify status from localStorage if not provided via props
+    if (propsIsAdmin === undefined || propsIsAuthenticated === undefined) {
       const adminStatus = localStorage.getItem("isAdmin") === "true";
       const loginStatus = localStorage.getItem("isLoggedIn") === "true";
       setIsAdmin(adminStatus);
       setIsLoggedIn(loginStatus);
-    };
+    }
 
     window.addEventListener('scroll', handleScroll);
-    checkUserStatus();
     
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [location.pathname]); // Re-verifica ao mudar de página
+  }, [location.pathname, propsIsAdmin, propsIsAuthenticated]);
 
   const closeMenu = () => setIsMobileMenuOpen(false);
 
@@ -42,8 +57,21 @@ const Header = () => {
     localStorage.removeItem("isLoggedIn");
     setIsAdmin(false);
     setIsLoggedIn(false);
-    toast.success("Logout realizado com sucesso");
-    navigate("/");
+    
+    if (propsOnLogout) {
+      propsOnLogout();
+    } else {
+      toast.success("Logout realizado com sucesso");
+      navigate("/");
+    }
+  };
+
+  const handleLogin = () => {
+    if (propsOnLogin) {
+      propsOnLogin();
+    } else {
+      navigate("/login");
+    }
   };
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -59,8 +87,15 @@ const Header = () => {
           <Logo />
         </div>
         <DesktopNav isAdmin={isAdmin} isLoggedIn={isLoggedIn} />
-        <DesktopAuthMenu isAdmin={isAdmin} handleLogout={handleLogout} />
-        <MobileMenuToggle isOpen={isMobileMenuOpen} onClick={toggleMobileMenu} />
+        <DesktopAuthMenu 
+          isAdmin={isAdmin} 
+          isLoggedIn={isLoggedIn}
+          onLogin={handleLogin}
+          onLogout={handleLogout}
+        />
+        <div className="md:hidden">
+          <MobileMenuToggle onClick={toggleMobileMenu} />
+        </div>
       </div>
 
       {/* Mobile menu */}
@@ -69,6 +104,7 @@ const Header = () => {
         isAdmin={isAdmin}
         isLoggedIn={isLoggedIn} 
         onClose={closeMenu} 
+        onLogin={handleLogin}
         onLogout={handleLogout}
       />
     </header>
