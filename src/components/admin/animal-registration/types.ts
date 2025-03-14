@@ -12,6 +12,13 @@ export interface AnimalFormData {
   characteristics: string[];
   requirements: string[];
   responsibleId: string;
+  caretaker?: {
+    name: string;
+    role: string;
+    phone: string;
+    email: string;
+    notes?: string;
+  };
 }
 
 export const defaultFormData: AnimalFormData = {
@@ -26,7 +33,14 @@ export const defaultFormData: AnimalFormData = {
   location: '',
   characteristics: [],
   requirements: [],
-  responsibleId: ''
+  responsibleId: '',
+  caretaker: {
+    name: '',
+    role: '',
+    phone: '',
+    email: '',
+    notes: ''
+  }
 };
 
 // Mock staff members for the dropdown

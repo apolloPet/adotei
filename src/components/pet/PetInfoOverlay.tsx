@@ -5,11 +5,10 @@ import { Pet, getPetColors } from './types';
 
 interface PetInfoOverlayProps {
   pet: Pet;
-  showDetails: boolean;
   setShowDetails: (show: boolean) => void;
 }
 
-const PetInfoOverlay = ({ pet, showDetails, setShowDetails }: PetInfoOverlayProps) => {
+const PetInfoOverlay = ({ pet, setShowDetails }: PetInfoOverlayProps) => {
   const petColors = getPetColors(pet.species);
 
   return (
@@ -41,13 +40,6 @@ const PetInfoOverlay = ({ pet, showDetails, setShowDetails }: PetInfoOverlayProp
           {pet.size === 'small' ? 'Pequeno' : pet.size === 'medium' ? 'Médio' : 'Grande'}
         </Badge>
       </div>
-      
-      <button 
-        className="mt-3 text-sm underline underline-offset-2 opacity-90 hover:opacity-100 transition-opacity flex items-center"
-        onClick={(e) => { e.stopPropagation(); setShowDetails(!showDetails); }}
-      >
-        {showDetails ? 'Ocultar detalhes' : 'Ver mais detalhes'}
-      </button>
     </div>
   );
 };
