@@ -1,15 +1,12 @@
 
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import Header from "@/components/Header";
 import UserRegistration from "@/components/UserRegistration";
 import { Button } from "@/components/ui/button";
 
 const Register = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      
       <main className="container mx-auto px-4 pt-32 pb-20">
         <div className="max-w-lg mx-auto">
           <div className="mb-6">

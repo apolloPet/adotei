@@ -1,7 +1,5 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import Header from "@/components/Header";
 import { Check, Heart, MessageCircle, PawPrint, Search, ShieldCheck, User } from 'lucide-react';
 
 const HowItWorks = () => {
@@ -63,8 +61,6 @@ const HowItWorks = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      
       <main className="container mx-auto px-4 pt-32 pb-16">
         <Card className="max-w-4xl mx-auto mb-10">
           <CardHeader className="text-center">
