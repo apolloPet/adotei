@@ -68,7 +68,6 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
         
         <PetInfoOverlay 
           pet={pet} 
-          showDetails={showDetails} 
           setShowDetails={setShowDetails} 
         />
         
