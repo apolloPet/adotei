@@ -3,16 +3,19 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-sonner";
-import { mockMatches, formatDate } from './admin/MockData';
-import { Match } from './admin/MatchCard';
-import AdminTabs, { PaymentSettingsType } from './admin/AdminTabs';
+import { formatDate } from './admin/MockData';
+import { PaymentSettingsType } from './admin/AdminTabs';
 import AdoptionManagement from './admin/AdoptionManagement';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
-import { LogOut } from 'lucide-react';
+import { LogOut, PawPrint, Settings, Users, Handshake } from 'lucide-react';
+import PartnershipInterest from './admin/PartnershipInterest';
+import { UsersList } from './admin/users';
+import AdminUserManagement from './admin/AdminUserManagement';
+import PaymentSettings from './admin/PaymentSettings';
+import AnimalRegistrationForm from './admin/animal-registration';
 
 const AdminPanel = () => {
-  const [matches, setMatches] = useState<Match[]>(mockMatches);
   const [settings, setSettings] = useState<PaymentSettingsType>({
     adoptionFee: 120,
     ngoPercentage: 90,
@@ -22,30 +25,6 @@ const AdminPanel = () => {
     followUpPeriod: 90
   });
   const navigate = useNavigate();
-
-  const handleApprove = (id: string) => {
-    setMatches(prev => 
-      prev.map(match => 
-        match.id === id ? { ...match, status: 'approved' } : match
-      )
-    );
-    
-    toast.success("Match aprovado com sucesso!", {
-      description: "O adotante será notificado."
-    });
-  };
-
-  const handleReject = (id: string) => {
-    setMatches(prev => 
-      prev.map(match => 
-        match.id === id ? { ...match, status: 'rejected' } : match
-      )
-    );
-    
-    toast("Match rejeitado", {
-      description: "O adotante não será notificado."
-    });
-  };
 
   const handleSaveSettings = (newSettings: PaymentSettingsType) => {
     setSettings(newSettings);
@@ -81,50 +60,59 @@ const AdminPanel = () => {
         <CardContent className="pt-6">
           <Tabs defaultValue="adoption" className="w-full">
             <TabsList className="w-full mb-6">
-              <TabsTrigger value="adoption">Processo de Adoção</TabsTrigger>
-              <TabsTrigger value="matches">Matches</TabsTrigger>
-              <TabsTrigger value="users">Usuários</TabsTrigger>
-              <TabsTrigger value="settings">Configurações</TabsTrigger>
+              <TabsTrigger value="adoption" className="flex items-center gap-1">
+                <PawPrint className="h-4 w-4" />
+                Adoção
+              </TabsTrigger>
+              <TabsTrigger value="partnerships" className="flex items-center gap-1">
+                <Handshake className="h-4 w-4" />
+                Parcerias
+              </TabsTrigger>
+              <TabsTrigger value="users" className="flex items-center gap-1">
+                <Users className="h-4 w-4" />
+                Usuários
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="flex items-center gap-1">
+                <Settings className="h-4 w-4" />
+                Configurações
+              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="adoption">
               <AdoptionManagement />
             </TabsContent>
             
-            <TabsContent value="matches">
-              <AdminTabs 
-                matches={matches}
-                onApprove={handleApprove}
-                onReject={handleReject}
-                formatDate={formatDate}
-                settings={settings}
-                onSaveSettings={handleSaveSettings}
-                activeTab="pending"
-              />
+            <TabsContent value="partnerships">
+              <PartnershipInterest />
             </TabsContent>
             
             <TabsContent value="users">
-              <AdminTabs 
-                matches={matches}
-                onApprove={handleApprove}
-                onReject={handleReject}
-                formatDate={formatDate}
-                settings={settings}
-                onSaveSettings={handleSaveSettings}
-                activeTab="users"
-              />
+              <UsersList />
             </TabsContent>
             
             <TabsContent value="settings">
-              <AdminTabs 
-                matches={matches}
-                onApprove={handleApprove}
-                onReject={handleReject}
-                formatDate={formatDate}
-                settings={settings}
-                onSaveSettings={handleSaveSettings}
-                activeTab="settings"
-              />
+              <Tabs defaultValue="parameters" className="w-full">
+                <TabsList className="w-full mb-4">
+                  <TabsTrigger value="parameters">Parâmetros</TabsTrigger>
+                  <TabsTrigger value="administrators">Administradores</TabsTrigger>
+                  <TabsTrigger value="register-animal">Cadastrar Animais</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="parameters">
+                  <PaymentSettings 
+                    settings={settings}
+                    onSave={handleSaveSettings}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="administrators">
+                  <AdminUserManagement />
+                </TabsContent>
+                
+                <TabsContent value="register-animal">
+                  <AnimalRegistrationForm />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
           </Tabs>
         </CardContent>
