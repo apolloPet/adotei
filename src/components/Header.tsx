@@ -55,7 +55,9 @@ const Header = () => {
       }`}
     >
       <div className="container mx-auto px-4 flex justify-between items-center">
-        <Logo />
+        <div className="flex items-center gap-4">
+          <Logo />
+        </div>
         <DesktopNav isAdmin={isAdmin} isLoggedIn={isLoggedIn} />
         <DesktopAuthMenu isAdmin={isAdmin} handleLogout={handleLogout} />
         <MobileMenuToggle isOpen={isMobileMenuOpen} onClick={toggleMobileMenu} />

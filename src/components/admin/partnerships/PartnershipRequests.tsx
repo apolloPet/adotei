@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Download, Filter, ArrowLeft } from 'lucide-react';
 import PartnerRequestCard, { PartnerRequestCardProps } from './PartnerRequestCard';
 
 // Mock data for partner requests
@@ -49,27 +51,37 @@ const PartnershipRequests = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Solicitações de Parceria</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            Exportar
-          </Button>
-          <Button variant="outline" size="sm">
-            Filtrar
-          </Button>
+    <Card className="w-full">
+      <CardHeader className="pb-3">
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-2xl font-bold">Solicitações de Parceria</CardTitle>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="flex items-center gap-1">
+              <Download className="h-4 w-4" />
+              Exportar
+            </Button>
+            <Button variant="outline" size="sm" className="flex items-center gap-1">
+              <Filter className="h-4 w-4" />
+              Filtrar
+            </Button>
+          </div>
         </div>
-      </div>
+      </CardHeader>
       
-      {requests.map(request => (
-        <PartnerRequestCard 
-          key={request.id}
-          {...request}
-          onStatusChange={handleStatusChange}
-        />
-      ))}
-    </div>
+      <CardContent className="space-y-4">
+        {requests.length === 0 ? (
+          <p className="text-center py-8 text-muted-foreground">Nenhuma solicitação de parceria encontrada.</p>
+        ) : (
+          requests.map(request => (
+            <PartnerRequestCard 
+              key={request.id}
+              {...request}
+              onStatusChange={handleStatusChange}
+            />
+          ))
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

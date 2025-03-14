@@ -1,7 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Heart, User, PawPrint, ShieldAlert, LogIn, LogOut, KeyRound, Settings, Building2 } from 'lucide-react';
+import { Heart, User, PawPrint, ShieldAlert, LogIn, LogOut, KeyRound, Settings, Building2, ArrowLeft } from 'lucide-react';
 
 interface MobileMenuProps {
   isOpen: boolean;
