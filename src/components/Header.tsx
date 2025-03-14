@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from "@/hooks/use-sonner";
@@ -58,6 +57,24 @@ const Header = ({
   }, [location.pathname]);
 
   const closeMenu = () => setIsMobileMenuOpen(false);
+
+  // Garantir que o estado é atualizado quando o localStorage muda
+  useEffect(() => {
+    const checkLoginStatus = () => {
+      const adminStatus = localStorage.getItem("isAdmin") === "true";
+      const loginStatus = localStorage.getItem("isLoggedIn") === "true";
+      setIsAdmin(adminStatus);
+      setIsLoggedIn(loginStatus);
+    };
+
+    // Verificar ao montar o componente
+    checkLoginStatus();
+
+    // Verificar quando a rota muda
+    return () => {
+      checkLoginStatus();
+    };
+  }, [location.pathname]);
 
   const handleLogout = () => {
     localStorage.removeItem("isAdmin");

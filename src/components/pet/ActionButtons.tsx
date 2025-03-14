@@ -19,15 +19,15 @@ const ActionButtons = ({ onLike, onDislike, onInfo }: ActionButtonsProps) => {
       </button>
       
       <button
-        className="w-14 h-14 rounded-full bg-white text-[#D946EF] shadow-lg flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95"
+        className="w-14 h-14 rounded-full bg-white text-green-500 shadow-lg flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95"
         onClick={onLike}
         aria-label="Curtir"
       >
-        <Heart className="h-7 w-7 fill-[#D946EF]" />
+        <Heart className="h-7 w-7 fill-green-500" />
       </button>
       
       <button
-        className="w-14 h-14 rounded-full bg-white text-[#9b87f5] shadow-lg flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95"
+        className="w-14 h-14 rounded-full bg-white text-blue-500 shadow-lg flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95"
         onClick={onInfo}
         aria-label="Informações"
       >

@@ -31,23 +31,23 @@ const Login = ({ onLogin }: LoginProps = {}) => {
     try {
       setIsLoading(true);
       
-      // For demo purposes, we'll accept any email/password combination
+      // Simulando login para demonstração
       console.log("Login attempt with:", { email, password, rememberMe });
       
-      // Simulate network delay
+      // Simulação de delay de rede
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Set logged in status in localStorage
+      // Definimos o estado de login no localStorage
       localStorage.setItem("isLoggedIn", "true");
       
-      // Call the onLogin callback if provided
+      // Chamamos o callback onLogin se fornecido
       if (onLogin) {
         onLogin();
       }
       
       toast.success("Login realizado com sucesso!");
       
-      // Redirect after successful login
+      // Redirecionamento após login bem-sucedido
       navigate("/browse");
     } catch (error) {
       console.error("Login error:", error);
