@@ -1,11 +1,16 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Heart, ArrowLeft, MapPin, Calendar, Activity, AlertCircle } from "lucide-react";
-import { toast } from "@/hooks/use-sonner";
+import { ArrowLeft } from "lucide-react";
+import PetImageGallery from "@/components/pet-details/PetImageGallery";
+import PetHeader from "@/components/pet-details/PetHeader";
+import PetDescription from "@/components/pet-details/PetDescription";
+import PetCharacteristics from "@/components/pet-details/PetCharacteristics";
+import PetMedicalInfo from "@/components/pet-details/PetMedicalInfo";
+import PetRequirements from "@/components/pet-details/PetRequirements";
+import PetAdoptionProcess from "@/components/pet-details/PetAdoptionProcess";
+import PetNotFound from "@/components/pet-details/PetNotFound";
+import PetLoading from "@/components/pet-details/PetLoading";
 
 // Mock data for the pet details
 const mockPets = [
@@ -55,7 +60,6 @@ const mockPets = [
 
 const PetDetails = () => {
   const { id } = useParams();
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [pet, setPet] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   
@@ -70,46 +74,13 @@ const PetDetails = () => {
     }, 500);
   }, [id]);
   
-  const handleLikeClick = () => {
-    toast.success("Você demonstrou interesse neste pet!", {
-      description: "A ONG será notificada e entrará em contato."
-    });
-    
-    console.log(`Liked pet with ID: ${id}`);
-  };
-  
   if (loading) {
-    return (
-      <div className="container mx-auto p-4 flex justify-center items-center min-h-[50vh]">
-        <p className="text-lg">Carregando detalhes do pet...</p>
-      </div>
-    );
+    return <PetLoading />;
   }
   
   if (!pet) {
-    return (
-      <div className="container mx-auto p-4 flex flex-col items-center justify-center min-h-[50vh]">
-        <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-        <h2 className="text-2xl font-bold mb-2">Pet não encontrado</h2>
-        <p className="text-muted-foreground mb-6">O pet que você está procurando não existe ou foi removido.</p>
-        <Link to="/browse">
-          <Button>Ver outros pets disponíveis</Button>
-        </Link>
-      </div>
-    );
+    return <PetNotFound />;
   }
-  
-  const nextImage = () => {
-    setCurrentImageIndex(prevIndex => 
-      prevIndex === pet.images.length - 1 ? 0 : prevIndex + 1
-    );
-  };
-  
-  const prevImage = () => {
-    setCurrentImageIndex(prevIndex => 
-      prevIndex === 0 ? pet.images.length - 1 : prevIndex - 1
-    );
-  };
   
   return (
     <div className="container mx-auto p-4 pb-16">
@@ -122,126 +93,37 @@ const PetDetails = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Image gallery */}
-        <div className="relative rounded-lg overflow-hidden aspect-square bg-muted">
-          <img
-            src={pet.images[currentImageIndex]}
-            alt={`Foto de ${pet.name}`}
-            className="w-full h-full object-cover"
-          />
-          
-          {pet.images.length > 1 && (
-            <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
-              {pet.images.map((_, index) => (
-                <button
-                  key={index}
-                  className={`w-2 h-2 rounded-full ${
-                    index === currentImageIndex ? "bg-white" : "bg-white/50"
-                  }`}
-                  onClick={() => setCurrentImageIndex(index)}
-                />
-              ))}
-            </div>
-          )}
-          
-          {pet.images.length > 1 && (
-            <>
-              <button
-                onClick={prevImage}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 flex items-center justify-center text-white hover:bg-black/50"
-              >
-                &lt;
-              </button>
-              <button
-                onClick={nextImage}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 flex items-center justify-center text-white hover:bg-black/50"
-              >
-                &gt;
-              </button>
-            </>
-          )}
-        </div>
+        <PetImageGallery 
+          images={pet.images} 
+          petName={pet.name} 
+        />
         
         {/* Pet details */}
         <div>
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h1 className="text-3xl font-bold">{pet.name}</h1>
-              <div className="flex items-center mt-1 text-muted-foreground">
-                <Badge variant="outline" className="mr-2">{pet.type}</Badge>
-                <span className="mr-2">•</span>
-                <span>{pet.breed}</span>
-                <span className="mx-2">•</span>
-                <span>{pet.age}</span>
-              </div>
-            </div>
-            
-            <Button onClick={handleLikeClick} size="icon" className="h-10 w-10 rounded-full">
-              <Heart className="h-5 w-5" />
-            </Button>
-          </div>
+          <PetHeader 
+            id={pet.id}
+            name={pet.name}
+            type={pet.type}
+            breed={pet.breed}
+            age={pet.age}
+          />
           
-          <Card className="mb-6">
-            <CardContent className="pt-6">
-              <p className="mb-4">{pet.description}</p>
-              
-              <div className="flex items-center text-sm text-muted-foreground mb-2">
-                <MapPin className="h-4 w-4 mr-2" />
-                <span>{pet.location}</span>
-                <span className="mx-2">•</span>
-                <span>{pet.distance}</span>
-              </div>
-            </CardContent>
-          </Card>
+          <PetDescription 
+            description={pet.description}
+            location={pet.location}
+            distance={pet.distance}
+          />
           
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Características</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {pet.characteristics.map((trait: string, index: number) => (
-                  <Badge key={index} variant="secondary">{trait}</Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <PetCharacteristics characteristics={pet.characteristics} />
           
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Informações Médicas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>{pet.medicalInfo}</p>
-            </CardContent>
-          </Card>
+          <PetMedicalInfo medicalInfo={pet.medicalInfo} />
           
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-lg">Requisitos para Adoção</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="list-disc pl-5 space-y-1">
-                {pet.requirements.map((req: string, index: number) => (
-                  <li key={index}>{req}</li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
+          <PetRequirements requirements={pet.requirements} />
           
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Processo de Adoção</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>{pet.adoptionProcess}</p>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleLikeClick} className="w-full">
-                <Heart className="h-5 w-5 mr-2" />
-                Quero Adotar
-              </Button>
-            </CardFooter>
-          </Card>
+          <PetAdoptionProcess 
+            id={pet.id}
+            adoptionProcess={pet.adoptionProcess}
+          />
         </div>
       </div>
     </div>
