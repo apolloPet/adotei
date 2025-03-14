@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from 'react-router-dom';
-import { ShieldAlert, Heart, PawPrint, Building2, User } from 'lucide-react';
+import { ShieldAlert, Heart, PawPrint, Building2, User, Mail } from 'lucide-react';
 
 interface DesktopNavProps {
   isAdmin: boolean;
@@ -42,6 +42,13 @@ const DesktopNav = ({ isAdmin, isLoggedIn }: DesktopNavProps) => {
       >
         <User className="h-4 w-4" />
         ONG Parceira
+      </Link>
+      <Link 
+        to="/contact" 
+        className={`font-medium hover:text-primary transition-colors flex items-center gap-1 ${isActive('/contact') ? 'text-primary' : ''}`}
+      >
+        <Mail className="h-4 w-4" />
+        Contato
       </Link>
       {isAdmin && (
         <Link 

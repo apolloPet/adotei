@@ -1,48 +1,96 @@
+import { useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import './App.css';
+import Header from './components/Header';
+import Index from './pages/Index';
+import HowItWorks from './pages/HowItWorks';
+import PetDetails from './pages/PetDetails';
+import Register from './pages/Register';
+import About from './pages/About';
+import Login from './components/Login';
+import AdminLogin from './components/AdminLogin';
+import AdminPanel from './components/AdminPanel';
+import AdminProtectedRoute from './components/AdminProtectedRoute';
+import Browse from './pages/Browse';
+import PaymentProcess from './pages/PaymentProcess';
+import NotFound from './pages/NotFound';
+import PetMatch from './pages/PetMatch';
+import Institution from './pages/Institution';
+import Contact from './pages/Contact';
 
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "next-themes";
-import { Toaster } from "sonner";
-import Index from "./pages/Index";
-import Browse from "./pages/Browse";
-import PetDetails from "./pages/PetDetails";
-import UserRegistration from "./components/UserRegistration";
-import Login from "./components/Login";
-import AdminPanel from "./components/AdminPanel";
-import PetMatch from "./pages/PetMatch";
-import Institution from "./pages/Institution";
-import HowItWorks from "./pages/HowItWorks";
-import AdminLogin from "./components/AdminLogin";
-import AdminProtectedRoute from "./components/AdminProtectedRoute";
-import PaymentProcess from "./pages/PaymentProcess";
+// Protected route component
+const ProtectedRoute = ({ isAuthenticated, children }: { isAuthenticated: boolean, children: React.ReactNode }) => {
+  if (!isAuthenticated) {
+    // Redirect to login
+    window.location.href = '/login';
+    return null;
+  }
+  return <>{children}</>;
+};
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setIsAdmin(false);
+  };
+
+  const handleAdminLogin = () => {
+    setIsAdmin(true);
+  };
+
   return (
-    <ThemeProvider defaultTheme="light" enableSystem>
-      <Router>
+    <div className="app">
+      <Header 
+        isAuthenticated={isAuthenticated}
+        isAdmin={isAdmin}
+        onLogin={handleLogin}
+        onLogout={handleLogout}
+      />
+      <main className="min-h-[calc(100vh-64px)]">
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/browse" element={<Browse />} />
+          <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/pet/:id" element={<PetDetails />} />
-          <Route path="/register" element={<UserRegistration />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/payment/:id" element={<PaymentProcess />} />
           <Route path="/petmatch" element={<PetMatch />} />
           <Route path="/institution" element={<Institution />} />
-          <Route path="/how-it-works" element={<HowItWorks />} />
-          <Route path="/admin-login" element={<AdminLogin />} />
-          <Route path="/payment/:matchId" element={<PaymentProcess />} />
-          <Route path="/register-tech-partner" element={<Index />} />
-          <Route path="/register-vet-partner" element={<Index />} />
-          <Route path="/register-ngo-partner" element={<Index />} />
-          <Route path="/contact" element={<Index />} />
-          <Route path="/admin" element={
-            <AdminProtectedRoute>
-              <AdminPanel />
-            </AdminProtectedRoute>
-          } />
+          <Route path="/contact" element={<Contact />} />
+          
+          <Route path="/login" element={<Login onLogin={handleLogin} />} />
+          
+          <Route
+            path="/browse"
+            element={
+              <ProtectedRoute isAuthenticated={isAuthenticated}>
+                <Browse />
+              </ProtectedRoute>
+            }
+          />
+          
+          <Route
+            path="/admin"
+            element={
+              <AdminProtectedRoute isAuthenticated={isAdmin}>
+                <AdminPanel handleLogout={handleLogout} />
+              </AdminProtectedRoute>
+            }
+          />
+          
+          <Route path="/admin-login" element={<AdminLogin onLogin={handleAdminLogin} />} />
+          
+          <Route path="*" element={<NotFound />} />
         </Routes>
-      </Router>
-      <Toaster position="top-right" />
-    </ThemeProvider>
+      </main>
+    </div>
   );
 }
 
