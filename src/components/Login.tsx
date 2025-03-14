@@ -9,7 +9,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-sonner";
 import { ArrowLeft } from 'lucide-react';
 
-const Login = () => {
+interface LoginProps {
+  onLogin?: () => void;
+}
+
+const Login = ({ onLogin }: LoginProps = {}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
@@ -28,6 +32,11 @@ const Login = () => {
     
     // Set logged in status in localStorage
     localStorage.setItem("isLoggedIn", "true");
+    
+    // Call the onLogin callback if provided
+    if (onLogin) {
+      onLogin();
+    }
     
     // For demo purposes, we'll just show a success message and redirect
     toast.success("Login realizado com sucesso!");

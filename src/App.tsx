@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import './App.css';
 import Header from './components/Header';
@@ -18,6 +18,8 @@ import NotFound from './pages/NotFound';
 import PetMatch from './pages/PetMatch';
 import Institution from './pages/Institution';
 import Contact from './pages/Contact';
+import { AdminLoginProps } from './components/AdminLoginProps';
+import { AdminPanelProps } from './components/AdminPanelProps';
 
 // Protected route component
 const ProtectedRoute = ({ isAuthenticated, children }: { isAuthenticated: boolean, children: React.ReactNode }) => {
@@ -32,6 +34,20 @@ const ProtectedRoute = ({ isAuthenticated, children }: { isAuthenticated: boolea
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user is already logged in from localStorage on mount
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+    const isAdminUser = localStorage.getItem("isAdmin") === "true";
+    
+    if (isLoggedIn) {
+      setIsAuthenticated(true);
+    }
+    
+    if (isAdminUser) {
+      setIsAdmin(true);
+    }
+  }, []);
 
   const handleLogin = () => {
     setIsAuthenticated(true);
@@ -51,6 +67,11 @@ function App() {
     localStorage.setItem("isAdmin", "true");
     localStorage.setItem("isLoggedIn", "true");
   };
+
+  // Cast the components to accept our props
+  const LoginWithProps = Login as React.ComponentType<{ onLogin: () => void }>;
+  const AdminLoginWithProps = AdminLogin as React.ComponentType<AdminLoginProps>;
+  const AdminPanelWithProps = AdminPanel as React.ComponentType<AdminPanelProps>;
 
   return (
     <div className="app">
@@ -72,7 +93,7 @@ function App() {
           <Route path="/institution" element={<Institution />} />
           <Route path="/contact" element={<Contact />} />
           
-          <Route path="/login" element={<Login onLogin={handleLogin} />} />
+          <Route path="/login" element={<LoginWithProps onLogin={handleLogin} />} />
           
           <Route
             path="/browse"
@@ -87,12 +108,12 @@ function App() {
             path="/admin"
             element={
               <AdminProtectedRoute isAdmin={isAdmin}>
-                <AdminPanel onLogout={handleLogout} />
+                <AdminPanelWithProps onLogout={handleLogout} />
               </AdminProtectedRoute>
             }
           />
           
-          <Route path="/admin-login" element={<AdminLogin onLogin={handleAdminLogin} />} />
+          <Route path="/admin-login" element={<AdminLoginWithProps onLogin={handleAdminLogin} />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
