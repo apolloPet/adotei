@@ -37,21 +37,21 @@ const Login = ({ onLogin }: LoginProps = {}) => {
       // Simulação de delay de rede
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Definimos o estado de login no localStorage
+      // Set authentication state in localStorage
       localStorage.setItem("isLoggedIn", "true");
       localStorage.setItem("userEmail", email);
       
-      // Dispatch storage event to notify other components
+      // Explicitly update all relevant components by dispatching a storage event
       window.dispatchEvent(new Event('storage'));
       
-      // Chamamos o callback onLogin se fornecido
+      // Call the onLogin callback if provided
       if (onLogin) {
         onLogin();
       }
       
       toast.success("Login realizado com sucesso!");
       
-      // Redirecionamento após login bem-sucedido
+      // Redirect after successful login
       navigate("/browse");
     } catch (error) {
       console.error("Login error:", error);

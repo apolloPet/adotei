@@ -41,6 +41,15 @@ const MobileMenu = ({
   };
 
   const handleLogout = () => {
+    // Clear login state in localStorage
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("isAdmin");
+    localStorage.removeItem("userEmail");
+    
+    // Dispatch events to notify all components about auth state change
+    window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new Event('authStateChanged'));
+    
     onLogout();
     onClose?.();
   };

@@ -27,16 +27,19 @@ const Header = ({
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Check login state on component mount and route changes
+  // Check login state on component mount, route changes, and auth state changes
   useEffect(() => {
     const checkLoginStatus = () => {
       const loginStatus = localStorage.getItem("isLoggedIn") === "true";
       const adminStatus = localStorage.getItem("isAdmin") === "true";
       
+      console.log("Header: Auth state updated:", { loginStatus, adminStatus });
+      
       setIsLoggedIn(loginStatus);
       setIsAdmin(adminStatus);
     };
     
+    // Initial check
     checkLoginStatus();
     
     // Also check when props change
@@ -48,9 +51,14 @@ const Header = ({
       setIsAdmin(propsIsAdmin);
     }
 
-    // Add event listener for storage changes
+    // Add event listeners for storage and custom auth changes
     window.addEventListener('storage', checkLoginStatus);
-    return () => window.removeEventListener('storage', checkLoginStatus);
+    window.addEventListener('authStateChanged', checkLoginStatus);
+    
+    return () => {
+      window.removeEventListener('storage', checkLoginStatus);
+      window.removeEventListener('authStateChanged', checkLoginStatus);
+    };
   }, [propsIsAuthenticated, propsIsAdmin, location.pathname]);
 
   // Handle scroll events
@@ -83,8 +91,9 @@ const Header = ({
     setIsLoggedIn(false);
     setIsMobileMenuOpen(false);
     
-    // Dispatch storage event to notify other components
+    // Notify components about auth state change
     window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new Event('authStateChanged'));
     
     // Call props callback if provided
     if (propsOnLogout) {

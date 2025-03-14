@@ -13,6 +13,7 @@ interface DesktopAuthMenuProps {
 
 const DesktopAuthMenu = ({ 
   isLoggedIn = false, 
+  isAdmin = false,
   onLogin, 
   onLogout 
 }: DesktopAuthMenuProps) => {
@@ -32,8 +33,9 @@ const DesktopAuthMenu = ({
     localStorage.removeItem("isAdmin");
     localStorage.removeItem("userEmail");
     
-    // Dispatch a storage event to notify other components
+    // Dispatch events to notify all components about auth state change
     window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new Event('authStateChanged'));
     
     // Call the callback if provided
     if (onLogout) {

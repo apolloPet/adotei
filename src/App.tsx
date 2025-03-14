@@ -40,42 +40,57 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
-  // Check if user is already logged in from localStorage on mount
+  // Check login status from localStorage on mount and when storage changes
   useEffect(() => {
     const checkLoginStatus = () => {
       const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
       const isAdminUser = localStorage.getItem("isAdmin") === "true";
       
+      console.log("Auth state changed:", { isLoggedIn, isAdminUser });
+      
       setIsAuthenticated(isLoggedIn);
       setIsAdmin(isAdminUser);
     };
     
+    // Initial check
     checkLoginStatus();
     
-    // Re-check login status when storage changes
+    // Listen for storage events (both from this window and others)
     window.addEventListener('storage', checkLoginStatus);
-    return () => window.removeEventListener('storage', checkLoginStatus);
+    
+    // Custom event listener for internal state changes
+    window.addEventListener('authStateChanged', checkLoginStatus);
+    
+    return () => {
+      window.removeEventListener('storage', checkLoginStatus);
+      window.removeEventListener('authStateChanged', checkLoginStatus);
+    };
   }, []);
 
   const handleLogin = () => {
     setIsAuthenticated(true);
     localStorage.setItem("isLoggedIn", "true");
     
-    // Dispatch storage event to notify other components
+    // Notify components about auth state change
     window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new Event('authStateChanged'));
     
     toast.success("Login realizado com sucesso");
   };
 
   const handleLogout = () => {
-    setIsAuthenticated(false);
-    setIsAdmin(false);
+    // Clear auth state in localStorage
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("isAdmin");
     localStorage.removeItem("userEmail");
     
-    // Dispatch a storage event to notify other components
+    // Update state
+    setIsAuthenticated(false);
+    setIsAdmin(false);
+    
+    // Notify components about auth state change
     window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new Event('authStateChanged'));
     
     toast.success("Logout realizado com sucesso");
     navigate('/');
@@ -87,13 +102,14 @@ function App() {
     localStorage.setItem("isAdmin", "true");
     localStorage.setItem("isLoggedIn", "true");
     
-    // Dispatch storage event to notify other components
+    // Notify components about auth state change
     window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new Event('authStateChanged'));
     
     toast.success("Login de administrador realizado com sucesso");
   };
 
-  // Cast the components to accept our props
+  // Type casting for components with props
   const LoginWithProps = Login as React.ComponentType<{ onLogin: () => void }>;
   const AdminLoginWithProps = AdminLogin as React.ComponentType<AdminLoginProps>;
   const AdminPanelWithProps = AdminPanel as React.ComponentType<AdminPanelProps>;
