@@ -29,19 +29,16 @@ const Header = ({
 
   // Update authentication state when props change
   useEffect(() => {
-    setIsAdmin(propsIsAdmin || false);
-    setIsLoggedIn(propsIsAuthenticated || false);
-  }, [propsIsAdmin, propsIsAuthenticated]);
-
-  // Check localStorage for auth status when not provided via props
-  useEffect(() => {
-    if (propsIsAdmin === undefined || propsIsAuthenticated === undefined) {
+    if (propsIsAdmin !== undefined || propsIsAuthenticated !== undefined) {
+      setIsAdmin(propsIsAdmin || false);
+      setIsLoggedIn(propsIsAuthenticated || false);
+    } else {
       const adminStatus = localStorage.getItem("isAdmin") === "true";
       const loginStatus = localStorage.getItem("isLoggedIn") === "true";
       setIsAdmin(adminStatus);
       setIsLoggedIn(loginStatus);
     }
-  }, [propsIsAdmin, propsIsAuthenticated]);
+  }, [propsIsAdmin, propsIsAuthenticated, location.pathname]);
 
   // Handle scroll events
   useEffect(() => {

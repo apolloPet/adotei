@@ -4,8 +4,6 @@ import HeroSection from "@/components/home/HeroSection";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
 import BenefitsSection from "@/components/home/BenefitsSection";
 import PartnershipSection from "@/components/home/PartnershipSection";
-import PartnersSection from "@/components/home/PartnersSection";
-import CallToActionSection from "@/components/home/CallToActionSection";
 import Footer from "@/components/home/Footer";
 
 const Index = () => {
@@ -14,8 +12,6 @@ const Index = () => {
     howItWorks: false,
     benefits: false,
     partnership: false,
-    partners: false,
-    callToAction: false,
   });
 
   useEffect(() => {
@@ -36,7 +32,7 @@ const Index = () => {
 
     const observer = new IntersectionObserver(observerCallback, observerOptions);
     
-    const sections = ['howItWorks', 'benefits', 'partnership', 'partners', 'callToAction'];
+    const sections = ['howItWorks', 'benefits', 'partnership'];
     sections.forEach(section => {
       const element = document.getElementById(section);
       if (element) observer.observe(element);
@@ -55,9 +51,7 @@ const Index = () => {
       <HeroSection />
       <HowItWorksSection isVisible={isVisible.howItWorks} />
       <BenefitsSection isVisible={isVisible.benefits} />
-      <PartnersSection isVisible={isVisible.partners} />
       <PartnershipSection isVisible={isVisible.partnership} />
-      <CallToActionSection isVisible={isVisible.callToAction} />
       <Footer />
     </div>
   );

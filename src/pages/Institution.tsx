@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/Header";
 import Footer from "@/components/home/Footer";
-import { Building2, HandHeart, Users } from 'lucide-react';
+import { Building2, HandHeart, Users, Facebook, Instagram, Twitter, Youtube, Link as LinkIcon } from 'lucide-react';
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const Institution = () => {
   return (
@@ -81,6 +83,51 @@ const Institution = () => {
                     mais de 80 voluntários. Realizamos feiras de adoção mensais e trabalhamos 
                     constantemente em campanhas de castração e vacinação em comunidades carentes.
                   </p>
+                </section>
+                
+                <section>
+                  <h2 className="text-2xl font-bold text-primary mb-3">Redes Sociais</h2>
+                  <p className="text-muted-foreground leading-relaxed mb-4">
+                    Siga-nos nas redes sociais para acompanhar nosso trabalho, conhecer os animais disponíveis
+                    para adoção e ficar por dentro das nossas ações e eventos.
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-3">
+                    <Button variant="outline" className="gap-2" asChild>
+                      <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">
+                        <Facebook className="h-4 w-4" />
+                        <span>Facebook</span>
+                      </a>
+                    </Button>
+                    
+                    <Button variant="outline" className="gap-2" asChild>
+                      <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
+                        <Instagram className="h-4 w-4" />
+                        <span>Instagram</span>
+                      </a>
+                    </Button>
+                    
+                    <Button variant="outline" className="gap-2" asChild>
+                      <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
+                        <Twitter className="h-4 w-4" />
+                        <span>Twitter</span>
+                      </a>
+                    </Button>
+                    
+                    <Button variant="outline" className="gap-2" asChild>
+                      <a href="https://youtube.com" target="_blank" rel="noopener noreferrer">
+                        <Youtube className="h-4 w-4" />
+                        <span>YouTube</span>
+                      </a>
+                    </Button>
+                    
+                    <Button variant="outline" className="gap-2" asChild>
+                      <a href="https://techanimal.org" target="_blank" rel="noopener noreferrer">
+                        <LinkIcon className="h-4 w-4" />
+                        <span>Site Oficial</span>
+                      </a>
+                    </Button>
+                  </div>
                 </section>
               </TabsContent>
               

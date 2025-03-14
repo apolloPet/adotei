@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+
+import { useState, useRef } from 'react';
 import { motion, PanInfo } from 'framer-motion';
-import { Heart, X, Info, MapPin, Calendar } from 'lucide-react';
+import { Heart, X, Info, MapPin, Calendar, Paw } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-sonner";
 
@@ -27,7 +28,6 @@ interface PetCardProps {
 const PetCard = ({ pet, onSwipe }: PetCardProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
 
   // Handle image cycling
@@ -41,7 +41,7 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
 
   // Handle swipe gesture
   const handleDragStart = () => {
-    setDragStart({ x: 0, y: 0 });
+    // Reset drag start position
   };
 
   const handleDragEnd = (e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -69,6 +69,13 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
 
   const handleDislike = () => {
     onSwipe('left', pet.id);
+  };
+
+  // Colors based on the Tech Animal palette
+  const petColors = {
+    badge: pet.species === 'dog' ? 'bg-[#9b87f5]' : 'bg-[#D946EF]',
+    icon: pet.species === 'dog' ? 'text-[#9b87f5]' : 'text-[#D946EF]',
+    accent: pet.species === 'dog' ? 'bg-[#9b87f5]/10' : 'bg-[#D946EF]/10',
   };
 
   return (
@@ -101,8 +108,8 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
               {pet.images.map((_, index) => (
                 <div 
                   key={index}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    index === currentImageIndex ? 'bg-white w-6' : 'bg-white/50'
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    index === currentImageIndex ? 'bg-white w-6' : 'bg-white/50 w-2'
                   }`}
                   onClick={() => setCurrentImageIndex(index)}
                 />
@@ -118,27 +125,28 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
             <div className="flex items-end justify-between">
               <div>
-                <h2 className="text-2xl font-bold">{pet.name}</h2>
+                <h2 className="text-2xl font-bold flex items-center">
+                  {pet.name}
+                  <Paw className={`ml-2 h-5 w-5 ${petColors.icon}`} />
+                </h2>
                 <div className="flex items-center space-x-2 mt-1">
                   <MapPin className="h-4 w-4 opacity-70" />
                   <span className="text-sm opacity-90">{pet.location}</span>
                 </div>
               </div>
-              <Badge className={`${
-                pet.species === 'dog' ? 'bg-pet-blue' : 'bg-pet-pink'
-              } text-white border-none px-3 py-1`}>
+              <Badge className={`${petColors.badge} text-white border-none px-3 py-1`}>
                 {pet.species === 'dog' ? 'Cachorro' : 'Gato'}
               </Badge>
             </div>
             
             <div className="flex flex-wrap gap-2 mt-3">
-              <Badge variant="secondary" className="bg-white/20 border-none text-white">
+              <Badge variant="secondary" className={`${petColors.accent} border-none text-foreground font-medium`}>
                 {pet.age}
               </Badge>
-              <Badge variant="secondary" className="bg-white/20 border-none text-white">
+              <Badge variant="secondary" className={`${petColors.accent} border-none text-foreground font-medium`}>
                 {pet.gender === 'male' ? 'Macho' : 'Fêmea'}
               </Badge>
-              <Badge variant="secondary" className="bg-white/20 border-none text-white">
+              <Badge variant="secondary" className={`${petColors.accent} border-none text-foreground font-medium`}>
                 {pet.size === 'small' ? 'Pequeno' : pet.size === 'medium' ? 'Médio' : 'Grande'}
               </Badge>
             </div>
@@ -165,11 +173,14 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
               </button>
               
               <div className="text-white h-full overflow-auto pt-8">
-                <h2 className="text-2xl font-bold">{pet.name}</h2>
+                <h2 className="text-2xl font-bold flex items-center">
+                  {pet.name}
+                  <Paw className={`ml-2 h-5 w-5 ${petColors.icon}`} />
+                </h2>
                 <p className="text-white/70 mt-1">{pet.breed}</p>
                 
                 <div className="mt-4 flex items-center space-x-2">
-                  <Calendar className="h-4 w-4" />
+                  <Calendar className={petColors.icon} />
                   <span>{pet.age}</span>
                 </div>
                 
@@ -182,7 +193,7 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
                   <h3 className="text-lg font-semibold mb-2">Características</h3>
                   <div className="flex flex-wrap gap-2">
                     {pet.traits.map((trait, index) => (
-                      <Badge key={index} variant="outline" className="border-white/30 text-white">
+                      <Badge key={index} className={`${petColors.badge} text-white`}>
                         {trait}
                       </Badge>
                     ))}
@@ -210,15 +221,15 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
         </button>
         
         <button
-          className="w-14 h-14 rounded-full bg-white text-[#ff6b6b] shadow-lg flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95"
+          className="w-14 h-14 rounded-full bg-white text-[#D946EF] shadow-lg flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95"
           onClick={handleLike}
           aria-label="Curtir"
         >
-          <Heart className="h-7 w-7 fill-[#ff6b6b]" />
+          <Heart className="h-7 w-7 fill-[#D946EF]" />
         </button>
         
         <button
-          className="w-14 h-14 rounded-full bg-white text-blue-500 shadow-lg flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95"
+          className="w-14 h-14 rounded-full bg-white text-[#9b87f5] shadow-lg flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95"
           onClick={() => setShowDetails(!showDetails)}
           aria-label="Informações"
         >
