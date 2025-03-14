@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from "@/hooks/use-sonner";
@@ -46,6 +47,10 @@ const Header = ({
     if (propsIsAdmin !== undefined) {
       setIsAdmin(propsIsAdmin);
     }
+
+    // Add event listener for storage changes
+    window.addEventListener('storage', checkLoginStatus);
+    return () => window.removeEventListener('storage', checkLoginStatus);
   }, [propsIsAuthenticated, propsIsAdmin, location.pathname]);
 
   // Handle scroll events
@@ -71,6 +76,7 @@ const Header = ({
     // Clear localStorage
     localStorage.removeItem("isAdmin");
     localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("userEmail");
     
     // Update local state
     setIsAdmin(false);

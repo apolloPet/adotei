@@ -39,6 +39,7 @@ const Login = ({ onLogin }: LoginProps = {}) => {
       
       // Definimos o estado de login no localStorage
       localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("userEmail", email);
       
       // Chamamos o callback onLogin se fornecido
       if (onLogin) {

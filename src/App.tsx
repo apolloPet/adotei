@@ -68,6 +68,11 @@ function App() {
     setIsAdmin(false);
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("isAdmin");
+    localStorage.removeItem("userEmail");
+    
+    // Dispatch a storage event to notify other components
+    window.dispatchEvent(new Event('storage'));
+    
     toast.success("Logout realizado com sucesso");
     navigate('/');
   };

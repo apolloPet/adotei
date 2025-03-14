@@ -30,6 +30,10 @@ const DesktopAuthMenu = ({
     // Clear login state in localStorage
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("isAdmin");
+    localStorage.removeItem("userEmail");
+    
+    // Dispatch a storage event to notify other components
+    window.dispatchEvent(new Event('storage'));
     
     // Call the callback if provided
     if (onLogout) {

@@ -1,5 +1,4 @@
 
-import Header from "@/components/Header";
 import FilterPanel from "@/components/browse/FilterPanel";
 import PetBrowser from "@/components/browse/PetBrowser";
 import { usePetBrowse } from "@/hooks/use-pet-browse";
@@ -17,8 +16,6 @@ const Browse = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
-      
       <main className="container mx-auto px-4 pt-32 pb-20">
         <div className="max-w-md mx-auto">
           <div className="flex justify-between items-center mb-8">
