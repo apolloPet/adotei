@@ -32,7 +32,9 @@ const AdoptionTermsPDF = ({
     // For this example, we'll create a text blob and download it
     const formattedDate = format(adoptionDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
     
-    const defaultContractText = `Eu, ${adopterName}, inscrito(a) sob o documento ${adopterDocument}, residente em ${adopterAddress}, me comprometo a cuidar do animal ${petName} adotado, fornecendo abrigo, alimentação adequada, cuidados veterinários e carinho. Concordo em permitir visitas de acompanhamento pelo período de ${followUpPeriod} dias estabelecido e em não abandonar ou maltratar o animal sob quaisquer circunstâncias. Entendo que o animal é um ser senciente e merece respeito e amor.`;
+    const defaultContractText = `Eu, ${adopterName}, inscrito(a) sob o documento ${adopterDocument}, residente em ${adopterAddress}, me comprometo a cuidar do animal ${petName} adotado, fornecendo abrigo, alimentação adequada, cuidados veterinários e carinho. Concordo em permitir visitas de acompanhamento pelo período de ${followUpPeriod} dias estabelecido e em não abandonar ou maltratar o animal sob quaisquer circunstâncias. Entendo que o animal é um ser s
+
+enciente e merece respeito e amor.`;
     
     const fullText = contractText || defaultContractText;
     
