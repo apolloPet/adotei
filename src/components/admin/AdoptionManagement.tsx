@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdoptionStages, { AdoptionStage, adoptionStages } from '../adoption/AdoptionStages';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar as CalendarIcon, Clock, Edit, MapPin, MessageSquare, UserCheck } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, Edit, MapPin, MessageSquare, UserCheck, Check, HeartHandshake } from 'lucide-react';
 import { 
   Dialog, 
   DialogClose, 
@@ -26,7 +25,6 @@ import { format, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-// Types for adoption matches
 export interface AdoptionMatch {
   id: string;
   petId: string;
@@ -42,9 +40,15 @@ export interface AdoptionMatch {
   notes: string;
   responsibleId?: string;
   responsibleName?: string;
+  matchPoints?: MatchPoint[];
 }
 
-// Mock data for demonstration
+export interface MatchPoint {
+  icon: string;
+  description: string;
+  strength: 'high' | 'medium' | 'low';
+}
+
 const mockAdoptionMatches: AdoptionMatch[] = [
   {
     id: "match-1",
@@ -60,7 +64,12 @@ const mockAdoptionMatches: AdoptionMatch[] = [
     updatedAt: "2023-11-15T10:30:00Z",
     notes: "Usuário tem experiência com cães de porte médio.",
     responsibleId: "admin-1",
-    responsibleName: "Mariana Silva"
+    responsibleName: "Mariana Silva",
+    matchPoints: [
+      { icon: "🏠", description: "Mora em casa com quintal", strength: "high" },
+      { icon: "⏰", description: "Disponibilidade de tempo", strength: "medium" },
+      { icon: "🐕", description: "Experiência com cães", strength: "high" }
+    ]
   },
   {
     id: "match-2",
@@ -76,7 +85,12 @@ const mockAdoptionMatches: AdoptionMatch[] = [
     updatedAt: "2023-11-12T09:15:00Z",
     notes: "Mora em apartamento, precisa verificar se é adequado para o pet.",
     responsibleId: "admin-1",
-    responsibleName: "Mariana Silva"
+    responsibleName: "Mariana Silva",
+    matchPoints: [
+      { icon: "🏢", description: "Mora em apartamento", strength: "medium" },
+      { icon: "❤️", description: "Primeira adoção", strength: "low" },
+      { icon: "🐈", description: "Experiência apenas com gatos", strength: "low" }
+    ]
   },
   {
     id: "match-3",
@@ -144,7 +158,6 @@ const mockAdoptionMatches: AdoptionMatch[] = [
   }
 ];
 
-// Helper to format dates
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat('pt-BR', {
@@ -159,11 +172,8 @@ const formatDate = (dateString: string) => {
 const AdoptionManagement = () => {
   const [matches, setMatches] = useState<AdoptionMatch[]>(mockAdoptionMatches);
   const [selectedMatch, setSelectedMatch] = useState<AdoptionMatch | null>(null);
-  const [scheduleDate, setScheduleDate] = useState<Date | undefined>(undefined);
-  const [scheduleTime, setScheduleTime] = useState("");
-  const [scheduleNotes, setScheduleNotes] = useState("");
-  const [showNotifyDialog, setShowNotifyDialog] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
+  const [showNotifyDialog, setShowNotifyDialog] = useState(false);
 
   const handleStageChange = (matchId: string, newStage: AdoptionStage) => {
     const match = matches.find(m => m.id === matchId);
@@ -509,6 +519,7 @@ const MatchCard = ({
   const [expanded, setExpanded] = useState(false);
   const [showVisitDialog, setShowVisitDialog] = useState(false);
   const [showInspectionDialog, setShowInspectionDialog] = useState(false);
+  const [showMatchDialog, setShowMatchDialog] = useState(false);
   const [scheduleDate, setScheduleDate] = useState<Date | undefined>(undefined);
   const [scheduleTime, setScheduleTime] = useState("");
   const [scheduleNotes, setScheduleNotes] = useState("");
@@ -527,6 +538,10 @@ const MatchCard = ({
   const handleOpenInspectionDialog = () => {
     resetScheduleForm();
     setShowInspectionDialog(true);
+  };
+
+  const handleOpenMatchDialog = () => {
+    setShowMatchDialog(true);
   };
   
   const handleSubmitVisit = () => {
@@ -564,6 +579,17 @@ const MatchCard = ({
       case "pending_approval":
         return (
           <>
+            {match.matchPoints && match.matchPoints.length > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="flex items-center gap-1"
+                onClick={handleOpenMatchDialog}
+              >
+                <HeartHandshake className="h-4 w-4" />
+                <span>Ver Compatibilidade</span>
+              </Button>
+            )}
             <Button 
               variant="outline" 
               size="sm"
@@ -702,6 +728,77 @@ const MatchCard = ({
         </div>
       </Card>
       
+      {/* Match Points Dialog */}
+      <Dialog open={showMatchDialog} onOpenChange={setShowMatchDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Pontos de Compatibilidade</DialogTitle>
+            <DialogDescription>
+              Análise de compatibilidade entre o adotante e o animal
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <img 
+                src={match.petImage} 
+                alt={match.petName}
+                className="w-12 h-12 rounded-full object-cover"
+              />
+              <div>
+                <p className="font-medium">{match.petName}</p>
+                <p className="text-sm text-muted-foreground">Adotante: {match.userName}</p>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">Pontos de Compatibilidade</h4>
+              {match.matchPoints && match.matchPoints.length > 0 ? (
+                <div className="space-y-2">
+                  {match.matchPoints.map((point, index) => {
+                    let badgeClass = "";
+                    
+                    switch(point.strength) {
+                      case "high":
+                        badgeClass = "bg-green-100 text-green-800";
+                        break;
+                      case "medium":
+                        badgeClass = "bg-yellow-100 text-yellow-800";
+                        break;
+                      case "low":
+                        badgeClass = "bg-orange-100 text-orange-800";
+                        break;
+                    }
+                    
+                    return (
+                      <div key={index} className="flex items-center gap-2">
+                        <div className="w-8 h-8 flex items-center justify-center text-lg">
+                          {point.icon}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm">{point.description}</p>
+                        </div>
+                        <Badge variant="outline" className={badgeClass}>
+                          {point.strength === "high" ? "Alto" : point.strength === "medium" ? "Médio" : "Baixo"}
+                        </Badge>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhum ponto de compatibilidade registrado.</p>
+              )}
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button onClick={() => setShowMatchDialog(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {/* Visit Scheduling Dialog */}
       <Dialog open={showVisitDialog} onOpenChange={setShowVisitDialog}>
         <DialogContent className="sm:max-w-[425px]">
@@ -755,7 +852,6 @@ const MatchCard = ({
                       onSelect={setScheduleDate}
                       locale={ptBR}
                       initialFocus
-                      className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -788,9 +884,11 @@ const MatchCard = ({
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowVisitDialog(false)}>
-              Cancelar
-            </Button>
+            <DialogClose asChild>
+              <Button variant="outline">
+                Cancelar
+              </Button>
+            </DialogClose>
             <Button onClick={handleSubmitVisit}>
               Agendar
             </Button>
@@ -851,7 +949,6 @@ const MatchCard = ({
                       onSelect={setScheduleDate}
                       locale={ptBR}
                       initialFocus
-                      className="pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
@@ -884,9 +981,11 @@ const MatchCard = ({
           </div>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowInspectionDialog(false)}>
-              Cancelar
-            </Button>
+            <DialogClose asChild>
+              <Button variant="outline">
+                Cancelar
+              </Button>
+            </DialogClose>
             <Button onClick={handleSubmitInspection}>
               Agendar
             </Button>
@@ -898,3 +997,4 @@ const MatchCard = ({
 };
 
 export default AdoptionManagement;
+

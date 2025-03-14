@@ -31,7 +31,7 @@ const HeroSection = () => {
               </Link>
               
               <Link to="/browse">
-                <Button variant="outline" size="lg" className="rounded-full px-8 py-6 text-base">
+                <Button variant="secondary" size="lg" className="rounded-full px-8 py-6 text-base">
                   Explorar pets
                 </Button>
               </Link>
