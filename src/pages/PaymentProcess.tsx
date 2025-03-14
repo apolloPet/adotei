@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -78,8 +77,8 @@ const PaymentProcess = () => {
       setIsProcessing(false);
       setIsPaymentComplete(true);
       
-      toast.success("Pagamento realizado com sucesso!", {
-        description: "Sua adoção foi confirmada. Aguarde contato da ONG."
+      toast.success("Contribuição confirmada!", {
+        description: "Obrigado pelo seu apoio. Sua adoção foi confirmada."
       });
     }, 2000);
   };
@@ -94,12 +93,13 @@ const PaymentProcess = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Payment summary column */}
         <div className="md:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl">Finalizar Adoção</CardTitle>
-              <CardDescription>Pague a taxa de adoção para confirmar o processo</CardDescription>
+              <CardDescription>
+                Complete o processo com sua contribuição de apoio
+              </CardDescription>
             </CardHeader>
             
             <CardContent>
@@ -149,10 +149,10 @@ const PaymentProcess = () => {
                 <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-900/30">
                   <div className="flex items-center">
                     <Check className="h-5 w-5 text-green-600 dark:text-green-400 mr-2" />
-                    <h4 className="font-medium text-green-600 dark:text-green-400">Pagamento confirmado</h4>
+                    <h4 className="font-medium text-green-600 dark:text-green-400">Contribuição confirmada</h4>
                   </div>
                   <p className="mt-2 text-sm text-green-600/80 dark:text-green-400/80">
-                    Agradecemos sua contribuição! A ONG entrará em contato para os próximos passos da adoção.
+                    Agradecemos seu apoio! A ONG entrará em contato para os próximos passos da adoção.
                   </p>
                 </div>
               ) : (
@@ -163,26 +163,27 @@ const PaymentProcess = () => {
                   pixKey={settings.pixKey}
                   contractText={settings.contractText}
                   followUpPeriod={settings.followUpPeriod}
+                  petName={adoption.petName}
+                  adopterName={adoption.userName}
                 />
               )}
             </CardContent>
           </Card>
         </div>
         
-        {/* Info panel column */}
         <div>
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Informações sobre a Taxa</CardTitle>
+              <CardTitle className="text-lg">Sobre a Contribuição</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div>
                 <h4 className="font-medium mb-1 flex items-center">
                   <DollarSign className="h-4 w-4 mr-1" />
-                  Para que serve a taxa?
+                  Para que serve?
                 </h4>
                 <p className="text-muted-foreground">
-                  A taxa de adoção ajuda a cobrir despesas com vacinas, castração, microchipagem e cuidados médicos que o pet recebeu.
+                  Sua contribuição ajuda a cobrir despesas com vacinas, castração, microchipagem e cuidados médicos que o pet recebeu.
                 </p>
               </div>
               

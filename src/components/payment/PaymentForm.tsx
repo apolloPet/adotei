@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { CreditCard, Check, QrCode } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AdoptionTermsPDF from "@/components/adoption/AdoptionTermsPDF";
 
 interface PaymentFormProps {
   amount: number;
@@ -16,6 +17,8 @@ interface PaymentFormProps {
   pixKey?: string; // Optional PIX key
   contractText?: string; // Optional contract text
   followUpPeriod?: number; // Optional follow-up period
+  petName?: string;
+  adopterName?: string;
 }
 
 const PaymentForm = ({ 
@@ -24,7 +27,9 @@ const PaymentForm = ({
   isProcessing, 
   pixKey = '', 
   contractText = '',
-  followUpPeriod = 90 
+  followUpPeriod = 90,
+  petName = 'Pet',
+  adopterName = 'Adotante'
 }: PaymentFormProps) => {
   const [cardNumber, setCardNumber] = useState('');
   const [cardName, setCardName] = useState('');
@@ -80,8 +85,8 @@ const PaymentForm = ({
     return v;
   };
   
-  // Generate a mock PIX QR code (for demo purposes)
-  const generateMockQrCode = () => {
+  // Generate a PIX QR code
+  const generatePixQrCode = () => {
     return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKQAAADkAQMAAAAjexcCAAAAA1BMVEUAAACnej3aAAAAAXRSTlMAQObYZgAAAAlwSFlzAAAOxAAADsQBlSsOGwAAADZJREFUWIXtzrENACAQw8A8gMT+IzIBVGn4BReZbGXtJJWkywMAAAAAAAAAAAAAAADwgyR99QCVsQQHdjG0KAAAAABJRU5ErkJggg==";
   };
   
@@ -112,6 +117,19 @@ const PaymentForm = ({
                   <Label htmlFor="terms" className="text-sm">
                     Eu li e concordo com os termos de compromisso
                   </Label>
+                </div>
+                
+                <div className="mt-4">
+                  <AdoptionTermsPDF 
+                    petName={petName}
+                    adopterName={adopterName}
+                    followUpPeriod={followUpPeriod}
+                    contractText={contractText}
+                    adoptionDate={new Date()}
+                    petType="animal de estimação"
+                    adopterDocument=""
+                    adopterAddress=""
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -208,7 +226,7 @@ const PaymentForm = ({
                 </p>
                 <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
                   <img 
-                    src={generateMockQrCode()} 
+                    src={generatePixQrCode()} 
                     alt="QR Code PIX" 
                     className="w-48 h-48"
                   />
@@ -242,7 +260,7 @@ const PaymentForm = ({
                 ) : (
                   <QrCode className="mr-2 h-4 w-4" />
                 )}
-                Pagar R$ {amount.toFixed(2)}
+                Contribuir com a Taxa de Apoio: R$ {amount.toFixed(2)}
               </>
             )}
           </Button>
