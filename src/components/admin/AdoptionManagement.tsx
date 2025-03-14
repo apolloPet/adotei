@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -163,8 +164,6 @@ const AdoptionManagement = () => {
   const [scheduleNotes, setScheduleNotes] = useState("");
   const [showNotifyDialog, setShowNotifyDialog] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
-  const [showVisitDialog, setShowVisitDialog] = useState(false);
-  const [showInspectionDialog, setShowInspectionDialog] = useState(false);
 
   const handleStageChange = (matchId: string, newStage: AdoptionStage) => {
     const match = matches.find(m => m.id === matchId);
@@ -226,102 +225,78 @@ const AdoptionManagement = () => {
     }
   };
 
-  const openScheduleVisitDialog = (match: AdoptionMatch) => {
-    setSelectedMatch(match);
-    setScheduleDate(undefined);
-    setScheduleTime("");
-    setScheduleNotes("");
-    setShowVisitDialog(true);
-  };
-
-  const openScheduleInspectionDialog = (match: AdoptionMatch) => {
-    setSelectedMatch(match);
-    setScheduleDate(undefined);
-    setScheduleTime("");
-    setScheduleNotes("");
-    setShowInspectionDialog(true);
-  };
-
-  const handleScheduleVisit = () => {
-    if (!selectedMatch || !scheduleDate) {
+  const handleScheduleVisit = (match: AdoptionMatch, date: Date, time: string, notes: string) => {
+    if (!date) {
       toast.error("Por favor, selecione uma data para a visita");
       return;
     }
 
-    if (!scheduleTime) {
+    if (!time) {
       toast.error("Por favor, informe um horário para a visita");
       return;
     }
 
-    const formattedDate = format(scheduleDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    const formattedDate = format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
 
-    const updatedNotes = `${selectedMatch.notes}\n\nVisita agendada para ${formattedDate} às ${scheduleTime}. ${scheduleNotes}`;
+    const updatedNotes = `${match.notes}\n\nVisita agendada para ${formattedDate} às ${time}. ${notes}`;
     
     setMatches(prevMatches => 
-      prevMatches.map(match => 
-        match.id === selectedMatch.id 
+      prevMatches.map(m => 
+        m.id === match.id 
           ? { 
-              ...match, 
+              ...m, 
               notes: updatedNotes,
               currentStage: "visit_scheduled",
               updatedAt: new Date().toISOString() 
             } 
-          : match
+          : m
       )
     );
     
-    const autoMessage = `Olá ${selectedMatch.userName}! Gostaríamos de agendar uma visita para que você conheça ${selectedMatch.petName}. A data sugerida é ${formattedDate} às ${scheduleTime}. Por favor, confirme se esta data é conveniente para você. Obrigado!`;
+    const autoMessage = `Olá ${match.userName}! Gostaríamos de agendar uma visita para que você conheça ${match.petName}. A data sugerida é ${formattedDate} às ${time}. Por favor, confirme se esta data é conveniente para você. Obrigado!`;
     setNotificationMessage(autoMessage);
     
-    setShowVisitDialog(false);
+    setSelectedMatch(match);
     setShowNotifyDialog(true);
     
     toast.success("Visita agendada com sucesso!");
-    
-    setScheduleDate(undefined);
-    setScheduleTime("");
-    setScheduleNotes("");
   };
 
-  const handleScheduleHomeInspection = () => {
-    if (!selectedMatch || !scheduleDate) {
+  const handleScheduleHomeInspection = (match: AdoptionMatch, date: Date, time: string, notes: string) => {
+    if (!date) {
       toast.error("Por favor, selecione uma data para a inspeção");
       return;
     }
 
-    if (!scheduleTime) {
+    if (!time) {
       toast.error("Por favor, informe um horário para a inspeção");
       return;
     }
 
-    const formattedDate = format(scheduleDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    const formattedDate = format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
 
-    const updatedNotes = `${selectedMatch.notes}\n\nInspeção domiciliar agendada para ${formattedDate} às ${scheduleTime}. ${scheduleNotes}`;
+    const updatedNotes = `${match.notes}\n\nInspeção domiciliar agendada para ${formattedDate} às ${time}. ${notes}`;
     
     setMatches(prevMatches => 
-      prevMatches.map(match => 
-        match.id === selectedMatch.id 
+      prevMatches.map(m => 
+        m.id === match.id 
           ? { 
-              ...match, 
+              ...m, 
               notes: updatedNotes,
               currentStage: "home_inspection",
               updatedAt: new Date().toISOString() 
             } 
-          : match
+          : m
       )
     );
     
-    const autoMessage = `Olá ${selectedMatch.userName}! Gostaríamos de agendar uma visita à sua residência para verificar as condições para ${selectedMatch.petName}. A data sugerida é ${formattedDate} às ${scheduleTime}. Por favor, confirme se esta data é conveniente para você. Obrigado!`;
+    const autoMessage = `Olá ${match.userName}! Gostaríamos de agendar uma visita à sua residência para verificar as condições para ${match.petName}. A data sugerida é ${formattedDate} às ${time}. Por favor, confirme se esta data é conveniente para você. Obrigado!`;
     setNotificationMessage(autoMessage);
     
-    setShowInspectionDialog(false);
+    setSelectedMatch(match);
     setShowNotifyDialog(true);
     
     toast.success("Inspeção domiciliar agendada com sucesso!");
-    
-    setScheduleDate(undefined);
-    setScheduleTime("");
-    setScheduleNotes("");
   };
 
   const completeAdoption = (matchId: string) => {
@@ -392,7 +367,7 @@ const AdoptionManagement = () => {
         </CardDescription>
       </CardHeader>
       
-      <CardContent>
+      <CardContent className="pt-6">
         <Tabs defaultValue="all" className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="all">Todos</TabsTrigger>
@@ -411,8 +386,8 @@ const AdoptionManagement = () => {
                     key={match.id} 
                     match={match} 
                     onStageChange={handleStageChange}
-                    onScheduleVisit={openScheduleVisitDialog}
-                    onScheduleHomeInspection={openScheduleInspectionDialog}
+                    onScheduleVisit={handleScheduleVisit}
+                    onScheduleHomeInspection={handleScheduleHomeInspection}
                     onCompleteAdoption={handleCompleteAdoption}
                     getStageLabel={getStageLabel}
                     getStageColor={getStageColor}
@@ -436,8 +411,8 @@ const AdoptionManagement = () => {
                       key={match.id} 
                       match={match} 
                       onStageChange={handleStageChange}
-                      onScheduleVisit={openScheduleVisitDialog}
-                      onScheduleHomeInspection={openScheduleInspectionDialog}
+                      onScheduleVisit={handleScheduleVisit}
+                      onScheduleHomeInspection={handleScheduleHomeInspection}
                       onCompleteAdoption={handleCompleteAdoption}
                       getStageLabel={getStageLabel}
                       getStageColor={getStageColor}
@@ -454,198 +429,7 @@ const AdoptionManagement = () => {
           ))}
         </Tabs>
         
-        <Dialog open={showVisitDialog} onOpenChange={setShowVisitDialog}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Agendar Visita</DialogTitle>
-              <DialogDescription>
-                Agende uma visita para que o adotante conheça o animal
-              </DialogDescription>
-            </DialogHeader>
-            
-            {selectedMatch && (
-              <div className="py-4 space-y-4">
-                <div className="flex items-center gap-3">
-                  <img 
-                    src={selectedMatch.petImage} 
-                    alt={selectedMatch.petName}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="font-medium">{selectedMatch.petName}</p>
-                    <p className="text-sm text-muted-foreground">Para: {selectedMatch.userName}</p>
-                  </div>
-                </div>
-                
-                <div className="grid gap-4 py-4">
-                  <div className="space-y-2">
-                    <label htmlFor="date" className="text-sm font-medium">
-                      Data
-                    </label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !scheduleDate && "text-muted-foreground"
-                          )}
-                          id="date"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {scheduleDate ? (
-                            format(scheduleDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-                          ) : (
-                            <span>Selecione uma data</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={scheduleDate}
-                          onSelect={setScheduleDate}
-                          locale={ptBR}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label htmlFor="time" className="text-sm font-medium">
-                      Horário
-                    </label>
-                    <Input
-                      id="time"
-                      type="time"
-                      value={scheduleTime}
-                      onChange={(e) => setScheduleTime(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label htmlFor="notes" className="text-sm font-medium">
-                      Observações
-                    </label>
-                    <Textarea
-                      id="notes"
-                      placeholder="Informações adicionais sobre a visita..."
-                      value={scheduleNotes}
-                      onChange={(e) => setScheduleNotes(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowVisitDialog(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleScheduleVisit}>
-                Agendar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        
-        <Dialog open={showInspectionDialog} onOpenChange={setShowInspectionDialog}>
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Agendar Inspeção Domiciliar</DialogTitle>
-              <DialogDescription>
-                Agende uma visita ao domicílio do adotante para verificar as condições
-              </DialogDescription>
-            </DialogHeader>
-            
-            {selectedMatch && (
-              <div className="py-4 space-y-4">
-                <div className="flex items-center gap-3">
-                  <img 
-                    src={selectedMatch.petImage} 
-                    alt={selectedMatch.petName}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  <div>
-                    <p className="font-medium">{selectedMatch.petName}</p>
-                    <p className="text-sm text-muted-foreground">Adotante: {selectedMatch.userName}</p>
-                  </div>
-                </div>
-                
-                <div className="grid gap-4 py-4">
-                  <div className="space-y-2">
-                    <label htmlFor="inspection-date" className="text-sm font-medium">
-                      Data
-                    </label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !scheduleDate && "text-muted-foreground"
-                          )}
-                          id="inspection-date"
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {scheduleDate ? (
-                            format(scheduleDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-                          ) : (
-                            <span>Selecione uma data</span>
-                          )}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={scheduleDate}
-                          onSelect={setScheduleDate}
-                          locale={ptBR}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label htmlFor="inspection-time" className="text-sm font-medium">
-                      Horário
-                    </label>
-                    <Input
-                      id="inspection-time"
-                      type="time"
-                      value={scheduleTime}
-                      onChange={(e) => setScheduleTime(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label htmlFor="inspection-notes" className="text-sm font-medium">
-                      Observações
-                    </label>
-                    <Textarea
-                      id="inspection-notes"
-                      placeholder="Detalhes sobre a inspeção, o que será verificado..."
-                      value={scheduleNotes}
-                      onChange={(e) => setScheduleNotes(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowInspectionDialog(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleScheduleHomeInspection}>
-                Agendar
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-        
+        {/* Notification Dialog */}
         <Dialog open={showNotifyDialog} onOpenChange={setShowNotifyDialog}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -704,8 +488,8 @@ const AdoptionManagement = () => {
 interface MatchCardProps {
   match: AdoptionMatch;
   onStageChange: (matchId: string, stage: AdoptionStage) => void;
-  onScheduleVisit: (match: AdoptionMatch) => void;
-  onScheduleHomeInspection: (match: AdoptionMatch) => void;
+  onScheduleVisit: (match: AdoptionMatch, date: Date, time: string, notes: string) => void;
+  onScheduleHomeInspection: (match: AdoptionMatch, date: Date, time: string, notes: string) => void;
   onCompleteAdoption: (matchId: string) => void;
   getStageLabel: (stage: AdoptionStage) => string;
   getStageColor: (stage: AdoptionStage) => string;
@@ -723,6 +507,45 @@ const MatchCard = ({
   formatDate
 }: MatchCardProps) => {
   const [expanded, setExpanded] = useState(false);
+  const [showVisitDialog, setShowVisitDialog] = useState(false);
+  const [showInspectionDialog, setShowInspectionDialog] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState<Date | undefined>(undefined);
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [scheduleNotes, setScheduleNotes] = useState("");
+  
+  const resetScheduleForm = () => {
+    setScheduleDate(undefined);
+    setScheduleTime("");
+    setScheduleNotes("");
+  };
+  
+  const handleOpenVisitDialog = () => {
+    resetScheduleForm();
+    setShowVisitDialog(true);
+  };
+  
+  const handleOpenInspectionDialog = () => {
+    resetScheduleForm();
+    setShowInspectionDialog(true);
+  };
+  
+  const handleSubmitVisit = () => {
+    if (scheduleDate) {
+      onScheduleVisit(match, scheduleDate, scheduleTime, scheduleNotes);
+      setShowVisitDialog(false);
+    } else {
+      toast.error("Por favor, selecione uma data para a visita");
+    }
+  };
+  
+  const handleSubmitInspection = () => {
+    if (scheduleDate) {
+      onScheduleHomeInspection(match, scheduleDate, scheduleTime, scheduleNotes);
+      setShowInspectionDialog(false);
+    } else {
+      toast.error("Por favor, selecione uma data para a inspeção");
+    }
+  };
   
   const getAvailableActions = () => {
     switch (match.currentStage) {
@@ -761,35 +584,27 @@ const MatchCard = ({
         );
       case "approved":
         return (
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex items-center gap-1"
-                onClick={() => onScheduleVisit(match)}
-              >
-                <Calendar className="h-4 w-4" />
-                <span>Agendar Visita</span>
-              </Button>
-            </DialogTrigger>
-          </Dialog>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={handleOpenVisitDialog}
+          >
+            <Calendar className="h-4 w-4" />
+            <span>Agendar Visita</span>
+          </Button>
         );
       case "visit_scheduled":
         return (
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex items-center gap-1"
-                onClick={() => onScheduleHomeInspection(match)}
-              >
-                <MapPin className="h-4 w-4" />
-                <span>Agendar Inspeção</span>
-              </Button>
-            </DialogTrigger>
-          </Dialog>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="flex items-center gap-1"
+            onClick={handleOpenInspectionDialog}
+          >
+            <MapPin className="h-4 w-4" />
+            <span>Agendar Inspeção</span>
+          </Button>
         );
       case "home_inspection":
         return (
@@ -815,76 +630,270 @@ const MatchCard = ({
   };
   
   return (
-    <Card className="overflow-hidden">
-      <div className={`p-4 border-l-4 ${match.currentStage === "completed" ? "border-primary" : "border-muted"}`}>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <img 
-              src={match.petImage} 
-              alt={match.petName}
-              className="w-16 h-16 rounded-full object-cover"
-            />
-            <div>
-              <h3 className="font-medium">{match.petName}</h3>
-              <p className="text-sm text-muted-foreground">Adotante: {match.userName}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="outline" className={getStageColor(match.currentStage)}>
-                  {getStageLabel(match.currentStage)}
-                </Badge>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock className="h-3 w-3" /> Atualizado: {formatDate(match.updatedAt)}
-                </span>
+    <>
+      <Card className="overflow-hidden">
+        <div className={`p-4 border-l-4 ${match.currentStage === "completed" ? "border-primary" : "border-muted"}`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <img 
+                src={match.petImage} 
+                alt={match.petName}
+                className="w-16 h-16 rounded-full object-cover"
+              />
+              <div>
+                <h3 className="font-medium">{match.petName}</h3>
+                <p className="text-sm text-muted-foreground">Adotante: {match.userName}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant="outline" className={getStageColor(match.currentStage)}>
+                    {getStageLabel(match.currentStage)}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> Atualizado: {formatDate(match.updatedAt)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex flex-wrap items-center gap-2">
+              {getAvailableActions()}
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setExpanded(!expanded)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          {expanded && (
+            <div className="mt-4 pt-4 border-t">
+              <div className="mb-4">
+                <h4 className="text-sm font-medium mb-2">Estágios da Adoção</h4>
+                <AdoptionStages currentStage={match.currentStage} />
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Dados do Adotante</h4>
+                  <ul className="text-sm space-y-1">
+                    <li><span className="text-muted-foreground">Nome:</span> {match.userName}</li>
+                    <li><span className="text-muted-foreground">Email:</span> {match.userEmail}</li>
+                    <li><span className="text-muted-foreground">Telefone:</span> {match.userPhone}</li>
+                  </ul>
+                </div>
+                
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Informações da Adoção</h4>
+                  <ul className="text-sm space-y-1">
+                    <li><span className="text-muted-foreground">Interesse inicial:</span> {formatDate(match.createdAt)}</li>
+                    <li><span className="text-muted-foreground">Última atualização:</span> {formatDate(match.updatedAt)}</li>
+                    <li><span className="text-muted-foreground">Responsável:</span> {match.responsibleName || "Não atribuído"}</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div className="mt-4">
+                <h4 className="text-sm font-medium mb-2">Observações</h4>
+                <p className="text-sm text-muted-foreground whitespace-pre-line">{match.notes || "Nenhuma observação registrada."}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+      
+      {/* Visit Scheduling Dialog */}
+      <Dialog open={showVisitDialog} onOpenChange={setShowVisitDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Agendar Visita</DialogTitle>
+            <DialogDescription>
+              Agende uma visita para que o adotante conheça o animal
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <img 
+                src={match.petImage} 
+                alt={match.petName}
+                className="w-12 h-12 rounded-full object-cover"
+              />
+              <div>
+                <p className="font-medium">{match.petName}</p>
+                <p className="text-sm text-muted-foreground">Para: {match.userName}</p>
+              </div>
+            </div>
+            
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="date" className="text-sm font-medium">
+                  Data
+                </label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !scheduleDate && "text-muted-foreground"
+                      )}
+                      id="date"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {scheduleDate ? (
+                        format(scheduleDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                      ) : (
+                        <span>Selecione uma data</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={scheduleDate}
+                      onSelect={setScheduleDate}
+                      locale={ptBR}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="time" className="text-sm font-medium">
+                  Horário
+                </label>
+                <Input
+                  id="time"
+                  type="time"
+                  value={scheduleTime}
+                  onChange={(e) => setScheduleTime(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="notes" className="text-sm font-medium">
+                  Observações
+                </label>
+                <Textarea
+                  id="notes"
+                  placeholder="Informações adicionais sobre a visita..."
+                  value={scheduleNotes}
+                  onChange={(e) => setScheduleNotes(e.target.value)}
+                />
               </div>
             </div>
           </div>
           
-          <div className="flex flex-wrap items-center gap-2">
-            {getAvailableActions()}
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => setExpanded(!expanded)}
-            >
-              <Edit className="h-4 w-4" />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowVisitDialog(false)}>
+              Cancelar
             </Button>
-          </div>
-        </div>
-        
-        {expanded && (
-          <div className="mt-4 pt-4 border-t">
-            <div className="mb-4">
-              <h4 className="text-sm font-medium mb-2">Estágios da Adoção</h4>
-              <AdoptionStages currentStage={match.currentStage} />
+            <Button onClick={handleSubmitVisit}>
+              Agendar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Home Inspection Dialog */}
+      <Dialog open={showInspectionDialog} onOpenChange={setShowInspectionDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Agendar Inspeção Domiciliar</DialogTitle>
+            <DialogDescription>
+              Agende uma visita ao domicílio do adotante para verificar as condições
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <img 
+                src={match.petImage} 
+                alt={match.petName}
+                className="w-12 h-12 rounded-full object-cover"
+              />
+              <div>
+                <p className="font-medium">{match.petName}</p>
+                <p className="text-sm text-muted-foreground">Adotante: {match.userName}</p>
+              </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-              <div>
-                <h4 className="text-sm font-medium mb-2">Dados do Adotante</h4>
-                <ul className="text-sm space-y-1">
-                  <li><span className="text-muted-foreground">Nome:</span> {match.userName}</li>
-                  <li><span className="text-muted-foreground">Email:</span> {match.userEmail}</li>
-                  <li><span className="text-muted-foreground">Telefone:</span> {match.userPhone}</li>
-                </ul>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="inspection-date" className="text-sm font-medium">
+                  Data
+                </label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !scheduleDate && "text-muted-foreground"
+                      )}
+                      id="inspection-date"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {scheduleDate ? (
+                        format(scheduleDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                      ) : (
+                        <span>Selecione uma data</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={scheduleDate}
+                      onSelect={setScheduleDate}
+                      locale={ptBR}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               
-              <div>
-                <h4 className="text-sm font-medium mb-2">Informações da Adoção</h4>
-                <ul className="text-sm space-y-1">
-                  <li><span className="text-muted-foreground">Interesse inicial:</span> {formatDate(match.createdAt)}</li>
-                  <li><span className="text-muted-foreground">Última atualização:</span> {formatDate(match.updatedAt)}</li>
-                  <li><span className="text-muted-foreground">Responsável:</span> {match.responsibleName || "Não atribuído"}</li>
-                </ul>
+              <div className="space-y-2">
+                <label htmlFor="inspection-time" className="text-sm font-medium">
+                  Horário
+                </label>
+                <Input
+                  id="inspection-time"
+                  type="time"
+                  value={scheduleTime}
+                  onChange={(e) => setScheduleTime(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="inspection-notes" className="text-sm font-medium">
+                  Observações
+                </label>
+                <Textarea
+                  id="inspection-notes"
+                  placeholder="Detalhes sobre a inspeção, o que será verificado..."
+                  value={scheduleNotes}
+                  onChange={(e) => setScheduleNotes(e.target.value)}
+                />
               </div>
             </div>
-            
-            <div className="mt-4">
-              <h4 className="text-sm font-medium mb-2">Observações</h4>
-              <p className="text-sm text-muted-foreground whitespace-pre-line">{match.notes || "Nenhuma observação registrada."}</p>
-            </div>
           </div>
-        )}
-      </div>
-    </Card>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInspectionDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmitInspection}>
+              Agendar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
