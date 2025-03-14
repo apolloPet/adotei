@@ -60,6 +60,10 @@ function App() {
   const handleLogin = () => {
     setIsAuthenticated(true);
     localStorage.setItem("isLoggedIn", "true");
+    
+    // Dispatch storage event to notify other components
+    window.dispatchEvent(new Event('storage'));
+    
     toast.success("Login realizado com sucesso");
   };
 
@@ -82,6 +86,10 @@ function App() {
     setIsAuthenticated(true);
     localStorage.setItem("isAdmin", "true");
     localStorage.setItem("isLoggedIn", "true");
+    
+    // Dispatch storage event to notify other components
+    window.dispatchEvent(new Event('storage'));
+    
     toast.success("Login de administrador realizado com sucesso");
   };
 

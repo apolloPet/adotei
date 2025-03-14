@@ -83,6 +83,9 @@ const Header = ({
     setIsLoggedIn(false);
     setIsMobileMenuOpen(false);
     
+    // Dispatch storage event to notify other components
+    window.dispatchEvent(new Event('storage'));
+    
     // Call props callback if provided
     if (propsOnLogout) {
       propsOnLogout();

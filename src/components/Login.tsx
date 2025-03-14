@@ -41,6 +41,9 @@ const Login = ({ onLogin }: LoginProps = {}) => {
       localStorage.setItem("isLoggedIn", "true");
       localStorage.setItem("userEmail", email);
       
+      // Dispatch storage event to notify other components
+      window.dispatchEvent(new Event('storage'));
+      
       // Chamamos o callback onLogin se fornecido
       if (onLogin) {
         onLogin();
