@@ -37,6 +37,8 @@ const PetAdoptionProcess = ({ id, adoptionProcess }: PetAdoptionProcessProps) =>
             <AdoptionTermsPDF 
               petName={`Pet #${id}`}
               adopterName="Usuário"
+              adopterDocument="000.000.000-00"
+              adopterAddress="Endereço do adotante"
               followUpPeriod={90}
               adoptionDate={new Date()}
               petType="animal de estimação"

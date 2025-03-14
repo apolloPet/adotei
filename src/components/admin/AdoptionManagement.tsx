@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,6 +25,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import AdoptionTermsPDF from '@/components/adoption/AdoptionTermsPDF';
 
 export interface AdoptionMatch {
   id: string;
@@ -174,6 +176,7 @@ const AdoptionManagement = () => {
   const [selectedMatch, setSelectedMatch] = useState<AdoptionMatch | null>(null);
   const [notificationMessage, setNotificationMessage] = useState("");
   const [showNotifyDialog, setShowNotifyDialog] = useState(false);
+  const [showAdoptionContract, setShowAdoptionContract] = useState(false);
 
   const handleStageChange = (matchId: string, newStage: AdoptionStage) => {
     const match = matches.find(m => m.id === matchId);
@@ -330,12 +333,15 @@ const AdoptionManagement = () => {
     const match = matches.find(m => m.id === matchId);
     
     if (match) {
+      // Show adoption contract dialog
+      setSelectedMatch(match);
+      setShowAdoptionContract(true);
+      
       completeAdoption(matchId);
       
       const autoMessage = generateAdoptionStageMessage(match.petName, "completed");
       setNotificationMessage(autoMessage);
       
-      setSelectedMatch(match);
       setShowNotifyDialog(true);
     }
   };
@@ -486,6 +492,89 @@ const AdoptionManagement = () => {
               <Button onClick={handleSendNotification} className="flex items-center gap-1">
                 <MessageSquare className="h-4 w-4" />
                 Enviar WhatsApp
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Adoption Contract Dialog */}
+        <Dialog open={showAdoptionContract} onOpenChange={setShowAdoptionContract}>
+          <DialogContent className="sm:max-w-[550px]">
+            <DialogHeader>
+              <DialogTitle>Contrato de Adoção</DialogTitle>
+              <DialogDescription>
+                Termo de responsabilidade para adoção de animal
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedMatch && (
+              <div className="py-4 space-y-4">
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={selectedMatch.petImage} 
+                    alt={selectedMatch.petName}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
+                  <div>
+                    <p className="font-medium">{selectedMatch.petName}</p>
+                    <p className="text-sm text-muted-foreground">Adotante: {selectedMatch.userName}</p>
+                  </div>
+                </div>
+                
+                <div className="border p-4 rounded bg-muted/20 max-h-[300px] overflow-y-auto">
+                  <h3 className="text-sm font-medium mb-2">Visualização do Contrato:</h3>
+                  <p className="text-xs text-muted-foreground italic mb-4">
+                    Este contrato será enviado para o email do adotante após a finalização do processo.
+                  </p>
+                  
+                  <div className="space-y-2 text-sm">
+                    <p className="font-semibold">TERMO DE RESPONSABILIDADE E COMPROMISSO DE ADOÇÃO</p>
+                    <p>Data: {format(new Date(), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
+                    <p>Nome do Adotante: {selectedMatch.userName}</p>
+                    <p>Email: {selectedMatch.userEmail}</p>
+                    <p>Telefone: {selectedMatch.userPhone}</p>
+                    <p>Nome do Animal: {selectedMatch.petName}</p>
+                    
+                    <p className="mt-4">
+                      O adotante se compromete a cuidar do animal adotado, fornecendo abrigo, 
+                      alimentação adequada, cuidados veterinários e carinho. Concordo em permitir 
+                      visitas de acompanhamento pelo período estabelecido e em não abandonar ou 
+                      maltratar o animal sob quaisquer circunstâncias.
+                    </p>
+                    
+                    <div className="mt-4 p-3 bg-primary-50 rounded border border-primary-100">
+                      <p className="font-medium text-xs">Valor da Taxa de Adoção: R$ 50,00</p>
+                      <p className="text-xs text-muted-foreground">
+                        A taxa de adoção ajuda a cobrir custos de cuidados veterinários e manutenção da ONG.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-center">
+                  <AdoptionTermsPDF 
+                    petName={selectedMatch.petName}
+                    adopterName={selectedMatch.userName}
+                    adopterDocument="000.000.000-00"
+                    adopterAddress="Endereço do adotante"
+                    followUpPeriod={90}
+                    adoptionDate={new Date()}
+                    petType="animal de estimação"
+                    contractText={`Eu, ${selectedMatch.userName}, me comprometo a cuidar do animal ${selectedMatch.petName} adotado, fornecendo abrigo, alimentação adequada, cuidados veterinários e carinho. Concordo em permitir visitas de acompanhamento pelo período de 90 dias estabelecido e em não abandonar ou maltratar o animal sob quaisquer circunstâncias.`}
+                  />
+                </div>
+              </div>
+            )}
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAdoptionContract(false)}>
+                Fechar
+              </Button>
+              <Button onClick={() => {
+                toast.success("Adoção finalizada! Contrato enviado por email.");
+                setShowAdoptionContract(false);
+              }}>
+                Finalizar Adoção
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -834,4 +923,158 @@ const MatchCard = ({
                       variant="outline"
                       className={cn(
                         "w-full justify-start text-left font-normal",
-                        !scheduleDate && "text
+                        !scheduleDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {scheduleDate ? format(scheduleDate, "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={scheduleDate}
+                      onSelect={setScheduleDate}
+                      initialFocus
+                      disabled={(date) => date < new Date()}
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="time" className="text-sm font-medium">
+                  Horário
+                </label>
+                <Input
+                  id="time"
+                  placeholder="Ex: 14:30"
+                  value={scheduleTime}
+                  onChange={(e) => setScheduleTime(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="notes" className="text-sm font-medium">
+                  Observações
+                </label>
+                <Textarea
+                  id="notes"
+                  placeholder="Adicione informações adicionais sobre a visita..."
+                  value={scheduleNotes}
+                  onChange={(e) => setScheduleNotes(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowVisitDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmitVisit}>
+              Agendar Visita
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Home Inspection Dialog */}
+      <Dialog open={showInspectionDialog} onOpenChange={setShowInspectionDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Agendar Inspeção Domiciliar</DialogTitle>
+            <DialogDescription>
+              Agende uma visita à residência do adotante
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <img 
+                src={match.petImage} 
+                alt={match.petName}
+                className="w-12 h-12 rounded-full object-cover"
+              />
+              <div>
+                <p className="font-medium">{match.petName}</p>
+                <p className="text-sm text-muted-foreground">Para: {match.userName}</p>
+              </div>
+            </div>
+            
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <label htmlFor="date" className="text-sm font-medium">
+                  Data
+                </label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !scheduleDate && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {scheduleDate ? format(scheduleDate, "PPP", { locale: ptBR }) : <span>Selecione uma data</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={scheduleDate}
+                      onSelect={setScheduleDate}
+                      initialFocus
+                      disabled={(date) => date < new Date()}
+                      className={cn("p-3 pointer-events-auto")}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="time" className="text-sm font-medium">
+                  Horário
+                </label>
+                <Input
+                  id="time"
+                  placeholder="Ex: 14:30"
+                  value={scheduleTime}
+                  onChange={(e) => setScheduleTime(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="notes" className="text-sm font-medium">
+                  Observações
+                </label>
+                <Textarea
+                  id="notes"
+                  placeholder="Adicione informações adicionais sobre a inspeção..."
+                  value={scheduleNotes}
+                  onChange={(e) => setScheduleNotes(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowInspectionDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmitInspection}>
+              Agendar Inspeção
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+export default AdoptionManagement;
+
