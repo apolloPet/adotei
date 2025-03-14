@@ -28,6 +28,9 @@ const DesktopAuthMenu = ({
   const handleLogout = () => {
     if (onLogout) {
       onLogout();
+      // Clear login state in localStorage
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("isAdmin");
     }
   };
   

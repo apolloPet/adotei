@@ -31,7 +31,7 @@ const Login = ({ onLogin }: LoginProps = {}) => {
     try {
       setIsLoading(true);
       
-      // In a real app, this would call an authentication API
+      // For demo purposes, we'll accept any email/password combination
       console.log("Login attempt with:", { email, password, rememberMe });
       
       // Simulate network delay
@@ -45,7 +45,6 @@ const Login = ({ onLogin }: LoginProps = {}) => {
         onLogin();
       }
       
-      // For demo purposes, we'll just show a success message and redirect
       toast.success("Login realizado com sucesso!");
       
       // Redirect after successful login
