@@ -43,6 +43,8 @@ const PetAdoptionProcess = ({ id, adoptionProcess }: PetAdoptionProcessProps) =>
               adoptionDate={new Date()}
               petType="animal de estimação"
               contractText="Eu, adotante, me comprometo a cuidar do animal adotado, fornecendo abrigo, alimentação adequada, cuidados veterinários e carinho."
+              ngoBankDetails="PIX: 00.000.000/0001-00 (CNPJ)"
+              adoptionFee={100}
             />
           </div>
         )}

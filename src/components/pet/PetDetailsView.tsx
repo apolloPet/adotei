@@ -1,5 +1,5 @@
 
-import { X, Calendar, Heart, Check, AlertCircle, User } from 'lucide-react';
+import { X, Calendar, Heart, User } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-sonner";
@@ -12,13 +12,6 @@ interface PetDetailsViewProps {
 
 const PetDetailsView = ({ pet, onClose }: PetDetailsViewProps) => {
   const petColors = getPetColors(pet.species);
-  
-  // Mock compatibility data - in a real app, this would come from comparing user profile and pet requirements
-  const compatibility = {
-    overall: 85, // percentage
-    matches: ["Ambiente tranquilo", "Espaço adequado", "Experiência prévia"],
-    concerns: ["Precisa de tempo para passeios", "Requer treinamento"],
-  };
   
   const handleScheduleVisit = () => {
     toast.success("Visita agendada com sucesso!", {
@@ -71,39 +64,6 @@ const PetDetailsView = ({ pet, onClose }: PetDetailsViewProps) => {
                 {trait}
               </Badge>
             ))}
-          </div>
-        </div>
-        
-        <div className="mt-6">
-          <h3 className="text-xl font-semibold mb-3">
-            Compatibilidade
-            <span className="ml-2 text-base bg-pet-primary text-pet-secondary py-1 px-3 rounded-full">
-              {compatibility.overall}%
-            </span>
-          </h3>
-          
-          <div className="space-y-4">
-            <div>
-              <h4 className="text-lg flex items-center text-pet-primary">
-                <Check className="h-5 w-5 mr-2" /> Pontos positivos
-              </h4>
-              <ul className="mt-2 pl-7 space-y-1 list-disc">
-                {compatibility.matches.map((match, index) => (
-                  <li key={index}>{match}</li>
-                ))}
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="text-lg flex items-center text-amber-400">
-                <AlertCircle className="h-5 w-5 mr-2" /> Pontos de atenção
-              </h4>
-              <ul className="mt-2 pl-7 space-y-1 list-disc">
-                {compatibility.concerns.map((concern, index) => (
-                  <li key={index}>{concern}</li>
-                ))}
-              </ul>
-            </div>
           </div>
         </div>
         
