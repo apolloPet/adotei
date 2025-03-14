@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -164,13 +163,13 @@ const AdoptionManagement = () => {
   const [scheduleNotes, setScheduleNotes] = useState("");
   const [showNotifyDialog, setShowNotifyDialog] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
+  const [showVisitDialog, setShowVisitDialog] = useState(false);
+  const [showInspectionDialog, setShowInspectionDialog] = useState(false);
 
   const handleStageChange = (matchId: string, newStage: AdoptionStage) => {
-    // Find the match first
     const match = matches.find(m => m.id === matchId);
     
     if (match) {
-      // Update the match in state
       setMatches(prevMatches => 
         prevMatches.map(m => 
           m.id === matchId 
@@ -183,11 +182,9 @@ const AdoptionManagement = () => {
         )
       );
       
-      // Generate automatic message for notification
       const autoMessage = generateAdoptionStageMessage(match.petName, newStage);
       setNotificationMessage(autoMessage);
       
-      // Set the selected match for notification
       setSelectedMatch(match);
       setShowNotifyDialog(true);
       
@@ -202,10 +199,8 @@ const AdoptionManagement = () => {
     }
 
     try {
-      // Send the WhatsApp message
       sendWhatsAppMessage(selectedMatch.userPhone, notificationMessage);
       
-      // Update notes to include the sent notification
       const timestamp = new Date().toLocaleString('pt-BR');
       const updatedNotes = `${selectedMatch.notes}\n\n[${timestamp}] Notificação enviada via WhatsApp: "${notificationMessage}"`;
       
@@ -222,7 +217,6 @@ const AdoptionManagement = () => {
       
       toast.success("Notificação enviada com sucesso!");
       
-      // Reset form
       setNotificationMessage("");
       setSelectedMatch(null);
       setShowNotifyDialog(false);
@@ -230,6 +224,22 @@ const AdoptionManagement = () => {
       console.error("Erro ao enviar notificação:", error);
       toast.error("Erro ao enviar notificação. Tente novamente.");
     }
+  };
+
+  const openScheduleVisitDialog = (match: AdoptionMatch) => {
+    setSelectedMatch(match);
+    setScheduleDate(undefined);
+    setScheduleTime("");
+    setScheduleNotes("");
+    setShowVisitDialog(true);
+  };
+
+  const openScheduleInspectionDialog = (match: AdoptionMatch) => {
+    setSelectedMatch(match);
+    setScheduleDate(undefined);
+    setScheduleTime("");
+    setScheduleNotes("");
+    setShowInspectionDialog(true);
   };
 
   const handleScheduleVisit = () => {
@@ -243,13 +253,10 @@ const AdoptionManagement = () => {
       return;
     }
 
-    // Format the date for better readability
     const formattedDate = format(scheduleDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
 
-    // Update the match notes with the schedule information
     const updatedNotes = `${selectedMatch.notes}\n\nVisita agendada para ${formattedDate} às ${scheduleTime}. ${scheduleNotes}`;
     
-    // Update the match in the state
     setMatches(prevMatches => 
       prevMatches.map(match => 
         match.id === selectedMatch.id 
@@ -263,16 +270,14 @@ const AdoptionManagement = () => {
       )
     );
     
-    // Update notification message with the scheduled date
     const autoMessage = `Olá ${selectedMatch.userName}! Gostaríamos de agendar uma visita para que você conheça ${selectedMatch.petName}. A data sugerida é ${formattedDate} às ${scheduleTime}. Por favor, confirme se esta data é conveniente para você. Obrigado!`;
     setNotificationMessage(autoMessage);
     
-    // Show notification dialog to send WhatsApp message
+    setShowVisitDialog(false);
     setShowNotifyDialog(true);
     
     toast.success("Visita agendada com sucesso!");
     
-    // Reset date and time inputs
     setScheduleDate(undefined);
     setScheduleTime("");
     setScheduleNotes("");
@@ -289,13 +294,10 @@ const AdoptionManagement = () => {
       return;
     }
 
-    // Format the date for better readability
     const formattedDate = format(scheduleDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
 
-    // Update the match notes with the home inspection information
     const updatedNotes = `${selectedMatch.notes}\n\nInspeção domiciliar agendada para ${formattedDate} às ${scheduleTime}. ${scheduleNotes}`;
     
-    // Update the match in the state
     setMatches(prevMatches => 
       prevMatches.map(match => 
         match.id === selectedMatch.id 
@@ -309,16 +311,14 @@ const AdoptionManagement = () => {
       )
     );
     
-    // Update notification message with the scheduled date
     const autoMessage = `Olá ${selectedMatch.userName}! Gostaríamos de agendar uma visita à sua residência para verificar as condições para ${selectedMatch.petName}. A data sugerida é ${formattedDate} às ${scheduleTime}. Por favor, confirme se esta data é conveniente para você. Obrigado!`;
     setNotificationMessage(autoMessage);
     
-    // Show notification dialog to send WhatsApp message
+    setShowInspectionDialog(false);
     setShowNotifyDialog(true);
     
     toast.success("Inspeção domiciliar agendada com sucesso!");
     
-    // Reset date and time inputs
     setScheduleDate(undefined);
     setScheduleTime("");
     setScheduleNotes("");
@@ -342,18 +342,14 @@ const AdoptionManagement = () => {
   };
 
   const handleCompleteAdoption = (matchId: string) => {
-    // Find the match first
     const match = matches.find(m => m.id === matchId);
     
     if (match) {
-      // Update to completed status
       completeAdoption(matchId);
       
-      // Generate automatic message for completion notification
       const autoMessage = generateAdoptionStageMessage(match.petName, "completed");
       setNotificationMessage(autoMessage);
       
-      // Set the selected match for notification
       setSelectedMatch(match);
       setShowNotifyDialog(true);
     }
@@ -382,7 +378,6 @@ const AdoptionManagement = () => {
     }
   };
 
-  // Group matches by stage
   const matchesByStage = adoptionStages.reduce((acc, stage) => {
     acc[stage.id] = matches.filter(match => match.currentStage === stage.id);
     return acc;
@@ -416,8 +411,8 @@ const AdoptionManagement = () => {
                     key={match.id} 
                     match={match} 
                     onStageChange={handleStageChange}
-                    onScheduleVisit={(match) => setSelectedMatch(match)}
-                    onScheduleHomeInspection={(match) => setSelectedMatch(match)}
+                    onScheduleVisit={openScheduleVisitDialog}
+                    onScheduleHomeInspection={openScheduleInspectionDialog}
                     onCompleteAdoption={handleCompleteAdoption}
                     getStageLabel={getStageLabel}
                     getStageColor={getStageColor}
@@ -441,8 +436,8 @@ const AdoptionManagement = () => {
                       key={match.id} 
                       match={match} 
                       onStageChange={handleStageChange}
-                      onScheduleVisit={(match) => setSelectedMatch(match)}
-                      onScheduleHomeInspection={(match) => setSelectedMatch(match)}
+                      onScheduleVisit={openScheduleVisitDialog}
+                      onScheduleHomeInspection={openScheduleInspectionDialog}
                       onCompleteAdoption={handleCompleteAdoption}
                       getStageLabel={getStageLabel}
                       getStageColor={getStageColor}
@@ -459,11 +454,7 @@ const AdoptionManagement = () => {
           ))}
         </Tabs>
         
-        {/* Schedule Visit Dialog */}
-        <Dialog>
-          <DialogTrigger asChild>
-            <span className="hidden">Agendar Visita</span>
-          </DialogTrigger>
+        <Dialog open={showVisitDialog} onOpenChange={setShowVisitDialog}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Agendar Visita</DialogTitle>
@@ -549,21 +540,17 @@ const AdoptionManagement = () => {
             )}
             
             <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancelar</Button>
-              </DialogClose>
-              <DialogClose asChild>
-                <Button onClick={handleScheduleVisit}>Agendar</Button>
-              </DialogClose>
+              <Button variant="outline" onClick={() => setShowVisitDialog(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleScheduleVisit}>
+                Agendar
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
         
-        {/* Schedule Home Inspection Dialog */}
-        <Dialog>
-          <DialogTrigger asChild>
-            <span className="hidden">Agendar Inspeção</span>
-          </DialogTrigger>
+        <Dialog open={showInspectionDialog} onOpenChange={setShowInspectionDialog}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Agendar Inspeção Domiciliar</DialogTitle>
@@ -649,17 +636,16 @@ const AdoptionManagement = () => {
             )}
             
             <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancelar</Button>
-              </DialogClose>
-              <DialogClose asChild>
-                <Button onClick={handleScheduleHomeInspection}>Agendar</Button>
-              </DialogClose>
+              <Button variant="outline" onClick={() => setShowInspectionDialog(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleScheduleHomeInspection}>
+                Agendar
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
         
-        {/* WhatsApp Notification Dialog */}
         <Dialog open={showNotifyDialog} onOpenChange={setShowNotifyDialog}>
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -700,9 +686,9 @@ const AdoptionManagement = () => {
             )}
             
             <DialogFooter>
-              <DialogClose asChild>
-                <Button variant="outline">Cancelar</Button>
-              </DialogClose>
+              <Button variant="outline" onClick={() => setShowNotifyDialog(false)}>
+                Cancelar
+              </Button>
               <Button onClick={handleSendNotification} className="flex items-center gap-1">
                 <MessageSquare className="h-4 w-4" />
                 Enviar WhatsApp
@@ -715,7 +701,6 @@ const AdoptionManagement = () => {
   );
 };
 
-// Match Card Component
 interface MatchCardProps {
   match: AdoptionMatch;
   onStageChange: (matchId: string, stage: AdoptionStage) => void;
@@ -739,7 +724,6 @@ const MatchCard = ({
 }: MatchCardProps) => {
   const [expanded, setExpanded] = useState(false);
   
-  // Define available actions based on current stage
   const getAvailableActions = () => {
     switch (match.currentStage) {
       case "interested":

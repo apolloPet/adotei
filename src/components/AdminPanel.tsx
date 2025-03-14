@@ -61,73 +61,75 @@ const AdminPanel = () => {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="text-2xl">Painel Administrativo</CardTitle>
-          <CardDescription>Gerencie solicitações de adoção, usuários e administradores</CardDescription>
-        </div>
-        <Button 
-          variant="outline" 
-          className="flex items-center gap-1"
-          onClick={handleLogout}
-        >
-          <LogOut className="h-4 w-4" />
-          Logout
-        </Button>
-      </CardHeader>
-      
-      <CardContent>
-        <Tabs defaultValue="adoption" className="w-full">
-          <TabsList className="w-full mb-6">
-            <TabsTrigger value="adoption">Processo de Adoção</TabsTrigger>
-            <TabsTrigger value="matches">Matches</TabsTrigger>
-            <TabsTrigger value="users">Usuários</TabsTrigger>
-            <TabsTrigger value="settings">Configurações</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="adoption">
-            <AdoptionManagement />
-          </TabsContent>
-          
-          <TabsContent value="matches">
-            <AdminTabs 
-              matches={matches}
-              onApprove={handleApprove}
-              onReject={handleReject}
-              formatDate={formatDate}
-              settings={settings}
-              onSaveSettings={handleSaveSettings}
-              activeTab="pending"
-            />
-          </TabsContent>
-          
-          <TabsContent value="users">
-            <AdminTabs 
-              matches={matches}
-              onApprove={handleApprove}
-              onReject={handleReject}
-              formatDate={formatDate}
-              settings={settings}
-              onSaveSettings={handleSaveSettings}
-              activeTab="users"
-            />
-          </TabsContent>
-          
-          <TabsContent value="settings">
-            <AdminTabs 
-              matches={matches}
-              onApprove={handleApprove}
-              onReject={handleReject}
-              formatDate={formatDate}
-              settings={settings}
-              onSaveSettings={handleSaveSettings}
-              activeTab="settings"
-            />
-          </TabsContent>
-        </Tabs>
-      </CardContent>
-    </Card>
+    <div className="container py-8 max-w-6xl mx-auto">
+      <Card className="w-full">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-2xl">Painel Administrativo</CardTitle>
+            <CardDescription>Gerencie solicitações de adoção, usuários e administradores</CardDescription>
+          </div>
+          <Button 
+            variant="outline" 
+            className="flex items-center gap-1"
+            onClick={handleLogout}
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
+        </CardHeader>
+        
+        <CardContent>
+          <Tabs defaultValue="adoption" className="w-full">
+            <TabsList className="w-full mb-6">
+              <TabsTrigger value="adoption">Processo de Adoção</TabsTrigger>
+              <TabsTrigger value="matches">Matches</TabsTrigger>
+              <TabsTrigger value="users">Usuários</TabsTrigger>
+              <TabsTrigger value="settings">Configurações</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="adoption">
+              <AdoptionManagement />
+            </TabsContent>
+            
+            <TabsContent value="matches">
+              <AdminTabs 
+                matches={matches}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                formatDate={formatDate}
+                settings={settings}
+                onSaveSettings={handleSaveSettings}
+                activeTab="pending"
+              />
+            </TabsContent>
+            
+            <TabsContent value="users">
+              <AdminTabs 
+                matches={matches}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                formatDate={formatDate}
+                settings={settings}
+                onSaveSettings={handleSaveSettings}
+                activeTab="users"
+              />
+            </TabsContent>
+            
+            <TabsContent value="settings">
+              <AdminTabs 
+                matches={matches}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                formatDate={formatDate}
+                settings={settings}
+                onSaveSettings={handleSaveSettings}
+                activeTab="settings"
+              />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
