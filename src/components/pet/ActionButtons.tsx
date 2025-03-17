@@ -9,7 +9,7 @@ interface ActionButtonsProps {
 
 const ActionButtons = ({ onLike, onDislike, onInfo }: ActionButtonsProps) => {
   return (
-    <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center space-x-4">
+    <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center space-x-4 z-20">
       <button
         className="w-14 h-14 rounded-full bg-white text-red-500 shadow-lg flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95"
         onClick={onDislike}

@@ -16,7 +16,7 @@ const PetInfoOverlay = ({ pet, setShowDetails }: PetInfoOverlayProps) => {
   const petColors = getPetColors(petSpecies as 'dog' | 'cat');
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
+    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white z-10 pb-20">
       <div className="flex items-end justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center">

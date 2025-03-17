@@ -63,17 +63,17 @@ const PetDetailsView = ({ pet, onClose }: PetDetailsViewProps) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="absolute inset-0 bg-background z-10 overflow-hidden"
+      className="absolute inset-0 bg-background z-30 overflow-hidden"
     >
       <div className="flex flex-col h-full">
-        <div className="flex justify-between items-center p-4 border-b sticky top-0 bg-background z-10">
+        <div className="flex justify-between items-center p-4 border-b sticky top-0 bg-background z-40">
           <h2 className="text-xl font-bold">{pet.name}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
         </div>
         
-        <ScrollArea className="flex-1 px-4 pb-24">
+        <ScrollArea className="flex-1 px-4 pb-28">
           <div className="grid grid-cols-2 gap-2 my-4">
             <div className="flex items-center text-sm">
               <MapPin className="h-4 w-4 mr-1 text-primary" />
@@ -151,9 +151,11 @@ const PetDetailsView = ({ pet, onClose }: PetDetailsViewProps) => {
               </p>
             </div>
           )}
+          
+          <div className="h-20"></div> {/* Extra space at the bottom to prevent content from being hidden behind the button */}
         </ScrollArea>
         
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t z-40">
           <Button className="w-full flex items-center justify-center" size="lg">
             <Heart className="h-5 w-5 mr-2" />
             Quero Adotar {pet.name}
