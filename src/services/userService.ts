@@ -1,7 +1,7 @@
-
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import type { User } from '@/components/admin/users/types';
+import { toast } from '@/hooks/use-sonner';
 
 type DbUser = Database['public']['Tables']['users']['Row'];
 
@@ -32,6 +32,11 @@ export const dbUserToUser = (dbUser: DbUser): User => {
 
 export const fetchUsers = async (): Promise<User[]> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('users')
       .select('*');
@@ -47,6 +52,11 @@ export const fetchUsers = async (): Promise<User[]> => {
 
 export const fetchUserById = async (id: string): Promise<User | null> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -65,6 +75,11 @@ export const fetchUserById = async (id: string): Promise<User | null> => {
 
 export const createUser = async (user: Omit<User, 'id' | 'registrationDate'>, authId: string): Promise<User | null> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return null;
+    }
+
     const dbUser = {
       auth_id: authId,
       name: user.name,
@@ -101,6 +116,11 @@ export const createUser = async (user: Omit<User, 'id' | 'registrationDate'>, au
 
 export const updateUser = async (id: string, updates: Partial<User>): Promise<User | null> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return null;
+    }
+
     const dbUpdates: any = {};
     
     if (updates.name) dbUpdates.name = updates.name;
@@ -138,6 +158,11 @@ export const updateUser = async (id: string, updates: Partial<User>): Promise<Us
 
 export const deleteUser = async (id: string): Promise<boolean> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return false;
+    }
+
     const { error } = await supabase
       .from('users')
       .delete()

@@ -1,5 +1,4 @@
-
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { createUser } from './userService';
 import { toast } from '@/hooks/use-sonner';
 import type { User } from '@/components/admin/users/types';
@@ -10,6 +9,11 @@ export const signUp = async (
   userData: Omit<User, 'id' | 'registrationDate'>
 ): Promise<boolean> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return false;
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -18,7 +22,6 @@ export const signUp = async (
     if (error) throw error;
     if (!data.user) throw new Error('Failed to create user');
     
-    // Create user profile in our database
     const user = await createUser(userData, data.user.id);
     
     if (!user) throw new Error('Failed to create user profile');
@@ -35,6 +38,11 @@ export const signUp = async (
 
 export const signIn = async (email: string, password: string): Promise<boolean> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return false;
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -42,11 +50,9 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
     
     if (error) throw error;
     
-    // Set authentication state in localStorage
     localStorage.setItem("isLoggedIn", "true");
     localStorage.setItem("userEmail", email);
     
-    // Dispatch storage event to update components
     window.dispatchEvent(new Event('storage'));
     window.dispatchEvent(new Event('authStateChanged'));
     
@@ -66,12 +72,10 @@ export const signOut = async (): Promise<boolean> => {
     
     if (error) throw error;
     
-    // Clear auth state in localStorage
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("isAdmin");
     localStorage.removeItem("userEmail");
     
-    // Update components
     window.dispatchEvent(new Event('storage'));
     window.dispatchEvent(new Event('authStateChanged'));
     
@@ -87,6 +91,11 @@ export const signOut = async (): Promise<boolean> => {
 
 export const signInAdmin = async (email: string, password: string): Promise<boolean> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return false;
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -94,19 +103,15 @@ export const signInAdmin = async (email: string, password: string): Promise<bool
     
     if (error) throw error;
     
-    // Check if user is an admin (in a real app, you would check roles)
-    // For demo purposes, we'll check a specific email domain
     if (!email.includes('@ong') && !email.includes('@admin')) {
       await signOut();
       throw new Error('Esta conta não tem permissão de administrador');
     }
     
-    // Set authentication state in localStorage
     localStorage.setItem("isLoggedIn", "true");
     localStorage.setItem("isAdmin", "true");
     localStorage.setItem("userEmail", email);
     
-    // Dispatch storage event to update components
     window.dispatchEvent(new Event('storage'));
     window.dispatchEvent(new Event('authStateChanged'));
     

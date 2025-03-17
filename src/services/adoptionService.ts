@@ -1,15 +1,20 @@
-
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import { AdoptionMatch } from '@/components/admin/adoption/types';
 import { AdoptionStage } from '@/components/adoption/AdoptionStages';
 import { fetchPetById } from './petService';
 import { fetchUserById } from './userService';
+import { toast } from '@/hooks/use-sonner';
 
 type DbAdoption = Database['public']['Tables']['adoptions']['Row'];
 
 export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return [];
+    }
+
     const { data: adoptions, error } = await supabase
       .from('adoptions')
       .select('*');
@@ -17,7 +22,6 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
     if (error) throw error;
     if (!adoptions) return [];
     
-    // Map adoptions to AdoptionMatch format
     const adoptionMatches = await Promise.all(
       adoptions.map(async (adoption) => {
         const pet = await fetchPetById(adoption.pet_id);
@@ -39,7 +43,7 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
           updatedAt: adoption.updated_at,
           notes: adoption.notes,
           responsibleId: adoption.responsible_id || '',
-          responsibleName: '', // This would need to be populated by fetching staff data
+          responsibleName: '',
           matchPoints: []
         };
       })
@@ -59,6 +63,11 @@ export const createAdoption = async (
   notes = ''
 ): Promise<AdoptionMatch | null> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return null;
+    }
+
     const { data: adoption, error } = await supabase
       .from('adoptions')
       .insert({
@@ -111,6 +120,11 @@ export const updateAdoptionStage = async (
   paymentComplete?: boolean
 ): Promise<boolean> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return false;
+    }
+
     const updates: any = {
       current_stage: stage,
       updated_at: new Date().toISOString()
@@ -142,6 +156,11 @@ export const recordPetMatch = async (
   matchType: 'liked' | 'disliked'
 ): Promise<boolean> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return false;
+    }
+
     const { error } = await supabase
       .from('pet_matches')
       .insert({
@@ -152,10 +171,7 @@ export const recordPetMatch = async (
     
     if (error) throw error;
     
-    // If this is a like, check if we need to create an adoption
     if (matchType === 'liked') {
-      // In a real app, you would wait for the shelter to match back
-      // For demo purposes, we'll automatically create an adoption
       await createAdoption(petId, userId);
     }
     

@@ -1,7 +1,7 @@
-
-import { supabase } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import { Pet } from '@/components/pet/types';
+import { toast } from '@/hooks/use-sonner';
 
 // Type for database pets
 type DbPet = Database['public']['Tables']['pets']['Row'];
@@ -39,6 +39,11 @@ export const dbPetToPet = (
 
 export const fetchPets = async (filters?: any): Promise<Pet[]> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return [];
+    }
+
     let query = supabase.from('pets').select('*');
     
     // Apply filters if they exist
@@ -91,6 +96,11 @@ export const fetchPets = async (filters?: any): Promise<Pet[]> => {
 
 export const fetchPetById = async (id: string): Promise<Pet | null> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return null;
+    }
+
     const { data: pet, error: petError } = await supabase
       .from('pets')
       .select('*')
@@ -116,6 +126,11 @@ export const fetchPetById = async (id: string): Promise<Pet | null> => {
 
 export const createPet = async (pet: Omit<Pet, 'id'>, images: File[]): Promise<Pet | null> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return null;
+    }
+
     // Convert frontend pet to database pet
     const dbPet = {
       name: pet.name,
@@ -187,6 +202,11 @@ export const createPet = async (pet: Omit<Pet, 'id'>, images: File[]): Promise<P
 
 export const updatePet = async (id: string, updates: Partial<Pet>, newImages?: File[]): Promise<Pet | null> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return null;
+    }
+
     // Convert frontend updates to database updates
     const dbUpdates: any = {};
     
@@ -274,6 +294,11 @@ export const updatePet = async (id: string, updates: Partial<Pet>, newImages?: F
 
 export const deletePet = async (id: string): Promise<boolean> => {
   try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return false;
+    }
+
     // First delete all images for this pet
     const { error: deleteImagesError } = await supabase
       .from('pet_images')
