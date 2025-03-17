@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import { AdoptionMatch } from '@/components/admin/adoption/types';
@@ -37,8 +38,8 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
           createdAt: adoption.created_at,
           updatedAt: adoption.updated_at,
           notes: adoption.notes,
-          responsibleId: '', // Default empty values
-          responsibleName: '',
+          responsibleId: adoption.responsible_id || '',
+          responsibleName: '', // This would need to be populated by fetching staff data
           matchPoints: []
         };
       })
@@ -90,7 +91,7 @@ export const createAdoption = async (
       createdAt: adoption.created_at,
       updatedAt: adoption.updated_at,
       notes: adoption.notes,
-      responsibleId: '', // Default empty values
+      responsibleId: adoption.responsible_id || '',
       responsibleName: '',
       matchPoints: []
     };
@@ -164,4 +165,3 @@ export const recordPetMatch = async (
     return false;
   }
 };
-
