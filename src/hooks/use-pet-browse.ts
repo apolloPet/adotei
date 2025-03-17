@@ -1,7 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { Pet } from "@/components/pet/types";
-import { fetchPets, recordPetMatch } from '@/services/petService';
+import { fetchPets } from '@/services/petService';
+import { recordPetMatch } from '@/services/adoptionService';
 import { getCurrentUser } from '@/services/authService';
 
 interface FilterOptions {

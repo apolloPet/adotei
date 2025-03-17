@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import { AdoptionMatch } from '@/components/admin/adoption/types';
@@ -30,23 +29,17 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
           petId: pet.id,
           petName: pet.name,
           petImage: pet.images[0] || '',
-          petBreed: pet.breed,
-          petAge: pet.age,
-          petGender: pet.gender,
           userId: user.id,
           userName: user.name,
           userPhone: user.phone,
           userEmail: user.email,
-          userImage: '',
-          userAddress: `${user.address.street}, ${user.address.city}`,
-          matchDate: adoption.created_at,
           currentStage: adoption.current_stage as AdoptionStage,
-          lastUpdated: adoption.updated_at,
+          createdAt: adoption.created_at,
+          updatedAt: adoption.updated_at,
           notes: adoption.notes,
-          visitDate: adoption.scheduled_visit_date,
-          inspectionDate: adoption.home_inspection_date,
-          contractSigned: adoption.contract_signed,
-          paymentComplete: adoption.adoption_fee_paid
+          responsibleId: '', // Default empty values
+          responsibleName: '',
+          matchPoints: []
         };
       })
     );
@@ -61,7 +54,7 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
 export const createAdoption = async (
   petId: string, 
   userId: string, 
-  stage: AdoptionStage = 'pending',
+  stage: AdoptionStage = 'interested',
   notes = ''
 ): Promise<AdoptionMatch | null> => {
   try {
@@ -89,23 +82,17 @@ export const createAdoption = async (
       petId: pet.id,
       petName: pet.name,
       petImage: pet.images[0] || '',
-      petBreed: pet.breed,
-      petAge: pet.age,
-      petGender: pet.gender,
       userId: user.id,
       userName: user.name,
       userPhone: user.phone,
       userEmail: user.email,
-      userImage: '',
-      userAddress: `${user.address.street}, ${user.address.city}`,
-      matchDate: adoption.created_at,
       currentStage: adoption.current_stage as AdoptionStage,
-      lastUpdated: adoption.updated_at,
+      createdAt: adoption.created_at,
+      updatedAt: adoption.updated_at,
       notes: adoption.notes,
-      visitDate: adoption.scheduled_visit_date,
-      inspectionDate: adoption.home_inspection_date,
-      contractSigned: adoption.contract_signed,
-      paymentComplete: adoption.adoption_fee_paid
+      responsibleId: '', // Default empty values
+      responsibleName: '',
+      matchPoints: []
     };
   } catch (error) {
     console.error('Error creating adoption:', error);
@@ -177,3 +164,4 @@ export const recordPetMatch = async (
     return false;
   }
 };
+
