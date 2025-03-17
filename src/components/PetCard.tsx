@@ -53,7 +53,7 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
         transition={{ duration: 0.3 }}
-        drag
+        drag={!showDetails}
         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
         dragElastic={0.7}
         onDragStart={handleDragStart}
@@ -79,7 +79,8 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
       <ActionButtons 
         onLike={handleLike} 
         onDislike={handleDislike} 
-        onInfo={() => setShowDetails(!showDetails)} 
+        onInfo={() => setShowDetails(!showDetails)}
+        isDetailsOpen={showDetails}
       />
     </div>
   );

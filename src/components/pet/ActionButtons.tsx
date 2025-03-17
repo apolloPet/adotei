@@ -5,9 +5,12 @@ interface ActionButtonsProps {
   onLike: () => void;
   onDislike: () => void;
   onInfo: () => void;
+  isDetailsOpen?: boolean;
 }
 
-const ActionButtons = ({ onLike, onDislike, onInfo }: ActionButtonsProps) => {
+const ActionButtons = ({ onLike, onDislike, onInfo, isDetailsOpen = false }: ActionButtonsProps) => {
+  if (isDetailsOpen) return null;
+  
   return (
     <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center space-x-4 z-20">
       <button
