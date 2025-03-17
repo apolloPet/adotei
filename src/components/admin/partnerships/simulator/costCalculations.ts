@@ -6,26 +6,26 @@ export const getFoodCostPerKg = (animalType: string): number => {
 };
 
 // Calculate daily food consumption in grams
-export const getDailyFoodConsumption = (animalType: string, weight: number, ageMonths: number): number => {
+export const getDailyFoodConsumption = (animalType: string, weight: number, ageYears: number): number => {
   // Simple formula: 
   // Dogs: ~20g per kg of weight
   // Cats: ~30g per kg of weight
-  // Puppies and kittens (< 12 months) eat more (1.5x)
+  // Puppies and kittens (< 1 year) eat more (1.5x)
   const baseConsumption = animalType === 'dog' ? 20 : 30;
-  const ageMultiplier = ageMonths < 12 ? 1.5 : 1;
+  const ageMultiplier = ageYears < 1 ? 1.5 : 1;
   
   return (baseConsumption * weight * ageMultiplier);
 };
 
 // Calculate monthly medical costs
-export const getMonthlyMedicalCost = (animalType: string, ageMonths: number, vaccineCount: number, isSterilized: boolean, weight: number): number => {
+export const getMonthlyMedicalCost = (animalType: string, ageYears: number, vaccineCount: number, isSterilized: boolean, weight: number): number => {
   // Base costs
   let cost = animalType === 'dog' ? 50 : 30;
   
   // Age adjustments - older animals need more care
-  if (ageMonths > 84) { // > 7 years
+  if (ageYears > 7) { // Senior
     cost *= 1.5;
-  } else if (ageMonths > 36) { // > 3 years
+  } else if (ageYears > 3) { // Adult
     cost *= 1.2;
   }
   
@@ -61,20 +61,20 @@ export const getSpecialNeedsCost = (hasSpecialNeeds: boolean, animalType: string
 // Calculate all costs and return results
 export const calculateCosts = (
   animalType: string,
-  ageMonths: number,
+  ageYears: number,
   weight: number,
   hasSpecialNeeds: boolean,
   isSterilized: boolean,
   vaccineCount: number
 ) => {
   // Calculate food cost (monthly)
-  const dailyFoodGrams = getDailyFoodConsumption(animalType, weight, ageMonths);
+  const dailyFoodGrams = getDailyFoodConsumption(animalType, weight, ageYears);
   const dailyFoodKg = dailyFoodGrams / 1000;
   const dailyFoodCost = dailyFoodKg * getFoodCostPerKg(animalType);
   const monthlyFoodCost = dailyFoodCost * 30;
   
   // Calculate medical costs
-  const monthlyMedicalCost = getMonthlyMedicalCost(animalType, ageMonths, vaccineCount, isSterilized, weight);
+  const monthlyMedicalCost = getMonthlyMedicalCost(animalType, ageYears, vaccineCount, isSterilized, weight);
   
   // Calculate special needs costs
   const monthlySpecialCost = getSpecialNeedsCost(hasSpecialNeeds, animalType, weight);

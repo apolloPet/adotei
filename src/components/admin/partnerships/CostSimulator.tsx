@@ -12,7 +12,7 @@ import { calculateCosts } from './simulator/costCalculations';
 const CostSimulator = () => {
   const [formData, setFormData] = useState<CostSimulatorFormData>({
     animalType: 'dog',
-    ageMonths: 12,
+    ageYears: 1,
     weight: 15,
     hasSpecialNeeds: false,
     isSterilized: false,
@@ -26,7 +26,7 @@ const CostSimulator = () => {
   };
 
   const handleAgeChange = (value: number) => {
-    setFormData(prev => ({ ...prev, ageMonths: value }));
+    setFormData(prev => ({ ...prev, ageYears: value }));
   };
 
   const handleWeightChange = (value: number) => {
@@ -48,7 +48,7 @@ const CostSimulator = () => {
   const handleCalculate = () => {
     const calculatedResults = calculateCosts(
       formData.animalType,
-      formData.ageMonths,
+      formData.ageYears,
       formData.weight,
       formData.hasSpecialNeeds,
       formData.isSterilized,

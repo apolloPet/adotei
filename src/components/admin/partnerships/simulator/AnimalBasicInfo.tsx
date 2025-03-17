@@ -35,20 +35,20 @@ const AnimalBasicInfo: React.FC<AnimalBasicInfoProps> = ({
       
       <div className="space-y-2">
         <div className="flex justify-between items-center">
-          <Label htmlFor="age">Idade (meses)</Label>
-          <span className="text-sm font-medium">{formData.ageMonths} meses</span>
+          <Label htmlFor="age">Idade (anos)</Label>
+          <span className="text-sm font-medium">{formData.ageYears} anos</span>
         </div>
         <Slider 
           id="age" 
-          min={1} 
-          max={180} 
-          step={1} 
-          value={[formData.ageMonths]} 
+          min={0.1} 
+          max={15} 
+          step={0.1} 
+          value={[formData.ageYears]} 
           onValueChange={(vals) => onAgeChange(vals[0])} 
         />
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>1 mês</span>
-          <span>15 anos</span>
+          <span>Filhote</span>
+          <span>Sênior</span>
         </div>
       </div>
       

@@ -1,7 +1,7 @@
 
 export interface CostSimulatorFormData {
   animalType: string;
-  ageMonths: number;
+  ageYears: number;
   weight: number;
   hasSpecialNeeds: boolean;
   isSterilized: boolean;
