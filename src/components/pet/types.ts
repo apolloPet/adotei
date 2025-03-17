@@ -15,7 +15,10 @@ export interface PetInfo {
   personality?: string[];
   specialNeeds?: boolean;
   healthIssues?: boolean;
-  // Add more fields as needed
+  // Added Pet interface fields
+  species?: 'dog' | 'cat';
+  shelter?: string;
+  traits?: string[];
 }
 
 export interface PetCardProps {
@@ -23,23 +26,16 @@ export interface PetCardProps {
   onSwipe: (direction: string, id: string) => void;
 }
 
-// Added Pet interface that was missing
-export interface Pet {
-  id: string;
-  name: string;
-  images: string[];
-  age: string;
-  gender: 'male' | 'female';
-  size: 'small' | 'medium' | 'large';
-  breed: string;
-  species: 'dog' | 'cat';
-  description: string;
-  location: string;
+// This interface was previously separate but was causing type conflicts
+// Now Pet extends PetInfo to make them compatible
+export interface Pet extends Omit<PetInfo, 'age' | 'type'> {
+  age: string; // In Pet it's a string, in PetInfo it's a number
+  species: 'dog' | 'cat'; // This replaces 'type' in PetInfo
   shelter: string;
   traits: string[];
 }
 
-// Added getPetColors function
+// Helper function for pet colors
 export const getPetColors = (species: 'dog' | 'cat') => {
   return {
     icon: species === 'dog' ? 'text-amber-500' : 'text-indigo-500',

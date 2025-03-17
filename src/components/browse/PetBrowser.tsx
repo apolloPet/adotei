@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PetCard from "@/components/PetCard";
 import NoResults from "@/components/browse/NoResults";
-import { Pet } from "@/components/pet/types";
+import { Pet, PetInfo } from "@/components/pet/types";
 
 interface PetBrowserProps {
   pets: Pet[];
@@ -14,6 +14,30 @@ interface PetBrowserProps {
 const PetBrowser = ({ pets, onSwipe, onReset }: PetBrowserProps) => {
   const [currentPetIndex, setCurrentPetIndex] = useState(0);
   const currentPet = pets[currentPetIndex];
+  
+  // Convert Pet to PetInfo for compatibility with PetCard
+  const convertToCardPet = (pet: Pet): PetInfo => {
+    return {
+      id: pet.id,
+      name: pet.name,
+      images: pet.images,
+      age: parseInt(pet.age) || 0,
+      gender: pet.gender,
+      size: pet.size,
+      breed: pet.breed,
+      type: pet.species,
+      description: pet.description,
+      location: pet.location,
+      shelterTime: "recente", // Default value
+      weight: 0, // Default value
+      personality: pet.traits,
+      specialNeeds: false,
+      healthIssues: false,
+      species: pet.species,
+      shelter: pet.shelter,
+      traits: pet.traits
+    };
+  };
   
   const handleSwipe = (direction: 'left' | 'right', petId: string) => {
     // Forward the swipe to the parent component
@@ -44,7 +68,7 @@ const PetBrowser = ({ pets, onSwipe, onReset }: PetBrowserProps) => {
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3 }}
       >
-        <PetCard pet={currentPet} onSwipe={handleSwipe} />
+        <PetCard pet={convertToCardPet(currentPet)} onSwipe={handleSwipe} />
       </motion.div>
     </AnimatePresence>
   );

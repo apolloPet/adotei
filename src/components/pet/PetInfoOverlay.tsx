@@ -1,15 +1,19 @@
 
 import { MapPin } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
-import { Pet, getPetColors } from './types';
+import { Pet, PetInfo, getPetColors } from './types';
 
+// Update the props to accept either PetInfo or Pet
 interface PetInfoOverlayProps {
-  pet: Pet;
+  pet: Pet | PetInfo;
   setShowDetails: (show: boolean) => void;
 }
 
 const PetInfoOverlay = ({ pet, setShowDetails }: PetInfoOverlayProps) => {
-  const petColors = getPetColors(pet.species);
+  // Check if pet has species (it's a Pet) or type (it's a PetInfo)
+  const isPet = 'species' in pet;
+  const petSpecies = isPet ? (pet as Pet).species : (pet as PetInfo).type === 'dog' ? 'dog' : 'cat';
+  const petColors = getPetColors(petSpecies as 'dog' | 'cat');
 
   return (
     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
@@ -25,13 +29,13 @@ const PetInfoOverlay = ({ pet, setShowDetails }: PetInfoOverlayProps) => {
           </div>
         </div>
         <Badge className={`${petColors.badge} text-white border-none px-3 py-1`}>
-          {pet.species === 'dog' ? 'Cachorro' : 'Gato'}
+          {petSpecies === 'dog' ? 'Cachorro' : 'Gato'}
         </Badge>
       </div>
       
       <div className="flex flex-wrap gap-2 mt-3">
         <Badge variant="secondary" className={`${petColors.accent} border-none text-foreground font-medium`}>
-          {pet.age}
+          {isPet ? (pet as Pet).age : `${(pet as PetInfo).age} anos`}
         </Badge>
         <Badge variant="secondary" className={`${petColors.accent} border-none text-foreground font-medium`}>
           {pet.gender === 'male' ? 'Macho' : 'Fêmea'}
