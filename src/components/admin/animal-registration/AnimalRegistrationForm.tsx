@@ -1,8 +1,8 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AnimalFormData, defaultFormData } from "./types";
 import AnimalBasicInfo from "./AnimalBasicInfo";
 import AnimalCharacteristics from "./AnimalCharacteristics";
@@ -10,6 +10,7 @@ import AnimalRequirements from "./AnimalRequirements";
 import AnimalImages from "./AnimalImages";
 import AnimalHealthInfo from "./AnimalHealthInfo";
 import AnimalLocationStaff from "./AnimalLocationStaff";
+import CostSimulator from "../partnerships/CostSimulator";
 
 const AnimalRegistrationForm = () => {
   const [formData, setFormData] = useState<AnimalFormData>(defaultFormData);
@@ -148,47 +149,60 @@ const AnimalRegistrationForm = () => {
         <CardDescription>Adicione um novo animal para adoção</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <AnimalBasicInfo 
-            formData={formData}
-            handleInputChange={handleInputChange}
-            handleRadioChange={handleRadioChange}
-          />
+        <Tabs defaultValue="animal-info">
+          <TabsList className="mb-4">
+            <TabsTrigger value="animal-info">Informações do Animal</TabsTrigger>
+            <TabsTrigger value="cost-simulator">Simulador de Custos</TabsTrigger>
+          </TabsList>
           
-          <AnimalHealthInfo 
-            formData={formData}
-            handleInputChange={handleInputChange}
-          />
+          <TabsContent value="animal-info">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <AnimalBasicInfo 
+                formData={formData}
+                handleInputChange={handleInputChange}
+                handleRadioChange={handleRadioChange}
+              />
+              
+              <AnimalHealthInfo 
+                formData={formData}
+                handleInputChange={handleInputChange}
+              />
+              
+              <AnimalLocationStaff 
+                formData={formData}
+                handleInputChange={handleInputChange}
+                handleResponsibleChange={handleResponsibleChange}
+              />
+              
+              <AnimalCharacteristics 
+                formData={formData}
+                customCharacteristic={customCharacteristic}
+                setCustomCharacteristic={setCustomCharacteristic}
+                handleCharacteristicToggle={handleCharacteristicToggle}
+                addCustomCharacteristic={addCustomCharacteristic}
+              />
+              
+              <AnimalRequirements 
+                formData={formData}
+                customRequirement={customRequirement}
+                setCustomRequirement={setCustomRequirement}
+                handleRequirementToggle={handleRequirementToggle}
+                addCustomRequirement={addCustomRequirement}
+              />
+              
+              <AnimalImages 
+                images={images}
+                imagePreviewUrls={imagePreviewUrls}
+                handleImageUpload={handleImageUpload}
+                removeImage={removeImage}
+              />
+            </form>
+          </TabsContent>
           
-          <AnimalLocationStaff 
-            formData={formData}
-            handleInputChange={handleInputChange}
-            handleResponsibleChange={handleResponsibleChange}
-          />
-          
-          <AnimalCharacteristics 
-            formData={formData}
-            customCharacteristic={customCharacteristic}
-            setCustomCharacteristic={setCustomCharacteristic}
-            handleCharacteristicToggle={handleCharacteristicToggle}
-            addCustomCharacteristic={addCustomCharacteristic}
-          />
-          
-          <AnimalRequirements 
-            formData={formData}
-            customRequirement={customRequirement}
-            setCustomRequirement={setCustomRequirement}
-            handleRequirementToggle={handleRequirementToggle}
-            addCustomRequirement={addCustomRequirement}
-          />
-          
-          <AnimalImages 
-            images={images}
-            imagePreviewUrls={imagePreviewUrls}
-            handleImageUpload={handleImageUpload}
-            removeImage={removeImage}
-          />
-        </form>
+          <TabsContent value="cost-simulator">
+            <CostSimulator />
+          </TabsContent>
+        </Tabs>
       </CardContent>
       <CardFooter>
         <Button onClick={handleSubmit} className="w-full">Cadastrar Animal</Button>
