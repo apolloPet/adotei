@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { PetInfo } from './types';
 
 interface PetDetailsViewProps {
@@ -62,96 +63,97 @@ const PetDetailsView = ({ pet, onClose }: PetDetailsViewProps) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 20 }}
-      className="absolute inset-0 bg-background z-10 overflow-y-auto"
+      className="absolute inset-0 bg-background z-10 overflow-hidden"
     >
-      <div className="p-4 h-full">
-        <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col h-full">
+        <div className="flex justify-between items-center p-4 border-b sticky top-0 bg-background z-10">
           <h2 className="text-xl font-bold">{pet.name}</h2>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>
         </div>
         
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          <div className="flex items-center text-sm">
-            <MapPin className="h-4 w-4 mr-1 text-primary" />
-            <span>{pet.location}</span>
+        <ScrollArea className="flex-1 px-4 pb-24">
+          <div className="grid grid-cols-2 gap-2 my-4">
+            <div className="flex items-center text-sm">
+              <MapPin className="h-4 w-4 mr-1 text-primary" />
+              <span>{pet.location}</span>
+            </div>
+            <div className="flex items-center text-sm">
+              <Clock className="h-4 w-4 mr-1 text-primary" />
+              <span>No abrigo há {pet.shelterTime}</span>
+            </div>
           </div>
-          <div className="flex items-center text-sm">
-            <Clock className="h-4 w-4 mr-1 text-primary" />
-            <span>No abrigo há {pet.shelterTime}</span>
+          
+          <div className="flex flex-wrap gap-2 mb-4">
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Heart className="h-3 w-3" />
+              {pet.type}
+            </Badge>
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              {pet.age} {pet.age === 1 ? 'ano' : 'anos'}
+            </Badge>
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Ruler className="h-3 w-3" />
+              {pet.size === 'small' ? 'Pequeno' : pet.size === 'medium' ? 'Médio' : 'Grande'}
+            </Badge>
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Weight className="h-3 w-3" />
+              {pet.weight} kg
+            </Badge>
           </div>
-        </div>
-        
-        <div className="flex flex-wrap gap-2 mb-4">
-          <Badge variant="secondary" className="flex items-center gap-1">
-            {/* Replaced Paw with Heart icon since Paw is not available */}
-            <Heart className="h-3 w-3" />
-            {pet.type}
-          </Badge>
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            {pet.age} {pet.age === 1 ? 'ano' : 'anos'}
-          </Badge>
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <Ruler className="h-3 w-3" />
-            {pet.size === 'small' ? 'Pequeno' : pet.size === 'medium' ? 'Médio' : 'Grande'}
-          </Badge>
-          <Badge variant="secondary" className="flex items-center gap-1">
-            <Weight className="h-3 w-3" />
-            {pet.weight} kg
-          </Badge>
-        </div>
-        
-        <Separator className="my-4" />
-        
-        <div className="mb-4">
-          <h3 className="font-semibold mb-2 flex items-center">
-            <Info className="h-4 w-4 mr-1 text-primary" />
-            Sobre {pet.name}
-          </h3>
-          <p className="text-sm text-muted-foreground">{pet.description}</p>
-        </div>
-        
-        {pet.personality && (
+          
+          <Separator className="my-4" />
+          
           <div className="mb-4">
             <h3 className="font-semibold mb-2 flex items-center">
-              <Star className="h-4 w-4 mr-1 text-primary" />
-              Personalidade
+              <Info className="h-4 w-4 mr-1 text-primary" />
+              Sobre {pet.name}
             </h3>
-            <div className="flex flex-wrap gap-2">
-              {pet.personality.map((trait, index) => (
-                <Badge key={index} variant="outline">
-                  {trait}
-                </Badge>
-              ))}
-            </div>
+            <p className="text-sm text-muted-foreground">{pet.description}</p>
           </div>
-        )}
-        
-        {costEstimate && (
-          <div className="mb-4 bg-primary/5 p-3 rounded-md">
-            <h3 className="font-semibold mb-2 flex items-center">
-              <DollarSign className="h-4 w-4 mr-1 text-primary" />
-              Estimativa de Custos
-            </h3>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <span className="text-muted-foreground">Mensal:</span>
-                <p className="font-medium">R$ {costEstimate.monthlyTotal.toFixed(2)}</p>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Anual:</span>
-                <p className="font-medium">R$ {costEstimate.yearlyTotal.toFixed(2)}</p>
+          
+          {pet.personality && (
+            <div className="mb-4">
+              <h3 className="font-semibold mb-2 flex items-center">
+                <Star className="h-4 w-4 mr-1 text-primary" />
+                Personalidade
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {pet.personality.map((trait, index) => (
+                  <Badge key={index} variant="outline">
+                    {trait}
+                  </Badge>
+                ))}
               </div>
             </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              *Estimativa baseada no porte, idade e condição do animal. Valores reais podem variar.
-            </p>
-          </div>
-        )}
+          )}
+          
+          {costEstimate && (
+            <div className="mb-4 bg-primary/5 p-3 rounded-md">
+              <h3 className="font-semibold mb-2 flex items-center">
+                <DollarSign className="h-4 w-4 mr-1 text-primary" />
+                Estimativa de Custos
+              </h3>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Mensal:</span>
+                  <p className="font-medium">R$ {costEstimate.monthlyTotal.toFixed(2)}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Anual:</span>
+                  <p className="font-medium">R$ {costEstimate.yearlyTotal.toFixed(2)}</p>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                *Estimativa baseada no porte, idade e condição do animal. Valores reais podem variar.
+              </p>
+            </div>
+          )}
+        </ScrollArea>
         
-        <div className="mt-auto pt-4">
+        <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
           <Button className="w-full flex items-center justify-center" size="lg">
             <Heart className="h-5 w-5 mr-2" />
             Quero Adotar {pet.name}
