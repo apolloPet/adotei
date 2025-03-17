@@ -1,11 +1,12 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, Handshake, Users } from 'lucide-react';
+import { Building2, Handshake, Users, Calculator } from 'lucide-react';
 import { 
   PartnershipOverview, 
   PartnershipForm, 
-  PartnershipRequests 
+  PartnershipRequests,
+  CostSimulator
 } from './partnerships';
 
 const PartnershipInterest = () => {
@@ -23,7 +24,11 @@ const PartnershipInterest = () => {
           </TabsTrigger>
           <TabsTrigger value="requests" className="flex items-center gap-1">
             <Users className="h-4 w-4" />
-            Solicitações Recebidas
+            Solicitações
+          </TabsTrigger>
+          <TabsTrigger value="simulator" className="flex items-center gap-1">
+            <Calculator className="h-4 w-4" />
+            Simulador de Custos
           </TabsTrigger>
         </TabsList>
         
@@ -37,6 +42,10 @@ const PartnershipInterest = () => {
         
         <TabsContent value="requests">
           <PartnershipRequests />
+        </TabsContent>
+        
+        <TabsContent value="simulator">
+          <CostSimulator />
         </TabsContent>
       </Tabs>
     </div>

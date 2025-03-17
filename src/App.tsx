@@ -119,7 +119,6 @@ function App() {
       <Header 
         isAuthenticated={isAuthenticated}
         isAdmin={isAdmin}
-        onLogin={handleLogin}
         onLogout={handleLogout}
       />
       <main className="min-h-[calc(100vh-64px)]">

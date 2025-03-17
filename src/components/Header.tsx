@@ -106,11 +106,8 @@ const Header = ({
 
   const handleLogin = () => {
     setIsMobileMenuOpen(false);
-    if (propsOnLogin) {
-      propsOnLogin();
-    } else {
-      navigate("/login");
-    }
+    // Always navigate to login page
+    navigate("/login");
   };
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);

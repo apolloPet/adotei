@@ -20,11 +20,8 @@ const DesktopAuthMenu = ({
   const navigate = useNavigate();
 
   const handleLogin = () => {
-    if (onLogin) {
-      onLogin();
-    } else {
-      navigate('/login');
-    }
+    // Instead of using callback, always navigate to login page
+    navigate('/login');
   };
 
   const handleLogout = () => {

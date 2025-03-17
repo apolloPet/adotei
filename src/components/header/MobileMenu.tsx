@@ -13,6 +13,7 @@ import {
   LogOut 
 } from 'lucide-react';
 import { Button } from "../ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface MobileMenuProps {
   isAdmin: boolean;
@@ -33,10 +34,11 @@ const MobileMenu = ({
   onClose,
   onClick
 }: MobileMenuProps) => {
+  const navigate = useNavigate();
+
   const handleLogin = () => {
-    if (onLogin) {
-      onLogin();
-    }
+    // Always navigate to login page instead of using callback
+    navigate('/login');
     onClose?.();
   };
 
