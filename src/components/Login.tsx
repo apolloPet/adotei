@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-sonner";
 import { ArrowLeft } from 'lucide-react';
+import { signIn } from '@/services/authService';
 
 interface LoginProps {
   onLogin?: () => void;
@@ -31,28 +32,17 @@ const Login = ({ onLogin }: LoginProps = {}) => {
     try {
       setIsLoading(true);
       
-      // Simulando login para demonstração
-      console.log("Login attempt with:", { email, password, rememberMe });
+      const success = await signIn(email, password);
       
-      // Simulação de delay de rede
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Set authentication state in localStorage
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("userEmail", email);
-      
-      // Explicitly update all relevant components by dispatching a storage event
-      window.dispatchEvent(new Event('storage'));
-      
-      // Call the onLogin callback if provided
-      if (onLogin) {
-        onLogin();
+      if (success) {
+        // Call the onLogin callback if provided
+        if (onLogin) {
+          onLogin();
+        }
+        
+        // Redirect after successful login
+        navigate("/browse");
       }
-      
-      toast.success("Login realizado com sucesso!");
-      
-      // Redirect after successful login
-      navigate("/browse");
     } catch (error) {
       console.error("Login error:", error);
       toast.error("Erro ao fazer login. Por favor, tente novamente.");
