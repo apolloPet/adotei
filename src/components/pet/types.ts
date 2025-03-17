@@ -33,6 +33,8 @@ export interface Pet extends Omit<PetInfo, 'age' | 'type'> {
   species: 'dog' | 'cat'; // This replaces 'type' in PetInfo
   shelter: string;
   traits: string[];
+  weight: number; // Adding required properties to match error messages
+  shelterTime: string; // Adding required properties to match error messages
 }
 
 // Helper function for pet colors

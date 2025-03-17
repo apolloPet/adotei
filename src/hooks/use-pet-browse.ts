@@ -19,7 +19,9 @@ const MOCK_PETS: Pet[] = [
     description: "Luna é uma gatinha carinhosa e brincalhona que adora se aconchegar no colo. Ela foi resgatada das ruas e está ansiosa para encontrar uma família que a ame para sempre.",
     location: "São Paulo, SP",
     shelter: "Abrigo Amigos dos Animais",
-    traits: ["Carinhosa", "Brincalhona", "Sociável", "Independente"]
+    traits: ["Carinhosa", "Brincalhona", "Sociável", "Independente"],
+    weight: 3,
+    shelterTime: "3 meses"
   },
   {
     id: "2",
@@ -36,7 +38,9 @@ const MOCK_PETS: Pet[] = [
     description: "Max é um labrador cheio de energia e muito amigável. Ele adora correr, brincar com bolas e é ótimo com crianças. Será um companheiro leal para toda a família.",
     location: "Rio de Janeiro, RJ",
     shelter: "Patinhas Carentes",
-    traits: ["Energético", "Amigável", "Leal", "Brincalhão"]
+    traits: ["Energético", "Amigável", "Leal", "Brincalhão"],
+    weight: 25,
+    shelterTime: "6 meses"
   },
   {
     id: "3",
@@ -53,7 +57,9 @@ const MOCK_PETS: Pet[] = [
     description: "Bella é uma gatinha tímida, mas muito afetuosa quando se sente segura. Ela adora lugares quietos e ama brincar com bolinhas. Será uma companheira tranquila.",
     location: "Curitiba, PR",
     shelter: "Gatinhos Felizes",
-    traits: ["Tímida", "Afetuosa", "Tranquila", "Curiosa"]
+    traits: ["Tímida", "Afetuosa", "Tranquila", "Curiosa"],
+    weight: 3.5,
+    shelterTime: "2 meses"
   },
   {
     id: "4",
@@ -70,7 +76,9 @@ const MOCK_PETS: Pet[] = [
     description: "Thor é um pastor alemão nobre e inteligente. Ele é extremamente leal, aprende comandos rapidamente e adoraria uma família ativa. Excelente como cão de guarda.",
     location: "Belo Horizonte, MG",
     shelter: "Anjos de Patas",
-    traits: ["Inteligente", "Protetor", "Leal", "Treinável"]
+    traits: ["Inteligente", "Protetor", "Leal", "Treinável"],
+    weight: 35,
+    shelterTime: "1 ano"
   },
   {
     id: "5",
@@ -87,7 +95,9 @@ const MOCK_PETS: Pet[] = [
     description: "Nina é uma border collie extremamente inteligente e energética. Ela adora aprender truques novos e precisa de atividades mentais e físicas. Perfeita para uma família ativa.",
     location: "Porto Alegre, RS",
     shelter: "Cães Felizes",
-    traits: ["Inteligente", "Energética", "Ágil", "Brincalhona"]
+    traits: ["Inteligente", "Energética", "Ágil", "Brincalhona"],
+    weight: 18,
+    shelterTime: "4 meses"
   },
   {
     id: "6",
@@ -104,7 +114,9 @@ const MOCK_PETS: Pet[] = [
     description: "Simba é um gato persa majestoso com uma personalidade calma e afetuosa. Ele adora relaxar no sofá e receber carinho. Um companheiro perfeito para momentos tranquilos.",
     location: "Brasília, DF",
     shelter: "Bigodes Felizes",
-    traits: ["Calmo", "Afetuoso", "Preguiçoso", "Elegante"]
+    traits: ["Calmo", "Afetuoso", "Preguiçoso", "Elegante"],
+    weight: 5,
+    shelterTime: "7 meses"
   },
 ];
 
