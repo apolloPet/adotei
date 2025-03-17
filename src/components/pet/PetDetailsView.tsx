@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Heart, Info, MapPin, Clock, Paw, Calendar, Ruler, Weight, Star, DollarSign } from 'lucide-react';
+import { X, Heart, Info, MapPin, Clock, Calendar, Ruler, Weight, Star, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -85,7 +85,8 @@ const PetDetailsView = ({ pet, onClose }: PetDetailsViewProps) => {
         
         <div className="flex flex-wrap gap-2 mb-4">
           <Badge variant="secondary" className="flex items-center gap-1">
-            <Paw className="h-3 w-3" />
+            {/* Replaced Paw with Heart icon since Paw is not available */}
+            <Heart className="h-3 w-3" />
             {pet.type}
           </Badge>
           <Badge variant="secondary" className="flex items-center gap-1">
