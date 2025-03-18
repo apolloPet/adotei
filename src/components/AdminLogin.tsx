@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,23 +15,37 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [redirectChecked, setRedirectChecked] = useState(false);
   const navigate = useNavigate();
   const { isAdmin, isAuthenticated, fetchUserData } = useAuth();
+  const hasRedirected = useRef(false);
   
-  // Redirect to admin panel if already authenticated as admin
+  // Verificação única de status de admin na montagem
   useEffect(() => {
+    // Evitar verificações repetidas
+    if (redirectChecked || hasRedirected.current) return;
+    
     const checkAdminStatus = async () => {
-      // Verificar localStorage primeiro
-      const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
-      
-      if ((isAdmin || localStorageAdmin) && isAuthenticated) {
-        console.log('AdminLogin: Usuário já está autenticado como admin, redirecionando para /admin');
-        navigate('/admin', { replace: true });
+      try {
+        console.log('AdminLogin: Verificando status inicial', { isAdmin, isAuthenticated });
+        
+        // Verificar localStorage primeiro (método mais rápido)
+        const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
+        
+        if ((isAdmin || localStorageAdmin) && isAuthenticated) {
+          console.log('AdminLogin: Usuário já autenticado como admin, redirecionando para /admin');
+          hasRedirected.current = true;
+          navigate('/admin', { replace: true });
+        }
+        
+        setRedirectChecked(true);
+      } catch (error) {
+        console.error('Erro ao verificar status admin:', error);
       }
     };
     
     checkAdminStatus();
-  }, [isAdmin, isAuthenticated, navigate]);
+  }, [isAdmin, isAuthenticated, navigate, redirectChecked]);
   
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,10 +61,7 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
       // Verificar se é o admin de demonstração
       const isDemoAdmin = email === "admin@petmatch.com" && password === "admin123";
       
-      console.log('Tentando login administrativo com:', { 
-        email, 
-        isDemoAdmin 
-      });
+      console.log('Tentando login administrativo com:', { email, isDemoAdmin });
       
       // Verificar se o usuário tem papel de admin na tabela user_roles
       let adminUserFound = false;
@@ -124,10 +135,13 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
         
         toast.success("Login administrativo realizado com sucesso!");
         
-        // Usar setTimeout para permitir que o estado de autenticação seja atualizado primeiro
+        // Marcar que já redirecionamos
+        hasRedirected.current = true;
+        
+        // Usar setTimeout com um pequeno atraso para garantir que o estado seja atualizado
         setTimeout(() => {
           navigate("/admin", { replace: true });
-        }, 100);
+        }, 300);
       } else {
         toast.error("Credenciais inválidas ou usuário não tem permissão de administrador");
       }
@@ -139,8 +153,8 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
     }
   };
   
-  // Se o usuário já estiver autenticado como admin, não renderizar o formulário
-  if (isAdmin && isAuthenticated) {
+  // Não renderizar se já foi confirmado como admin
+  if ((isAdmin || localStorage.getItem("isAdmin") === "true") && isAuthenticated && redirectChecked) {
     return null;
   }
   
