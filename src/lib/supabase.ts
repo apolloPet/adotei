@@ -9,9 +9,11 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Create a single Supabase client for the entire application
+// We need to provide default values to prevent runtime errors
+// even if these won't work without proper configuration
 export const supabase = createClient<Database>(
-  supabaseUrl || '', 
-  supabaseAnonKey || ''
+  supabaseUrl || 'https://placeholder-url.supabase.co', 
+  supabaseAnonKey || 'placeholder-key'
 );
 
 // Function to check if Supabase connection is properly configured
