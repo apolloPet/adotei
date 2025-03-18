@@ -308,7 +308,7 @@ export const updateProfile = async (profile: Partial<UserProfile>): Promise<bool
       has_allergies: profile.hasAllergies,
       allergies_description: profile.allergiesDescription,
       work_schedule: profile.workSchedule,
-      updated_at: new Date()
+      updated_at: new Date().toISOString() // Convert Date to ISO string format
     };
     
     // Filter out undefined values
