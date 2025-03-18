@@ -175,16 +175,27 @@ export const terminateSession = async (sessionId: string): Promise<boolean> => {
     
     // Se for a sessão atual, faça logout
     if (currentSession && (currentSession.access_token === sessionId || sessionId === 'current-session')) {
-      const { error } = await supabase.auth.signOut();
+      // Fazer logout com escopo global para remover todas as sessões do usuário
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) {
         console.error('Erro ao fazer logout:', error);
         return false;
       }
       
-      // Limpar dados da sessão no localStorage
+      // Limpar dados da sessão no localStorage e sessionStorage
       localStorage.removeItem("isLoggedIn");
       localStorage.removeItem("isAdmin");
       localStorage.removeItem("userEmail");
+      localStorage.removeItem("supabase.auth.token");
+      sessionStorage.clear();
+      
+      // Limpar cookies relacionados à autenticação se existirem
+      document.cookie.split(";").forEach(cookie => {
+        const [name] = cookie.trim().split("=");
+        if (name.includes("supabase") || name.includes("auth") || name.includes("session")) {
+          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        }
+      });
       
       // Disparar eventos para atualizar a UI
       window.dispatchEvent(new Event('storage'));

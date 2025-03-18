@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from "@/hooks/use-sonner";
@@ -74,20 +75,45 @@ const Header = ({
   const closeMenu = () => setIsMobileMenuOpen(false);
 
   const handleLogout = async () => {
-    await signOut();
+    // Adicionar logging para debug
+    console.log("Header: Starting logout process");
     
-    setTimeout(() => {
+    try {
+      await signOut();
+      
+      // Verificar se localStorage ainda tem algum dado após logout
+      console.log("Header: After signOut, checking localStorage:", {
+        isLoggedIn: localStorage.getItem("isLoggedIn"),
+        isAdmin: localStorage.getItem("isAdmin"),
+        userEmail: localStorage.getItem("userEmail")
+      });
+      
+      // Forçar limpeza adicional do localStorage
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("isAdmin");
+      localStorage.removeItem("userEmail");
+      
+      // Atualizar estado do componente
       setIsAdmin(false);
       setIsLoggedIn(false);
       setIsMobileMenuOpen(false);
       
+      // Executar callback se fornecido
       if (propsOnLogout) {
         propsOnLogout();
       } else {
         toast.success("Logout realizado com sucesso");
-        navigate("/");
+        // Redirecionar para a página inicial
+        navigate("/", { replace: true });
       }
-    }, 100);
+      
+      // Recarregar a página para garantir que todos os estados sejam limpos
+      // Comentado, mas pode ser habilitado se necessário
+      // window.location.reload();
+    } catch (error) {
+      console.error("Header: Error during logout:", error);
+      toast.error("Erro ao fazer logout. Tente novamente.");
+    }
   };
 
   const handleLogin = () => {

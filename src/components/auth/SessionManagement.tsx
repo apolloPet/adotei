@@ -9,16 +9,19 @@ import { LogOut, RefreshCw, Monitor, Smartphone, Laptop } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import { pt } from 'date-fns/locale';
 import { toast } from '@/hooks/use-sonner';
+import { useNavigate } from 'react-router-dom';
 
 const SessionManagement = () => {
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
   
   const fetchSessions = async () => {
     setIsLoading(true);
     try {
       const userSessions = await getUserSessions();
       setSessions(userSessions);
+      console.log('Sessões ativas carregadas:', userSessions);
     } catch (error) {
       console.error('Error fetching sessions:', error);
       toast.error('Não foi possível carregar suas sessões ativas');
@@ -33,13 +36,23 @@ const SessionManagement = () => {
   
   const handleTerminateSession = async (sessionId: string) => {
     try {
+      console.log('Tentando encerrar sessão:', sessionId);
       const success = await terminateSession(sessionId);
       
       if (success) {
         // Se a sessão atual foi encerrada, o usuário já será redirecionado
         // para a página de login pelo processo de logout
-        // Caso contrário, atualizar a lista de sessões
-        if (!sessions.find(s => s.id === sessionId)?.isCurrentSession) {
+        const currentSession = sessions.find(s => s.id === sessionId);
+        
+        if (currentSession?.isCurrentSession) {
+          console.log('Sessão atual encerrada, redirecionando...');
+          toast.success('Você foi desconectado');
+          
+          // Pequeno atraso para garantir que o toast seja exibido
+          setTimeout(() => {
+            navigate('/login', { replace: true });
+          }, 500);
+        } else {
           toast.success('Sessão encerrada com sucesso');
           // Atualizar a lista de sessões
           setSessions(sessions.filter(s => s.id !== sessionId));
