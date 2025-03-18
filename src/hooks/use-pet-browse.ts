@@ -1,11 +1,12 @@
 
 import { useState, useCallback } from 'react';
 import { Pet } from '@/components/pet/types';
+import { PetFilters } from '@/services/petService';
 
 type Filters = {
-  species: string;
-  size: string;
-  gender: string;
+  species: 'dog' | 'cat' | 'other' | 'all';
+  size: 'small' | 'medium' | 'large' | 'all';
+  gender: 'male' | 'female' | 'all';
   ageRange: [number, number];
 };
 
