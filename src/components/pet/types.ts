@@ -16,7 +16,7 @@ export interface PetInfo {
   specialNeeds?: boolean;
   healthIssues?: boolean;
   // Added Pet interface fields
-  species?: 'dog' | 'cat';
+  species?: 'dog' | 'cat' | 'other';
   shelter?: string;
   traits?: string[];
 }
@@ -30,7 +30,7 @@ export interface PetCardProps {
 // Now Pet extends PetInfo to make them compatible
 export interface Pet extends Omit<PetInfo, 'age' | 'type'> {
   age: string; // In Pet it's a string, in PetInfo it's a number
-  species: 'dog' | 'cat'; // This replaces 'type' in PetInfo
+  species: 'dog' | 'cat' | 'other'; // This replaces 'type' in PetInfo
   shelter: string;
   traits: string[];
   weight: number; // Adding required properties to match error messages
@@ -38,10 +38,10 @@ export interface Pet extends Omit<PetInfo, 'age' | 'type'> {
 }
 
 // Helper function for pet colors
-export const getPetColors = (species: 'dog' | 'cat') => {
+export const getPetColors = (species: 'dog' | 'cat' | 'other') => {
   return {
-    icon: species === 'dog' ? 'text-amber-500' : 'text-indigo-500',
-    badge: species === 'dog' ? 'bg-amber-500' : 'bg-indigo-500',
-    accent: species === 'dog' ? 'bg-amber-100' : 'bg-indigo-100',
+    icon: species === 'dog' ? 'text-amber-500' : species === 'cat' ? 'text-indigo-500' : 'text-emerald-500',
+    badge: species === 'dog' ? 'bg-amber-500' : species === 'cat' ? 'bg-indigo-500' : 'bg-emerald-500',
+    accent: species === 'dog' ? 'bg-amber-100' : species === 'cat' ? 'bg-indigo-100' : 'bg-emerald-100',
   };
 };

@@ -84,7 +84,7 @@ export const fetchPets = async (filters?: any): Promise<Pet[]> => {
         
         if (imagesError) throw imagesError;
         
-        return dbPetToPet(pet, imagesData || []);
+        return dbPetToPet(pet as DbPet, imagesData || []);
       })
     );
     
@@ -118,7 +118,7 @@ export const fetchPetById = async (id: string): Promise<Pet | null> => {
     
     if (imagesError) throw imagesError;
     
-    return dbPetToPet(pet, images || []);
+    return dbPetToPet(pet as DbPet, images || []);
   } catch (error) {
     console.error('Error fetching pet by ID:', error);
     return null;
@@ -135,13 +135,13 @@ export const createPet = async (pet: Omit<Pet, 'id'>, images: File[]): Promise<P
     // Convert frontend pet to database pet
     const dbPet = {
       name: pet.name,
-      species: pet.species as 'dog' | 'cat' | 'other',
+      species: pet.species,
       breed: pet.breed,
       age: parseInt(pet.age.split(' ')[0]),
       age_unit: pet.age.includes('ano') ? 'years' : 
                 pet.age.includes('mês') || pet.age.includes('mese') ? 'months' : 'days',
-      gender: pet.gender as 'male' | 'female',
-      size: pet.size as 'small' | 'medium' | 'large',
+      gender: pet.gender,
+      size: pet.size,
       weight: pet.weight,
       description: pet.description,
       location: pet.location,
@@ -194,7 +194,7 @@ export const createPet = async (pet: Omit<Pet, 'id'>, images: File[]): Promise<P
       })
     );
     
-    return dbPetToPet(newPet, uploadedImages);
+    return dbPetToPet(newPet as DbPet, uploadedImages);
   } catch (error) {
     console.error('Error creating pet:', error);
     return null;
@@ -286,7 +286,7 @@ export const updatePet = async (id: string, updates: Partial<Pet>, newImages?: F
     
     if (imagesError) throw imagesError;
     
-    return dbPetToPet(updatedPet, [...(existingImages || []), ...images]);
+    return dbPetToPet(updatedPet as DbPet, [...(existingImages || []), ...images]);
   } catch (error) {
     console.error('Error updating pet:', error);
     return null;
