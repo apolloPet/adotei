@@ -8,24 +8,25 @@ import { toast } from '@/hooks/use-sonner';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Validate that the required environment variables are set
-if (!supabaseUrl) {
-  console.error('Missing VITE_SUPABASE_URL environment variable');
-  toast.error('Erro de configuração: VITE_SUPABASE_URL não está definido');
-}
-
-if (!supabaseAnonKey) {
-  console.error('Missing VITE_SUPABASE_ANON_KEY environment variable');
-  toast.error('Erro de configuração: VITE_SUPABASE_ANON_KEY não está definido');
-}
-
 // Create a single Supabase client for the entire application
 export const supabase = createClient<Database>(
-  supabaseUrl || 'https://placeholder-url.supabase.co', 
-  supabaseAnonKey || 'placeholder-key'
+  supabaseUrl || '', 
+  supabaseAnonKey || ''
 );
 
 // Function to check if Supabase connection is properly configured
 export const isSupabaseConfigured = () => {
-  return Boolean(supabaseUrl && supabaseAnonKey);
+  if (!supabaseUrl) {
+    console.error('Missing VITE_SUPABASE_URL environment variable');
+    toast.error('Erro de configuração: VITE_SUPABASE_URL não está definido');
+    return false;
+  }
+
+  if (!supabaseAnonKey) {
+    console.error('Missing VITE_SUPABASE_ANON_KEY environment variable');
+    toast.error('Erro de configuração: VITE_SUPABASE_ANON_KEY não está definido');
+    return false;
+  }
+
+  return true;
 };
