@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from "@/hooks/use-sonner";
@@ -6,6 +5,7 @@ import Logo from './header/Logo';
 import DesktopNav from './header/DesktopNav';
 import DesktopAuthMenu from './header/DesktopAuthMenu';
 import MobileMenu from './header/MobileMenu';
+import { signOut } from '@/services/auth';
 
 interface HeaderProps {
   isAuthenticated?: boolean;
@@ -80,20 +80,14 @@ const Header = ({
 
   const closeMenu = () => setIsMobileMenuOpen(false);
 
-  const handleLogout = () => {
-    // Clear localStorage
-    localStorage.removeItem("isAdmin");
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("userEmail");
+  const handleLogout = async () => {
+    // Use the signOut service function
+    await signOut();
     
-    // Update local state
+    // Also update local state
     setIsAdmin(false);
     setIsLoggedIn(false);
     setIsMobileMenuOpen(false);
-    
-    // Notify components about auth state change
-    window.dispatchEvent(new Event('storage'));
-    window.dispatchEvent(new Event('authStateChanged'));
     
     // Call props callback if provided
     if (propsOnLogout) {

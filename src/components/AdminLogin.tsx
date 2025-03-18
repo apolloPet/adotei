@@ -10,7 +10,7 @@ import { KeyRound, ShieldAlert } from 'lucide-react';
 import { signInAdmin } from '@/services/auth';
 import { useAuth } from '@/hooks/auth';
 
-const AdminLogin = ({ onLogin }) => {
+const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);

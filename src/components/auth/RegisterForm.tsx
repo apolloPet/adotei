@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,7 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { CheckCircle } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-sonner";
-import { signUp, type SignupData } from '@/services/auth';
+import { signUp } from '@/services/auth';
+import { SignupData } from '@/services/auth/types';
 
 const RegisterForm = () => {
   const navigate = useNavigate();
@@ -158,11 +160,12 @@ const RegisterForm = () => {
       };
       
       console.log('Registering user with data:', userData);
+      
       const success = await signUp(userData);
       
       if (success) {
         toast.success("Conta criada com sucesso! Por favor, verifique seu email para confirmar o cadastro.");
-        navigate('/login');
+        setStep(3); // Move to success screen
       }
     } catch (error) {
       console.error("Registration error:", error);

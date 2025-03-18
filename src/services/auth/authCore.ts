@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
@@ -179,7 +178,7 @@ export const signInAdmin = async (email: string, password: string): Promise<bool
   try {
     // Verificar se é o admin de demonstração
     if (email === "admin@petmatch.com" && password === "admin123") {
-      console.log("Demo admin login attempt");
+      console.log("Demo admin login successful");
       
       // Tenta fazer login via Supabase também
       try {
@@ -215,25 +214,29 @@ export const signInAdmin = async (email: string, password: string): Promise<bool
     });
     
     if (error) {
-      console.error('Signin error:', error);
+      console.error('Admin signin error:', error);
       throw error;
     }
     
     // Verificar se é admin baseado no email
-    const isAdmin = email.includes('@ong') || email.includes('@admin');
+    const isAdmin = email.includes('@ong') || email.includes('@admin') || email === 'admin@petmatch.com';
     
     if (isAdmin) {
+      localStorage.setItem("isLoggedIn", "true");
       localStorage.setItem("isAdmin", "true");
+      localStorage.setItem("userEmail", email);
       window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('authStateChanged'));
       return true;
     } else {
       // Não é admin, fazer logout
       await supabase.auth.signOut();
+      toast.error('Este usuário não tem permissão de administrador');
       return false;
     }
   } catch (error) {
     console.error('Admin login error:', error);
-    if (error instanceof AuthError) {
+    if (error instanceof Error) {
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Credenciais inválidas');
       } else {
