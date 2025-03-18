@@ -1,777 +1,487 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
+import { CheckCircle } from 'lucide-react';
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-sonner";
-import { signUp, SignupData } from "@/services/authService";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  FormDescription
-} from "@/components/ui/form";
-import { Loader2 } from "lucide-react";
-
-interface RegistrationStep {
-  title: string;
-  description: string;
-}
-
-// Esquema de validação para os dados do formulário
-const accountSchema = z.object({
-  email: z.string().email('Digite um email válido'),
-  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres')
-});
-
-const personalInfoSchema = z.object({
-  name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
-  phone: z.string().min(10, 'Telefone deve ter pelo menos 10 dígitos')
-});
-
-const addressSchema = z.object({
-  cep: z.string().min(8, 'CEP deve ter pelo menos 8 caracteres'),
-  street: z.string().min(3, 'Rua é obrigatória'),
-  number: z.string().min(1, 'Número é obrigatório'),
-  neighborhood: z.string().min(2, 'Bairro é obrigatório'),
-  city: z.string().min(2, 'Cidade é obrigatória'),
-  housingType: z.enum(['apartment', 'house', 'other']),
-  hasChildren: z.boolean(),
-  childrenAges: z.string().optional()
-});
-
-const experienceSchema = z.object({
-  hadPetsBefore: z.boolean(),
-  hasAllergies: z.boolean(),
-  allergiesDescription: z.string().optional(),
-  workSchedule: z.string().min(3, 'Informe sua rotina de trabalho')
-});
+import { signUp, SignupData } from '@/services/authService';
 
 const RegisterForm = () => {
-  const [step, setStep] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [isLoadingCep, setIsLoadingCep] = useState(false);
-  const [acceptTerms, setAcceptTerms] = useState(false);
   const navigate = useNavigate();
+  const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Definir formulários para cada etapa
-  const accountForm = useForm<z.infer<typeof accountSchema>>({
-    resolver: zodResolver(accountSchema),
-    defaultValues: {
-      email: '',
-      password: ''
+  // Form fields
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  
+  // Address fields
+  const [street, setStreet] = useState('');
+  const [number, setNumber] = useState('');
+  const [neighborhood, setNeighborhood] = useState('');
+  const [city, setCity] = useState('');
+  const [cep, setCep] = useState('');
+  
+  // Housing and personal details
+  const [housingType, setHousingType] = useState<'house' | 'apartment' | 'other'>('house');
+  const [hasChildren, setHasChildren] = useState(false);
+  const [childrenAges, setChildrenAges] = useState('');
+  const [hadPetsBefore, setHadPetsBefore] = useState(false);
+  const [hasAllergies, setHasAllergies] = useState(false);
+  const [allergiesDescription, setAllergiesDescription] = useState('');
+  const [workSchedule, setWorkSchedule] = useState('');
+  
+  // Form validation
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  const validateStep1 = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!email) {
+      newErrors.email = 'O email é obrigatório';
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = 'Email inválido';
     }
-  });
-
-  const personalInfoForm = useForm<z.infer<typeof personalInfoSchema>>({
-    resolver: zodResolver(personalInfoSchema),
-    defaultValues: {
-      name: '',
-      phone: ''
+    
+    if (!password) {
+      newErrors.password = 'A senha é obrigatória';
+    } else if (password.length < 6) {
+      newErrors.password = 'A senha deve ter pelo menos 6 caracteres';
     }
-  });
-
-  const addressForm = useForm<z.infer<typeof addressSchema>>({
-    resolver: zodResolver(addressSchema),
-    defaultValues: {
-      cep: '',
-      street: '',
-      number: '',
-      neighborhood: '',
-      city: '',
-      housingType: 'apartment',
-      hasChildren: false,
-      childrenAges: ''
+    
+    if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'As senhas não coincidem';
     }
-  });
-
-  const experienceForm = useForm<z.infer<typeof experienceSchema>>({
-    resolver: zodResolver(experienceSchema),
-    defaultValues: {
-      hadPetsBefore: false,
-      hasAllergies: false,
-      allergiesDescription: '',
-      workSchedule: ''
+    
+    if (!name) {
+      newErrors.name = 'O nome é obrigatório';
     }
-  });
-
-  // Obter valores do formulário para cada etapa
-  const getFormData = (): SignupData => {
-    const accountData = accountForm.getValues();
-    const personalData = personalInfoForm.getValues();
-    const addressData = addressForm.getValues();
-    const experienceData = experienceForm.getValues();
-
-    return {
-      email: accountData.email,
-      password: accountData.password,
-      name: personalData.name,
-      phone: personalData.phone,
-      address: {
-        street: addressData.street,
-        number: addressData.number,
-        neighborhood: addressData.neighborhood,
-        city: addressData.city,
-        cep: addressData.cep,
-      },
-      housingType: addressData.housingType,
-      hasChildren: addressData.hasChildren,
-      childrenAges: addressData.childrenAges,
-      hadPetsBefore: experienceData.hadPetsBefore,
-      hasAllergies: experienceData.hasAllergies,
-      allergiesDescription: experienceData.allergiesDescription,
-      workSchedule: experienceData.workSchedule
-    };
+    
+    if (!phone) {
+      newErrors.phone = 'O telefone é obrigatório';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
-
-  const steps: RegistrationStep[] = [
-    {
-      title: "Informações da Conta",
-      description: "Crie seu login e senha"
-    },
-    {
-      title: "Informações Pessoais",
-      description: "Preencha seus dados de contato"
-    },
-    {
-      title: "Moradia",
-      description: "Conte-nos sobre seu lar"
-    },
-    {
-      title: "Experiência & Saúde",
-      description: "Informações sobre sua experiência com animais e saúde"
-    },
-    {
-      title: "Finalizar",
-      description: "Revise suas informações"
+  
+  const validateStep2 = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!street) {
+      newErrors.street = 'O endereço é obrigatório';
     }
-  ];
-
-  const handleCepLookup = async () => {
-    const cep = addressForm.getValues('cep').replace(/\D/g, '');
-    if (cep.length !== 8) {
-      toast.error("CEP inválido", {
-        description: "Por favor, digite um CEP válido com 8 números."
-      });
+    
+    if (!number) {
+      newErrors.number = 'O número é obrigatório';
+    }
+    
+    if (!neighborhood) {
+      newErrors.neighborhood = 'O bairro é obrigatório';
+    }
+    
+    if (!city) {
+      newErrors.city = 'A cidade é obrigatória';
+    }
+    
+    if (!cep) {
+      newErrors.cep = 'O CEP é obrigatório';
+    } else if (!/^\d{5}-?\d{3}$/.test(cep)) {
+      newErrors.cep = 'CEP inválido. Use o formato 00000-000';
+    }
+    
+    if (hasChildren && !childrenAges) {
+      newErrors.childrenAges = 'Por favor, informe as idades das crianças';
+    }
+    
+    if (hasAllergies && !allergiesDescription) {
+      newErrors.allergiesDescription = 'Por favor, descreva as alergias';
+    }
+    
+    if (!workSchedule) {
+      newErrors.workSchedule = 'A rotina de trabalho é obrigatória';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+  
+  const nextStep = () => {
+    if (step === 1 && validateStep1()) {
+      setStep(2);
+    }
+  };
+  
+  const prevStep = () => {
+    setStep(1);
+  };
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (step === 1) {
+      nextStep();
       return;
     }
-
-    setIsLoadingCep(true);
-    try {
-      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-      const data = await response.json();
-      
-      if (data.erro) {
-        toast.error("CEP não encontrado", {
-          description: "Não foi possível encontrar o endereço para este CEP."
-        });
-        return;
-      }
-      
-      addressForm.setValue('street', data.logradouro || '', { shouldValidate: true });
-      addressForm.setValue('neighborhood', data.bairro || '', { shouldValidate: true });
-      addressForm.setValue('city', data.localidade || '', { shouldValidate: true });
-      
-      toast.success("Endereço encontrado!", {
-        description: "Os campos de endereço foram preenchidos automaticamente."
-      });
-    } catch (error) {
-      toast.error("Erro ao buscar CEP", {
-        description: "Houve um problema ao buscar o endereço. Tente novamente."
-      });
-    } finally {
-      setIsLoadingCep(false);
+    
+    if (step === 2 && !validateStep2()) {
+      return;
     }
-  };
-
-  const handleNextStep = async () => {
-    // Validar etapa atual
-    try {
-      if (step === 0) {
-        const valid = await accountForm.trigger();
-        if (!valid) return;
-      }
-      
-      if (step === 1) {
-        const valid = await personalInfoForm.trigger();
-        if (!valid) return;
-      }
-      
-      if (step === 2) {
-        const valid = await addressForm.trigger();
-        if (!valid) return;
-      }
-      
-      if (step === 3) {
-        const valid = await experienceForm.trigger();
-        if (!valid) return;
-      }
-      
-      if (step === steps.length - 1) {
-        if (!acceptTerms) {
-          toast.error("Você precisa aceitar os termos e condições");
-          return;
-        }
-        
-        // Submit form
-        handleSubmit();
-        return;
-      }
-      
-      setStep(prev => prev + 1);
-    } catch (error) {
-      console.error("Validation error:", error);
-      toast.error("Erro ao validar formulário");
-    }
-  };
-
-  const handlePrevStep = () => {
-    setStep(prev => Math.max(0, prev - 1));
-  };
-
-  const handleSubmit = async () => {
+    
     try {
       setIsLoading(true);
+      setErrors({});
       
-      const formData = getFormData();
-      const success = await signUp(formData);
+      const userData: SignupData = {
+        email,
+        password,
+        name,
+        phone,
+        address: {
+          street,
+          number,
+          neighborhood,
+          city,
+          cep
+        },
+        housingType,
+        hasChildren,
+        childrenAges: hasChildren ? childrenAges : undefined,
+        hadPetsBefore,
+        hasAllergies,
+        allergiesDescription: hasAllergies ? allergiesDescription : undefined,
+        workSchedule
+      };
+      
+      console.log('Registering user with data:', userData);
+      const success = await signUp(userData);
       
       if (success) {
-        toast.success("Cadastro realizado com sucesso!", {
-          description: "Verifique seu e-mail para confirmar sua conta."
-        });
-        
-        // Navigate to login page after successful registration
-        setTimeout(() => {
-          navigate("/login");
-        }, 2000);
+        toast.success("Conta criada com sucesso! Por favor, verifique seu email para confirmar o cadastro.");
+        navigate('/login');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error("Registration error:", error);
-      toast.error("Erro ao fazer cadastro", {
-        description: error.message || "Por favor, tente novamente."
-      });
+      
+      if (error instanceof Error) {
+        if (error.message.includes('duplicate key')) {
+          setErrors({
+            email: 'Este email já está cadastrado. Por favor, tente outro email ou faça login.'
+          });
+          setStep(1); // Go back to email step
+        } else {
+          toast.error(`Erro ao criar conta: ${error.message}`);
+        }
+      } else {
+        toast.error("Erro desconhecido ao criar conta");
+      }
     } finally {
       setIsLoading(false);
     }
   };
-
-  // Renderização condicional do formulário baseado na etapa atual
-  const renderForm = () => {
-    switch (step) {
-      case 0:
-        return (
-          <Form {...accountForm}>
-            <form className="space-y-4 animate-fade-in">
-              <FormField
-                control={accountForm.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="seu.email@exemplo.com" 
-                        type="email" 
-                        disabled={isLoading}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={accountForm.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Senha</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Crie uma senha segura" 
-                        type="password" 
-                        disabled={isLoading}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      A senha deve ter pelo menos 6 caracteres.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </form>
-          </Form>
-        );
-      
-      case 1:
-        return (
-          <Form {...personalInfoForm}>
-            <form className="space-y-4 animate-fade-in">
-              <FormField
-                control={personalInfoForm.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome completo</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Seu nome completo" 
-                        disabled={isLoading}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={personalInfoForm.control}
-                name="phone"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Telefone (WhatsApp)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="(00) 00000-0000" 
-                        disabled={isLoading}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </form>
-          </Form>
-        );
-      
-      case 2:
-        return (
-          <Form {...addressForm}>
-            <form className="space-y-4 animate-fade-in">
-              <FormField
-                control={addressForm.control}
-                name="cep"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CEP</FormLabel>
-                    <div className="flex space-x-2">
-                      <FormControl>
-                        <Input 
-                          placeholder="00000-000" 
-                          disabled={isLoading}
-                          className="flex-1"
-                          {...field}
-                        />
-                      </FormControl>
-                      <Button 
-                        variant="secondary" 
-                        onClick={handleCepLookup}
-                        disabled={isLoadingCep || isLoading}
-                        type="button"
-                      >
-                        {isLoadingCep ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Buscando...
-                          </>
-                        ) : "Buscar"}
-                      </Button>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={addressForm.control}
-                name="street"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rua</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Nome da rua" 
-                        disabled={isLoading}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={addressForm.control}
-                  name="number"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Número</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="123" 
-                          disabled={isLoading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={addressForm.control}
-                  name="neighborhood"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bairro</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Nome do bairro" 
-                          disabled={isLoading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <FormField
-                control={addressForm.control}
-                name="city"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cidade</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Nome da cidade" 
-                        disabled={isLoading}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={addressForm.control}
-                name="housingType"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo de moradia</FormLabel>
-                    <FormControl>
-                      <RadioGroup 
-                        className="flex flex-col space-y-2"
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        disabled={isLoading}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="apartment" id="apartment" />
-                          <FormLabel htmlFor="apartment" className="font-normal">Apartamento</FormLabel>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="house" id="house" />
-                          <FormLabel htmlFor="house" className="font-normal">Casa</FormLabel>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="other" id="other-housing" />
-                          <FormLabel htmlFor="other-housing" className="font-normal">Outro</FormLabel>
-                        </div>
-                      </RadioGroup>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={addressForm.control}
-                name="hasChildren"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center justify-between">
-                      <FormLabel>Crianças em casa</FormLabel>
-                      <FormControl>
-                        <Switch 
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          disabled={isLoading}
-                        />
-                      </FormControl>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {addressForm.watch('hasChildren') && (
-                <FormField
-                  control={addressForm.control}
-                  name="childrenAges"
-                  render={({ field }) => (
-                    <FormItem className="pt-2 animate-fade-in">
-                      <FormLabel>Idades das crianças</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Ex: 5, 8, 12 anos" 
-                          disabled={isLoading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-            </form>
-          </Form>
-        );
-      
-      case 3:
-        return (
-          <Form {...experienceForm}>
-            <form className="space-y-4 animate-fade-in">
-              <FormField
-                control={experienceForm.control}
-                name="hadPetsBefore"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center justify-between">
-                      <FormLabel>Já teve animais de estimação?</FormLabel>
-                      <FormControl>
-                        <Switch 
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          disabled={isLoading}
-                        />
-                      </FormControl>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={experienceForm.control}
-                name="hasAllergies"
-                render={({ field }) => (
-                  <FormItem>
-                    <div className="flex items-center justify-between">
-                      <FormLabel>Possui alergias relacionadas a animais?</FormLabel>
-                      <FormControl>
-                        <Switch 
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          disabled={isLoading}
-                        />
-                      </FormControl>
-                    </div>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              {experienceForm.watch('hasAllergies') && (
-                <FormField
-                  control={experienceForm.control}
-                  name="allergiesDescription"
-                  render={({ field }) => (
-                    <FormItem className="pt-2 animate-fade-in">
-                      <FormLabel>Descreva suas alergias</FormLabel>
-                      <FormControl>
-                        <Input 
-                          placeholder="Tipo de alergia, sintomas, etc." 
-                          disabled={isLoading}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-              
-              <FormField
-                control={experienceForm.control}
-                name="workSchedule"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rotina de trabalho</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Ex: Home office, 8h-18h fora de casa, etc." 
-                        disabled={isLoading}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </form>
-          </Form>
-        );
-      
-      case 4:
-        const formData = getFormData();
-        return (
-          <div className="space-y-6 animate-fade-in">
-            <div>
-              <h3 className="text-lg font-medium">Resumo das informações</h3>
-              <p className="text-sm text-muted-foreground mt-1">Verifique se todos os dados estão corretos</p>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <h4 className="text-sm font-medium">Informações da Conta</h4>
-                <div className="text-sm mt-1 space-y-1">
-                  <p><span className="text-muted-foreground">Email:</span> {formData.email}</p>
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div>
-                <h4 className="text-sm font-medium">Informações Pessoais</h4>
-                <div className="text-sm mt-1 space-y-1">
-                  <p><span className="text-muted-foreground">Nome:</span> {formData.name}</p>
-                  <p><span className="text-muted-foreground">Telefone:</span> {formData.phone}</p>
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div>
-                <h4 className="text-sm font-medium">Moradia</h4>
-                <div className="text-sm mt-1 space-y-1">
-                  <p>
-                    <span className="text-muted-foreground">Endereço:</span> 
-                    {formData.address.street}, {formData.address.number} - {formData.address.neighborhood}, {formData.address.city} (CEP: {formData.address.cep})
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">Tipo de moradia:</span> 
-                    {formData.housingType === 'apartment' ? 'Apartamento' : 
-                     formData.housingType === 'house' ? 'Casa' : 'Outro'}
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">Crianças:</span> 
-                    {formData.hasChildren ? `Sim (${formData.childrenAges})` : 'Não'}
-                  </p>
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div>
-                <h4 className="text-sm font-medium">Experiência & Saúde</h4>
-                <div className="text-sm mt-1 space-y-1">
-                  <p>
-                    <span className="text-muted-foreground">Experiência prévia com animais:</span> 
-                    {formData.hadPetsBefore ? 'Sim' : 'Não'}
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">Alergias:</span> 
-                    {formData.hasAllergies ? `Sim (${formData.allergiesDescription})` : 'Não'}
-                  </p>
-                  <p>
-                    <span className="text-muted-foreground">Rotina de trabalho:</span> 
-                    {formData.workSchedule}
-                  </p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-2 pt-4">
-              <Checkbox 
-                id="terms" 
-                checked={acceptTerms}
-                onCheckedChange={(checked) => setAcceptTerms(checked === true)}
-                disabled={isLoading}
-              />
-              <label htmlFor="terms" className="text-sm leading-tight cursor-pointer">
-                Concordo com os <a href="#" className="text-primary hover:underline">Termos de Uso</a> e 
-                confirmo que todas as informações fornecidas são verdadeiras.
-              </label>
-            </div>
-          </div>
-        );
-      
-      default:
-        return null;
-    }
-  };
-
+  
   return (
-    <div className="w-full max-w-lg mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
-        <h2 className="text-2xl font-bold">{steps[step].title}</h2>
-        <p className="text-gray-500">{steps[step].description}</p>
-      </div>
-      
-      {/* Step indicator */}
-      <div className="px-6 py-4 bg-gray-50">
-        <div className="flex justify-between mb-2">
-          {steps.map((_, index) => (
-            <div 
-              key={index}
-              className={`w-full h-1.5 rounded-full ${index === step ? 'bg-primary' : index < step ? 'bg-primary/50' : 'bg-gray-200'} ${index < steps.length - 1 ? 'mr-1' : ''}`}
-            />
-          ))}
-        </div>
-      </div>
-      
-      <div className="p-6">
-        {renderForm()}
-      </div>
-      
-      <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-between">
-        <Button
-          variant="outline"
-          onClick={handlePrevStep}
-          disabled={step === 0 || isLoading}
-          type="button"
-        >
-          Voltar
-        </Button>
-        
-        <Button 
-          onClick={handleNextStep}
-          disabled={isLoading}
-          type="button"
-        >
-          {isLoading ? (
+    <Card className="w-full">
+      <CardContent className="p-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {step === 1 && (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Carregando...
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white font-bold">1</div>
+                  <h3 className="text-lg font-semibold">Informações de Conta</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input 
+                      id="email" 
+                      type="email" 
+                      placeholder="seu.email@exemplo.com" 
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                    {errors.email && <p className="text-destructive text-sm">{errors.email}</p>}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="password">Senha</Label>
+                      <Input 
+                        id="password" 
+                        type="password" 
+                        placeholder="••••••••" 
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
+                      {errors.password && <p className="text-destructive text-sm">{errors.password}</p>}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password">Confirmar Senha</Label>
+                      <Input 
+                        id="confirm-password" 
+                        type="password" 
+                        placeholder="••••••••" 
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                      />
+                      {errors.confirmPassword && <p className="text-destructive text-sm">{errors.confirmPassword}</p>}
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nome Completo</Label>
+                    <Input 
+                      id="name" 
+                      type="text" 
+                      placeholder="Seu nome completo" 
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                    />
+                    {errors.name && <p className="text-destructive text-sm">{errors.name}</p>}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Telefone</Label>
+                    <Input 
+                      id="phone" 
+                      type="tel" 
+                      placeholder="(00) 00000-0000" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      required
+                    />
+                    {errors.phone && <p className="text-destructive text-sm">{errors.phone}</p>}
+                  </div>
+                </div>
+              </div>
+              
+              <Button type="button" onClick={nextStep} className="w-full" disabled={isLoading}>
+                Próximo
+              </Button>
             </>
-          ) : step === steps.length - 1 
-              ? 'Finalizar Cadastro' 
-              : 'Continuar'}
-        </Button>
-      </div>
-    </div>
+          )}
+          
+          {step === 2 && (
+            <>
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white font-bold">2</div>
+                  <h3 className="text-lg font-semibold">Informações Residenciais</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="street">Endereço</Label>
+                    <Input 
+                      id="street" 
+                      type="text" 
+                      placeholder="Rua/Avenida" 
+                      value={street}
+                      onChange={(e) => setStreet(e.target.value)}
+                      required
+                    />
+                    {errors.street && <p className="text-destructive text-sm">{errors.street}</p>}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="number">Número</Label>
+                      <Input 
+                        id="number" 
+                        type="text" 
+                        placeholder="123" 
+                        value={number}
+                        onChange={(e) => setNumber(e.target.value)}
+                        required
+                      />
+                      {errors.number && <p className="text-destructive text-sm">{errors.number}</p>}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="neighborhood">Bairro</Label>
+                      <Input 
+                        id="neighborhood" 
+                        type="text" 
+                        placeholder="Seu bairro" 
+                        value={neighborhood}
+                        onChange={(e) => setNeighborhood(e.target.value)}
+                        required
+                      />
+                      {errors.neighborhood && <p className="text-destructive text-sm">{errors.neighborhood}</p>}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="city">Cidade</Label>
+                      <Input 
+                        id="city" 
+                        type="text" 
+                        placeholder="Sua cidade" 
+                        value={city}
+                        onChange={(e) => setCity(e.target.value)}
+                        required
+                      />
+                      {errors.city && <p className="text-destructive text-sm">{errors.city}</p>}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="cep">CEP</Label>
+                      <Input 
+                        id="cep" 
+                        type="text" 
+                        placeholder="00000-000" 
+                        value={cep}
+                        onChange={(e) => setCep(e.target.value)}
+                        required
+                      />
+                      {errors.cep && <p className="text-destructive text-sm">{errors.cep}</p>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white font-bold">3</div>
+                  <h3 className="text-lg font-semibold">Informações Pessoais</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="housing-type">Tipo de Residência</Label>
+                    <Select 
+                      value={housingType} 
+                      onValueChange={(val) => setHousingType(val as 'house' | 'apartment' | 'other')}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o tipo de residência" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="house">Casa</SelectItem>
+                        <SelectItem value="apartment">Apartamento</SelectItem>
+                        <SelectItem value="other">Outro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="has-children">Possui crianças em casa?</Label>
+                      <Switch 
+                        id="has-children" 
+                        checked={hasChildren}
+                        onCheckedChange={setHasChildren}
+                      />
+                    </div>
+                    
+                    {hasChildren && (
+                      <div className="pt-2">
+                        <Label htmlFor="children-ages">Idades das crianças</Label>
+                        <Input 
+                          id="children-ages" 
+                          placeholder="Ex: 5, 8 e 12 anos" 
+                          value={childrenAges}
+                          onChange={(e) => setChildrenAges(e.target.value)}
+                        />
+                        {errors.childrenAges && <p className="text-destructive text-sm">{errors.childrenAges}</p>}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="had-pets">Já teve animais de estimação?</Label>
+                      <Switch 
+                        id="had-pets" 
+                        checked={hadPetsBefore}
+                        onCheckedChange={setHadPetsBefore}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="has-allergies">Possui alergias relacionadas a animais?</Label>
+                      <Switch 
+                        id="has-allergies" 
+                        checked={hasAllergies}
+                        onCheckedChange={setHasAllergies}
+                      />
+                    </div>
+                    
+                    {hasAllergies && (
+                      <div className="pt-2">
+                        <Label htmlFor="allergies-description">Descreva as alergias</Label>
+                        <Textarea 
+                          id="allergies-description" 
+                          placeholder="Descreva quais alergias você possui" 
+                          value={allergiesDescription}
+                          onChange={(e) => setAllergiesDescription(e.target.value)}
+                        />
+                        {errors.allergiesDescription && <p className="text-destructive text-sm">{errors.allergiesDescription}</p>}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="work-schedule">Rotina de Trabalho</Label>
+                    <Textarea 
+                      id="work-schedule" 
+                      placeholder="Descreva sua rotina diária de trabalho/estudos" 
+                      value={workSchedule}
+                      onChange={(e) => setWorkSchedule(e.target.value)}
+                      required
+                    />
+                    {errors.workSchedule && <p className="text-destructive text-sm">{errors.workSchedule}</p>}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                <Button type="button" variant="outline" onClick={prevStep} className="w-full" disabled={isLoading}>
+                  Voltar
+                </Button>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading ? 'Registrando...' : 'Cadastrar'}
+                </Button>
+              </div>
+            </>
+          )}
+          
+          {step === 3 && (
+            <div className="flex flex-col items-center justify-center text-center space-y-4">
+              <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                <CheckCircle className="h-8 w-8" />
+              </div>
+              <h2 className="text-2xl font-bold">Cadastro Realizado com Sucesso!</h2>
+              <p className="text-muted-foreground">
+                Enviamos um email de confirmação para você. Por favor, verifique sua caixa de entrada e confirme seu cadastro para começar a usar o PetMatch.
+              </p>
+              <Button onClick={() => navigate('/login')} className="mt-4">
+                Ir para Login
+              </Button>
+            </div>
+          )}
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,14 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-sonner";
-import Header from "@/components/Header";
 import { KeyRound, ShieldAlert } from 'lucide-react';
+import { signInAdmin } from '@/services/authService';
+import { useAuth } from '@/hooks/use-auth';
 
 const AdminLogin = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { isAdmin, isAuthenticated } = useAuth();
+  
+  if (isAdmin && isAuthenticated) {
+    navigate('/admin');
+    return null;
+  }
   
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,18 +32,30 @@ const AdminLogin = ({ onLogin }) => {
     setIsLoading(true);
     
     try {
-      // Em uma aplicação real, isso seria uma chamada API segura
-      // Esta é apenas uma simulação para fins de demonstração
       if (email === "admin@petmatch.com" && password === "admin123") {
-        // Call the onLogin prop to update the app state
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("isAdmin", "true");
+        localStorage.setItem("userEmail", email);
+        
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new Event('authStateChanged'));
+        
         if (onLogin) {
           onLogin();
         }
         
         toast.success("Login administrativo realizado com sucesso!");
         navigate("/admin");
-      } else {
-        toast.error("Credenciais de administrador inválidas");
+        return;
+      }
+      
+      const success = await signInAdmin(email, password);
+      
+      if (success) {
+        if (onLogin) {
+          onLogin();
+        }
+        navigate("/admin");
       }
     } catch (error) {
       console.error("Erro ao fazer login:", error);
@@ -48,11 +66,9 @@ const AdminLogin = ({ onLogin }) => {
   };
   
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <div className="container mx-auto px-4 pt-32 pb-16 flex justify-center">
-        <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="container mx-auto px-4 max-w-md">
+        <Card>
           <CardHeader className="space-y-1">
             <div className="flex items-center justify-center mb-4">
               <ShieldAlert className="h-12 w-12 text-primary" />

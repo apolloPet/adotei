@@ -12,6 +12,8 @@ export const supabase = integrationClient;
 // Function to check if Supabase connection is properly configured
 export const isSupabaseConfigured = async () => {
   try {
+    console.log('Testing Supabase connection...');
+    
     // Test if we can query something from Supabase
     const { data, error } = await supabase.from('pets').select('count', { count: 'exact', head: true });
     
@@ -20,6 +22,7 @@ export const isSupabaseConfigured = async () => {
       return false;
     }
     
+    console.log('Supabase connection successful!');
     return true;
   } catch (error) {
     console.error('Error connecting to Supabase:', error);
