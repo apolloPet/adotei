@@ -1,9 +1,17 @@
 
-import { Link, useNavigate } from 'react-router-dom';
-import { LogIn, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { toast } from "@/hooks/use-sonner";
-import { signOut } from '@/services/auth';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { LogIn, LogOut, User } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface DesktopAuthMenuProps {
   isAdmin?: boolean;
@@ -13,48 +21,84 @@ interface DesktopAuthMenuProps {
 }
 
 const DesktopAuthMenu = ({ 
-  isLoggedIn = false, 
-  isAdmin = false,
+  isAdmin, 
+  isLoggedIn, 
   onLogin, 
   onLogout 
 }: DesktopAuthMenuProps) => {
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
 
   const handleLogin = () => {
-    // Instead of using callback, always navigate to login page
-    navigate('/login');
+    if (onLogin) {
+      onLogin();
+    } else {
+      navigate("/login");
+    }
   };
 
   const handleLogout = async () => {
-    // Use the signOut service function
-    await signOut();
-    
-    // Call the callback if provided
-    if (onLogout) {
-      onLogout();
-    } else {
-      toast.success("Logout realizado com sucesso");
-      navigate('/');
+    try {
+      setIsLoggingOut(true);
+      
+      // Chamar o callback de logout fornecido pelas props
+      if (onLogout) {
+        await onLogout();
+      }
+      
+      // Redirecionar para a página inicial sem precisar de setTimeout
+      navigate("/", { replace: true });
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+    } finally {
+      setIsLoggingOut(false);
     }
   };
-  
+
+  const getUserInitial = () => {
+    const userEmail = localStorage.getItem("userEmail");
+    return userEmail ? userEmail.charAt(0).toUpperCase() : "U";
+  };
+
   return (
     <div className="hidden md:flex items-center space-x-4">
       {isLoggedIn ? (
-        <Button variant="outline" onClick={handleLogout} size="sm">
-          <LogOut className="h-4 w-4 mr-2" />
-          Sair
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Avatar className="cursor-pointer hover:opacity-80 transition-opacity">
+              <AvatarFallback className="bg-primary text-primary-foreground">
+                {getUserInitial()}
+              </AvatarFallback>
+            </Avatar>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate("/profile")}>
+              <User className="mr-2 h-4 w-4" />
+              Perfil
+            </DropdownMenuItem>
+            {isAdmin && (
+              <DropdownMenuItem onClick={() => navigate("/admin")} className="text-primary">
+                <ShieldAlert className="mr-2 h-4 w-4" />
+                Admin
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              {isLoggingOut ? "Saindo..." : "Sair"}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       ) : (
-        <>
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/register">Cadastrar</Link>
-          </Button>
-          <Button onClick={handleLogin} size="sm">
-            <LogIn className="h-4 w-4 mr-2" />
-            Entrar
-          </Button>
-        </>
+        <Button onClick={handleLogin} variant="default" className="flex items-center">
+          <LogIn className="mr-2 h-4 w-4" />
+          Entrar
+        </Button>
       )}
     </div>
   );

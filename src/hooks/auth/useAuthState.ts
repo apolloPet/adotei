@@ -20,7 +20,7 @@ export function useAuthState() {
       setIsLoading(true);
       console.log('Verificando estado de autenticação atual...');
       
-      // Verificar diretamente com o Supabase para obter o estado mais atualizado
+      // Performance: verificar diretamente a sessão do Supabase para evitar chamadas extras
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
@@ -43,64 +43,58 @@ export function useAuthState() {
       setSession(currentSession);
       
       if (currentSession) {
-        // Obter dados do usuário
-        const { data: userData, error: userError } = await supabase.auth.getUser();
+        // Performance: fazer apenas uma chamada para obter o usuário
+        const userData = currentSession.user;
+        setUser(userData);
+        setIsAuthenticated(true);
         
-        if (userError) {
-          console.error('Erro ao obter usuário do Supabase:', userError);
-          setUser(null);
-          setIsAuthenticated(false);
+        // Verificar se é admin
+        if (userData?.email) {
+          // Verificação por email (critério primário)
+          const isAdminByEmail = 
+            userData.email.includes('@admin') || 
+            userData.email.includes('@ong') || 
+            userData.email === 'admin@petmatch.com';
+          
+          // Verificação por metadados (critério secundário)
+          const isAdminByMetadata = 
+            userData.app_metadata?.role === 'admin' || 
+            userData.user_metadata?.isAdmin === true;
+          
+          const finalAdminStatus = isAdminByEmail || isAdminByMetadata;
+          
+          console.log('Verificação de perfil:', { 
+            email: userData.email, 
+            isAdminByEmail,
+            isAdminByMetadata,
+            finalStatus: finalAdminStatus
+          });
+          
+          setIsAdmin(finalAdminStatus);
+          
+          // Atualizar localStorage
+          localStorage.setItem("isLoggedIn", "true");
+          localStorage.setItem("isAdmin", finalAdminStatus.toString());
+          localStorage.setItem("userEmail", userData.email);
         } else {
-          const currentUser = userData.user;
-          setUser(currentUser);
-          setIsAuthenticated(true);
-          
-          // Verificar se é admin pelo email e por metadados do usuário
-          if (currentUser?.email) {
-            // Verificação por email (critério primário)
-            const isAdminByEmail = 
-              currentUser.email.includes('@admin') || 
-              currentUser.email.includes('@ong') || 
-              currentUser.email === 'admin@petmatch.com';
-            
-            // Verificação por metadados (critério secundário)
-            const isAdminByMetadata = 
-              currentUser.app_metadata?.role === 'admin' || 
-              currentUser.user_metadata?.isAdmin === true;
-            
-            // Adicionar verificação pelo banco de dados se disponível (implementação futura)
-            // const userRole = await getUserRole(currentUser.id);
-            // const isAdminByDatabase = userRole === 'admin';
-            
-            const finalAdminStatus = isAdminByEmail || isAdminByMetadata;
-            
-            console.log('Verificação de perfil do usuário:', { 
-              email: currentUser.email, 
-              isAdminByEmail,
-              isAdminByMetadata,
-              // isAdminByDatabase,
-              finalStatus: finalAdminStatus
-            });
-            
-            setIsAdmin(finalAdminStatus);
-            
-            // Atualizar localStorage
-            localStorage.setItem("isLoggedIn", "true");
-            localStorage.setItem("isAdmin", finalAdminStatus.toString());
-            localStorage.setItem("userEmail", currentUser.email);
-          } else {
-            setIsAdmin(false);
-          }
-          
-          // Obter perfil do usuário
-          try {
-            const userProfile = await getProfile();
-            if (userProfile) {
-              setProfile(userProfile);
+          setIsAdmin(false);
+        }
+        
+        // Performance: obter perfil do usuário apenas se necessário e em background
+        try {
+          // Executar em segundo plano para não bloquear o login
+          setTimeout(async () => {
+            try {
+              const userProfile = await getProfile();
+              if (userProfile) {
+                setProfile(userProfile);
+              }
+            } catch (profileError) {
+              console.error('Erro ao obter perfil do usuário (background):', profileError);
             }
-          } catch (profileError) {
-            console.error('Erro ao obter perfil do usuário:', profileError);
-          }
+          }, 100);
+        } catch (profileError) {
+          console.error('Erro ao obter perfil do usuário:', profileError);
         }
       } else {
         console.log('Nenhuma sessão ativa encontrada');

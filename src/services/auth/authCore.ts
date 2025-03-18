@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
@@ -100,19 +99,10 @@ export const getCurrentUser = async () => {
  */
 export const signIn = async (email: string, password: string): Promise<boolean> => {
   try {
-    console.log('Tentando fazer login com:', { email });
+    console.log('Iniciando login com:', { email });
     
-    // Clear any previous login state to ensure a fresh login attempt
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("isAdmin");
-    localStorage.removeItem("userEmail");
-    
-    // Log debug info antes da tentativa de login
-    console.log('Estado do localStorage antes do login:', {
-      isLoggedIn: localStorage.getItem("isLoggedIn"),
-      isAdmin: localStorage.getItem("isAdmin"),
-      userEmail: localStorage.getItem("userEmail")
-    });
+    // Performance: remover limpeza de localStorage antes da tentativa de login
+    // para evitar operações desnecessárias se o login falhar
     
     // Validação básica de entrada
     if (!email || !password) {
@@ -127,9 +117,7 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
       password,
     });
 
-    // Log detalhado do resultado do login
-    console.log('Resposta do Supabase:', { data: data ? 'Dados recebidos' : 'Nenhum dado', error: error || 'Nenhum erro' });
-
+    // Tratamento de erros
     if (error) {
       console.error('Erro de autenticação:', error);
       if (error instanceof AuthError) {
@@ -156,7 +144,7 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
       hasSession: !!data.session
     });
     
-    // Atualiza o localStorage manualmente para garantir que os eventos de mudança de estado sejam disparados
+    // Performance: atualizar o localStorage apenas após confirmar autenticação bem-sucedida
     localStorage.setItem("isLoggedIn", "true");
     if (email.includes('@admin') || email.includes('@ong')) {
       localStorage.setItem("isAdmin", "true");
@@ -165,11 +153,9 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
     }
     localStorage.setItem("userEmail", email);
     
-    // Dispara eventos para atualizar a UI
-    window.dispatchEvent(new Event('storage'));
+    // Dispara apenas um evento para atualizar a UI (reduzido de dois para um)
     window.dispatchEvent(new Event('authStateChanged'));
     
-    toast.success('Login realizado com sucesso!');
     return true;
   } catch (error) {
     console.error('Erro inesperado durante o login:', error);

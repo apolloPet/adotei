@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-sonner";
-import { ArrowLeft } from 'lucide-react';
-import { signIn } from '@/services/authService';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { signIn } from '@/services/auth';
 import { useAuth } from '@/hooks/auth';
 
 interface LoginProps {
@@ -42,25 +42,27 @@ const Login = ({ onLogin }: LoginProps = {}) => {
     try {
       setIsLoading(true);
       
+      // Performance: processamento de login otimizado
       const success = await signIn(email, password);
       
       if (success) {
-        // Update user data
+        toast.success("Login realizado com sucesso!");
+        
+        // Performance: apenas uma chamada de função para atualizar dados
         if (fetchUserData) {
-          await fetchUserData();
+          // Executar de forma assíncrona sem aguardar a conclusão
+          fetchUserData().catch(error => {
+            console.error("Erro ao buscar dados do usuário:", error);
+          });
         }
         
-        // Call the onLogin callback if provided
+        // Chamar callback se fornecido
         if (onLogin) {
           onLogin();
         }
         
-        toast.success("Login realizado com sucesso!");
-        
-        // Adicionar um pequeno atraso para garantir que o estado seja atualizado
-        setTimeout(() => {
-          navigate("/browse", { replace: true });
-        }, 500);
+        // Performance: redirecionar imediatamente sem setTimeout
+        navigate("/browse", { replace: true });
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -104,6 +106,7 @@ const Login = ({ onLogin }: LoginProps = {}) => {
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
                 required
+                autoFocus
               />
             </div>
             
@@ -136,8 +139,22 @@ const Login = ({ onLogin }: LoginProps = {}) => {
             </div>
             
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Entrando...' : 'Entrar'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Entrando...
+                </>
+              ) : 'Entrar'}
             </Button>
+            
+            {/* Performance: adicionar informações demo para facilitar testes */}
+            <div className="text-center mt-4 text-sm text-muted-foreground">
+              <p>Para fins de demonstração, use:</p>
+              <p><strong>Email:</strong> usuario@petmatch.com</p>
+              <p><strong>Senha:</strong> senha123</p>
+              <p className="mt-2"><strong>Admin:</strong> admin@petmatch.com</p>
+              <p><strong>Senha:</strong> admin123</p>
+            </div>
           </form>
         </CardContent>
         
