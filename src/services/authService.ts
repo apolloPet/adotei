@@ -383,7 +383,9 @@ export const getUserSessions = async (): Promise<UserSession[]> => {
       browser: browserInfo,
       ip: 'Não disponível',
       lastActive: new Date().toISOString(),
-      createdAt: session.created_at ? new Date(session.created_at * 1000).toISOString() : new Date().toISOString()
+      createdAt: session.expires_at 
+        ? new Date(Date.now() - (session.expires_at - Math.floor(Date.now() / 1000)) * 1000).toISOString() 
+        : new Date().toISOString()
     }];
   } catch (error) {
     console.error('Error getting user sessions:', error);
