@@ -14,15 +14,32 @@ export const isSupabaseConfigured = async () => {
   try {
     console.log('Testing Supabase connection...');
     
-    // Test if we can query something from Supabase
-    const { data, error } = await supabase.from('pets').select('count', { count: 'exact', head: true });
+    // Testa primeiro a autenticação (não precisa de tabelas)
+    const { data: authData, error: authError } = await supabase.auth.getSession();
     
-    if (error) {
-      console.error('Error testing Supabase connection:', error);
+    if (authError) {
+      console.error('Error testing Supabase auth connection:', authError);
       return false;
     }
     
-    console.log('Supabase connection successful!');
+    console.log('Supabase auth connection successful!');
+    
+    // Test if we can query something from Supabase
+    try {
+      // Se a tabela não existir, essa query vai falhar, mas não impedirá a autenticação
+      const { data, error } = await supabase.from('pets').select('count', { count: 'exact', head: true });
+      
+      if (error) {
+        console.warn('Table query test failed, but auth is working:', error);
+        // Não retorna false, pois a autenticação pode funcionar sem as tabelas
+      } else {
+        console.log('Supabase data query successful!');
+      }
+    } catch (queryError) {
+      console.warn('Table query test failed, but auth is working:', queryError);
+      // Não retorna false, pois a autenticação pode funcionar sem as tabelas
+    }
+    
     return true;
   } catch (error) {
     console.error('Error connecting to Supabase:', error);

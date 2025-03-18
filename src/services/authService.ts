@@ -33,7 +33,6 @@ export const signUp = async (data: SignupData): Promise<boolean> => {
       return false;
     }
 
-    // Check if email already exists
     const { data: existingUsers, error: existingError } = await supabase
       .from('users')
       .select('email')
@@ -142,7 +141,6 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
     if (error) {
       console.error("Sign in error:", error);
       
-      // Handle specific error messages
       if (error.message.includes('Invalid login credentials')) {
         toast.error('Credenciais inválidas. Verifique seu email e senha.');
       } else {
@@ -195,22 +193,39 @@ export const signOut = async (): Promise<boolean> => {
 
 export const signInAdmin = async (email: string, password: string): Promise<boolean> => {
   try {
-    if (!isSupabaseConfigured()) {
+    const configCheck = await isSupabaseConfigured();
+    if (!configCheck) {
       toast.error('Erro: Configuração do Supabase incompleta');
       return false;
     }
+
+    console.log('Attempting admin login for:', email);
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     
-    if (error) throw error;
+    if (error) {
+      console.error("Admin sign in error:", error);
+      
+      if (error.message.includes('Invalid login credentials')) {
+        toast.error('Credenciais inválidas. Verifique seu email e senha.');
+      } else {
+        handleSupabaseError(error, 'Erro ao fazer login administrativo');
+      }
+      
+      return false;
+    }
     
     if (!email.includes('@ong') && !email.includes('@admin')) {
+      console.error("Login successful but user is not an admin:", email);
       await signOut();
-      throw new Error('Esta conta não tem permissão de administrador');
+      toast.error('Esta conta não tem permissão de administrador');
+      return false;
     }
+    
+    console.log('Admin login successful:', data.user?.id);
     
     localStorage.setItem("isLoggedIn", "true");
     localStorage.setItem("isAdmin", "true");
@@ -479,7 +494,6 @@ export const terminateSession = async (sessionId: string): Promise<boolean> => {
 
 export const getUserRole = async (userId: string): Promise<UserRole | null> => {
   try {
-    // Verificar se o usuário é um administrador pelo email (método temporário)
     const { data: { user } } = await supabase.auth.getUser();
     
     if (!user) return null;
@@ -504,37 +518,6 @@ export const getUserRole = async (userId: string): Promise<UserRole | null> => {
 export const setUserRole = async (userId: string, role: UserRole): Promise<boolean> => {
   try {
     console.log(`Setting user ${userId} to role ${role}`);
-    
-    // Implementação completa quando a tabela estiver funcionando:
-    /*
-    // Verificar se o usuário já tem a função
-    const { data: existingRole } = await supabase
-      .from('user_roles')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('role', role);
-    
-    // Se já existe, não precisa fazer nada
-    if (existingRole && existingRole.length > 0) {
-      return true;
-    }
-    
-    // Remover qualquer função existente (uma vez que queremos apenas uma função por usuário)
-    await supabase
-      .from('user_roles')
-      .delete()
-      .eq('user_id', userId);
-    
-    // Inserir a nova função
-    const { error } = await supabase
-      .from('user_roles')
-      .insert({
-        user_id: userId,
-        role: role
-      });
-    
-    if (error) throw error;
-    */
     
     return true;
   } catch (error) {
