@@ -3,8 +3,9 @@
 import { signIn, signUp, signOut, getCurrentUser, getCurrentSession, confirmEmail, signInAdmin, getUserRole, setUserRole } from './authCore';
 import { resetPassword as resetPasswordService, updatePassword as updatePasswordService, resendVerificationEmail } from './passwordService';
 import { getProfile as getProfileService, updateProfile as updateProfileService } from './profileService';
-import { getUserSessions, terminateSession, createSessionLog, getSessionHistory, getCurrentSessionInfo, UserSession } from './sessionService';
-import { type SignupData, type UserRoleData } from './types';
+import { getUserSessions, terminateSession, createSessionLog, getSessionHistory, getCurrentSessionInfo } from './sessionService';
+import type { UserSession } from './sessionService';
+import type { SignupData, UserRoleData } from './types';
 
 // Export everything with clear naming
 export {
@@ -34,9 +35,7 @@ export {
   createSessionLog,
   getSessionHistory,
   getCurrentSessionInfo,
-  UserSession,
-  
-  // Types
-  type SignupData,
-  type UserRoleData
 };
+
+// Re-export types with explicit 'export type' syntax
+export type { UserSession, SignupData, UserRoleData };
