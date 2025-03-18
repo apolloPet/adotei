@@ -10,6 +10,7 @@ export interface SignupData {
     neighborhood: string;
     city: string;
     cep: string;
+    state?: string; // Add state as an optional property
   };
   housingType?: 'house' | 'apartment' | 'other';
   hasChildren?: boolean;
