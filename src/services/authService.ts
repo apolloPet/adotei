@@ -383,7 +383,7 @@ export const getUserSessions = async (): Promise<UserSession[]> => {
       browser: browserInfo,
       ip: 'Não disponível',
       lastActive: new Date().toISOString(),
-      createdAt: session.created_at ? new Date(session.created_at).toISOString() : new Date().toISOString()
+      createdAt: session.created_at ? new Date(session.created_at * 1000).toISOString() : new Date().toISOString()
     }];
   } catch (error) {
     console.error('Error getting user sessions:', error);
@@ -409,22 +409,34 @@ export const terminateSession = async (sessionId: string): Promise<boolean> => {
 
 export const getUserRole = async (userId: string): Promise<UserRole | null> => {
   try {
-    try {
-      const userEmail = (await supabase.auth.getUser()).data.user?.email || '';
-      
-      if (userEmail.includes('@admin') || userEmail.includes('@ong')) {
-        return 'admin';
-      } else if (userEmail.includes('@moderator')) {
-        return 'moderator';
-      } else if (userEmail.includes('@staff')) {
-        return 'staff';
-      } else {
-        return 'user';
-      }
-    } catch (error) {
-      console.error('Error checking user role:', error);
+    // Verificar se o usuário é um administrador pelo email (método temporário)
+    const userEmail = (await supabase.auth.getUser()).data.user?.email || '';
+    
+    if (userEmail.includes('@admin') || userEmail.includes('@ong')) {
+      return 'admin';
+    } else if (userEmail.includes('@moderator')) {
+      return 'moderator';
+    } else if (userEmail.includes('@staff')) {
+      return 'staff';
+    } else {
       return 'user';
     }
+    
+    // Quando a tabela user_roles estiver configurada, use o código abaixo:
+    /*
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+      
+    if (error) {
+      console.error('Error fetching user role:', error);
+      return 'user'; // Padrão para usuário normal
+    }
+    
+    return data.role as UserRole;
+    */
   } catch (error) {
     console.error('Error getting user role:', error);
     return null;
@@ -434,6 +446,38 @@ export const getUserRole = async (userId: string): Promise<UserRole | null> => {
 export const setUserRole = async (userId: string, role: UserRole): Promise<boolean> => {
   try {
     console.log(`Setting user ${userId} to role ${role}`);
+    
+    // Implementação completa quando a tabela estiver funcionando:
+    /*
+    // Verificar se o usuário já tem a função
+    const { data: existingRole } = await supabase
+      .from('user_roles')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('role', role);
+    
+    // Se já existe, não precisa fazer nada
+    if (existingRole && existingRole.length > 0) {
+      return true;
+    }
+    
+    // Remover qualquer função existente (uma vez que queremos apenas uma função por usuário)
+    await supabase
+      .from('user_roles')
+      .delete()
+      .eq('user_id', userId);
+    
+    // Inserir a nova função
+    const { error } = await supabase
+      .from('user_roles')
+      .insert({
+        user_id: userId,
+        role: role
+      });
+    
+    if (error) throw error;
+    */
+    
     return true;
   } catch (error) {
     console.error('Error setting user role:', error);

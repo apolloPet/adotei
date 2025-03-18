@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
@@ -15,7 +16,6 @@ import { UserProfile } from '@/types/user';
 import { toast } from '@/hooks/use-sonner';
 import { ArrowLeft, User, LogOut, Shield, MailCheck } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Badge } from '@/components/ui/badge';
 
 const Profile = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
