@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { getUserSessions, terminateSession } from '@/services/authService';
-import { UserSession } from '@/types/user';
+import { getUserSessions, terminateSession } from '@/services/auth';
+import { UserSession } from '@/services/auth/sessionService';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";

@@ -137,10 +137,24 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
  */
 export const confirmEmail = async (token: string, type: 'signup' | 'recovery' = 'signup'): Promise<boolean> => {
   try {
-    const { data, error } = await supabase.auth.verifyOtp({
-      token,
-      type,
-    });
+    let result;
+    
+    // Handle different types of verification
+    if (type === 'signup') {
+      result = await supabase.auth.verifyOtp({
+        token_hash: token,
+        type: 'signup',
+      });
+    } else if (type === 'recovery') {
+      result = await supabase.auth.verifyOtp({
+        token_hash: token,
+        type: 'recovery',
+      });
+    } else {
+      throw new Error('Invalid verification type');
+    }
+
+    const { data, error } = result;
 
     if (error) {
       console.error('Email confirmation error:', error);
