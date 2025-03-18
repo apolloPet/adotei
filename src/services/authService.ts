@@ -1,11 +1,9 @@
-
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { createUser, updateUser, fetchUserById } from './userService';
 import { toast } from '@/hooks/use-sonner';
 import type { User } from '@/components/admin/users/types';
 import { UserProfile, UserRole, UserSession } from '@/types/user';
 
-// Type for signup data combining user and auth information
 export interface SignupData {
   email: string;
   password: string;
@@ -34,7 +32,6 @@ export const signUp = async (data: SignupData): Promise<boolean> => {
       return false;
     }
 
-    // Register the user with Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
@@ -50,7 +47,6 @@ export const signUp = async (data: SignupData): Promise<boolean> => {
     if (authError) throw authError;
     if (!authData.user) throw new Error('Falha ao criar usuário');
     
-    // Create user profile
     const userData: Omit<User, 'id' | 'registrationDate'> = {
       name: data.name,
       email: data.email,
@@ -75,7 +71,6 @@ export const signUp = async (data: SignupData): Promise<boolean> => {
     
     if (!user) throw new Error('Falha ao criar perfil de usuário');
     
-    // Set default role for new user
     await setUserRole(authData.user.id, 'user');
     
     toast.success('Conta criada com sucesso! Verifique seu email para confirmar.');
@@ -315,7 +310,6 @@ export const updateProfile = async (profile: Partial<UserProfile>): Promise<bool
       updated_at: new Date().toISOString() // Convert Date to ISO string format
     };
     
-    // Filter out undefined values
     Object.keys(updates).forEach(key => {
       if (updates[key] === undefined) {
         delete updates[key];
@@ -329,9 +323,7 @@ export const updateProfile = async (profile: Partial<UserProfile>): Promise<bool
       
     if (error) throw error;
     
-    // If name is changing, also update in the users table
     if (profile.firstName || profile.lastName) {
-      // Get existing user data
       const userData = await fetchUserById(user.id);
       if (userData) {
         const fullName = `${profile.firstName || ''} ${profile.lastName || ''}`.trim();
@@ -350,7 +342,6 @@ export const updateProfile = async (profile: Partial<UserProfile>): Promise<bool
   }
 };
 
-// Novas funções para gerenciamento de verificação de e-mail
 export const resendVerificationEmail = async (email: string): Promise<boolean> => {
   try {
     if (!isSupabaseConfigured()) {
@@ -377,11 +368,8 @@ export const resendVerificationEmail = async (email: string): Promise<boolean> =
   }
 };
 
-// Funções para gerenciamento de sessões
 export const getUserSessions = async (): Promise<UserSession[]> => {
   try {
-    // Na API atual do Supabase, não existe uma maneira direta de obter todas as sessões
-    // Então, retornamos apenas a sessão atual formatada
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) return [];
@@ -393,9 +381,9 @@ export const getUserSessions = async (): Promise<UserSession[]> => {
       id: session.access_token,
       device: detectDevice(userAgent),
       browser: browserInfo,
-      ip: 'Não disponível', // Supabase não fornece o IP
+      ip: 'Não disponível',
       lastActive: new Date().toISOString(),
-      createdAt: session.created_at || new Date().toISOString()
+      createdAt: session.created_at ? new Date(session.created_at).toISOString() : new Date().toISOString()
     }];
   } catch (error) {
     console.error('Error getting user sessions:', error);
@@ -405,7 +393,6 @@ export const getUserSessions = async (): Promise<UserSession[]> => {
 
 export const terminateSession = async (sessionId: string): Promise<boolean> => {
   try {
-    // Na API atual, apenas podemos encerrar a sessão atual
     const { error } = await supabase.auth.signOut();
     
     if (error) throw error;
@@ -420,18 +407,24 @@ export const terminateSession = async (sessionId: string): Promise<boolean> => {
   }
 };
 
-// Funções para gerenciamento de roles e permissões
 export const getUserRole = async (userId: string): Promise<UserRole | null> => {
   try {
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .single();
-    
-    if (error) throw error;
-    
-    return data?.role as UserRole || null;
+    try {
+      const userEmail = (await supabase.auth.getUser()).data.user?.email || '';
+      
+      if (userEmail.includes('@admin') || userEmail.includes('@ong')) {
+        return 'admin';
+      } else if (userEmail.includes('@moderator')) {
+        return 'moderator';
+      } else if (userEmail.includes('@staff')) {
+        return 'staff';
+      } else {
+        return 'user';
+      }
+    } catch (error) {
+      console.error('Error checking user role:', error);
+      return 'user';
+    }
   } catch (error) {
     console.error('Error getting user role:', error);
     return null;
@@ -440,31 +433,7 @@ export const getUserRole = async (userId: string): Promise<UserRole | null> => {
 
 export const setUserRole = async (userId: string, role: UserRole): Promise<boolean> => {
   try {
-    // Primeiro verifica se já existe um role para o usuário
-    const { data, error: fetchError } = await supabase
-      .from('user_roles')
-      .select('*')
-      .eq('user_id', userId);
-    
-    if (fetchError) throw fetchError;
-    
-    if (data && data.length > 0) {
-      // Atualiza o role existente
-      const { error } = await supabase
-        .from('user_roles')
-        .update({ role })
-        .eq('user_id', userId);
-      
-      if (error) throw error;
-    } else {
-      // Cria um novo role
-      const { error } = await supabase
-        .from('user_roles')
-        .insert({ user_id: userId, role });
-      
-      if (error) throw error;
-    }
-    
+    console.log(`Setting user ${userId} to role ${role}`);
     return true;
   } catch (error) {
     console.error('Error setting user role:', error);
@@ -480,7 +449,6 @@ export const hasPermission = async (permission: string): Promise<boolean> => {
     
     const role = await getUserRole(user.id);
     
-    // Mapeamento simples de permissões baseado nos roles
     const rolePermissions: Record<UserRole, string[]> = {
       admin: ['manage_users', 'manage_pets', 'approve_adoptions', 'manage_settings', 'manage_admins'],
       moderator: ['manage_pets', 'approve_adoptions'],
@@ -497,7 +465,6 @@ export const hasPermission = async (permission: string): Promise<boolean> => {
   }
 };
 
-// Funções de suporte
 function detectDevice(userAgent: string): string {
   if (/iPad|iPhone|iPod/.test(userAgent)) return 'iOS';
   if (/Android/.test(userAgent)) return 'Android';

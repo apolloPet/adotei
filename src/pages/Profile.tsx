@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth';
@@ -11,11 +10,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getProfile, updateProfile } from '@/services/authService';
+import { getProfile, updateProfile, resendVerificationEmail } from '@/services/authService';
 import { UserProfile } from '@/types/user';
 import { toast } from '@/hooks/use-sonner';
 import { ArrowLeft, User, LogOut, Shield, MailCheck } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Badge } from '@/components/ui/badge';
 
 const Profile = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
@@ -109,7 +109,6 @@ const Profile = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar */}
         <div className="lg:col-span-1">
           <Card>
             <CardContent className="pt-6">
@@ -158,7 +157,6 @@ const Profile = () => {
                   variant="destructive"
                   className="w-full"
                   onClick={() => {
-                    // Lógica para sair
                     navigate('/logout');
                   }}
                 >
@@ -170,7 +168,6 @@ const Profile = () => {
           </Card>
         </div>
 
-        {/* Main Content */}
         <div className="lg:col-span-3">
           {activeTab === 'personal' && (
             <form onSubmit={handleSubmit}>
@@ -410,9 +407,8 @@ const Profile = () => {
                     <Button 
                       variant="outline" 
                       onClick={() => {
-                        // Lógica para reenviar email de verificação
                         if (user?.email) {
-                          // Chamar a função de reenvio
+                          resendVerificationEmail(user.email);
                         }
                       }}
                     >
