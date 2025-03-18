@@ -1,4 +1,7 @@
 
+import { User, Session } from '@supabase/supabase-js';
+import { UserProfile } from '@/types/user';
+
 export interface AuthContextType {
   user: User | null;
   session: Session | null;
