@@ -11,67 +11,29 @@ import PetRequirements from "@/components/pet-details/PetRequirements";
 import PetAdoptionProcess from "@/components/pet-details/PetAdoptionProcess";
 import PetNotFound from "@/components/pet-details/PetNotFound";
 import PetLoading from "@/components/pet-details/PetLoading";
-
-// Mock data for the pet details
-const mockPets = [
-  {
-    id: "1",
-    name: "Luna",
-    type: "Gato",
-    breed: "Siamês",
-    age: "2 anos",
-    gender: "Fêmea",
-    size: "Médio",
-    description: "Luna é uma gata siamesa muito dócil e carinhosa. Adora brincar com bolinhas e dormir no colo. Já está castrada e com todas as vacinas em dia.",
-    images: [
-      "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1027&q=80",
-      "https://images.unsplash.com/photo-1573865526739-10659fec78a5?ixlib=rb-1.2.1&auto=format&fit=crop&w=830&q=80",
-      "https://images.unsplash.com/photo-1513360371669-4adf3dd7dff8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1170&q=80"
-    ],
-    location: "ONG Amigos dos Animais - São Paulo, SP",
-    distance: "5 km",
-    characteristics: ["Dócil", "Castrada", "Vacinada", "Indoor"],
-    medicalInfo: "Castrada e vacinada. Testada negativo para FIV e FeLV.",
-    requirements: ["Tela nas janelas", "Ambiente calmo", "Sem outros gatos"],
-    adoptionProcess: "Entrevista, visita ao lar e assinatura de termo de adoção responsável."
-  },
-  {
-    id: "2",
-    name: "Max",
-    type: "Cachorro",
-    breed: "Labrador",
-    age: "3 anos",
-    gender: "Macho",
-    size: "Grande",
-    description: "Max é um labrador muito brincalhão e amoroso. Adora correr e brincar ao ar livre. Já está castrado e com todas as vacinas em dia.",
-    images: [
-      "https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1074&q=80",
-      "https://images.unsplash.com/photo-1587300003388-59208cc962cb?ixlib=rb-1.2.1&auto=format&fit=crop&w=1170&q=80",
-      "https://images.unsplash.com/photo-1598133894008-61f7fdb8cc3a?ixlib=rb-1.2.1&auto=format&fit=crop&w=776&q=80"
-    ],
-    location: "ONG Patinhas Carentes - São Paulo, SP",
-    distance: "12 km",
-    characteristics: ["Brincalhão", "Castrado", "Vacinado", "Adora crianças"],
-    medicalInfo: "Castrado e vacinado. Tratado para vermes recentemente.",
-    requirements: ["Espaço para brincar", "Passeios diários", "Lar sem gatos"],
-    adoptionProcess: "Entrevista, visita ao lar e assinatura de termo de adoção responsável. Taxa de adoção de R$100 para cobrir custos médicos."
-  }
-];
+import { fetchPetById } from '@/services/petService';
+import { Pet } from '@/components/pet/types';
 
 const PetDetails = () => {
   const { id } = useParams();
-  const [pet, setPet] = useState<any>(null);
+  const [pet, setPet] = useState<Pet | null>(null);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Simulating API call to get pet details
-    setTimeout(() => {
-      const foundPet = mockPets.find(pet => pet.id === id);
-      if (foundPet) {
-        setPet(foundPet);
+    const loadPet = async () => {
+      if (id) {
+        try {
+          const petData = await fetchPetById(id);
+          setPet(petData);
+        } catch (error) {
+          console.error('Error fetching pet:', error);
+        } finally {
+          setLoading(false);
+        }
       }
-      setLoading(false);
-    }, 500);
+    };
+    
+    loadPet();
   }, [id]);
   
   if (loading) {
@@ -103,7 +65,7 @@ const PetDetails = () => {
           <PetHeader 
             id={pet.id}
             name={pet.name}
-            type={pet.type}
+            type={pet.species === 'dog' ? 'Cachorro' : pet.species === 'cat' ? 'Gato' : 'Outro'}
             breed={pet.breed}
             age={pet.age}
           />
@@ -111,18 +73,18 @@ const PetDetails = () => {
           <PetDescription 
             description={pet.description}
             location={pet.location}
-            distance={pet.distance}
+            distance="Distância não disponível"
           />
           
-          <PetCharacteristics characteristics={pet.characteristics} />
+          <PetCharacteristics characteristics={pet.traits || []} />
           
-          <PetMedicalInfo medicalInfo={pet.medicalInfo} />
+          <PetMedicalInfo medicalInfo={pet.specialNeeds ? "Necessidades especiais" : "Sem necessidades especiais"} />
           
-          <PetRequirements requirements={pet.requirements} />
+          <PetRequirements requirements={["Ambiente adequado", "Carinho e atenção", "Compromisso com o bem-estar animal"]} />
           
           <PetAdoptionProcess 
             id={pet.id}
-            adoptionProcess={pet.adoptionProcess}
+            adoptionProcess="Entre em contato para iniciar o processo de adoção"
           />
         </div>
       </div>

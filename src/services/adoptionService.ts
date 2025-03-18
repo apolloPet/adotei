@@ -1,5 +1,5 @@
 
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/lib/database.types';
 import { AdoptionMatch } from '@/components/admin/adoption/types';
 import { AdoptionStage } from '@/components/adoption/AdoptionStages';
@@ -11,11 +11,6 @@ type DbAdoption = Database['public']['Tables']['adoptions']['Row'];
 
 export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return [];
-    }
-
     const { data: adoptions, error } = await supabase
       .from('adoptions')
       .select('*');
@@ -53,6 +48,7 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
     return adoptionMatches.filter(Boolean) as AdoptionMatch[];
   } catch (error) {
     console.error('Error fetching adoptions:', error);
+    toast.error('Erro ao buscar adoções');
     return [];
   }
 };
@@ -64,11 +60,6 @@ export const createAdoption = async (
   notes = ''
 ): Promise<AdoptionMatch | null> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return null;
-    }
-
     const { data: adoption, error } = await supabase
       .from('adoptions')
       .insert({
@@ -107,6 +98,7 @@ export const createAdoption = async (
     };
   } catch (error) {
     console.error('Error creating adoption:', error);
+    toast.error('Erro ao criar adoção');
     return null;
   }
 };
@@ -121,11 +113,6 @@ export const updateAdoptionStage = async (
   paymentComplete?: boolean
 ): Promise<boolean> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return false;
-    }
-
     const updates: any = {
       current_stage: stage,
       updated_at: new Date().toISOString()
@@ -147,6 +134,7 @@ export const updateAdoptionStage = async (
     return true;
   } catch (error) {
     console.error('Error updating adoption stage:', error);
+    toast.error('Erro ao atualizar estágio da adoção');
     return false;
   }
 };
@@ -157,11 +145,6 @@ export const recordPetMatch = async (
   matchType: 'liked' | 'disliked'
 ): Promise<boolean> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return false;
-    }
-
     const { error } = await supabase
       .from('pet_matches')
       .insert({
@@ -179,6 +162,7 @@ export const recordPetMatch = async (
     return true;
   } catch (error) {
     console.error('Error recording pet match:', error);
+    toast.error('Erro ao registrar match com o pet');
     return false;
   }
 };

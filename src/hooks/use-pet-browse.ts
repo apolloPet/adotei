@@ -1,105 +1,59 @@
 
-import { useState, useEffect } from 'react';
-import { Pet } from "@/components/pet/types";
-import { fetchPets } from '@/services/petService';
-import { recordPetMatch } from '@/services/adoptionService';
-import { getCurrentUser } from '@/services/authService';
+import { useState, useCallback } from 'react';
+import { Pet } from '@/components/pet/types';
 
-interface FilterOptions {
+type Filters = {
   species: string;
-  gender: string;
   size: string;
-  ageRange: number[];
-}
+  gender: string;
+  ageRange: [number, number];
+};
 
 export const usePetBrowse = () => {
   const [pets, setPets] = useState<Pet[]>([]);
-  const [filters, setFilters] = useState<FilterOptions>({
+  const [displayedPets, setDisplayedPets] = useState<Pet[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [filters, setFilters] = useState<Filters>({
     species: 'all',
-    gender: 'all',
     size: 'all',
+    gender: 'all',
     ageRange: [0, 15],
   });
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Load pets on initial render
-  useEffect(() => {
-    loadPets();
+  const handleFilterChange = useCallback((name: string, value: any) => {
+    setFilters(prev => ({ ...prev, [name]: value }));
   }, []);
 
-  const loadPets = async () => {
-    setIsLoading(true);
-    
-    try {
-      const petsData = await fetchPets();
-      setPets(petsData);
-    } catch (error) {
-      console.error('Error loading pets:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const applyFilters = useCallback(() => {
+    // Filters will be applied at the API level in fetchPets function
+    // This function is kept for UI state management
+  }, []);
 
-  const handleFilterChange = (key: string, value: any) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
-
-  const applyFilters = async () => {
-    setIsLoading(true);
-    
-    try {
-      const filteredPets = await fetchPets(filters);
-      setPets(filteredPets);
-    } catch (error) {
-      console.error('Error applying filters:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const resetFilters = async () => {
+  const resetFilters = useCallback(() => {
     setFilters({
       species: 'all',
-      gender: 'all',
       size: 'all',
+      gender: 'all',
       ageRange: [0, 15],
     });
-    
-    loadPets();
-  };
+  }, []);
 
-  const handleSwipe = async (direction: string, petId: string) => {
-    console.log(`Swiped ${direction} on pet ${petId}`);
-    
-    try {
-      const user = await getCurrentUser();
-      
-      if (!user) {
-        console.error('User not logged in');
-        return;
-      }
-      
-      await recordPetMatch(
-        petId, 
-        user.id, 
-        direction === 'right' ? 'liked' : 'disliked'
-      );
-      
-    } catch (error) {
-      console.error('Error recording swipe:', error);
-    }
-  };
+  const handleSwipe = useCallback((direction: string, id: string) => {
+    setDisplayedPets(prev => prev.filter(pet => pet.id !== id));
+  }, []);
 
   return {
-    pets,
+    pets: displayedPets.length ? displayedPets : pets,
     filters,
     isLoading,
     handleFilterChange,
     applyFilters,
     resetFilters,
-    handleSwipe
+    handleSwipe,
+    setPets: useCallback((newPets: Pet[]) => {
+      setPets(newPets);
+      setDisplayedPets(newPets);
+    }, []),
+    setIsLoading
   };
 };
