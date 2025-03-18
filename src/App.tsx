@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import './App.css';
@@ -103,7 +104,7 @@ function AppContent() {
           <Route
             path="/admin"
             element={
-              <AdminProtectedRoute isAdmin={isAdmin}>
+              <AdminProtectedRoute>
                 <AdminPanelWithProps onLogout={handleLogout} />
               </AdminProtectedRoute>
             }
