@@ -27,7 +27,6 @@ const Header = ({
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Check login state on component mount, route changes, and auth state changes
   useEffect(() => {
     const checkLoginStatus = () => {
       const loginStatus = localStorage.getItem("isLoggedIn") === "true";
@@ -39,10 +38,8 @@ const Header = ({
       setIsAdmin(adminStatus);
     };
     
-    // Initial check
     checkLoginStatus();
     
-    // Also check when props change
     if (propsIsAuthenticated !== undefined) {
       setIsLoggedIn(propsIsAuthenticated);
     }
@@ -51,7 +48,6 @@ const Header = ({
       setIsAdmin(propsIsAdmin);
     }
 
-    // Add event listeners for storage and custom auth changes
     window.addEventListener('storage', checkLoginStatus);
     window.addEventListener('authStateChanged', checkLoginStatus);
     
@@ -61,7 +57,6 @@ const Header = ({
     };
   }, [propsIsAuthenticated, propsIsAdmin, location.pathname]);
 
-  // Handle scroll events
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
@@ -69,11 +64,9 @@ const Header = ({
 
     window.addEventListener('scroll', handleScroll);
     
-    // Clean up the event listener on component unmount
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
@@ -81,26 +74,24 @@ const Header = ({
   const closeMenu = () => setIsMobileMenuOpen(false);
 
   const handleLogout = async () => {
-    // Use the signOut service function
     await signOut();
     
-    // Also update local state
-    setIsAdmin(false);
-    setIsLoggedIn(false);
-    setIsMobileMenuOpen(false);
-    
-    // Call props callback if provided
-    if (propsOnLogout) {
-      propsOnLogout();
-    } else {
-      toast.success("Logout realizado com sucesso");
-      navigate("/");
-    }
+    setTimeout(() => {
+      setIsAdmin(false);
+      setIsLoggedIn(false);
+      setIsMobileMenuOpen(false);
+      
+      if (propsOnLogout) {
+        propsOnLogout();
+      } else {
+        toast.success("Logout realizado com sucesso");
+        navigate("/");
+      }
+    }, 100);
   };
 
   const handleLogin = () => {
     setIsMobileMenuOpen(false);
-    // Always navigate to login page
     navigate("/login");
   };
 

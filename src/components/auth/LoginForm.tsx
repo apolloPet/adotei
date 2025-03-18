@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,13 +15,18 @@ const LoginForm = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, fetchUserData } = useAuth();
   
-  // Redirect if already logged in
-  if (isAuthenticated) {
-    navigate('/browse');
-    return null;
-  }
+  // Verificar estado de autenticação quando o componente é montado
+  useEffect(() => {
+    // Forçar uma nova verificação do estado de autenticação
+    fetchUserData();
+    
+    // Redirect if already logged in
+    if (isAuthenticated) {
+      navigate('/browse');
+    }
+  }, [isAuthenticated, navigate, fetchUserData]);
   
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +56,11 @@ const LoginForm = () => {
       setIsLoading(false);
     }
   };
+  
+  // Se o usuário estiver autenticado, não renderizar o formulário
+  if (isAuthenticated) {
+    return null;
+  }
   
   return (
     <div className="w-full max-w-md mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">

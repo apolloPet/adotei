@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
@@ -14,12 +13,20 @@ export const signOut = async (): Promise<void> => {
       console.error('Signout error:', error);
       toast.error('Erro ao fazer logout');
     } else {
+      // Limpar completamente o localStorage para garantir que todas as credenciais sejam removidas
       localStorage.removeItem("isLoggedIn");
       localStorage.removeItem("isAdmin");
       localStorage.removeItem("userEmail");
+      
+      // Forçar a atualização do estado de autenticação em toda a aplicação
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('authStateChanged'));
+      
+      // Logs para debug
       console.log('User signed out successfully');
+      
+      // Adicionar um pequeno atraso para garantir que a limpeza de estado seja concluída
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
   } catch (error) {
     console.error('Unexpected error during signout:', error);
@@ -172,7 +179,7 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
             phone: userData.phone,
             address: userData.address?.street,
             city: userData.address?.city,
-            state: userData.address?.state || '', // Fixed: state might not exist in address type
+            state: userData.address?.state || '', // Fixed: correctly handle optional state property
             zip: userData.address?.cep,
             housing_type: userData.housingType,
             has_children: userData.hasChildren,

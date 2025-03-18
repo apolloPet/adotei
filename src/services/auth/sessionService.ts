@@ -21,12 +21,13 @@ export const getUserSessions = async (): Promise<UserSession[]> => {
     // this is a placeholder implementation
     
     // Get current session for comparison
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data } = await supabase.auth.getSession();
+    const currentSession = data.session;
     
     // For demo purposes, return a mock session list with the current session
     const mockSessions: UserSession[] = [
       {
-        id: session?.id || 'current-session', // Fixed: properly accessing session.id
+        id: currentSession?.id || 'current-session', // Fixed: properly accessing session.id
         device: navigator.userAgent.includes('Mobile') ? 'Mobile Device' : 
                 navigator.userAgent.includes('Mac') ? 'MacOS' : 
                 navigator.userAgent.includes('Windows') ? 'Windows PC' : 'Desktop Device',
@@ -53,9 +54,10 @@ export const getUserSessions = async (): Promise<UserSession[]> => {
 export const terminateSession = async (sessionId: string): Promise<boolean> => {
   try {
     // Check if this is the current session
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data } = await supabase.auth.getSession();
+    const currentSession = data.session;
     
-    if (session?.id === sessionId) { // Fixed: properly accessing session.id
+    if (currentSession?.id === sessionId) { // Fixed: properly accessing session.id
       // Sign out current session
       await supabase.auth.signOut();
       return true;
