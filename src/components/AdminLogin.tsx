@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,10 +18,12 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
   const { isAdmin, isAuthenticated, fetchUserData } = useAuth();
   
   // Redirect to admin panel if already authenticated as admin
-  if (isAdmin && isAuthenticated) {
-    navigate('/admin');
-    return null;
-  }
+  useEffect(() => {
+    if (isAdmin && isAuthenticated) {
+      console.log('AdminLogin: Usuário já está autenticado como admin, redirecionando para /admin');
+      navigate('/admin', { replace: true });
+    }
+  }, [isAdmin, isAuthenticated, navigate]);
   
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,8 +53,13 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
         if (onLogin) {
           onLogin();
         }
+        
         toast.success("Login administrativo realizado com sucesso!");
-        navigate("/admin");
+        
+        // Adicionar um pequeno atraso para garantir que o estado seja atualizado
+        setTimeout(() => {
+          navigate("/admin", { replace: true });
+        }, 500);
       } else {
         console.error('Falha no login administrativo');
         toast.error("Credenciais inválidas ou usuário não tem permissão de administrador");
@@ -64,6 +71,11 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
       setIsLoading(false);
     }
   };
+  
+  // Se o usuário já estiver autenticado como admin, não renderizar o formulário
+  if (isAdmin && isAuthenticated) {
+    return null;
+  }
   
   return (
     <div className="min-h-screen bg-background flex flex-col justify-center py-12 sm:px-6 lg:px-8">

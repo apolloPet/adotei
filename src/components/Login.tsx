@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-sonner";
 import { ArrowLeft } from 'lucide-react';
 import { signIn } from '@/services/authService';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/auth';
 
 interface LoginProps {
   onLogin?: () => void;
@@ -21,13 +21,15 @@ const Login = ({ onLogin }: LoginProps = {}) => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, fetchUserData } = useAuth();
   
   // Redirect if already logged in
-  if (isAuthenticated) {
-    navigate('/browse');
-    return null;
-  }
+  useEffect(() => {
+    if (isAuthenticated) {
+      console.log('Login: Usuário já está autenticado, redirecionando para /browse');
+      navigate('/browse', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
   
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,13 +45,22 @@ const Login = ({ onLogin }: LoginProps = {}) => {
       const success = await signIn(email, password);
       
       if (success) {
+        // Update user data
+        if (fetchUserData) {
+          await fetchUserData();
+        }
+        
         // Call the onLogin callback if provided
         if (onLogin) {
           onLogin();
         }
         
-        // Redirect after successful login
-        navigate("/browse");
+        toast.success("Login realizado com sucesso!");
+        
+        // Adicionar um pequeno atraso para garantir que o estado seja atualizado
+        setTimeout(() => {
+          navigate("/browse", { replace: true });
+        }, 500);
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -58,6 +69,11 @@ const Login = ({ onLogin }: LoginProps = {}) => {
       setIsLoading(false);
     }
   };
+  
+  // Se o usuário já estiver autenticado, não renderizar o formulário
+  if (isAuthenticated) {
+    return null;
+  }
   
   return (
     <div className="container max-w-md mx-auto px-4 py-8">

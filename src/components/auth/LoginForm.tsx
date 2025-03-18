@@ -17,11 +17,11 @@ const LoginForm = () => {
   const navigate = useNavigate();
   const { isAuthenticated, user, fetchUserData } = useAuth();
   
-  // Check authentication state when component mounts
+  // Verificar estado de autenticação quando o componente é montado
   useEffect(() => {
-    // Redirect if already logged in
+    // Redirecionar se já estiver logado
     if (isAuthenticated && user) {
-      console.log('LoginForm: User is authenticated, redirecting to /browse');
+      console.log('LoginForm: Usuário já está autenticado, redirecionando para /browse');
       navigate('/browse');
     }
   }, [isAuthenticated, navigate, user]);
@@ -46,10 +46,21 @@ const LoginForm = () => {
         // Atualizar explicitamente os dados do usuário após login
         if (fetchUserData) {
           await fetchUserData();
+          
+          // Após atualizar os dados do usuário, verificar se está autenticado antes de redirecionar
+          console.log('Redirecionando para /browse após login bem-sucedido');
+          toast.success('Login realizado com sucesso!');
+          
+          // Adicionar um pequeno atraso para garantir que o estado seja atualizado
+          setTimeout(() => {
+            navigate('/browse', { replace: true });
+          }, 500);
+        } else {
+          // Caso fetchUserData não esteja disponível, redirecionar mesmo assim
+          console.log('fetchUserData não disponível, redirecionando mesmo assim');
+          toast.success('Login realizado com sucesso!');
+          navigate('/browse', { replace: true });
         }
-        
-        console.log('Redirecionando para /browse após login bem-sucedido');
-        navigate("/browse");
       } else {
         console.log('Login falhou');
       }

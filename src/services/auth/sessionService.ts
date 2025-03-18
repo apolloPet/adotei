@@ -1,76 +1,88 @@
 
 import { supabase } from '@/lib/supabase';
-import { toast } from '@/hooks/use-sonner';
-
-export interface UserSession {
-  id: string;
-  device: string;
-  browser: string;
-  lastActive: string;
-  createdAt: string;
-  isCurrentSession?: boolean;
-}
+import { Session } from '@supabase/supabase-js';
 
 /**
- * Get all active sessions for the current user
+ * Creates a new session log entry
  */
-export const getUserSessions = async (): Promise<UserSession[]> => {
+export const createSessionLog = async (session: Session | null, eventType: string): Promise<void> => {
   try {
-    // In a real implementation, this would fetch active sessions from Supabase
-    // Since Supabase doesn't have a direct API for listing all sessions,
-    // this is a placeholder implementation
+    if (!session) {
+      console.warn('Tentativa de criar log de sessão com sessão nula');
+      return;
+    }
     
-    // Get current session for comparison
-    const { data } = await supabase.auth.getSession();
-    const currentSession = data.session;
+    // Log para debugging
+    console.log(`Criando log de sessão: ${eventType}, sessionId: ${session?.id || 'N/A'}`);
     
-    // For demo purposes, return a mock session list with the current session
-    const mockSessions: UserSession[] = [
-      {
-        id: currentSession?.id || 'current-session', // Using optional chaining
-        device: navigator.userAgent.includes('Mobile') ? 'Mobile Device' : 
-                navigator.userAgent.includes('Mac') ? 'MacOS' : 
-                navigator.userAgent.includes('Windows') ? 'Windows PC' : 'Desktop Device',
-        browser: navigator.userAgent.includes('Chrome') ? 'Chrome' : 
-                 navigator.userAgent.includes('Firefox') ? 'Firefox' : 
-                 navigator.userAgent.includes('Safari') ? 'Safari' : 'Unknown Browser',
-        lastActive: new Date().toISOString(),
-        createdAt: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-        isCurrentSession: true
-      }
-    ];
-    
-    return mockSessions;
+    // Inserir log na tabela session_logs
+    const { error } = await supabase
+      .from('session_logs')
+      .insert({
+        user_id: session.user.id,
+        session_id: session?.id, // Use optional chaining here
+        event_type: eventType,
+        timestamp: new Date().toISOString(),
+        user_agent: navigator.userAgent,
+        ip_address: null // IP deve ser capturado no backend por segurança
+      });
+      
+    if (error) {
+      console.error('Erro ao criar log de sessão:', error);
+    }
   } catch (error) {
-    console.error('Error fetching user sessions:', error);
-    toast.error('Não foi possível carregar as sessões');
-    return [];
+    console.error('Erro inesperado ao criar log de sessão:', error);
   }
 };
 
 /**
- * Terminate a specific session
+ * Recupera o histórico de sessões de um usuário
  */
-export const terminateSession = async (sessionId: string): Promise<boolean> => {
+export const getSessionHistory = async (userId: string) => {
   try {
-    // Check if this is the current session
-    const { data } = await supabase.auth.getSession();
-    const currentSession = data.session;
-    
-    if (currentSession?.id === sessionId) { // Using optional chaining
-      // Sign out current session
-      await supabase.auth.signOut();
-      return true;
-    } else {
-      // For demo purposes, we'll just pretend we can terminate other sessions
-      // In a real implementation, you would need a backend function to terminate other sessions
-      console.log('Terminating session:', sessionId);
-      toast.success('Sessão encerrada com sucesso');
-      return true;
+    const { data, error } = await supabase
+      .from('session_logs')
+      .select('*')
+      .eq('user_id', userId)
+      .order('timestamp', { ascending: false });
+      
+    if (error) {
+      console.error('Erro ao recuperar histórico de sessões:', error);
+      return null;
     }
+    
+    return data;
   } catch (error) {
-    console.error('Error terminating session:', error);
-    toast.error('Não foi possível encerrar a sessão');
-    return false;
+    console.error('Erro inesperado ao recuperar histórico de sessões:', error);
+    return null;
+  }
+};
+
+/**
+ * Recupera a sessão atual
+ */
+export const getCurrentSessionInfo = async (session: Session | null) => {
+  try {
+    if (!session) {
+      return null;
+    }
+    
+    const { data, error } = await supabase
+      .from('session_logs')
+      .select('*')
+      .eq('session_id', session?.id) // Use optional chaining here
+      .order('timestamp', { ascending: false })
+      .limit(1)
+      .single();
+      
+    if (error) {
+      console.error('Erro ao recuperar informações da sessão atual:', error);
+      return null;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Erro inesperado ao recuperar informações da sessão:', error);
+    return null;
   }
 };
