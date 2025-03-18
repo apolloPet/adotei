@@ -47,7 +47,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     profile,
     isLoading,
     isAdmin,
-    isAuthenticated
+    isAuthenticated,
+    fetchUserData
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

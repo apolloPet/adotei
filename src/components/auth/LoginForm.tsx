@@ -15,18 +15,16 @@ const LoginForm = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { isAuthenticated, fetchUserData } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   
-  // Verificar estado de autenticação quando o componente é montado
+  // Check authentication state when component mounts
   useEffect(() => {
-    // Forçar uma nova verificação do estado de autenticação
-    fetchUserData();
-    
     // Redirect if already logged in
-    if (isAuthenticated) {
+    if (isAuthenticated && user) {
+      console.log('LoginForm: User is authenticated, redirecting to /browse');
       navigate('/browse');
     }
-  }, [isAuthenticated, navigate, fetchUserData]);
+  }, [isAuthenticated, navigate, user]);
   
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +56,7 @@ const LoginForm = () => {
   };
   
   // Se o usuário estiver autenticado, não renderizar o formulário
-  if (isAuthenticated) {
+  if (isAuthenticated && user) {
     return null;
   }
   

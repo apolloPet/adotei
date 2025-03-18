@@ -1,14 +1,12 @@
 
-import { User as SupabaseUser, Session } from '@supabase/supabase-js';
-import { UserProfile } from '@/types/user';
-
 export interface AuthContextType {
-  user: SupabaseUser | null;
+  user: User | null;
   session: Session | null;
   profile: UserProfile | null;
   isLoading: boolean;
   isAdmin: boolean;
   isAuthenticated: boolean;
+  fetchUserData?: () => Promise<void>; // Added missing fetchUserData method
 }
 
 export interface AuthProviderProps {

@@ -8,7 +8,9 @@ import { SignupData } from './types';
  */
 export const signOut = async (): Promise<void> => {
   try {
+    console.log('Attempting to sign out user');
     const { error } = await supabase.auth.signOut();
+    
     if (error) {
       console.error('Signout error:', error);
       toast.error('Erro ao fazer logout');
@@ -23,10 +25,12 @@ export const signOut = async (): Promise<void> => {
       window.dispatchEvent(new Event('authStateChanged'));
       
       // Logs para debug
-      console.log('User signed out successfully');
+      console.log('User signed out successfully, localStorage cleared');
       
       // Adicionar um pequeno atraso para garantir que a limpeza de estado seja concluída
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      toast.success('Logout realizado com sucesso');
     }
   } catch (error) {
     console.error('Unexpected error during signout:', error);
@@ -75,6 +79,11 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
   try {
     console.log('Tentando fazer login com:', { email });
     
+    // Clear any previous login state to ensure a fresh login attempt
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("isAdmin");
+    localStorage.removeItem("userEmail");
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -91,6 +100,12 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
       } else {
         toast.error('Erro ao fazer login');
       }
+      return false;
+    }
+
+    if (!data.session) {
+      console.error('No session returned after login');
+      toast.error('Erro ao iniciar sessão');
       return false;
     }
 
@@ -141,10 +156,20 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
     if (error) {
       console.error('Signup error:', error);
       if (error instanceof AuthError) {
-        toast.error(error.message);
+        if (error.message.includes('User already registered')) {
+          toast.error('Este email já está registrado. Por favor, faça login ou redefina sua senha.');
+        } else {
+          toast.error(error.message);
+        }
       } else {
         toast.error('Erro ao criar a conta');
       }
+      return false;
+    }
+
+    if (!data.user) {
+      console.error('No user returned after signup');
+      toast.error('Erro ao criar usuário');
       return false;
     }
 
@@ -179,7 +204,7 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
             phone: userData.phone,
             address: userData.address?.street,
             city: userData.address?.city,
-            state: userData.address?.state || '', // Fixed: correctly handle optional state property
+            state: userData.address?.state || '', 
             zip: userData.address?.cep,
             housing_type: userData.housingType,
             has_children: userData.hasChildren,
