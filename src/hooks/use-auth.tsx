@@ -73,8 +73,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       // Get profile for authenticated users
       if (session?.user) {
-        const userProfile = await getProfile();
-        setProfile(userProfile);
+        try {
+          const userProfile = await getProfile();
+          setProfile(userProfile);
+        } catch (error) {
+          console.error('Error fetching profile on auth change:', error);
+        }
       } else {
         setProfile(null);
       }

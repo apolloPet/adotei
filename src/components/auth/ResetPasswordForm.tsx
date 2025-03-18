@@ -35,6 +35,7 @@ const ResetPasswordForm = () => {
       
       if (success) {
         setIsSubmitted(true);
+        console.log("Email de recuperação enviado para:", email);
       }
     } catch (error) {
       console.error("Password reset error:", error);
