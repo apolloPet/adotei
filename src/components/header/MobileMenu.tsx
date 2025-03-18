@@ -56,6 +56,11 @@ const MobileMenu = ({
     onClose?.();
   };
 
+  const handleLinkClick = () => {
+    // Ensure menu closes when any link is clicked
+    onClose?.();
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={open => !open && onClose?.()}>
       <SheetTrigger asChild>
@@ -68,7 +73,7 @@ const MobileMenu = ({
               <Link 
                 to="/browse" 
                 className="flex items-center font-medium text-lg hover:text-primary transition-colors"
-                onClick={onClose}
+                onClick={handleLinkClick}
               >
                 <Heart className="h-4 w-4 mr-2" />
                 Encontrar Pets
@@ -77,7 +82,7 @@ const MobileMenu = ({
             <Link 
               to="/how-it-works" 
               className="flex items-center font-medium text-lg hover:text-primary transition-colors"
-              onClick={onClose}
+              onClick={handleLinkClick}
             >
               <PawPrint className="h-4 w-4 mr-2" />
               Como Funciona
@@ -85,7 +90,7 @@ const MobileMenu = ({
             <Link 
               to="/petmatch" 
               className="flex items-center font-medium text-lg hover:text-primary transition-colors"
-              onClick={onClose}
+              onClick={handleLinkClick}
             >
               <Building2 className="h-4 w-4 mr-2" />
               PetMatch
@@ -93,7 +98,7 @@ const MobileMenu = ({
             <Link 
               to="/institution" 
               className="flex items-center font-medium text-lg hover:text-primary transition-colors"
-              onClick={onClose}
+              onClick={handleLinkClick}
             >
               <User className="h-4 w-4 mr-2" />
               ONG Parceira
@@ -101,7 +106,7 @@ const MobileMenu = ({
             <Link 
               to="/contact" 
               className="flex items-center font-medium text-lg hover:text-primary transition-colors"
-              onClick={onClose}
+              onClick={handleLinkClick}
             >
               <Mail className="h-4 w-4 mr-2" />
               Contato
@@ -110,7 +115,7 @@ const MobileMenu = ({
               <Link 
                 to="/admin" 
                 className="flex items-center font-medium text-lg text-primary transition-colors"
-                onClick={onClose}
+                onClick={handleLinkClick}
               >
                 <ShieldAlert className="h-4 w-4 mr-2" />
                 Admin

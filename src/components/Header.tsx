@@ -28,6 +28,12 @@ const Header = ({
   const location = useLocation();
   const navigate = useNavigate();
 
+  // Fechar menu ao navegar para outra rota
+  useEffect(() => {
+    console.log("Rota alterada: fechando menu mobile");
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
   useEffect(() => {
     const checkLoginStatus = () => {
       const loginStatus = localStorage.getItem("isLoggedIn") === "true";
@@ -68,11 +74,10 @@ const Header = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
+  const closeMenu = () => {
+    console.log("Fechando menu mobile manualmente");
     setIsMobileMenuOpen(false);
-  }, [location.pathname]);
-
-  const closeMenu = () => setIsMobileMenuOpen(false);
+  };
 
   const handleLogout = async () => {
     // Adicionar logging para debug
@@ -117,11 +122,14 @@ const Header = ({
   };
 
   const handleLogin = () => {
-    setIsMobileMenuOpen(false);
+    closeMenu();
     navigate("/login");
   };
 
-  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+  const toggleMobileMenu = () => {
+    console.log("Alternando estado do menu mobile:", !isMobileMenuOpen);
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
 
   return (
     <header 
