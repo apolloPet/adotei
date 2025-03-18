@@ -21,3 +21,18 @@ export const isSupabaseConfigured = () => {
     return false;
   }
 };
+
+// Handle errors in a standardized way
+export const handleSupabaseError = (error: any, defaultMessage: string = 'Ocorreu um erro') => {
+  console.error('Supabase error:', error);
+  
+  // Check for specific authentication errors
+  if (error?.name === 'AuthSessionMissingError') {
+    toast.error('Sessão de autenticação expirada. Por favor, faça login novamente.');
+    return;
+  }
+  
+  // Handle other errors
+  const errorMessage = error?.message || defaultMessage;
+  toast.error(errorMessage);
+};

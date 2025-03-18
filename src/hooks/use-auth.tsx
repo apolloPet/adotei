@@ -1,6 +1,6 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, handleSupabaseError } from '@/lib/supabase';
 import { getCurrentUser, getCurrentSession, getProfile } from '@/services/authService';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { UserProfile } from '@/types/user';
@@ -36,23 +36,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(true);
         
         // Get session and user
-        const currentUser = await getCurrentUser();
         const currentSession = await getCurrentSession();
-        
-        setUser(currentUser);
         setSession(currentSession);
         
-        // Check if admin
-        const isAdminUser = currentUser?.email?.includes('@ong') || currentUser?.email?.includes('@admin') || false;
-        setIsAdmin(isAdminUser);
-        
-        // Get profile for authenticated users
-        if (currentUser) {
-          const userProfile = await getProfile();
-          setProfile(userProfile);
+        if (currentSession) {
+          const currentUser = await getCurrentUser();
+          setUser(currentUser);
+          
+          // Check if admin
+          const isAdminUser = currentUser?.email?.includes('@ong') || 
+                             currentUser?.email?.includes('@admin') || 
+                             false;
+          setIsAdmin(isAdminUser);
+          
+          // Get profile for authenticated users
+          if (currentUser) {
+            try {
+              const userProfile = await getProfile();
+              setProfile(userProfile);
+            } catch (profileError) {
+              console.error('Error fetching user profile:', profileError);
+            }
+          }
+        } else {
+          setUser(null);
+          setProfile(null);
+          setIsAdmin(false);
         }
       } catch (error) {
         console.error('Error in auth effect:', error);
+        // Don't show toast here as it can be annoying during initial load
       } finally {
         setIsLoading(false);
       }
@@ -61,18 +74,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     fetchUserData();
 
     // Set up auth state change subscription
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       console.log('Auth state changed:', event);
       
-      setUser(session?.user ?? null);
-      setSession(session);
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
       
       // Check if admin
-      const isAdminUser = session?.user?.email?.includes('@ong') || session?.user?.email?.includes('@admin') || false;
+      const isAdminUser = newSession?.user?.email?.includes('@ong') || 
+                         newSession?.user?.email?.includes('@admin') || 
+                         false;
       setIsAdmin(isAdminUser);
       
       // Get profile for authenticated users
-      if (session?.user) {
+      if (newSession?.user) {
         try {
           const userProfile = await getProfile();
           setProfile(userProfile);

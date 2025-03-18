@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from '@/hooks/use-auth';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Register = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   // Redirect if already logged in
   useEffect(() => {
@@ -19,12 +21,19 @@ const Register = () => {
   }, [isAuthenticated, isLoading, navigate]);
   
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="animate-pulse flex flex-col items-center p-8">
+          <div className="h-6 w-24 bg-muted rounded mb-4"></div>
+          <div className="h-4 w-64 bg-muted rounded"></div>
+        </div>
+      </div>
+    );
   }
   
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 pt-32 pb-20">
+      <main className={`container mx-auto px-4 ${isMobile ? 'pt-16 pb-12' : 'pt-32 pb-20'}`}>
         <div className="max-w-lg mx-auto">
           <div className="mb-6">
             <Link to="/">
@@ -34,7 +43,7 @@ const Register = () => {
               </Button>
             </Link>
             
-            <h1 className="text-2xl font-bold mb-2">Crie sua conta</h1>
+            <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold mb-2`}>Crie sua conta</h1>
             <p className="text-muted-foreground">
               Preencha o formulário abaixo para começar a encontrar seu novo amigo.
             </p>
