@@ -14,7 +14,6 @@ const ResetPasswordConfirm = () => {
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Check if this page was accessed with a valid token
     const hash = window.location.hash;
     if (!hash.includes('type=recovery')) {
       setIsTokenValid(false);

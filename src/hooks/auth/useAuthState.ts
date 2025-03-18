@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { UserProfile } from '@/types/user';
 import { supabase } from '@/lib/supabase';
-import { getCurrentUser, getCurrentSession, getProfile } from '@/services/auth';
+import { getCurrentUser, getCurrentSession } from '@/services/auth';
+import { getProfile } from '@/services/auth/profileService';
 
 export function useAuthState() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -57,7 +58,9 @@ export function useAuthState() {
               // Get profile for authenticated users
               try {
                 const userProfile = await getProfile();
-                setProfile(userProfile);
+                if (userProfile) {
+                  setProfile(userProfile);
+                }
               } catch (profileError) {
                 console.error('Error fetching user profile:', profileError);
               }
@@ -102,7 +105,9 @@ export function useAuthState() {
             if (currentUser) {
               try {
                 const userProfile = await getProfile();
-                setProfile(userProfile);
+                if (userProfile) {
+                  setProfile(userProfile);
+                }
               } catch (profileError) {
                 console.error('Error fetching profile on auth change:', profileError);
               }

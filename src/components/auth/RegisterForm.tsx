@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,28 +9,25 @@ import { Switch } from "@/components/ui/switch";
 import { CheckCircle } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-sonner";
-import { signUp, SignupData } from '@/services/authService';
+import { signUp, type SignupData } from '@/services/auth';
 
 const RegisterForm = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Form fields
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   
-  // Address fields
   const [street, setStreet] = useState('');
   const [number, setNumber] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
   const [city, setCity] = useState('');
   const [cep, setCep] = useState('');
   
-  // Housing and personal details
   const [housingType, setHousingType] = useState<'house' | 'apartment' | 'other'>('house');
   const [hasChildren, setHasChildren] = useState(false);
   const [childrenAges, setChildrenAges] = useState('');
@@ -40,9 +36,8 @@ const RegisterForm = () => {
   const [allergiesDescription, setAllergiesDescription] = useState('');
   const [workSchedule, setWorkSchedule] = useState('');
   
-  // Form validation
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const validateStep1 = () => {
     const newErrors: Record<string, string> = {};
     

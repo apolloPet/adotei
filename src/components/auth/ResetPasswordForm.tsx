@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from "@/hooks/use-sonner";
-import { resetPassword } from '@/services/authService';
+import { resetPassword } from '@/services/auth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 

@@ -1,6 +1,8 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
+import { SignupData } from './types';
 
 /**
  * Desloga o usuário atual
@@ -60,46 +62,6 @@ export const getCurrentUser = async () => {
 };
 
 /**
- * Envia um email de recuperação de senha
- */
-export const resetPassword = async (email: string): Promise<void> => {
-  try {
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password-confirm`,
-    });
-    if (error) {
-      console.error('Password reset error:', error);
-      toast.error('Erro ao solicitar a redefinição de senha');
-    } else {
-      toast.success('Email de redefinição de senha enviado!');
-      console.log('Password reset email sent:', data);
-    }
-  } catch (error) {
-    console.error('Unexpected error during password reset:', error);
-    toast.error('Erro inesperado ao solicitar a redefinição de senha');
-  }
-};
-
-/**
- * Atualiza a senha do usuário
- */
-export const updatePassword = async (newPassword: string): Promise<void> => {
-  try {
-    const { data, error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) {
-      console.error('Password update error:', error);
-      toast.error('Erro ao atualizar a senha');
-    } else {
-      toast.success('Senha atualizada com sucesso!');
-      console.log('Password updated successfully:', data);
-    }
-  } catch (error) {
-    console.error('Unexpected error during password update:', error);
-    toast.error('Erro inesperado ao atualizar a senha');
-  }
-};
-
-/**
  * Realiza o login do usuário
  */
 export const signIn = async (email: string, password: string): Promise<boolean> => {
@@ -135,13 +97,18 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
 /**
  * Realiza o cadastro do usuário
  */
-export const signUp = async (email: string, password: string): Promise<boolean> => {
+export const signUp = async (userData: SignupData): Promise<boolean> => {
   try {
     const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
+      email: userData.email,
+      password: userData.password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/email-confirmation`,
+        data: {
+          name: userData.name,
+          phone: userData.phone,
+          // Add other user metadata as needed
+        }
       },
     });
 
@@ -168,7 +135,7 @@ export const signUp = async (email: string, password: string): Promise<boolean> 
 /**
  * Confirma o email do usuário
  */
-export const confirmEmail = async (token: string, type: string): Promise<boolean> => {
+export const confirmEmail = async (token: string, type: 'signup' | 'recovery' = 'signup'): Promise<boolean> => {
   try {
     const { data, error } = await supabase.auth.verifyOtp({
       token,
@@ -188,54 +155,6 @@ export const confirmEmail = async (token: string, type: string): Promise<boolean
     console.error('Unexpected error during email confirmation:', error);
     toast.error('Erro inesperado ao confirmar o email');
     return false;
-  }
-};
-
-/**
- * Busca o perfil do usuário
- */
-export const getProfile = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select(`username, full_name, avatar_url, website`)
-      .eq('id', (await getCurrentUser()!)?.id)
-      .single();
-
-    if (error) {
-      console.error('Profile fetch error:', error);
-      toast.error('Erro ao buscar o perfil');
-      return null;
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Unexpected error during profile fetch:', error);
-    toast.error('Erro inesperado ao buscar o perfil');
-    return null;
-  }
-};
-
-/**
- * Atualiza o perfil do usuário
- */
-export const updateProfile = async (updates: { username: string; full_name: string; avatar_url: string | null; website: string | null }) => {
-  try {
-    const { error } = await supabase.from('profiles').upsert({
-      id: (await getCurrentUser()!)?.id,
-      updated_at: new Date(),
-      ...updates,
-    });
-
-    if (error) {
-      console.error('Profile update error:', error);
-      toast.error('Erro ao atualizar o perfil');
-      throw error;
-    }
-  } catch (error) {
-    console.error('Unexpected error during profile update:', error);
-    toast.error('Erro inesperado ao atualizar o perfil');
-    throw error;
   }
 };
 
@@ -310,5 +229,29 @@ export const signInAdmin = async (email: string, password: string): Promise<bool
       toast.error('Erro ao fazer login como administrador');
     }
     return false;
+  }
+};
+
+// Add functions for setting user roles if needed
+export const setUserRole = async (userId: string, role: string): Promise<boolean> => {
+  try {
+    // Implementation goes here
+    console.log('Setting user role:', { userId, role });
+    return true;
+  } catch (error) {
+    console.error('Error setting user role:', error);
+    toast.error('Erro ao definir função do usuário');
+    return false;
+  }
+};
+
+export const getUserRole = async (userId: string): Promise<string | null> => {
+  try {
+    // Implementation goes here
+    console.log('Getting user role for:', userId);
+    return 'user'; // Placeholder
+  } catch (error) {
+    console.error('Error getting user role:', error);
+    return null;
   }
 };

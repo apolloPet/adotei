@@ -1,7 +1,7 @@
 
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { getProfile } from '@/services/auth';
+import { getProfile } from '@/services/auth/profileService';
 
 export function useAuthSubscription({
   setUser,
@@ -40,7 +40,9 @@ export function useAuthSubscription({
         // Get profile for authenticated users
         try {
           const userProfile = await getProfile();
-          setProfile(userProfile);
+          if (userProfile) {
+            setProfile(userProfile);
+          }
         } catch (error) {
           console.error('Error fetching profile on auth change:', error);
         }

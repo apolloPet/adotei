@@ -1,162 +1,97 @@
-
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
-import { getUserRole, setUserRole } from '@/services/authService';
-import { UserRole } from '@/types/user';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from '@/hooks/use-sonner';
-import { Label } from "@/components/ui/label";
-import { Shield, ShieldCheck, ShieldAlert, ShieldX, RefreshCw } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, UserCheck } from 'lucide-react';
+import { setUserRole, getUserRole } from '@/services/auth/authCore';
+import { useAuth } from '@/hooks/auth';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole | null;
-}
-
-// Componente simulado para administradores - em uma implementação real, buscaríamos usuários do Supabase
 const RoleManagement = () => {
-  const [users, setUsers] = useState<User[]>([
-    { id: '1', name: 'Admin Principal', email: 'admin@ong.com', role: 'admin' },
-    { id: '2', name: 'Coordenador de Adoções', email: 'moderador@ong.com', role: 'moderator' },
-    { id: '3', name: 'Funcionário', email: 'staff@ong.com', role: 'staff' },
-    { id: '4', name: 'Usuário Comum', email: 'usuario@exemplo.com', role: 'user' }
-  ]);
+  const [userId, setUserId] = useState('');
+  const [role, setRole] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [userRole, setUserRoleState] = useState<string | null>(null);
+  const { user } = useAuth();
 
-  const roleIcons = {
-    admin: <ShieldAlert className="h-4 w-4 text-red-500" />,
-    moderator: <ShieldCheck className="h-4 w-4 text-green-500" />,
-    staff: <Shield className="h-4 w-4 text-blue-500" />,
-    user: <ShieldX className="h-4 w-4 text-gray-500" />
-  };
+  useEffect(() => {
+    if (user) {
+      setUserId(user.id);
+      fetchUserRole(user.id);
+    }
+  }, [user]);
 
-  const roleLabels = {
-    admin: 'Administrador',
-    moderator: 'Moderador',
-    staff: 'Funcionário',
-    user: 'Usuário'
-  };
-
-  const roleDescriptions = {
-    admin: 'Acesso completo a todas as áreas',
-    moderator: 'Pode gerenciar adoções e pets',
-    staff: 'Pode atualizar informações de pets',
-    user: 'Acesso padrão ao sistema'
-  };
-
-  const handleRoleChange = async (userId: string, newRole: UserRole) => {
-    setUpdatingUserId(userId);
-    
+  const fetchUserRole = async (userId: string) => {
+    setIsLoading(true);
     try {
-      // Em uma implementação real, chamaríamos a função setUserRole
-      // const success = await setUserRole(userId, newRole);
-      
-      // Simulação de atualização bem-sucedida
-      const success = true;
-      
+      const role = await getUserRole(userId);
+      setUserRoleState(role);
+    } catch (error) {
+      console.error("Error fetching user role:", error);
+      toast.error("Erro ao buscar função do usuário");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRoleUpdate = async () => {
+    if (!userId || !role) {
+      toast.error("Por favor, selecione um usuário e uma função.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const success = await setUserRole(userId, role);
       if (success) {
-        // Atualizar o estado local
-        setUsers(users.map(user => 
-          user.id === userId ? { ...user, role: newRole } : user
-        ));
-        
-        toast.success(`Função do usuário atualizada para ${roleLabels[newRole]}`);
+        toast.success("Função do usuário atualizada com sucesso!");
+        fetchUserRole(userId); // Refresh the role
+      } else {
+        toast.error("Falha ao atualizar função do usuário.");
       }
     } catch (error) {
-      console.error('Error updating user role:', error);
-      toast.error('Erro ao atualizar função do usuário');
+      console.error("Error updating user role:", error);
+      toast.error("Erro ao atualizar função do usuário");
     } finally {
-      setUpdatingUserId(null);
+      setIsLoading(false);
     }
   };
 
   return (
-    <Card>
+    <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Gerenciamento de Funções</CardTitle>
-            <CardDescription>Definir funções e permissões para usuários</CardDescription>
-          </div>
-        </div>
+        <CardTitle>Gerenciar Funções de Usuário</CardTitle>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Usuário</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Função Atual</TableHead>
-              <TableHead>Alterar Função</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>
-                  {user.role && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      {roleIcons[user.role]}
-                      {roleLabels[user.role]}
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <RadioGroup 
-                    value={user.role || ''} 
-                    className="flex gap-4"
-                    onValueChange={(value) => handleRoleChange(user.id, value as UserRole)}
-                  >
-                    {Object.entries(roleLabels).map(([role, label]) => (
-                      <div key={role} className="flex items-center space-x-2">
-                        <RadioGroupItem 
-                          value={role} 
-                          id={`${user.id}-${role}`} 
-                          disabled={updatingUserId === user.id}
-                        />
-                        <Label 
-                          htmlFor={`${user.id}-${role}`}
-                          className="cursor-pointer"
-                        >
-                          {label}
-                        </Label>
-                      </div>
-                    ))}
-                    
-                    {updatingUserId === user.id && (
-                      <RefreshCw className="h-4 w-4 animate-spin ml-2" />
-                    )}
-                  </RadioGroup>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        
-        <div className="mt-8 space-y-4">
-          <h3 className="text-lg font-medium">Descrição das Funções</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.entries(roleLabels).map(([role, label]) => (
-              <div key={role} className="border rounded-md p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  {roleIcons[role as UserRole]}
-                  <span className="font-medium">{label}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {roleDescriptions[role as UserRole]}
-                </p>
-              </div>
-            ))}
+      <CardContent className="space-y-4">
+        {isLoading && (
+          <div className="flex items-center justify-center">
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Carregando...
           </div>
+        )}
+        {userRole && (
+          <div className="flex items-center space-x-2">
+            <UserCheck className="h-4 w-4 text-green-500" />
+            <p className="text-sm text-muted-foreground">
+              Função atual do usuário: {userRole}
+            </p>
+          </div>
+        )}
+        <div className="space-y-2">
+          <Select onValueChange={setRole}>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecionar Função" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="user">Usuário</SelectItem>
+              <SelectItem value="admin">Administrador</SelectItem>
+              <SelectItem value="moderator">Moderador</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+        <Button onClick={handleRoleUpdate} disabled={isLoading} className="w-full">
+          Atualizar Função
+        </Button>
       </CardContent>
     </Card>
   );
