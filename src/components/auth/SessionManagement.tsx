@@ -1,7 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { getUserSessions, terminateSession } from '@/services/auth';
-import { UserSession } from '@/services/auth/sessionService';
+import { getUserSessions, terminateSession, UserSession } from '@/services/auth';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -37,8 +36,16 @@ const SessionManagement = () => {
       const success = await terminateSession(sessionId);
       
       if (success) {
-        // A sessão atual será encerrada e o usuário redirecionado para login
-        // A atualização do estado não é necessária
+        // Se a sessão atual foi encerrada, o usuário já será redirecionado
+        // para a página de login pelo processo de logout
+        // Caso contrário, atualizar a lista de sessões
+        if (!sessions.find(s => s.id === sessionId)?.isCurrentSession) {
+          toast.success('Sessão encerrada com sucesso');
+          // Atualizar a lista de sessões
+          setSessions(sessions.filter(s => s.id !== sessionId));
+        }
+      } else {
+        toast.error('Não foi possível encerrar a sessão');
       }
     } catch (error) {
       console.error('Error terminating session:', error);
@@ -47,9 +54,9 @@ const SessionManagement = () => {
   };
   
   const getDeviceIcon = (device: string) => {
-    if (device.includes('Android') || device.includes('iOS')) {
+    if (device.includes('Android') || device.includes('iOS') || device.includes('iPhone') || device.includes('Móvel')) {
       return <Smartphone className="h-4 w-4" />;
-    } else if (device.includes('Mac') || device.includes('Windows') || device.includes('Linux')) {
+    } else if (device.includes('Mac') || device.includes('Windows') || device.includes('Linux') || device.includes('PC')) {
       return <Laptop className="h-4 w-4" />;
     } else {
       return <Monitor className="h-4 w-4" />;
@@ -113,9 +120,11 @@ const SessionManagement = () => {
                     <div className="flex items-center gap-2">
                       {getDeviceIcon(session.device)}
                       <span>{session.device}</span>
-                      <Badge variant="outline" className="ml-2">
-                        {session.id === sessions[0].id ? 'Atual' : 'Inativo'}
-                      </Badge>
+                      {session.isCurrentSession && (
+                        <Badge variant="outline" className="ml-2">
+                          Atual
+                        </Badge>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>{session.browser}</TableCell>
