@@ -33,7 +33,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         });
         
         // Verificar se o usuário está autenticado
-        if (!isAuthenticated || !user) {
+        if (!isAuthenticated) {
           console.log('AdminProtectedRoute: Usuário não autenticado, redirecionando para login admin');
           toast.error("Por favor, faça login para acessar esta página");
           navigate('/admin-login', { replace: true });
@@ -46,7 +46,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         // Se é admin pelo localStorage OU pelo estado global
         if (localStorageAdmin || isAdmin) {
           console.log('AdminProtectedRoute: Acesso administrativo confirmado via localStorage ou estado global', { 
-            email: user.email,
+            email: user?.email,
             isAdmin,
             localStorageAdmin
           });
@@ -55,43 +55,45 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
           return;
         }
         
-        // Verificar na base de dados (user_roles)
-        console.log('AdminProtectedRoute: Verificando permissões na tabela user_roles');
-        const { data: roleData, error: roleError } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .single();
+        // Se chegou aqui e o usuário existe, verificar na base de dados (user_roles)
+        if (user) {
+          console.log('AdminProtectedRoute: Verificando permissões na tabela user_roles');
+          const { data: roleData, error: roleError } = await supabase
+            .from('user_roles')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('role', 'admin')
+            .single();
+            
+          if (roleData) {
+            console.log('AdminProtectedRoute: Usuário encontrado na tabela user_roles como admin', {
+              userId: user.id,
+              role: roleData.role
+            });
+            
+            // Atualizar localStorage para futuras verificações
+            localStorage.setItem("isAdmin", "true");
+            setIsVerifying(false);
+            return;
+          }
           
-        if (roleData) {
-          console.log('AdminProtectedRoute: Usuário encontrado na tabela user_roles como admin', {
-            userId: user.id,
-            role: roleData.role
-          });
+          // Verificação adicional por email
+          const adminEmails = ['admin@petmatch.com'];
+          const adminDomains = ['@admin', '@ong'];
           
-          // Atualizar localStorage para futuras verificações
-          localStorage.setItem("isAdmin", "true");
-          setIsVerifying(false);
-          return;
-        }
-        
-        // Verificação adicional por email
-        const adminEmails = ['admin@petmatch.com'];
-        const adminDomains = ['@admin', '@ong'];
-        
-        const isAdminEmail = adminEmails.includes(user.email || '') || 
-                          adminDomains.some(domain => (user.email || '').includes(domain));
-        
-        if (isAdminEmail) {
-          console.log('AdminProtectedRoute: Email administrativo detectado, concedendo acesso', {
-            email: user.email
-          });
+          const isAdminEmail = adminEmails.includes(user.email || '') || 
+                            adminDomains.some(domain => (user.email || '').includes(domain));
           
-          // Atualizar localStorage para futuras verificações
-          localStorage.setItem("isAdmin", "true");
-          setIsVerifying(false);
-          return;
+          if (isAdminEmail) {
+            console.log('AdminProtectedRoute: Email administrativo detectado, concedendo acesso', {
+              email: user.email
+            });
+            
+            // Atualizar localStorage para futuras verificações
+            localStorage.setItem("isAdmin", "true");
+            setIsVerifying(false);
+            return;
+          }
         }
         
         // Se chegou aqui, não é admin

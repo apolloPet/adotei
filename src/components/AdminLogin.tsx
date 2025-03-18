@@ -20,10 +20,17 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
   
   // Redirect to admin panel if already authenticated as admin
   useEffect(() => {
-    if (isAdmin && isAuthenticated) {
-      console.log('AdminLogin: Usuário já está autenticado como admin, redirecionando para /admin');
-      navigate('/admin', { replace: true });
-    }
+    const checkAdminStatus = async () => {
+      // Verificar localStorage primeiro
+      const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
+      
+      if ((isAdmin || localStorageAdmin) && isAuthenticated) {
+        console.log('AdminLogin: Usuário já está autenticado como admin, redirecionando para /admin');
+        navigate('/admin', { replace: true });
+      }
+    };
+    
+    checkAdminStatus();
   }, [isAdmin, isAuthenticated, navigate]);
   
   const handleAdminLogin = async (e: React.FormEvent) => {
@@ -116,7 +123,11 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
         }
         
         toast.success("Login administrativo realizado com sucesso!");
-        navigate("/admin", { replace: true });
+        
+        // Usar setTimeout para permitir que o estado de autenticação seja atualizado primeiro
+        setTimeout(() => {
+          navigate("/admin", { replace: true });
+        }, 100);
       } else {
         toast.error("Credenciais inválidas ou usuário não tem permissão de administrador");
       }

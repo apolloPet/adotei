@@ -74,7 +74,9 @@ export function useAuthState() {
           
           // Atualizar localStorage
           localStorage.setItem("isLoggedIn", "true");
-          localStorage.setItem("isAdmin", finalAdminStatus.toString());
+          if (finalAdminStatus) {
+            localStorage.setItem("isAdmin", "true");
+          }
           localStorage.setItem("userEmail", userData.email);
         } else if (localStorageAdmin) {
           // Se não temos email mas temos flag de admin no localStorage, manter como admin
@@ -113,10 +115,12 @@ export function useAuthState() {
         setIsAdmin(false);
         setIsAuthenticated(false);
         
-        // Limpar localStorage
-        localStorage.removeItem("isLoggedIn");
-        localStorage.removeItem("isAdmin");
-        localStorage.removeItem("userEmail");
+        // Limpar localStorage apenas se não for admin de demonstração
+        if (!localStorageAdmin) {
+          localStorage.removeItem("isLoggedIn");
+          localStorage.removeItem("isAdmin");
+          localStorage.removeItem("userEmail");
+        }
       }
     } catch (error) {
       console.error('Erro ao verificar autenticação:', error);
