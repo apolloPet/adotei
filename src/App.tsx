@@ -21,7 +21,7 @@ import Contact from './pages/Contact';
 import { AdminLoginProps } from './components/AdminLoginProps';
 import { AdminPanelProps } from './components/AdminPanelProps';
 import { toast } from '@/hooks/use-sonner';
-import { AuthProvider, useAuth } from './hooks/use-auth';
+import { AuthProvider, useAuth } from './hooks/auth';
 import Profile from './pages/Profile';
 import ResetPasswordConfirm from './pages/ResetPasswordConfirm';
 import ResetPasswordForm from './components/auth/ResetPasswordForm';

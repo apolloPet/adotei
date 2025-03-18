@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import RegisterForm from "@/components/auth/RegisterForm";
 import { Button } from "@/components/ui/button";
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/auth';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
