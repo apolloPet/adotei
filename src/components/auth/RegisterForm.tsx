@@ -1,47 +1,138 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-sonner";
 import { signUp, SignupData } from "@/services/authService";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription
+} from "@/components/ui/form";
+import { Loader2 } from "lucide-react";
 
 interface RegistrationStep {
   title: string;
   description: string;
 }
 
+// Esquema de validação para os dados do formulário
+const accountSchema = z.object({
+  email: z.string().email('Digite um email válido'),
+  password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres')
+});
+
+const personalInfoSchema = z.object({
+  name: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
+  phone: z.string().min(10, 'Telefone deve ter pelo menos 10 dígitos')
+});
+
+const addressSchema = z.object({
+  cep: z.string().min(8, 'CEP deve ter pelo menos 8 caracteres'),
+  street: z.string().min(3, 'Rua é obrigatória'),
+  number: z.string().min(1, 'Número é obrigatório'),
+  neighborhood: z.string().min(2, 'Bairro é obrigatório'),
+  city: z.string().min(2, 'Cidade é obrigatória'),
+  housingType: z.enum(['apartment', 'house', 'other']),
+  hasChildren: z.boolean(),
+  childrenAges: z.string().optional()
+});
+
+const experienceSchema = z.object({
+  hadPetsBefore: z.boolean(),
+  hasAllergies: z.boolean(),
+  allergiesDescription: z.string().optional(),
+  workSchedule: z.string().min(3, 'Informe sua rotina de trabalho')
+});
+
 const RegisterForm = () => {
   const [step, setStep] = useState(0);
-  const [formData, setFormData] = useState<SignupData>({
-    email: '',
-    password: '',
-    name: '',
-    phone: '',
-    address: {
-      street: '',
-      number: '',
-      neighborhood: '',
-      city: '',
-      cep: '',
-    },
-    housingType: 'apartment',
-    hasChildren: false,
-    childrenAges: '',
-    hadPetsBefore: false,
-    hasAllergies: false,
-    allergiesDescription: '',
-    workSchedule: '',
-  });
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingCep, setIsLoadingCep] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
   const navigate = useNavigate();
+
+  // Definir formulários para cada etapa
+  const accountForm = useForm<z.infer<typeof accountSchema>>({
+    resolver: zodResolver(accountSchema),
+    defaultValues: {
+      email: '',
+      password: ''
+    }
+  });
+
+  const personalInfoForm = useForm<z.infer<typeof personalInfoSchema>>({
+    resolver: zodResolver(personalInfoSchema),
+    defaultValues: {
+      name: '',
+      phone: ''
+    }
+  });
+
+  const addressForm = useForm<z.infer<typeof addressSchema>>({
+    resolver: zodResolver(addressSchema),
+    defaultValues: {
+      cep: '',
+      street: '',
+      number: '',
+      neighborhood: '',
+      city: '',
+      housingType: 'apartment',
+      hasChildren: false,
+      childrenAges: ''
+    }
+  });
+
+  const experienceForm = useForm<z.infer<typeof experienceSchema>>({
+    resolver: zodResolver(experienceSchema),
+    defaultValues: {
+      hadPetsBefore: false,
+      hasAllergies: false,
+      allergiesDescription: '',
+      workSchedule: ''
+    }
+  });
+
+  // Obter valores do formulário para cada etapa
+  const getFormData = (): SignupData => {
+    const accountData = accountForm.getValues();
+    const personalData = personalInfoForm.getValues();
+    const addressData = addressForm.getValues();
+    const experienceData = experienceForm.getValues();
+
+    return {
+      email: accountData.email,
+      password: accountData.password,
+      name: personalData.name,
+      phone: personalData.phone,
+      address: {
+        street: addressData.street,
+        number: addressData.number,
+        neighborhood: addressData.neighborhood,
+        city: addressData.city,
+        cep: addressData.cep,
+      },
+      housingType: addressData.housingType,
+      hasChildren: addressData.hasChildren,
+      childrenAges: addressData.childrenAges,
+      hadPetsBefore: experienceData.hadPetsBefore,
+      hasAllergies: experienceData.hasAllergies,
+      allergiesDescription: experienceData.allergiesDescription,
+      workSchedule: experienceData.workSchedule
+    };
+  };
 
   const steps: RegistrationStep[] = [
     {
@@ -66,29 +157,8 @@ const RegisterForm = () => {
     }
   ];
 
-  const updateFormData = (field: string, value: any) => {
-    setFormData(prev => {
-      // Handle nested address fields
-      if (field.startsWith('address.')) {
-        const addressField = field.split('.')[1];
-        return {
-          ...prev,
-          address: {
-            ...prev.address,
-            [addressField]: value
-          }
-        };
-      }
-      // Handle regular fields
-      return {
-        ...prev,
-        [field]: value
-      };
-    });
-  };
-
   const handleCepLookup = async () => {
-    const cep = formData.address.cep.replace(/\D/g, '');
+    const cep = addressForm.getValues('cep').replace(/\D/g, '');
     if (cep.length !== 8) {
       toast.error("CEP inválido", {
         description: "Por favor, digite um CEP válido com 8 números."
@@ -108,10 +178,9 @@ const RegisterForm = () => {
         return;
       }
       
-      updateFormData('address.street', data.logradouro || '');
-      updateFormData('address.neighborhood', data.bairro || '');
-      updateFormData('address.city', data.localidade || '');
-      updateFormData('address.state', data.uf || '');
+      addressForm.setValue('street', data.logradouro || '', { shouldValidate: true });
+      addressForm.setValue('neighborhood', data.bairro || '', { shouldValidate: true });
+      addressForm.setValue('city', data.localidade || '', { shouldValidate: true });
       
       toast.success("Endereço encontrado!", {
         description: "Os campos de endereço foram preenchidos automaticamente."
@@ -125,57 +194,45 @@ const RegisterForm = () => {
     }
   };
 
-  const handleNextStep = () => {
-    if (step === 0) {
-      // Validate account info
-      if (!formData.email || !formData.password) {
-        toast.error("Por favor preencha todos os campos obrigatórios");
+  const handleNextStep = async () => {
+    // Validar etapa atual
+    try {
+      if (step === 0) {
+        const valid = await accountForm.trigger();
+        if (!valid) return;
+      }
+      
+      if (step === 1) {
+        const valid = await personalInfoForm.trigger();
+        if (!valid) return;
+      }
+      
+      if (step === 2) {
+        const valid = await addressForm.trigger();
+        if (!valid) return;
+      }
+      
+      if (step === 3) {
+        const valid = await experienceForm.trigger();
+        if (!valid) return;
+      }
+      
+      if (step === steps.length - 1) {
+        if (!acceptTerms) {
+          toast.error("Você precisa aceitar os termos e condições");
+          return;
+        }
+        
+        // Submit form
+        handleSubmit();
         return;
       }
       
-      // Simple email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email)) {
-        toast.error("Por favor digite um e-mail válido");
-        return;
-      }
-      
-      // Password strength validation
-      if (formData.password.length < 6) {
-        toast.error("A senha deve ter pelo menos 6 caracteres");
-        return;
-      }
+      setStep(prev => prev + 1);
+    } catch (error) {
+      console.error("Validation error:", error);
+      toast.error("Erro ao validar formulário");
     }
-    
-    if (step === 1) {
-      // Validate personal info
-      if (!formData.name || !formData.phone) {
-        toast.error("Por favor preencha todos os campos obrigatórios");
-        return;
-      }
-    }
-    
-    if (step === 2) {
-      // Validate address
-      if (!formData.address.cep || !formData.address.street || !formData.address.number || 
-          !formData.address.neighborhood || !formData.address.city) {
-        toast.error("Por favor preencha todos os campos de endereço");
-        return;
-      }
-    }
-    
-    if (step === steps.length - 1) {
-      if (!acceptTerms) {
-        toast.error("Você precisa aceitar os termos e condições");
-        return;
-      }
-      
-      // Submit form
-      handleSubmit();
-      return;
-    }
-    
-    setStep(prev => prev + 1);
   };
 
   const handlePrevStep = () => {
@@ -186,6 +243,7 @@ const RegisterForm = () => {
     try {
       setIsLoading(true);
       
+      const formData = getFormData();
       const success = await signUp(formData);
       
       if (success) {
@@ -208,257 +266,377 @@ const RegisterForm = () => {
     }
   };
 
-  return (
-    <div className="w-full max-w-lg mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
-        <h2 className="text-2xl font-bold">{steps[step].title}</h2>
-        <p className="text-gray-500">{steps[step].description}</p>
-      </div>
+  // Renderização condicional do formulário baseado na etapa atual
+  const renderForm = () => {
+    switch (step) {
+      case 0:
+        return (
+          <Form {...accountForm}>
+            <form className="space-y-4 animate-fade-in">
+              <FormField
+                control={accountForm.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="seu.email@exemplo.com" 
+                        type="email" 
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={accountForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Senha</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Crie uma senha segura" 
+                        type="password" 
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      A senha deve ter pelo menos 6 caracteres.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+        );
       
-      {/* Step indicator */}
-      <div className="px-6 py-4 bg-gray-50">
-        <div className="flex justify-between mb-2">
-          {steps.map((_, index) => (
-            <div 
-              key={index}
-              className={`w-full h-1.5 rounded-full ${index === step ? 'bg-primary' : index < step ? 'bg-primary/50' : 'bg-gray-200'} ${index < steps.length - 1 ? 'mr-1' : ''}`}
-            />
-          ))}
-        </div>
-      </div>
+      case 1:
+        return (
+          <Form {...personalInfoForm}>
+            <form className="space-y-4 animate-fade-in">
+              <FormField
+                control={personalInfoForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome completo</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Seu nome completo" 
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={personalInfoForm.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone (WhatsApp)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="(00) 00000-0000" 
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+        );
       
-      <div className="p-6">
-        {step === 0 && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="seu.email@exemplo.com" 
-                value={formData.email}
-                onChange={(e) => updateFormData('email', e.target.value)}
-                disabled={isLoading}
+      case 2:
+        return (
+          <Form {...addressForm}>
+            <form className="space-y-4 animate-fade-in">
+              <FormField
+                control={addressForm.control}
+                name="cep"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CEP</FormLabel>
+                    <div className="flex space-x-2">
+                      <FormControl>
+                        <Input 
+                          placeholder="00000-000" 
+                          disabled={isLoading}
+                          className="flex-1"
+                          {...field}
+                        />
+                      </FormControl>
+                      <Button 
+                        variant="secondary" 
+                        onClick={handleCepLookup}
+                        disabled={isLoadingCep || isLoading}
+                        type="button"
+                      >
+                        {isLoadingCep ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Buscando...
+                          </>
+                        ) : "Buscar"}
+                      </Button>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="password">Senha</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                placeholder="Crie uma senha segura" 
-                value={formData.password}
-                onChange={(e) => updateFormData('password', e.target.value)}
-                disabled={isLoading}
-              />
-              <p className="text-xs text-gray-500">
-                A senha deve ter pelo menos 6 caracteres.
-              </p>
-            </div>
-          </div>
-        )}
-        
-        {step === 1 && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome completo</Label>
-              <Input 
-                id="name" 
-                placeholder="Seu nome completo" 
-                value={formData.name}
-                onChange={(e) => updateFormData('name', e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone (WhatsApp)</Label>
-              <Input 
-                id="phone" 
-                placeholder="(00) 00000-0000" 
-                value={formData.phone}
-                onChange={(e) => updateFormData('phone', e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-          </div>
-        )}
-        
-        {step === 2 && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="space-y-2">
-              <Label htmlFor="cep">CEP</Label>
-              <div className="flex space-x-2">
-                <Input 
-                  id="cep" 
-                  placeholder="00000-000" 
-                  value={formData.address.cep}
-                  onChange={(e) => updateFormData('address.cep', e.target.value)}
-                  className="flex-1"
-                  disabled={isLoading}
-                />
-                <Button 
-                  variant="secondary" 
-                  onClick={handleCepLookup}
-                  disabled={isLoadingCep || isLoading}
-                >
-                  {isLoadingCep ? "Buscando..." : "Buscar"}
-                </Button>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="street">Rua</Label>
-              <Input 
-                id="street" 
-                placeholder="Nome da rua" 
-                value={formData.address.street}
-                onChange={(e) => updateFormData('address.street', e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="number">Número</Label>
-                <Input 
-                  id="number" 
-                  placeholder="123" 
-                  value={formData.address.number}
-                  onChange={(e) => updateFormData('address.number', e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="neighborhood">Bairro</Label>
-                <Input 
-                  id="neighborhood" 
-                  placeholder="Nome do bairro" 
-                  value={formData.address.neighborhood}
-                  onChange={(e) => updateFormData('address.neighborhood', e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="city">Cidade</Label>
-              <Input 
-                id="city" 
-                placeholder="Nome da cidade" 
-                value={formData.address.city}
-                onChange={(e) => updateFormData('address.city', e.target.value)}
-                disabled={isLoading}
+              <FormField
+                control={addressForm.control}
+                name="street"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rua</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Nome da rua" 
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Tipo de moradia</Label>
-              <RadioGroup 
-                value={formData.housingType} 
-                onValueChange={(value) => updateFormData('housingType', value)}
-                className="flex flex-col space-y-2"
-                disabled={isLoading}
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="apartment" id="apartment" />
-                  <Label htmlFor="apartment">Apartamento</Label>
-                </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={addressForm.control}
+                  name="number"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Número</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="123" 
+                          disabled={isLoading}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="house" id="house" />
-                  <Label htmlFor="house">Casa</Label>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="other" id="other-housing" />
-                  <Label htmlFor="other-housing">Outro</Label>
-                </div>
-              </RadioGroup>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="has-children">Crianças em casa</Label>
-                <Switch 
-                  id="has-children" 
-                  checked={formData.hasChildren}
-                  onCheckedChange={(checked) => updateFormData('hasChildren', checked)}
-                  disabled={isLoading}
+                <FormField
+                  control={addressForm.control}
+                  name="neighborhood"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bairro</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Nome do bairro" 
+                          disabled={isLoading}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
               
-              {formData.hasChildren && (
-                <div className="pt-2 animate-fade-in">
-                  <Label htmlFor="children-ages">Idades das crianças</Label>
-                  <Input 
-                    id="children-ages" 
-                    placeholder="Ex: 5, 8, 12 anos" 
-                    value={formData.childrenAges}
-                    onChange={(e) => updateFormData('childrenAges', e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        
-        {step === 3 && (
-          <div className="space-y-4 animate-fade-in">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="had-pets-before">Já teve animais de estimação?</Label>
-                <Switch 
-                  id="had-pets-before" 
-                  checked={formData.hadPetsBefore}
-                  onCheckedChange={(checked) => updateFormData('hadPetsBefore', checked)}
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="has-allergies">Possui alergias relacionadas a animais?</Label>
-                <Switch 
-                  id="has-allergies" 
-                  checked={formData.hasAllergies}
-                  onCheckedChange={(checked) => updateFormData('hasAllergies', checked)}
-                  disabled={isLoading}
-                />
-              </div>
-              
-              {formData.hasAllergies && (
-                <div className="pt-2 animate-fade-in">
-                  <Label htmlFor="allergies-description">Descreva suas alergias</Label>
-                  <Input 
-                    id="allergies-description" 
-                    placeholder="Tipo de alergia, sintomas, etc." 
-                    value={formData.allergiesDescription || ''}
-                    onChange={(e) => updateFormData('allergiesDescription', e.target.value)}
-                    disabled={isLoading}
-                  />
-                </div>
-              )}
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="work-schedule">Rotina de trabalho</Label>
-              <Input 
-                id="work-schedule" 
-                placeholder="Ex: Home office, 8h-18h fora de casa, etc." 
-                value={formData.workSchedule}
-                onChange={(e) => updateFormData('workSchedule', e.target.value)}
-                disabled={isLoading}
+              <FormField
+                control={addressForm.control}
+                name="city"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cidade</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Nome da cidade" 
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-          </div>
-        )}
-        
-        {step === 4 && (
+              
+              <FormField
+                control={addressForm.control}
+                name="housingType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de moradia</FormLabel>
+                    <FormControl>
+                      <RadioGroup 
+                        className="flex flex-col space-y-2"
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        disabled={isLoading}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="apartment" id="apartment" />
+                          <FormLabel htmlFor="apartment" className="font-normal">Apartamento</FormLabel>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="house" id="house" />
+                          <FormLabel htmlFor="house" className="font-normal">Casa</FormLabel>
+                        </div>
+                        
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="other" id="other-housing" />
+                          <FormLabel htmlFor="other-housing" className="font-normal">Outro</FormLabel>
+                        </div>
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={addressForm.control}
+                name="hasChildren"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Crianças em casa</FormLabel>
+                      <FormControl>
+                        <Switch 
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={isLoading}
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {addressForm.watch('hasChildren') && (
+                <FormField
+                  control={addressForm.control}
+                  name="childrenAges"
+                  render={({ field }) => (
+                    <FormItem className="pt-2 animate-fade-in">
+                      <FormLabel>Idades das crianças</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Ex: 5, 8, 12 anos" 
+                          disabled={isLoading}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+            </form>
+          </Form>
+        );
+      
+      case 3:
+        return (
+          <Form {...experienceForm}>
+            <form className="space-y-4 animate-fade-in">
+              <FormField
+                control={experienceForm.control}
+                name="hadPetsBefore"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Já teve animais de estimação?</FormLabel>
+                      <FormControl>
+                        <Switch 
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={isLoading}
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={experienceForm.control}
+                name="hasAllergies"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Possui alergias relacionadas a animais?</FormLabel>
+                      <FormControl>
+                        <Switch 
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                          disabled={isLoading}
+                        />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {experienceForm.watch('hasAllergies') && (
+                <FormField
+                  control={experienceForm.control}
+                  name="allergiesDescription"
+                  render={({ field }) => (
+                    <FormItem className="pt-2 animate-fade-in">
+                      <FormLabel>Descreva suas alergias</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Tipo de alergia, sintomas, etc." 
+                          disabled={isLoading}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              <FormField
+                control={experienceForm.control}
+                name="workSchedule"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rotina de trabalho</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Ex: Home office, 8h-18h fora de casa, etc." 
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </form>
+          </Form>
+        );
+      
+      case 4:
+        const formData = getFormData();
+        return (
           <div className="space-y-6 animate-fade-in">
             <div>
               <h3 className="text-lg font-medium">Resumo das informações</h3>
@@ -532,13 +710,40 @@ const RegisterForm = () => {
                 onCheckedChange={(checked) => setAcceptTerms(checked === true)}
                 disabled={isLoading}
               />
-              <Label htmlFor="terms" className="text-sm leading-tight">
+              <label htmlFor="terms" className="text-sm leading-tight cursor-pointer">
                 Concordo com os <a href="#" className="text-primary hover:underline">Termos de Uso</a> e 
                 confirmo que todas as informações fornecidas são verdadeiras.
-              </Label>
+              </label>
             </div>
           </div>
-        )}
+        );
+      
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="w-full max-w-lg mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+      <div className="p-6 border-b border-gray-200">
+        <h2 className="text-2xl font-bold">{steps[step].title}</h2>
+        <p className="text-gray-500">{steps[step].description}</p>
+      </div>
+      
+      {/* Step indicator */}
+      <div className="px-6 py-4 bg-gray-50">
+        <div className="flex justify-between mb-2">
+          {steps.map((_, index) => (
+            <div 
+              key={index}
+              className={`w-full h-1.5 rounded-full ${index === step ? 'bg-primary' : index < step ? 'bg-primary/50' : 'bg-gray-200'} ${index < steps.length - 1 ? 'mr-1' : ''}`}
+            />
+          ))}
+        </div>
+      </div>
+      
+      <div className="p-6">
+        {renderForm()}
       </div>
       
       <div className="p-6 border-t border-gray-200 bg-gray-50 flex justify-between">
@@ -546,6 +751,7 @@ const RegisterForm = () => {
           variant="outline"
           onClick={handlePrevStep}
           disabled={step === 0 || isLoading}
+          type="button"
         >
           Voltar
         </Button>
@@ -553,10 +759,14 @@ const RegisterForm = () => {
         <Button 
           onClick={handleNextStep}
           disabled={isLoading}
+          type="button"
         >
-          {isLoading 
-            ? 'Carregando...' 
-            : step === steps.length - 1 
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Carregando...
+            </>
+          ) : step === steps.length - 1 
               ? 'Finalizar Cadastro' 
               : 'Continuar'}
         </Button>
