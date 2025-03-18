@@ -20,6 +20,10 @@ export function useAuthState() {
       setIsLoading(true);
       console.log('Verificando estado de autenticação atual...');
       
+      // Verificar localStorage primeiro para compatibilidade com login de demonstração
+      const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
+      const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+      
       // Performance: verificar diretamente a sessão do Supabase para evitar chamadas extras
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
@@ -28,14 +32,8 @@ export function useAuthState() {
         setUser(null);
         setSession(null);
         setProfile(null);
-        setIsAdmin(false);
-        setIsAuthenticated(false);
-        
-        // Limpar localStorage
-        localStorage.removeItem("isLoggedIn");
-        localStorage.removeItem("isAdmin");
-        localStorage.removeItem("userEmail");
-        
+        setIsAdmin(localStorageAdmin); // Manter status de admin do localStorage mesmo em caso de erro
+        setIsAuthenticated(localStorageLoggedIn); // Usar flag do localStorage
         return;
       }
       
@@ -61,12 +59,14 @@ export function useAuthState() {
             userData.app_metadata?.role === 'admin' || 
             userData.user_metadata?.isAdmin === true;
           
-          const finalAdminStatus = isAdminByEmail || isAdminByMetadata;
+          // Verificação pelo localStorage (para compatibilidade com login de demonstração)
+          const finalAdminStatus = isAdminByEmail || isAdminByMetadata || localStorageAdmin;
           
           console.log('Verificação de perfil:', { 
             email: userData.email, 
             isAdminByEmail,
             isAdminByMetadata,
+            localStorageAdmin,
             finalStatus: finalAdminStatus
           });
           
@@ -76,6 +76,9 @@ export function useAuthState() {
           localStorage.setItem("isLoggedIn", "true");
           localStorage.setItem("isAdmin", finalAdminStatus.toString());
           localStorage.setItem("userEmail", userData.email);
+        } else if (localStorageAdmin) {
+          // Se não temos email mas temos flag de admin no localStorage, manter como admin
+          setIsAdmin(true);
         } else {
           setIsAdmin(false);
         }
@@ -96,6 +99,13 @@ export function useAuthState() {
         } catch (profileError) {
           console.error('Erro ao obter perfil do usuário:', profileError);
         }
+      } else if (localStorageLoggedIn && localStorageAdmin) {
+        // Sem sessão válida no Supabase mas com login no localStorage (para admin de demonstração)
+        console.log('Nenhuma sessão Supabase, mas login detectado via localStorage. Possível admin de demonstração.');
+        setUser(null);
+        setProfile(null);
+        setIsAdmin(true);
+        setIsAuthenticated(true);
       } else {
         console.log('Nenhuma sessão ativa encontrada');
         setUser(null);
@@ -110,16 +120,27 @@ export function useAuthState() {
       }
     } catch (error) {
       console.error('Erro ao verificar autenticação:', error);
-      setUser(null);
-      setSession(null);
-      setProfile(null);
-      setIsAdmin(false);
-      setIsAuthenticated(false);
       
-      // Limpar localStorage
-      localStorage.removeItem("isLoggedIn");
-      localStorage.removeItem("isAdmin");
-      localStorage.removeItem("userEmail");
+      // Verificar localStorage mesmo em caso de erro (para compatibilidade com admin de demonstração)
+      const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
+      const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+      
+      if (localStorageLoggedIn && localStorageAdmin) {
+        console.log('Erro ao verificar autenticação, mas login admin detectado via localStorage.');
+        setIsAdmin(true);
+        setIsAuthenticated(true);
+      } else {
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setIsAdmin(false);
+        setIsAuthenticated(false);
+        
+        // Limpar localStorage
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("isAdmin");
+        localStorage.removeItem("userEmail");
+      }
     } finally {
       setIsLoading(false);
       console.log('Verificação de autenticação concluída');

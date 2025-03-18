@@ -39,44 +39,46 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
           return;
         }
         
-        // Verificar se o usuário é administrador
-        if (!isAdmin) {
-          console.log('AdminProtectedRoute: Usuário não é administrador, redirecionando para login admin', { 
+        // Verificar o localStorage primeiro (para compatibilidade com o login de demonstração)
+        const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
+        
+        // Se é admin pelo localStorage OU pelo estado global
+        if (localStorageAdmin || isAdmin) {
+          console.log('AdminProtectedRoute: Acesso administrativo confirmado via localStorage ou estado global', { 
             email: user.email,
             isAdmin,
-            localStorage: localStorage.getItem("isAdmin")
+            localStorageAdmin
           });
           
-          // Verificar email diretamente (verificação de segurança adicional)
-          const adminEmails = ['admin@petmatch.com'];
-          const adminDomains = ['@admin', '@ong'];
-          
-          const isAdminEmail = adminEmails.includes(user.email || '') || 
-                              adminDomains.some(domain => (user.email || '').includes(domain));
-          
-          if (isAdminEmail) {
-            console.log('AdminProtectedRoute: Email é administrativo, mas status admin está falso. Possível problema de sincronização.');
-            
-            // Tentar sincronizar status manualmente
-            localStorage.setItem("isAdmin", "true");
-            // Não usar setIsAdmin() diretamente pois pode causar efeitos colaterais inesperados
-            // Em vez disso, recarregar a página para forçar nova verificação
-            window.location.reload();
-            return;
-          }
-          
-          toast.error("Você não tem permissão para acessar esta página");
-          navigate('/admin-login', { replace: true });
+          setIsVerifying(false);
           return;
         }
         
-        console.log('AdminProtectedRoute: Acesso administrativo confirmado', { 
-          email: user.email,
-          isAdmin 
+        // Verificação adicional por email
+        const adminEmails = ['admin@petmatch.com'];
+        const adminDomains = ['@admin', '@ong'];
+        
+        const isAdminEmail = adminEmails.includes(user.email || '') || 
+                          adminDomains.some(domain => (user.email || '').includes(domain));
+        
+        if (isAdminEmail) {
+          console.log('AdminProtectedRoute: Email administrativo detectado, concedendo acesso', {
+            email: user.email
+          });
+          
+          // Atualizar localStorage para futuras verificações
+          localStorage.setItem("isAdmin", "true");
+          setIsVerifying(false);
+          return;
+        }
+        
+        // Se chegou aqui, não é admin
+        console.log('AdminProtectedRoute: Usuário não é administrador, redirecionando para login admin', { 
+          email: user?.email
         });
         
-        // Todas as verificações passaram
-        setIsVerifying(false);
+        toast.error("Você não tem permissão para acessar esta página");
+        navigate('/admin-login', { replace: true });
       } catch (error) {
         console.error("Erro ao verificar status de administrador:", error);
         toast.error("Erro ao verificar permissões de administrador");

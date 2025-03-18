@@ -36,17 +36,35 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
     setIsLoading(true);
     
     try {
-      // Log para depuração
-      console.log('Tentando login administrativo com:', { email });
-      
       // Verificar se é o admin de demonstração
       const isDemoAdmin = email === "admin@petmatch.com" && password === "admin123";
       
+      console.log('Tentando login administrativo com:', { 
+        email, 
+        isDemoAdmin 
+      });
+      
+      // Força definição no localStorage para admin de demonstração
       if (isDemoAdmin) {
-        console.log("Login de demonstração detectado");
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("isAdmin", "true");
+        localStorage.setItem("userEmail", email);
+        
+        toast.success("Login administrativo de demonstração realizado com sucesso!");
+        
+        // Executar callback de login se fornecido
+        if (onLogin) {
+          onLogin();
+        }
+        
+        setTimeout(() => {
+          navigate("/admin", { replace: true });
+        }, 100);
+        
+        return;
       }
       
-      // Try to sign in as admin
+      // Se não for admin de demonstração, tentar login normal
       const success = await signInAdmin(email, password);
       
       if (success) {
@@ -57,19 +75,9 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
         localStorage.setItem("isAdmin", "true");
         localStorage.setItem("userEmail", email);
         
-        // Atualizar explicitamente os dados do usuário após login
+        // Atualizar estado global
         if (fetchUserData) {
           await fetchUserData();
-        }
-        
-        // Verificar se o localStorage foi atualizado corretamente
-        const adminStatus = localStorage.getItem("isAdmin");
-        console.log('Status de admin após login:', { adminStatus });
-        
-        if (adminStatus !== "true") {
-          console.warn('O status de admin não foi definido corretamente no localStorage');
-          // Tentar novamente
-          localStorage.setItem("isAdmin", "true");
         }
         
         if (onLogin) {
@@ -77,18 +85,7 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
         }
         
         toast.success("Login administrativo realizado com sucesso!");
-        
-        // Adicionar um pequeno atraso para garantir que o estado seja atualizado
-        setTimeout(() => {
-          // Verificar novamente antes de redirecionar
-          if (localStorage.getItem("isAdmin") === "true") {
-            navigate("/admin", { replace: true });
-          } else {
-            console.error('Falha ao definir status de admin. Tentando uma abordagem alternativa.');
-            // Abordagem alternativa: recarregar e depois redirecionar
-            window.location.href = "/admin";
-          }
-        }, 500);
+        navigate("/admin", { replace: true });
       } else {
         console.error('Falha no login administrativo');
         toast.error("Credenciais inválidas ou usuário não tem permissão de administrador");

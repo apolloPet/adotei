@@ -335,38 +335,6 @@ export const signInAdmin = async (email: string, password: string): Promise<bool
       localStorage.setItem("isAdmin", "true");
       localStorage.setItem("userEmail", email);
       
-      // Tenta fazer login via Supabase também
-      try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
-        
-        if (error) {
-          console.warn("Supabase login failed, falling back to localStorage", error);
-        } else {
-          console.log("Successfully authenticated with Supabase as admin");
-          
-          // Se o login Supabase for bem-sucedido, adicione metadados de admin
-          try {
-            // Tentar atualizar metadados do usuário
-            const { error: updateError } = await supabase.auth.updateUser({
-              data: { isAdmin: true, role: 'admin' }
-            });
-            
-            if (updateError) {
-              console.warn("Não foi possível atualizar metadados do usuário", updateError);
-            } else {
-              console.log("Metadados de admin atualizados com sucesso");
-            }
-          } catch (metadataError) {
-            console.warn("Erro ao atualizar metadados", metadataError);
-          }
-        }
-      } catch (supabaseError) {
-        console.warn("Supabase auth error, using localStorage fallback", supabaseError);
-      }
-      
       // Trigger auth state change events
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('authStateChanged'));
