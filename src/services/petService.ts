@@ -1,44 +1,20 @@
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { Database } from '@/lib/database.types';
 import { Pet } from '@/components/pet/types';
 import { toast } from '@/hooks/use-sonner';
+import { dbPetToPet, DbPet, DbPetImage } from '@/utils/dbConverters';
 
-// Type for database pets
-type DbPet = Database['public']['Tables']['pets']['Row'];
-type DbPetImage = Database['public']['Tables']['pet_images']['Row'];
+export interface PetFilters {
+  species?: 'dog' | 'cat' | 'other' | 'all';
+  gender?: 'male' | 'female' | 'all';
+  size?: 'small' | 'medium' | 'large' | 'all';
+  ageRange?: [number, number];
+  hasSpecialNeeds?: boolean;
+  hasHealthIssues?: boolean;
+  searchTerm?: string;
+}
 
-// Convert database pet to frontend pet model
-export const dbPetToPet = (
-  dbPet: DbPet, 
-  images: DbPetImage[]
-): Pet => {
-  return {
-    id: dbPet.id,
-    name: dbPet.name,
-    species: dbPet.species as 'dog' | 'cat' | 'other',
-    breed: dbPet.breed,
-    age: `${dbPet.age} ${dbPet.age_unit}`,
-    gender: dbPet.gender as 'male' | 'female',
-    size: dbPet.size as 'small' | 'medium' | 'large',
-    weight: dbPet.weight,
-    description: dbPet.description,
-    location: dbPet.location,
-    shelterTime: dbPet.shelter_time || '',
-    images: images.map(img => img.url).sort((a, b) => {
-      // Sort images to ensure primary image is first
-      const isPrimaryA = images.find(img => img.url === a)?.is_primary;
-      const isPrimaryB = images.find(img => img.url === b)?.is_primary;
-      return isPrimaryA ? -1 : isPrimaryB ? 1 : 0;
-    }),
-    shelter: '', // Will be populated separately if needed
-    traits: dbPet.traits || [],
-    specialNeeds: dbPet.special_needs || false,
-    healthIssues: dbPet.health_issues || false,
-  };
-};
-
-export const fetchPets = async (filters?: any): Promise<Pet[]> => {
+export const fetchPets = async (filters?: PetFilters): Promise<Pet[]> => {
   try {
     if (!isSupabaseConfigured()) {
       toast.error('Erro: Configuração do Supabase incompleta');
@@ -66,6 +42,18 @@ export const fetchPets = async (filters?: any): Promise<Pet[]> => {
           .gte('age', filters.ageRange[0])
           .lte('age', filters.ageRange[1])
           .eq('age_unit', 'years'); // Assuming age range is in years
+      }
+
+      if (filters.hasSpecialNeeds) {
+        query = query.eq('special_needs', true);
+      }
+
+      if (filters.hasHealthIssues) {
+        query = query.eq('health_issues', true);
+      }
+
+      if (filters.searchTerm) {
+        query = query.or(`name.ilike.%${filters.searchTerm}%,breed.ilike.%${filters.searchTerm}%,description.ilike.%${filters.searchTerm}%`);
       }
     }
     
@@ -122,6 +110,42 @@ export const fetchPetById = async (id: string): Promise<Pet | null> => {
   } catch (error) {
     console.error('Error fetching pet by ID:', error);
     return null;
+  }
+};
+
+export const getFeaturedPets = async (limit: number = 6): Promise<Pet[]> => {
+  try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return [];
+    }
+
+    const { data: petsData, error: petsError } = await supabase
+      .from('pets')
+      .select('*')
+      .limit(limit);
+    
+    if (petsError) throw petsError;
+    if (!petsData) return [];
+    
+    // For each pet, fetch its images
+    const pets = await Promise.all(
+      petsData.map(async (pet) => {
+        const { data: imagesData, error: imagesError } = await supabase
+          .from('pet_images')
+          .select('*')
+          .eq('pet_id', pet.id);
+        
+        if (imagesError) throw imagesError;
+        
+        return dbPetToPet(pet as DbPet, imagesData || []);
+      })
+    );
+    
+    return pets;
+  } catch (error) {
+    console.error('Error fetching featured pets:', error);
+    return [];
   }
 };
 

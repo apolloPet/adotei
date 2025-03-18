@@ -1,35 +1,7 @@
-
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { Database } from '@/lib/database.types';
 import type { User } from '@/components/admin/users/types';
 import { toast } from '@/hooks/use-sonner';
-
-type DbUser = Database['public']['Tables']['users']['Row'];
-
-// Convert database user to frontend user model
-export const dbUserToUser = (dbUser: DbUser): User => {
-  return {
-    id: dbUser.id,
-    name: dbUser.name,
-    email: dbUser.email,
-    phone: dbUser.phone,
-    registrationDate: dbUser.created_at,
-    address: {
-      cep: dbUser.zip,
-      street: dbUser.address,
-      number: '', // Not stored separately in database
-      neighborhood: '', // Not stored separately in database
-      city: dbUser.city
-    },
-    housingType: dbUser.housing_type as 'apartment' | 'house' | 'other',
-    hasChildren: dbUser.has_children,
-    childrenAges: dbUser.children_ages,
-    hadPetsBefore: dbUser.had_pets_before,
-    hasAllergies: dbUser.has_allergies,
-    allergiesDescription: dbUser.allergies_description,
-    workSchedule: dbUser.work_schedule
-  };
-};
+import { dbUserToUser, DbUser } from '@/utils/dbConverters';
 
 export const fetchUsers = async (): Promise<User[]> => {
   try {
