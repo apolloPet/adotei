@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth';
 import { toast } from '@/hooks/use-sonner';
 import { Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface AdminProtectedRouteProps {
   children: React.ReactNode;
@@ -54,6 +55,27 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
           return;
         }
         
+        // Verificar na base de dados (user_roles)
+        console.log('AdminProtectedRoute: Verificando permissões na tabela user_roles');
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .single();
+          
+        if (roleData) {
+          console.log('AdminProtectedRoute: Usuário encontrado na tabela user_roles como admin', {
+            userId: user.id,
+            role: roleData.role
+          });
+          
+          // Atualizar localStorage para futuras verificações
+          localStorage.setItem("isAdmin", "true");
+          setIsVerifying(false);
+          return;
+        }
+        
         // Verificação adicional por email
         const adminEmails = ['admin@petmatch.com'];
         const adminDomains = ['@admin', '@ong'];
@@ -83,6 +105,8 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         console.error("Erro ao verificar status de administrador:", error);
         toast.error("Erro ao verificar permissões de administrador");
         navigate('/admin-login', { replace: true });
+      } finally {
+        setIsVerifying(false);
       }
     };
 

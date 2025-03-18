@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-sonner";
 import { KeyRound, ShieldAlert } from 'lucide-react';
 import { signInAdmin } from '@/services/auth';
 import { useAuth } from '@/hooks/auth';
+import { supabase } from '@/lib/supabase';
 
 const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
   const [email, setEmail] = useState('');
@@ -44,37 +45,67 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
         isDemoAdmin 
       });
       
-      // Força definição no localStorage para admin de demonstração
-      if (isDemoAdmin) {
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("isAdmin", "true");
-        localStorage.setItem("userEmail", email);
+      // Verificar se o usuário tem papel de admin na tabela user_roles
+      let adminUserFound = false;
+      
+      if (!isDemoAdmin) {
+        // Primeiro fazer login normal
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
         
-        toast.success("Login administrativo de demonstração realizado com sucesso!");
-        
-        // Executar callback de login se fornecido
-        if (onLogin) {
-          onLogin();
+        if (authError) {
+          console.error('Falha no login:', authError);
+          toast.error("Credenciais inválidas. Verifique seu email e senha.");
+          setIsLoading(false);
+          return;
         }
         
-        setTimeout(() => {
-          navigate("/admin", { replace: true });
-        }, 100);
+        if (!authData.user) {
+          toast.error("Usuário não encontrado");
+          setIsLoading(false);
+          return;
+        }
         
-        return;
-      }
-      
-      // Se não for admin de demonstração, tentar login normal
-      const success = await signInAdmin(email, password);
-      
-      if (success) {
-        console.log('Login administrativo bem-sucedido');
+        // Agora verificar se o usuário tem papel de admin
+        const { data: roleData } = await supabase
+          .from('user_roles')
+          .select('*')
+          .eq('user_id', authData.user.id)
+          .eq('role', 'admin')
+          .single();
         
-        // Forçar definição do estado admin no localStorage
+        // Verificar se o email indica administrador
+        const isAdminEmail = 
+          email.includes('@admin') || 
+          email.includes('@ong') || 
+          email === 'admin@petmatch.com';
+          
+        adminUserFound = !!roleData || isAdminEmail;
+        
+        if (adminUserFound) {
+          console.log('Login administrativo bem-sucedido via validação de papel/email');
+          localStorage.setItem("isLoggedIn", "true");
+          localStorage.setItem("isAdmin", "true");
+          localStorage.setItem("userEmail", email);
+        } else {
+          // Fazer logout se não for admin
+          await supabase.auth.signOut();
+          toast.error("Você não tem permissão de administrador");
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        // Força definição no localStorage para admin de demonstração
+        console.log('Login administrativo de demonstração realizado com sucesso!');
         localStorage.setItem("isLoggedIn", "true");
         localStorage.setItem("isAdmin", "true");
         localStorage.setItem("userEmail", email);
-        
+        adminUserFound = true;
+      }
+      
+      if (adminUserFound) {
         // Atualizar estado global
         if (fetchUserData) {
           await fetchUserData();
@@ -87,7 +118,6 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
         toast.success("Login administrativo realizado com sucesso!");
         navigate("/admin", { replace: true });
       } else {
-        console.error('Falha no login administrativo');
         toast.error("Credenciais inválidas ou usuário não tem permissão de administrador");
       }
     } catch (error) {
