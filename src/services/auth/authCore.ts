@@ -172,7 +172,7 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
             phone: userData.phone,
             address: userData.address?.street,
             city: userData.address?.city,
-            state: userData.address?.state,
+            state: userData.address?.state || '', // Fixed: state might not exist in address type
             zip: userData.address?.cep,
             housing_type: userData.housingType,
             has_children: userData.hasChildren,
