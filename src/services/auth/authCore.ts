@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
@@ -65,6 +66,8 @@ export const getCurrentUser = async () => {
  */
 export const signIn = async (email: string, password: string): Promise<boolean> => {
   try {
+    console.log('Tentando fazer login com:', { email });
+    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -85,6 +88,21 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
     }
 
     console.log('User signed in successfully:', data);
+    
+    // Atualize o localStorage manualmente para garantir que os eventos de mudança de estado sejam disparados
+    localStorage.setItem("isLoggedIn", "true");
+    if (email.includes('@admin') || email.includes('@ong')) {
+      localStorage.setItem("isAdmin", "true");
+    } else {
+      localStorage.setItem("isAdmin", "false");
+    }
+    localStorage.setItem("userEmail", email);
+    
+    // Dispare eventos para atualizar a UI
+    window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new Event('authStateChanged'));
+    
+    toast.success('Login realizado com sucesso!');
     return true;
   } catch (error) {
     console.error('Unexpected error during signin:', error);
@@ -98,6 +116,8 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
  */
 export const signUp = async (userData: SignupData): Promise<boolean> => {
   try {
+    console.log('Tentando registrar usuário:', { email: userData.email });
+    
     const { data, error } = await supabase.auth.signUp({
       email: userData.email,
       password: userData.password,
@@ -122,7 +142,55 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
     }
 
     console.log('User signed up successfully:', data);
-    toast.success('Conta criada com sucesso! Verifique seu email para confirmar.');
+    
+    // Verificar se o e-mail de confirmação está habilitado
+    if (data.session) {
+      // E-mail de confirmação desabilitado, o usuário está automaticamente logado
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("isAdmin", "false");
+      localStorage.setItem("userEmail", userData.email);
+      
+      // Dispare eventos para atualizar a UI
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('authStateChanged'));
+      
+      toast.success('Conta criada com sucesso! Você está logado.');
+    } else {
+      // E-mail de confirmação habilitado
+      toast.success('Conta criada com sucesso! Verifique seu email para confirmar.');
+    }
+    
+    // Criar perfil do usuário
+    if (data.user) {
+      try {
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: data.user.id,
+            first_name: userData.name.split(' ')[0],
+            last_name: userData.name.split(' ').slice(1).join(' '),
+            phone: userData.phone,
+            address: userData.address?.street,
+            city: userData.address?.city,
+            state: userData.address?.state,
+            zip: userData.address?.cep,
+            housing_type: userData.housingType,
+            has_children: userData.hasChildren,
+            children_ages: userData.childrenAges,
+            had_pets_before: userData.hadPetsBefore,
+            has_allergies: userData.hasAllergies,
+            allergies_description: userData.allergiesDescription,
+            work_schedule: userData.workSchedule
+          });
+          
+        if (profileError) {
+          console.error('Error creating user profile:', profileError);
+        }
+      } catch (profileError) {
+        console.error('Unexpected error creating profile:', profileError);
+      }
+    }
+    
     return true;
   } catch (error) {
     console.error('Unexpected error during signup:', error);

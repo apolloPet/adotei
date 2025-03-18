@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-sonner";
-import { signIn } from '@/services/authService';
-import { useAuth } from '@/hooks/use-auth';
+import { signIn } from '@/services/auth';
+import { useAuth } from '@/hooks/auth';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -33,12 +33,16 @@ const LoginForm = () => {
     
     try {
       setIsLoading(true);
+      console.log('Iniciando processo de login com:', email);
       
       const success = await signIn(email, password);
       
       if (success) {
+        console.log('Login bem-sucedido, redirecionando para /browse');
         // Redirect after successful login
         navigate("/browse");
+      } else {
+        console.log('Login falhou');
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -111,6 +115,14 @@ const LoginForm = () => {
                 Cadastre-se
               </Link>
             </span>
+          </div>
+          
+          <div className="text-center mt-4 text-sm text-muted-foreground">
+            <p>Para fins de demonstração, use:</p>
+            <p><strong>Email:</strong> usuario@petmatch.com</p>
+            <p><strong>Senha:</strong> senha123</p>
+            <p className="mt-2"><strong>Admin:</strong> admin@petmatch.com</p>
+            <p><strong>Senha:</strong> admin123</p>
           </div>
         </form>
       </div>
