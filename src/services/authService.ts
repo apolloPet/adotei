@@ -10,7 +10,7 @@ export * from './auth';
 import now from 'performance-now';
 
 // Substitutos das funções para medir o tempo de resposta
-const originalSignIn = require('./auth').signIn;
+import { signIn as originalSignIn } from './auth';
 
 export const signIn = async (email: string, password: string): Promise<boolean> => {
   const startTime = now();
