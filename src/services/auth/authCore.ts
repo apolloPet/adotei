@@ -338,9 +338,16 @@ export const confirmEmail = async (token: string, type: 'signup' | 'recovery' = 
  */
 export const signInAdmin = async (email: string, password: string): Promise<boolean> => {
   try {
+    console.log("Tentativa de login administrativo:", { email });
+    
     // Verificar se é o admin de demonstração
     if (email === "admin@petmatch.com" && password === "admin123") {
       console.log("Demo admin login successful");
+      
+      // Definir no localStorage primeiro (redundância importante)
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("isAdmin", "true");
+      localStorage.setItem("userEmail", email);
       
       // Tenta fazer login via Supabase também
       try {
@@ -353,14 +360,26 @@ export const signInAdmin = async (email: string, password: string): Promise<bool
           console.warn("Supabase login failed, falling back to localStorage", error);
         } else {
           console.log("Successfully authenticated with Supabase as admin");
+          
+          // Se o login Supabase for bem-sucedido, adicione metadados de admin
+          try {
+            // Tentar atualizar metadados do usuário
+            const { error: updateError } = await supabase.auth.updateUser({
+              data: { isAdmin: true, role: 'admin' }
+            });
+            
+            if (updateError) {
+              console.warn("Não foi possível atualizar metadados do usuário", updateError);
+            } else {
+              console.log("Metadados de admin atualizados com sucesso");
+            }
+          } catch (metadataError) {
+            console.warn("Erro ao atualizar metadados", metadataError);
+          }
         }
       } catch (supabaseError) {
         console.warn("Supabase auth error, using localStorage fallback", supabaseError);
       }
-      
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("isAdmin", "true");
-      localStorage.setItem("userEmail", email);
       
       // Trigger auth state change events
       window.dispatchEvent(new Event('storage'));
@@ -384,15 +403,40 @@ export const signInAdmin = async (email: string, password: string): Promise<bool
     const isAdmin = email.includes('@ong') || email.includes('@admin') || email === 'admin@petmatch.com';
     
     if (isAdmin) {
+      console.log("Login de administrador baseado no email bem-sucedido");
+      
+      // Definir flags e disparar eventos
       localStorage.setItem("isLoggedIn", "true");
       localStorage.setItem("isAdmin", "true");
       localStorage.setItem("userEmail", email);
+      
+      // Tentar atualizar metadados do usuário
+      try {
+        const { error: updateError } = await supabase.auth.updateUser({
+          data: { isAdmin: true, role: 'admin' }
+        });
+        
+        if (updateError) {
+          console.warn("Não foi possível atualizar metadados do usuário", updateError);
+        } else {
+          console.log("Metadados de admin atualizados com sucesso");
+        }
+      } catch (metadataError) {
+        console.warn("Erro ao atualizar metadados", metadataError);
+      }
+      
+      // Disparar eventos de mudança de estado
       window.dispatchEvent(new Event('storage'));
       window.dispatchEvent(new Event('authStateChanged'));
+      
       return true;
     } else {
       // Não é admin, fazer logout
       await supabase.auth.signOut();
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("isAdmin");
+      localStorage.removeItem("userEmail");
+      
       toast.error('Este usuário não tem permissão de administrador');
       return false;
     }

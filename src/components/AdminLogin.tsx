@@ -36,8 +36,15 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
     setIsLoading(true);
     
     try {
-      // Informação de depuração
+      // Log para depuração
       console.log('Tentando login administrativo com:', { email });
+      
+      // Verificar se é o admin de demonstração
+      const isDemoAdmin = email === "admin@petmatch.com" && password === "admin123";
+      
+      if (isDemoAdmin) {
+        console.log("Login de demonstração detectado");
+      }
       
       // Try to sign in as admin
       const success = await signInAdmin(email, password);
@@ -45,9 +52,24 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
       if (success) {
         console.log('Login administrativo bem-sucedido');
         
+        // Forçar definição do estado admin no localStorage
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("isAdmin", "true");
+        localStorage.setItem("userEmail", email);
+        
         // Atualizar explicitamente os dados do usuário após login
         if (fetchUserData) {
           await fetchUserData();
+        }
+        
+        // Verificar se o localStorage foi atualizado corretamente
+        const adminStatus = localStorage.getItem("isAdmin");
+        console.log('Status de admin após login:', { adminStatus });
+        
+        if (adminStatus !== "true") {
+          console.warn('O status de admin não foi definido corretamente no localStorage');
+          // Tentar novamente
+          localStorage.setItem("isAdmin", "true");
         }
         
         if (onLogin) {
@@ -58,7 +80,14 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
         
         // Adicionar um pequeno atraso para garantir que o estado seja atualizado
         setTimeout(() => {
-          navigate("/admin", { replace: true });
+          // Verificar novamente antes de redirecionar
+          if (localStorage.getItem("isAdmin") === "true") {
+            navigate("/admin", { replace: true });
+          } else {
+            console.error('Falha ao definir status de admin. Tentando uma abordagem alternativa.');
+            // Abordagem alternativa: recarregar e depois redirecionar
+            window.location.href = "/admin";
+          }
         }, 500);
       } else {
         console.error('Falha no login administrativo');
