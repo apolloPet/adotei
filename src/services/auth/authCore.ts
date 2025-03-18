@@ -9,29 +9,32 @@ import { SignupData } from './types';
 export const signOut = async (): Promise<void> => {
   try {
     console.log('Attempting to sign out user');
+    
+    // Limpar completamente o localStorage antes do signOut para evitar problemas de estado
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("isAdmin");
+    localStorage.removeItem("userEmail");
+    
+    // Fazer o signOut do Supabase
     const { error } = await supabase.auth.signOut();
     
     if (error) {
       console.error('Signout error:', error);
       toast.error('Erro ao fazer logout');
-    } else {
-      // Limpar completamente o localStorage para garantir que todas as credenciais sejam removidas
-      localStorage.removeItem("isLoggedIn");
-      localStorage.removeItem("isAdmin");
-      localStorage.removeItem("userEmail");
-      
-      // Forçar a atualização do estado de autenticação em toda a aplicação
-      window.dispatchEvent(new Event('storage'));
-      window.dispatchEvent(new Event('authStateChanged'));
-      
-      // Logs para debug
-      console.log('User signed out successfully, localStorage cleared');
-      
-      // Adicionar um pequeno atraso para garantir que a limpeza de estado seja concluída
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      toast.success('Logout realizado com sucesso');
+      return;
     }
+    
+    // Forçar a atualização do estado de autenticação em toda a aplicação
+    window.dispatchEvent(new Event('storage'));
+    window.dispatchEvent(new Event('authStateChanged'));
+    
+    // Logs para debug
+    console.log('User signed out successfully, localStorage cleared');
+    
+    // Adicionar um pequeno atraso para garantir que a limpeza de estado seja concluída
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    toast.success('Logout realizado com sucesso');
   } catch (error) {
     console.error('Unexpected error during signout:', error);
     toast.error('Erro inesperado ao fazer logout');
@@ -84,34 +87,56 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
     localStorage.removeItem("isAdmin");
     localStorage.removeItem("userEmail");
     
+    // Log debug info antes da tentativa de login
+    console.log('Estado do localStorage antes do login:', {
+      isLoggedIn: localStorage.getItem("isLoggedIn"),
+      isAdmin: localStorage.getItem("isAdmin"),
+      userEmail: localStorage.getItem("userEmail")
+    });
+    
+    // Validação básica de entrada
+    if (!email || !password) {
+      console.error('Email ou senha não fornecidos');
+      toast.error('Email e senha são obrigatórios');
+      return false;
+    }
+    
+    // Tenta fazer login através do Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
+    // Log detalhado do resultado do login
+    console.log('Resposta do Supabase:', { data: data ? 'Dados recebidos' : 'Nenhum dado', error: error || 'Nenhum erro' });
+
     if (error) {
-      console.error('Signin error:', error);
+      console.error('Erro de autenticação:', error);
       if (error instanceof AuthError) {
         if (error.message.includes('Invalid login credentials')) {
-          toast.error('Credenciais inválidas');
+          toast.error('Credenciais inválidas. Verifique seu email e senha.');
         } else {
-          toast.error(error.message);
+          toast.error(`Erro de autenticação: ${error.message}`);
         }
       } else {
-        toast.error('Erro ao fazer login');
+        toast.error('Erro ao fazer login. Tente novamente.');
       }
       return false;
     }
 
     if (!data.session) {
-      console.error('No session returned after login');
-      toast.error('Erro ao iniciar sessão');
+      console.error('Nenhuma sessão retornada após o login');
+      toast.error('Erro ao iniciar sessão. Tente novamente.');
       return false;
     }
 
-    console.log('User signed in successfully:', data);
+    console.log('Usuário autenticado com sucesso:', { 
+      userId: data.user?.id,
+      email: data.user?.email,
+      hasSession: !!data.session
+    });
     
-    // Atualize o localStorage manualmente para garantir que os eventos de mudança de estado sejam disparados
+    // Atualiza o localStorage manualmente para garantir que os eventos de mudança de estado sejam disparados
     localStorage.setItem("isLoggedIn", "true");
     if (email.includes('@admin') || email.includes('@ong')) {
       localStorage.setItem("isAdmin", "true");
@@ -120,15 +145,15 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
     }
     localStorage.setItem("userEmail", email);
     
-    // Dispare eventos para atualizar a UI
+    // Dispara eventos para atualizar a UI
     window.dispatchEvent(new Event('storage'));
     window.dispatchEvent(new Event('authStateChanged'));
     
     toast.success('Login realizado com sucesso!');
     return true;
   } catch (error) {
-    console.error('Unexpected error during signin:', error);
-    toast.error('Erro inesperado ao fazer login');
+    console.error('Erro inesperado durante o login:', error);
+    toast.error('Erro inesperado ao fazer login. Tente novamente.');
     return false;
   }
 };
@@ -139,6 +164,12 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
 export const signUp = async (userData: SignupData): Promise<boolean> => {
   try {
     console.log('Tentando registrar usuário:', { email: userData.email });
+    
+    // Validação básica dos dados
+    if (!userData.email || !userData.password || !userData.name) {
+      toast.error('Dados incompletos para cadastro');
+      return false;
+    }
     
     const { data, error } = await supabase.auth.signUp({
       email: userData.email,
@@ -153,27 +184,38 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
       },
     });
 
+    // Log detalhado do resultado do cadastro
+    console.log('Resposta do Supabase para signUp:', { 
+      user: data.user ? 'Usuário criado' : 'Nenhum usuário criado',
+      session: data.session ? 'Sessão criada' : 'Nenhuma sessão',
+      error: error || 'Nenhum erro' 
+    });
+
     if (error) {
-      console.error('Signup error:', error);
+      console.error('Erro no cadastro:', error);
       if (error instanceof AuthError) {
         if (error.message.includes('User already registered')) {
           toast.error('Este email já está registrado. Por favor, faça login ou redefina sua senha.');
         } else {
-          toast.error(error.message);
+          toast.error(`Erro no cadastro: ${error.message}`);
         }
       } else {
-        toast.error('Erro ao criar a conta');
+        toast.error('Erro ao criar a conta. Tente novamente.');
       }
       return false;
     }
 
     if (!data.user) {
-      console.error('No user returned after signup');
-      toast.error('Erro ao criar usuário');
+      console.error('Nenhum usuário retornado após o cadastro');
+      toast.error('Erro ao criar usuário. Tente novamente.');
       return false;
     }
 
-    console.log('User signed up successfully:', data);
+    console.log('Usuário cadastrado com sucesso:', { 
+      userId: data.user.id,
+      email: data.user.email,
+      hasSession: !!data.session
+    });
     
     // Verificar se o e-mail de confirmação está habilitado
     if (data.session) {
@@ -225,8 +267,8 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
     
     return true;
   } catch (error) {
-    console.error('Unexpected error during signup:', error);
-    toast.error('Erro inesperado ao criar a conta');
+    console.error('Erro inesperado durante o cadastro:', error);
+    toast.error('Erro inesperado ao criar a conta. Tente novamente.');
     return false;
   }
 };

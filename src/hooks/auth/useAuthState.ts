@@ -17,122 +17,101 @@ export function useAuthState() {
   const fetchUserData = async () => {
     try {
       setIsLoading(true);
+      console.log('Verificando estado de autenticação atual...');
       
-      // Check localStorage first for quicker login state
-      const isLoggedInFromStorage = localStorage.getItem("isLoggedIn") === "true";
-      const isAdminFromStorage = localStorage.getItem("isAdmin") === "true";
+      // Verificar diretamente com o Supabase para obter o estado mais atualizado
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
-      // For demo purposes, we can use localStorage
-      if (isLoggedInFromStorage) {
-        console.log('Auth: User is logged in from localStorage');
+      if (sessionError) {
+        console.error('Erro ao obter sessão do Supabase:', sessionError);
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setIsAdmin(false);
+        setIsAuthenticated(false);
         
-        // If we're in demo mode with localStorage
-        if (!user) {
-          // Set admin status from localStorage
-          setIsAdmin(isAdminFromStorage);
-          
-          // Get session and user from Supabase if available
-          try {
-            const currentSession = await getCurrentSession();
-            setSession(currentSession);
-            
-            if (currentSession) {
-              const currentUser = await getCurrentUser();
-              setUser(currentUser);
-              
-              // Check if admin from email
-              if (currentUser?.email) {
-                const isAdminUser = currentUser.email.includes('@ong') || 
-                                currentUser.email.includes('@admin') || 
-                                false;
-                
-                console.log('User role check:', { email: currentUser.email, isAdmin: isAdminUser });
-                setIsAdmin(isAdminUser || isAdminFromStorage);
-                
-                // If admin status changed in Supabase, update localStorage
-                if (isAdminUser !== isAdminFromStorage) {
-                  localStorage.setItem("isAdmin", isAdminUser.toString());
-                }
-              }
-              
-              // Get profile for authenticated users
-              try {
-                const userProfile = await getProfile();
-                if (userProfile) {
-                  setProfile(userProfile);
-                }
-              } catch (profileError) {
-                console.error('Error fetching user profile:', profileError);
-              }
-            }
-          } catch (authError) {
-            console.warn('Error checking Supabase session:', authError);
-            // Continue with localStorage values if Supabase fails
-          }
-        }
-        setIsAuthenticated(true);
-      } else {
-        // No localStorage login, check Supabase
-        console.log('Auth: Checking Supabase session');
+        // Limpar localStorage
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("isAdmin");
+        localStorage.removeItem("userEmail");
         
-        try {
-          // Get session and user
-          const currentSession = await getCurrentSession();
-          setSession(currentSession);
+        return;
+      }
+      
+      const currentSession = sessionData.session;
+      setSession(currentSession);
+      
+      if (currentSession) {
+        // Obter dados do usuário
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+          console.error('Erro ao obter usuário do Supabase:', userError);
+          setUser(null);
+          setIsAuthenticated(false);
+        } else {
+          const currentUser = userData.user;
+          setUser(currentUser);
+          setIsAuthenticated(true);
           
-          if (currentSession) {
-            const currentUser = await getCurrentUser();
-            setUser(currentUser);
+          // Verificar se é admin pelo email
+          if (currentUser?.email) {
+            const isAdminUser = currentUser.email.includes('@admin') || 
+                            currentUser.email.includes('@ong') || 
+                            currentUser.email === 'admin@petmatch.com';
             
-            // Check if admin
-            if (currentUser?.email) {
-              const isAdminUser = currentUser.email.includes('@ong') || 
-                              currentUser.email.includes('@admin') || 
-                              false;
-              
-              console.log('User role check:', { email: currentUser.email, isAdmin: isAdminUser });
-              setIsAdmin(isAdminUser);
-              
-              // Update localStorage to match Supabase state
-              localStorage.setItem("isLoggedIn", "true");
-              localStorage.setItem("isAdmin", isAdminUser.toString());
-              localStorage.setItem("userEmail", currentUser.email);
-            } else {
-              setIsAdmin(false);
-            }
+            console.log('Verificação de perfil do usuário:', { 
+              email: currentUser.email, 
+              isAdmin: isAdminUser 
+            });
             
-            // Get profile for authenticated users
-            if (currentUser) {
-              try {
-                const userProfile = await getProfile();
-                if (userProfile) {
-                  setProfile(userProfile);
-                }
-              } catch (profileError) {
-                console.error('Error fetching profile on auth change:', profileError);
-              }
-            }
-            setIsAuthenticated(true);
+            setIsAdmin(isAdminUser);
+            
+            // Atualizar localStorage
+            localStorage.setItem("isLoggedIn", "true");
+            localStorage.setItem("isAdmin", isAdminUser.toString());
+            localStorage.setItem("userEmail", currentUser.email);
           } else {
-            // No current session, clear state and localStorage
-            setUser(null);
-            setProfile(null);
             setIsAdmin(false);
-            setIsAuthenticated(false);
-            localStorage.removeItem("isLoggedIn");
-            localStorage.removeItem("isAdmin");
-            localStorage.removeItem("userEmail");
           }
-        } catch (supabaseError) {
-          console.error('Error in Supabase auth check:', supabaseError);
-          // Don't clear localStorage here as it might be a temporary Supabase error
+          
+          // Obter perfil do usuário
+          try {
+            const userProfile = await getProfile();
+            if (userProfile) {
+              setProfile(userProfile);
+            }
+          } catch (profileError) {
+            console.error('Erro ao obter perfil do usuário:', profileError);
+          }
         }
+      } else {
+        console.log('Nenhuma sessão ativa encontrada');
+        setUser(null);
+        setProfile(null);
+        setIsAdmin(false);
+        setIsAuthenticated(false);
+        
+        // Limpar localStorage
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("isAdmin");
+        localStorage.removeItem("userEmail");
       }
     } catch (error) {
-      console.error('Error in auth effect:', error);
-      // Don't show toast here as it can be annoying during initial load
+      console.error('Erro ao verificar autenticação:', error);
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      setIsAdmin(false);
+      setIsAuthenticated(false);
+      
+      // Limpar localStorage
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("isAdmin");
+      localStorage.removeItem("userEmail");
     } finally {
       setIsLoading(false);
+      console.log('Verificação de autenticação concluída');
     }
   };
 

@@ -15,7 +15,7 @@ const LoginForm = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, fetchUserData } = useAuth();
   
   // Check authentication state when component mounts
   useEffect(() => {
@@ -41,8 +41,14 @@ const LoginForm = () => {
       const success = await signIn(email, password);
       
       if (success) {
-        console.log('Login bem-sucedido, redirecionando para /browse');
-        // Redirect after successful login
+        console.log('Login bem-sucedido, atualizando dados do usuário');
+        
+        // Atualizar explicitamente os dados do usuário após login
+        if (fetchUserData) {
+          await fetchUserData();
+        }
+        
+        console.log('Redirecionando para /browse após login bem-sucedido');
         navigate("/browse");
       } else {
         console.log('Login falhou');

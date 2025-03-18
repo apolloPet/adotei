@@ -15,7 +15,7 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const { isAdmin, isAuthenticated } = useAuth();
+  const { isAdmin, isAuthenticated, fetchUserData } = useAuth();
   
   // Redirect to admin panel if already authenticated as admin
   if (isAdmin && isAuthenticated) {
@@ -34,21 +34,32 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
     setIsLoading(true);
     
     try {
+      // Informação de depuração
+      console.log('Tentando login administrativo com:', { email });
+      
       // Try to sign in as admin
       const success = await signInAdmin(email, password);
       
       if (success) {
+        console.log('Login administrativo bem-sucedido');
+        
+        // Atualizar explicitamente os dados do usuário após login
+        if (fetchUserData) {
+          await fetchUserData();
+        }
+        
         if (onLogin) {
           onLogin();
         }
         toast.success("Login administrativo realizado com sucesso!");
         navigate("/admin");
       } else {
+        console.error('Falha no login administrativo');
         toast.error("Credenciais inválidas ou usuário não tem permissão de administrador");
       }
     } catch (error) {
-      console.error("Erro ao fazer login:", error);
-      toast.error("Erro ao processar login");
+      console.error("Erro ao fazer login administrativo:", error);
+      toast.error("Erro ao processar login administrativo");
     } finally {
       setIsLoading(false);
     }
