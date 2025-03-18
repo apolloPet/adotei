@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-sonner";
 import { KeyRound, ShieldAlert } from 'lucide-react';
-import { signInAdmin } from '@/services/authService';
+import { signInAdmin } from '@/services/auth';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/lib/supabase';
 

@@ -1,7 +1,6 @@
-
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase, handleSupabaseError } from '@/lib/supabase';
-import { getCurrentUser, getCurrentSession, getProfile, getUserRole } from '@/services/authService';
+import { getCurrentUser, getCurrentSession, getProfile, getUserRole } from '@/services/auth';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { UserProfile } from '@/types/user';
 import { toast } from '@/hooks/use-sonner';
@@ -122,7 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   const userProfile = await getProfile();
                   setProfile(userProfile);
                 } catch (profileError) {
-                  console.error('Error fetching user profile:', profileError);
+                  console.error('Error fetching profile on auth change:', profileError);
                 }
               }
             } else {
