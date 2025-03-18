@@ -1,3 +1,4 @@
+
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import { Pet } from '@/components/pet/types';
@@ -15,15 +16,15 @@ export const dbPetToPet = (
   return {
     id: dbPet.id,
     name: dbPet.name,
-    species: dbPet.species === 'other' ? 'cat' : dbPet.species, // Default to cat if not dog or other
+    species: dbPet.species as 'dog' | 'cat' | 'other',
     breed: dbPet.breed,
     age: `${dbPet.age} ${dbPet.age_unit}`,
-    gender: dbPet.gender,
-    size: dbPet.size,
+    gender: dbPet.gender as 'male' | 'female',
+    size: dbPet.size as 'small' | 'medium' | 'large',
     weight: dbPet.weight,
     description: dbPet.description,
     location: dbPet.location,
-    shelterTime: dbPet.shelter_time,
+    shelterTime: dbPet.shelter_time || '',
     images: images.map(img => img.url).sort((a, b) => {
       // Sort images to ensure primary image is first
       const isPrimaryA = images.find(img => img.url === a)?.is_primary;
@@ -32,8 +33,8 @@ export const dbPetToPet = (
     }),
     shelter: '', // Will be populated separately if needed
     traits: dbPet.traits || [],
-    specialNeeds: dbPet.special_needs,
-    healthIssues: dbPet.health_issues,
+    specialNeeds: dbPet.special_needs || false,
+    healthIssues: dbPet.health_issues || false,
   };
 };
 
@@ -134,13 +135,13 @@ export const createPet = async (pet: Omit<Pet, 'id'>, images: File[]): Promise<P
     // Convert frontend pet to database pet
     const dbPet = {
       name: pet.name,
-      species: pet.species,
+      species: pet.species as 'dog' | 'cat' | 'other',
       breed: pet.breed,
       age: parseInt(pet.age.split(' ')[0]),
       age_unit: pet.age.includes('ano') ? 'years' : 
                 pet.age.includes('mês') || pet.age.includes('mese') ? 'months' : 'days',
-      gender: pet.gender,
-      size: pet.size,
+      gender: pet.gender as 'male' | 'female',
+      size: pet.size as 'small' | 'medium' | 'large',
       weight: pet.weight,
       description: pet.description,
       location: pet.location,

@@ -1,3 +1,4 @@
+
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
 import type { User } from '@/components/admin/users/types';
@@ -43,7 +44,7 @@ export const fetchUsers = async (): Promise<User[]> => {
     
     if (error) throw error;
     
-    return (data || []).map(dbUserToUser);
+    return (data || []).map((dbUser) => dbUserToUser(dbUser as DbUser));
   } catch (error) {
     console.error('Error fetching users:', error);
     return [];
@@ -66,7 +67,7 @@ export const fetchUserById = async (id: string): Promise<User | null> => {
     if (error) throw error;
     if (!data) return null;
     
-    return dbUserToUser(data);
+    return dbUserToUser(data as DbUser);
   } catch (error) {
     console.error('Error fetching user by ID:', error);
     return null;
@@ -107,7 +108,7 @@ export const createUser = async (user: Omit<User, 'id' | 'registrationDate'>, au
     if (error) throw error;
     if (!data) throw new Error('Failed to create user');
     
-    return dbUserToUser(data);
+    return dbUserToUser(data as DbUser);
   } catch (error) {
     console.error('Error creating user:', error);
     return null;
@@ -149,7 +150,7 @@ export const updateUser = async (id: string, updates: Partial<User>): Promise<Us
     if (error) throw error;
     if (!data) throw new Error('Failed to update user');
     
-    return dbUserToUser(data);
+    return dbUserToUser(data as DbUser);
   } catch (error) {
     console.error('Error updating user:', error);
     return null;
