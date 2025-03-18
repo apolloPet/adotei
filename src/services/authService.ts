@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { supabase, isSupabaseConfigured, handleSupabaseError } from '@/lib/supabase';
 import { createUser, updateUser, fetchUserById } from './userService';
 import { toast } from '@/hooks/use-sonner';
 import type { User } from '@/components/admin/users/types';
@@ -27,10 +27,27 @@ export interface SignupData {
 
 export const signUp = async (data: SignupData): Promise<boolean> => {
   try {
-    if (!isSupabaseConfigured()) {
+    const configCheck = await isSupabaseConfigured();
+    if (!configCheck) {
       toast.error('Erro: Configuração do Supabase incompleta');
       return false;
     }
+
+    // Check if email already exists
+    const { data: existingUsers, error: existingError } = await supabase
+      .from('users')
+      .select('email')
+      .eq('email', data.email)
+      .maybeSingle();
+    
+    if (existingError) {
+      console.error("Error checking existing user:", existingError);
+    } else if (existingUsers) {
+      toast.error('Este email já está cadastrado. Por favor, faça login.');
+      return false;
+    }
+
+    console.log('Starting user registration process', { email: data.email });
 
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: data.email,
@@ -44,8 +61,19 @@ export const signUp = async (data: SignupData): Promise<boolean> => {
       }
     });
     
-    if (authError) throw authError;
-    if (!authData.user) throw new Error('Falha ao criar usuário');
+    if (authError) {
+      console.error("Auth sign up error:", authError);
+      handleSupabaseError(authError, 'Falha ao criar conta de autenticação');
+      return false;
+    }
+    
+    if (!authData.user) {
+      console.error("No user data returned from signUp");
+      toast.error('Falha ao criar usuário: Resposta inesperada do servidor');
+      return false;
+    }
+    
+    console.log('Auth account created successfully', { userId: authData.user.id });
     
     const userData: Omit<User, 'id' | 'registrationDate'> = {
       name: data.name,
@@ -67,35 +95,64 @@ export const signUp = async (data: SignupData): Promise<boolean> => {
       workSchedule: data.workSchedule
     };
     
+    console.log('Attempting to create user profile', { authId: authData.user.id });
     const user = await createUser(userData, authData.user.id);
     
-    if (!user) throw new Error('Falha ao criar perfil de usuário');
+    if (!user) {
+      console.error("Failed to create user profile");
+      toast.error('Falha ao criar perfil de usuário');
+      return false;
+    }
     
-    await setUserRole(authData.user.id, 'user');
+    console.log('User profile created successfully');
+    
+    try {
+      await setUserRole(authData.user.id, 'user');
+      console.log('User role set successfully');
+    } catch (roleError) {
+      console.error("Error setting user role:", roleError);
+      // Non-blocking error, continue with signup
+    }
     
     toast.success('Conta criada com sucesso! Verifique seu email para confirmar.');
     
     return true;
   } catch (error: any) {
     console.error('Error signing up:', error);
-    toast.error(`Erro ao criar conta: ${error.message}`);
+    handleSupabaseError(error, 'Erro ao criar conta');
     return false;
   }
 };
 
 export const signIn = async (email: string, password: string): Promise<boolean> => {
   try {
-    if (!isSupabaseConfigured()) {
+    const configCheck = await isSupabaseConfigured();
+    if (!configCheck) {
       toast.error('Erro: Configuração do Supabase incompleta');
       return false;
     }
+
+    console.log('Attempting to sign in user', { email });
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     
-    if (error) throw error;
+    if (error) {
+      console.error("Sign in error:", error);
+      
+      // Handle specific error messages
+      if (error.message.includes('Invalid login credentials')) {
+        toast.error('Credenciais inválidas. Verifique seu email e senha.');
+      } else {
+        handleSupabaseError(error, 'Erro ao fazer login');
+      }
+      
+      return false;
+    }
+    
+    console.log('User signed in successfully', { userId: data.user?.id });
     
     localStorage.setItem("isLoggedIn", "true");
     localStorage.setItem("userEmail", email);
@@ -108,7 +165,7 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
     return true;
   } catch (error: any) {
     console.error('Error signing in:', error);
-    toast.error(`Erro ao fazer login: ${error.message}`);
+    handleSupabaseError(error, 'Erro ao fazer login');
     return false;
   }
 };
@@ -222,7 +279,10 @@ export const getCurrentUser = async () => {
   try {
     const { data, error } = await supabase.auth.getUser();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error getting current user:', error);
+      return null;
+    }
     
     return data.user;
   } catch (error) {
@@ -235,7 +295,10 @@ export const getCurrentSession = async () => {
   try {
     const { data, error } = await supabase.auth.getSession();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error getting current session:', error);
+      return null;
+    }
     
     return data.session;
   } catch (error) {
@@ -254,9 +317,14 @@ export const getProfile = async (): Promise<UserProfile | null> => {
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
       
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
+    }
+    
+    if (!data) return null;
     
     return {
       id: data.id,
@@ -412,7 +480,11 @@ export const terminateSession = async (sessionId: string): Promise<boolean> => {
 export const getUserRole = async (userId: string): Promise<UserRole | null> => {
   try {
     // Verificar se o usuário é um administrador pelo email (método temporário)
-    const userEmail = (await supabase.auth.getUser()).data.user?.email || '';
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) return null;
+    
+    const userEmail = user.email || '';
     
     if (userEmail.includes('@admin') || userEmail.includes('@ong')) {
       return 'admin';
@@ -423,22 +495,6 @@ export const getUserRole = async (userId: string): Promise<UserRole | null> => {
     } else {
       return 'user';
     }
-    
-    // Quando a tabela user_roles estiver configurada, use o código abaixo:
-    /*
-    const { data, error } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', userId)
-      .single();
-      
-    if (error) {
-      console.error('Error fetching user role:', error);
-      return 'user'; // Padrão para usuário normal
-    }
-    
-    return data.role as UserRole;
-    */
   } catch (error) {
     console.error('Error getting user role:', error);
     return null;

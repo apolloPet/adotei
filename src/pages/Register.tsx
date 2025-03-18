@@ -16,6 +16,7 @@ const Register = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
+      console.log('Register: User is already authenticated, redirecting to browse');
       navigate('/browse');
     }
   }, [isAuthenticated, isLoading, navigate]);

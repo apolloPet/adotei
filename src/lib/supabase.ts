@@ -10,10 +10,16 @@ import { supabase as integrationClient } from '@/integrations/supabase/client';
 export const supabase = integrationClient;
 
 // Function to check if Supabase connection is properly configured
-export const isSupabaseConfigured = () => {
+export const isSupabaseConfigured = async () => {
   try {
-    // Simple test query to check connection
-    supabase.from('pets').select('count', { count: 'exact', head: true });
+    // Test if we can query something from Supabase
+    const { data, error } = await supabase.from('pets').select('count', { count: 'exact', head: true });
+    
+    if (error) {
+      console.error('Error testing Supabase connection:', error);
+      return false;
+    }
+    
     return true;
   } catch (error) {
     console.error('Error connecting to Supabase:', error);
@@ -29,6 +35,17 @@ export const handleSupabaseError = (error: any, defaultMessage: string = 'Ocorre
   // Check for specific authentication errors
   if (error?.name === 'AuthSessionMissingError') {
     toast.error('Sessão de autenticação expirada. Por favor, faça login novamente.');
+    return;
+  }
+  
+  // Handle specific known errors
+  if (error?.message?.includes('Email link is invalid or has expired')) {
+    toast.error('O link de email é inválido ou expirou. Por favor, solicite um novo link.');
+    return;
+  }
+
+  if (error?.message?.includes('User already registered')) {
+    toast.error('Este email já está cadastrado. Por favor, tente fazer login ou recuperar sua senha.');
     return;
   }
   

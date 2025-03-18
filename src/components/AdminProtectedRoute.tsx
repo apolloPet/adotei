@@ -24,6 +24,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         
         // No user means redirect to login
         if (!user) {
+          console.log('AdminProtectedRoute: No user found, redirecting to admin login');
           toast.error("Por favor, faça login para acessar esta página");
           navigate('/admin-login', { replace: true });
           return;
@@ -31,10 +32,19 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         
         // Check admin status from our auth hook
         if (!isAdmin) {
+          console.log('AdminProtectedRoute: User is not admin, redirecting to admin login', { 
+            email: user.email,
+            isAdmin 
+          });
           toast.error("Você não tem permissão para acessar esta página");
           navigate('/admin-login', { replace: true });
           return;
         }
+        
+        console.log('AdminProtectedRoute: User has admin access', { 
+          email: user.email,
+          isAdmin 
+        });
         
         // All checks passed
         setIsVerifying(false);

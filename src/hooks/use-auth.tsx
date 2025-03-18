@@ -1,7 +1,7 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase, handleSupabaseError } from '@/lib/supabase';
-import { getCurrentUser, getCurrentSession, getProfile } from '@/services/authService';
+import { getCurrentUser, getCurrentSession, getProfile, getUserRole } from '@/services/authService';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { UserProfile } from '@/types/user';
 
@@ -44,10 +44,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUser(currentUser);
           
           // Check if admin
-          const isAdminUser = currentUser?.email?.includes('@ong') || 
-                             currentUser?.email?.includes('@admin') || 
-                             false;
-          setIsAdmin(isAdminUser);
+          if (currentUser?.email) {
+            const isAdminUser = currentUser.email.includes('@ong') || 
+                              currentUser.email.includes('@admin') || 
+                              false;
+            
+            console.log('User role check:', { email: currentUser.email, isAdmin: isAdminUser });
+            setIsAdmin(isAdminUser);
+          } else {
+            setIsAdmin(false);
+          }
           
           // Get profile for authenticated users
           if (currentUser) {
@@ -81,10 +87,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setUser(newSession?.user ?? null);
       
       // Check if admin
-      const isAdminUser = newSession?.user?.email?.includes('@ong') || 
-                         newSession?.user?.email?.includes('@admin') || 
-                         false;
-      setIsAdmin(isAdminUser);
+      const userEmail = newSession?.user?.email;
+      if (userEmail) {
+        const isAdminUser = userEmail.includes('@ong') || 
+                           userEmail.includes('@admin') || 
+                           false;
+        
+        console.log('Auth state update - user role check:', { email: userEmail, isAdmin: isAdminUser });
+        setIsAdmin(isAdminUser);
+      } else {
+        setIsAdmin(false);
+      }
       
       // Get profile for authenticated users
       if (newSession?.user) {
