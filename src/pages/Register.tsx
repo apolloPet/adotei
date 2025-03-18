@@ -1,10 +1,27 @@
 
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import UserRegistration from "@/components/UserRegistration";
+import RegisterForm from "@/components/auth/RegisterForm";
 import { Button } from "@/components/ui/button";
+import { useAuth } from '@/hooks/use-auth';
+import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 
 const Register = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+  const navigate = useNavigate();
+  
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      navigate('/browse');
+    }
+  }, [isAuthenticated, isLoading, navigate]);
+  
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
+  }
+  
   return (
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 pt-32 pb-20">
@@ -23,7 +40,7 @@ const Register = () => {
             </p>
           </div>
           
-          <UserRegistration />
+          <RegisterForm />
           
           <div className="text-center mt-8 text-sm text-muted-foreground">
             Já tem uma conta? <Link to="/login" className="text-primary hover:underline">Faça login</Link>

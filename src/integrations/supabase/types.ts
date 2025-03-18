@@ -206,6 +206,69 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          address: string | null
+          allergies_description: string | null
+          avatar_url: string | null
+          children_ages: string | null
+          city: string | null
+          created_at: string | null
+          first_name: string | null
+          had_pets_before: boolean | null
+          has_allergies: boolean | null
+          has_children: boolean | null
+          housing_type: string | null
+          id: string
+          last_name: string | null
+          phone: string | null
+          state: string | null
+          updated_at: string | null
+          work_schedule: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          allergies_description?: string | null
+          avatar_url?: string | null
+          children_ages?: string | null
+          city?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          had_pets_before?: boolean | null
+          has_allergies?: boolean | null
+          has_children?: boolean | null
+          housing_type?: string | null
+          id: string
+          last_name?: string | null
+          phone?: string | null
+          state?: string | null
+          updated_at?: string | null
+          work_schedule?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          allergies_description?: string | null
+          avatar_url?: string | null
+          children_ages?: string | null
+          city?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          had_pets_before?: boolean | null
+          has_allergies?: boolean | null
+          has_children?: boolean | null
+          housing_type?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          state?: string | null
+          updated_at?: string | null
+          work_schedule?: string | null
+          zip?: string | null
+        }
+        Relationships: []
+      }
       shelters: {
         Row: {
           address: string

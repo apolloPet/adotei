@@ -21,92 +21,37 @@ import Contact from './pages/Contact';
 import { AdminLoginProps } from './components/AdminLoginProps';
 import { AdminPanelProps } from './components/AdminPanelProps';
 import { toast } from '@/hooks/use-sonner';
+import { AuthProvider, useAuth } from './hooks/use-auth';
+import Profile from './pages/Profile';
+import ResetPasswordConfirm from './pages/ResetPasswordConfirm';
+import ResetPasswordForm from './components/auth/ResetPasswordForm';
 
 // Protected route component
-const ProtectedRoute = ({ isAuthenticated, children }: { isAuthenticated: boolean, children: React.ReactNode }) => {
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       navigate('/login');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, isLoading, navigate]);
+  
+  if (isLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
+  }
   
   return isAuthenticated ? <>{children}</> : null;
 };
 
-function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+function AppContent() {
+  const { isAuthenticated, isAdmin } = useAuth();
   const navigate = useNavigate();
 
-  // Check login status from localStorage on mount and when storage changes
-  useEffect(() => {
-    const checkLoginStatus = () => {
-      const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-      const isAdminUser = localStorage.getItem("isAdmin") === "true";
-      
-      console.log("Auth state changed:", { isLoggedIn, isAdminUser });
-      
-      setIsAuthenticated(isLoggedIn);
-      setIsAdmin(isAdminUser);
-    };
-    
-    // Initial check
-    checkLoginStatus();
-    
-    // Listen for storage events (both from this window and others)
-    window.addEventListener('storage', checkLoginStatus);
-    
-    // Custom event listener for internal state changes
-    window.addEventListener('authStateChanged', checkLoginStatus);
-    
-    return () => {
-      window.removeEventListener('storage', checkLoginStatus);
-      window.removeEventListener('authStateChanged', checkLoginStatus);
-    };
-  }, []);
-
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-    localStorage.setItem("isLoggedIn", "true");
-    
-    // Notify components about auth state change
-    window.dispatchEvent(new Event('storage'));
-    window.dispatchEvent(new Event('authStateChanged'));
-    
-    toast.success("Login realizado com sucesso");
-  };
-
   const handleLogout = () => {
-    // Clear auth state in localStorage
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("isAdmin");
-    localStorage.removeItem("userEmail");
-    
-    // Update state
-    setIsAuthenticated(false);
-    setIsAdmin(false);
-    
-    // Notify components about auth state change
-    window.dispatchEvent(new Event('storage'));
-    window.dispatchEvent(new Event('authStateChanged'));
-    
-    toast.success("Logout realizado com sucesso");
+    // Auth state is now managed by the AuthProvider
+    // The logout itself is handled in the Header component
     navigate('/');
-  };
-
-  const handleAdminLogin = () => {
-    setIsAdmin(true);
-    setIsAuthenticated(true);
-    localStorage.setItem("isAdmin", "true");
-    localStorage.setItem("isLoggedIn", "true");
-    
-    // Notify components about auth state change
-    window.dispatchEvent(new Event('storage'));
-    window.dispatchEvent(new Event('authStateChanged'));
-    
-    toast.success("Login de administrador realizado com sucesso");
   };
 
   // Type casting for components with props
@@ -133,12 +78,23 @@ function App() {
           <Route path="/institution" element={<Institution />} />
           <Route path="/contact" element={<Contact />} />
           
-          <Route path="/login" element={<LoginWithProps onLogin={handleLogin} />} />
+          <Route path="/login" element={<LoginWithProps onLogin={() => {}} />} />
+          <Route path="/reset-password" element={<ResetPasswordForm />} />
+          <Route path="/reset-password-confirm" element={<ResetPasswordConfirm />} />
+          
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
           
           <Route
             path="/browse"
             element={
-              <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <ProtectedRoute>
                 <Browse />
               </ProtectedRoute>
             }
@@ -153,12 +109,20 @@ function App() {
             }
           />
           
-          <Route path="/admin-login" element={<AdminLoginWithProps onLogin={handleAdminLogin} />} />
+          <Route path="/admin-login" element={<AdminLoginWithProps onLogin={() => {}} />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

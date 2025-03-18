@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-sonner";
 import { ArrowLeft } from 'lucide-react';
 import { signIn } from '@/services/authService';
+import { useAuth } from '@/hooks/use-auth';
 
 interface LoginProps {
   onLogin?: () => void;
@@ -20,6 +21,13 @@ const Login = ({ onLogin }: LoginProps = {}) => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  
+  // Redirect if already logged in
+  if (isAuthenticated) {
+    navigate('/browse');
+    return null;
+  }
   
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
