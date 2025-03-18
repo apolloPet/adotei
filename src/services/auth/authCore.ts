@@ -1,289 +1,314 @@
-
-import { supabase, isSupabaseConfigured, handleSupabaseError } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
-import { createUser, updateUser, fetchUserById } from '../userService';
-import type { User } from '@/components/admin/users/types';
-import { UserProfile } from '@/types/user';
+import { AuthError } from '@supabase/supabase-js';
 
-export interface SignupData {
-  email: string;
-  password: string;
-  name: string;
-  phone: string;
-  address: {
-    street: string;
-    number: string;
-    neighborhood: string;
-    city: string;
-    cep: string;
-  };
-  housingType: 'apartment' | 'house' | 'other';
-  hasChildren: boolean;
-  childrenAges?: string;
-  hadPetsBefore: boolean;
-  hasAllergies: boolean;
-  allergiesDescription?: string;
-  workSchedule: string;
-}
-
-export const signUp = async (data: SignupData): Promise<boolean> => {
-  try {
-    const configCheck = await isSupabaseConfigured();
-    if (!configCheck) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return false;
-    }
-
-    const { data: existingUsers, error: existingError } = await supabase
-      .from('users')
-      .select('email')
-      .eq('email', data.email)
-      .maybeSingle();
-    
-    if (existingError) {
-      console.error("Error checking existing user:", existingError);
-    } else if (existingUsers) {
-      toast.error('Este email já está cadastrado. Por favor, faça login.');
-      return false;
-    }
-
-    console.log('Starting user registration process', { email: data.email });
-
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: {
-          name: data.name,
-          phone: data.phone
-        },
-        emailRedirectTo: `${window.location.origin}/auth/email-confirmation`
-      }
-    });
-    
-    if (authError) {
-      console.error("Auth sign up error:", authError);
-      handleSupabaseError(authError, 'Falha ao criar conta de autenticação');
-      return false;
-    }
-    
-    if (!authData.user) {
-      console.error("No user data returned from signUp");
-      toast.error('Falha ao criar usuário: Resposta inesperada do servidor');
-      return false;
-    }
-    
-    console.log('Auth account created successfully', { userId: authData.user.id });
-    
-    const userData: Omit<User, 'id' | 'registrationDate'> = {
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      address: {
-        street: data.address.street,
-        number: data.address.number,
-        neighborhood: data.address.neighborhood,
-        city: data.address.city,
-        cep: data.address.cep
-      },
-      housingType: data.housingType,
-      hasChildren: data.hasChildren,
-      childrenAges: data.childrenAges,
-      hadPetsBefore: data.hadPetsBefore,
-      hasAllergies: data.hasAllergies,
-      allergiesDescription: data.allergiesDescription,
-      workSchedule: data.workSchedule
-    };
-    
-    console.log('Attempting to create user profile', { authId: authData.user.id });
-    const user = await createUser(userData, authData.user.id);
-    
-    if (!user) {
-      console.error("Failed to create user profile");
-      toast.error('Falha ao criar perfil de usuário');
-      return false;
-    }
-    
-    console.log('User profile created successfully');
-    
-    try {
-      await setUserRole(authData.user.id, 'user');
-      console.log('User role set successfully');
-    } catch (roleError) {
-      console.error("Error setting user role:", roleError);
-      // Non-blocking error, continue with signup
-    }
-    
-    toast.success('Conta criada com sucesso! Verifique seu email para confirmar.');
-    
-    return true;
-  } catch (error: any) {
-    console.error('Error signing up:', error);
-    handleSupabaseError(error, 'Erro ao criar conta');
-    return false;
-  }
-};
-
-export const signIn = async (email: string, password: string): Promise<boolean> => {
-  try {
-    const configCheck = await isSupabaseConfigured();
-    if (!configCheck) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return false;
-    }
-
-    console.log('Attempting to sign in user', { email });
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
-    if (error) {
-      console.error("Sign in error:", error);
-      
-      if (error.message.includes('Invalid login credentials')) {
-        toast.error('Credenciais inválidas. Verifique seu email e senha.');
-      } else {
-        handleSupabaseError(error, 'Erro ao fazer login');
-      }
-      
-      return false;
-    }
-    
-    console.log('User signed in successfully', { userId: data.user?.id });
-    
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("userEmail", email);
-    
-    window.dispatchEvent(new Event('storage'));
-    window.dispatchEvent(new Event('authStateChanged'));
-    
-    toast.success('Login realizado com sucesso!');
-    
-    return true;
-  } catch (error: any) {
-    console.error('Error signing in:', error);
-    handleSupabaseError(error, 'Erro ao fazer login');
-    return false;
-  }
-};
-
-export const signOut = async (): Promise<boolean> => {
+/**
+ * Desloga o usuário atual
+ */
+export const signOut = async (): Promise<void> => {
   try {
     const { error } = await supabase.auth.signOut();
-    
-    if (error) throw error;
-    
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("isAdmin");
-    localStorage.removeItem("userEmail");
-    
-    window.dispatchEvent(new Event('storage'));
-    window.dispatchEvent(new Event('authStateChanged'));
-    
-    toast.success('Logout realizado com sucesso!');
-    
-    return true;
-  } catch (error: any) {
-    console.error('Error signing out:', error);
-    toast.error(`Erro ao fazer logout: ${error.message}`);
-    return false;
-  }
-};
-
-export const signInAdmin = async (email: string, password: string): Promise<boolean> => {
-  try {
-    const configCheck = await isSupabaseConfigured();
-    if (!configCheck) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return false;
-    }
-
-    console.log('Attempting admin login for:', email);
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
     if (error) {
-      console.error("Admin sign in error:", error);
-      
-      if (error.message.includes('Invalid login credentials')) {
-        toast.error('Credenciais inválidas. Verifique seu email e senha.');
-      } else {
-        handleSupabaseError(error, 'Erro ao fazer login administrativo');
-      }
-      
-      return false;
+      console.error('Signout error:', error);
+      toast.error('Erro ao fazer logout');
+    } else {
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("isAdmin");
+      localStorage.removeItem("userEmail");
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('authStateChanged'));
+      console.log('User signed out successfully');
     }
-    
-    if (!email.includes('@ong') && !email.includes('@admin')) {
-      console.error("Login successful but user is not an admin:", email);
-      await signOut();
-      toast.error('Esta conta não tem permissão de administrador');
-      return false;
-    }
-    
-    console.log('Admin login successful:', data.user?.id);
-    
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("isAdmin", "true");
-    localStorage.setItem("userEmail", email);
-    
-    window.dispatchEvent(new Event('storage'));
-    window.dispatchEvent(new Event('authStateChanged'));
-    
-    toast.success('Login de administrador realizado com sucesso!');
-    
-    return true;
-  } catch (error: any) {
-    console.error('Error signing in as admin:', error);
-    toast.error(`Erro ao fazer login como administrador: ${error.message}`);
-    return false;
-  }
-};
-
-export const getCurrentUser = async () => {
-  try {
-    const { data, error } = await supabase.auth.getUser();
-    
-    if (error) {
-      console.error('Error getting current user:', error);
-      return null;
-    }
-    
-    return data.user;
   } catch (error) {
-    console.error('Error getting current user:', error);
-    return null;
+    console.error('Unexpected error during signout:', error);
+    toast.error('Erro inesperado ao fazer logout');
   }
 };
 
+/**
+ * Recupera a sessão atual do usuário
+ */
 export const getCurrentSession = async () => {
   try {
     const { data, error } = await supabase.auth.getSession();
-    
     if (error) {
-      console.error('Error getting current session:', error);
+      console.error('Error getting session:', error);
       return null;
     }
-    
     return data.session;
   } catch (error) {
-    console.error('Error getting current session:', error);
+    console.error('Unexpected error getting session:', error);
     return null;
   }
 };
 
-export const setUserRole = async (userId: string, role: string): Promise<boolean> => {
+/**
+ * Recupera o usuário atual
+ */
+export const getCurrentUser = async () => {
   try {
-    console.log(`Setting user ${userId} to role ${role}`);
-    
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      console.error('Error getting user:', error);
+      return null;
+    }
+    return data.user;
+  } catch (error) {
+    console.error('Unexpected error getting user:', error);
+    return null;
+  }
+};
+
+/**
+ * Envia um email de recuperação de senha
+ */
+export const resetPassword = async (email: string): Promise<void> => {
+  try {
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password-confirm`,
+    });
+    if (error) {
+      console.error('Password reset error:', error);
+      toast.error('Erro ao solicitar a redefinição de senha');
+    } else {
+      toast.success('Email de redefinição de senha enviado!');
+      console.log('Password reset email sent:', data);
+    }
+  } catch (error) {
+    console.error('Unexpected error during password reset:', error);
+    toast.error('Erro inesperado ao solicitar a redefinição de senha');
+  }
+};
+
+/**
+ * Atualiza a senha do usuário
+ */
+export const updatePassword = async (newPassword: string): Promise<void> => {
+  try {
+    const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      console.error('Password update error:', error);
+      toast.error('Erro ao atualizar a senha');
+    } else {
+      toast.success('Senha atualizada com sucesso!');
+      console.log('Password updated successfully:', data);
+    }
+  } catch (error) {
+    console.error('Unexpected error during password update:', error);
+    toast.error('Erro inesperado ao atualizar a senha');
+  }
+};
+
+/**
+ * Realiza o login do usuário
+ */
+export const signIn = async (email: string, password: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      console.error('Signin error:', error);
+      if (error instanceof AuthError) {
+        if (error.message.includes('Invalid login credentials')) {
+          toast.error('Credenciais inválidas');
+        } else {
+          toast.error(error.message);
+        }
+      } else {
+        toast.error('Erro ao fazer login');
+      }
+      return false;
+    }
+
+    console.log('User signed in successfully:', data);
     return true;
   } catch (error) {
-    console.error('Error setting user role:', error);
+    console.error('Unexpected error during signin:', error);
+    toast.error('Erro inesperado ao fazer login');
+    return false;
+  }
+};
+
+/**
+ * Realiza o cadastro do usuário
+ */
+export const signUp = async (email: string, password: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/email-confirmation`,
+      },
+    });
+
+    if (error) {
+      console.error('Signup error:', error);
+      if (error instanceof AuthError) {
+        toast.error(error.message);
+      } else {
+        toast.error('Erro ao criar a conta');
+      }
+      return false;
+    }
+
+    console.log('User signed up successfully:', data);
+    toast.success('Conta criada com sucesso! Verifique seu email para confirmar.');
+    return true;
+  } catch (error) {
+    console.error('Unexpected error during signup:', error);
+    toast.error('Erro inesperado ao criar a conta');
+    return false;
+  }
+};
+
+/**
+ * Confirma o email do usuário
+ */
+export const confirmEmail = async (token: string, type: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabase.auth.verifyOtp({
+      token,
+      type,
+    });
+
+    if (error) {
+      console.error('Email confirmation error:', error);
+      toast.error('Erro ao confirmar o email');
+      return false;
+    }
+
+    console.log('Email confirmed successfully:', data);
+    toast.success('Email confirmado com sucesso!');
+    return true;
+  } catch (error) {
+    console.error('Unexpected error during email confirmation:', error);
+    toast.error('Erro inesperado ao confirmar o email');
+    return false;
+  }
+};
+
+/**
+ * Busca o perfil do usuário
+ */
+export const getProfile = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select(`username, full_name, avatar_url, website`)
+      .eq('id', (await getCurrentUser()!)?.id)
+      .single();
+
+    if (error) {
+      console.error('Profile fetch error:', error);
+      toast.error('Erro ao buscar o perfil');
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Unexpected error during profile fetch:', error);
+    toast.error('Erro inesperado ao buscar o perfil');
+    return null;
+  }
+};
+
+/**
+ * Atualiza o perfil do usuário
+ */
+export const updateProfile = async (updates: { username: string; full_name: string; avatar_url: string | null; website: string | null }) => {
+  try {
+    const { error } = await supabase.from('profiles').upsert({
+      id: (await getCurrentUser()!)?.id,
+      updated_at: new Date(),
+      ...updates,
+    });
+
+    if (error) {
+      console.error('Profile update error:', error);
+      toast.error('Erro ao atualizar o perfil');
+      throw error;
+    }
+  } catch (error) {
+    console.error('Unexpected error during profile update:', error);
+    toast.error('Erro inesperado ao atualizar o perfil');
+    throw error;
+  }
+};
+
+/**
+ * Tenta fazer login com credenciais de administrador
+ */
+export const signInAdmin = async (email: string, password: string): Promise<boolean> => {
+  try {
+    // Verificar se é o admin de demonstração
+    if (email === "admin@petmatch.com" && password === "admin123") {
+      console.log("Demo admin login attempt");
+      
+      // Tenta fazer login via Supabase também
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        
+        if (error) {
+          console.warn("Supabase login failed, falling back to localStorage", error);
+        } else {
+          console.log("Successfully authenticated with Supabase as admin");
+        }
+      } catch (supabaseError) {
+        console.warn("Supabase auth error, using localStorage fallback", supabaseError);
+      }
+      
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("isAdmin", "true");
+      localStorage.setItem("userEmail", email);
+      
+      // Trigger auth state change events
+      window.dispatchEvent(new Event('storage'));
+      window.dispatchEvent(new Event('authStateChanged'));
+      
+      return true;
+    }
+    
+    // Login normal via Supabase
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    
+    if (error) {
+      console.error('Signin error:', error);
+      throw error;
+    }
+    
+    // Verificar se é admin baseado no email
+    const isAdmin = email.includes('@ong') || email.includes('@admin');
+    
+    if (isAdmin) {
+      localStorage.setItem("isAdmin", "true");
+      window.dispatchEvent(new Event('storage'));
+      return true;
+    } else {
+      // Não é admin, fazer logout
+      await supabase.auth.signOut();
+      return false;
+    }
+  } catch (error) {
+    console.error('Admin login error:', error);
+    if (error instanceof AuthError) {
+      if (error.message.includes('Invalid login credentials')) {
+        toast.error('Credenciais inválidas');
+      } else {
+        toast.error(error.message);
+      }
+    } else {
+      toast.error('Erro ao fazer login como administrador');
+    }
     return false;
   }
 };

@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,8 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-sonner";
 import { KeyRound, ShieldAlert } from 'lucide-react';
 import { signInAdmin } from '@/services/auth';
-import { useAuth } from '@/hooks/use-auth';
-import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/hooks/auth';
 
 const AdminLogin = ({ onLogin }) => {
   const [email, setEmail] = useState('');
@@ -17,6 +17,7 @@ const AdminLogin = ({ onLogin }) => {
   const navigate = useNavigate();
   const { isAdmin, isAuthenticated } = useAuth();
   
+  // Redirect to admin panel if already authenticated as admin
   if (isAdmin && isAuthenticated) {
     navigate('/admin');
     return null;
@@ -33,49 +34,14 @@ const AdminLogin = ({ onLogin }) => {
     setIsLoading(true);
     
     try {
-      // Método simples para login de demonstração
-      if (email === "admin@petmatch.com" && password === "admin123") {
-        console.log("Demo admin login attempt");
-        
-        // Tenta fazer login via Supabase também
-        try {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
-          
-          if (error) {
-            console.warn("Supabase login failed, falling back to localStorage", error);
-          } else {
-            console.log("Successfully authenticated with Supabase as admin");
-          }
-        } catch (supabaseError) {
-          console.warn("Supabase auth error, using localStorage fallback", supabaseError);
-        }
-        
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("isAdmin", "true");
-        localStorage.setItem("userEmail", email);
-        
-        window.dispatchEvent(new Event('storage'));
-        window.dispatchEvent(new Event('authStateChanged'));
-        
-        if (onLogin) {
-          onLogin();
-        }
-        
-        toast.success("Login administrativo realizado com sucesso!");
-        navigate("/admin");
-        return;
-      }
-      
-      // Tentativa de login regular de administrador
+      // Try to sign in as admin
       const success = await signInAdmin(email, password);
       
       if (success) {
         if (onLogin) {
           onLogin();
         }
+        toast.success("Login administrativo realizado com sucesso!");
         navigate("/admin");
       } else {
         toast.error("Credenciais inválidas ou usuário não tem permissão de administrador");
