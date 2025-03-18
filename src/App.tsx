@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import './App.css';
@@ -25,6 +24,7 @@ import { AuthProvider, useAuth } from './hooks/use-auth';
 import Profile from './pages/Profile';
 import ResetPasswordConfirm from './pages/ResetPasswordConfirm';
 import ResetPasswordForm from './components/auth/ResetPasswordForm';
+import EmailConfirmation from './pages/EmailConfirmation';
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -110,6 +110,8 @@ function AppContent() {
           />
           
           <Route path="/admin-login" element={<AdminLoginWithProps onLogin={() => {}} />} />
+          
+          <Route path="/auth/email-confirmation" element={<EmailConfirmation />} />
           
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -3,7 +3,7 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { createUser, updateUser, fetchUserById } from './userService';
 import { toast } from '@/hooks/use-sonner';
 import type { User } from '@/components/admin/users/types';
-import { UserProfile } from '@/types/user';
+import { UserProfile, UserRole, UserSession } from '@/types/user';
 
 // Type for signup data combining user and auth information
 export interface SignupData {
@@ -42,7 +42,8 @@ export const signUp = async (data: SignupData): Promise<boolean> => {
         data: {
           name: data.name,
           phone: data.phone
-        }
+        },
+        emailRedirectTo: `${window.location.origin}/auth/email-confirmation`
       }
     });
     
@@ -73,6 +74,9 @@ export const signUp = async (data: SignupData): Promise<boolean> => {
     const user = await createUser(userData, authData.user.id);
     
     if (!user) throw new Error('Falha ao criar perfil de usuário');
+    
+    // Set default role for new user
+    await setUserRole(authData.user.id, 'user');
     
     toast.success('Conta criada com sucesso! Verifique seu email para confirmar.');
     
@@ -345,3 +349,169 @@ export const updateProfile = async (profile: Partial<UserProfile>): Promise<bool
     return false;
   }
 };
+
+// Novas funções para gerenciamento de verificação de e-mail
+export const resendVerificationEmail = async (email: string): Promise<boolean> => {
+  try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return false;
+    }
+
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/email-confirmation`,
+      },
+    });
+    
+    if (error) throw error;
+    
+    toast.success('Email de verificação reenviado com sucesso!');
+    return true;
+  } catch (error: any) {
+    console.error('Error resending verification email:', error);
+    toast.error(`Erro ao reenviar email de verificação: ${error.message}`);
+    return false;
+  }
+};
+
+// Funções para gerenciamento de sessões
+export const getUserSessions = async (): Promise<UserSession[]> => {
+  try {
+    // Na API atual do Supabase, não existe uma maneira direta de obter todas as sessões
+    // Então, retornamos apenas a sessão atual formatada
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) return [];
+    
+    const userAgent = navigator.userAgent;
+    const browserInfo = detectBrowser(userAgent);
+    
+    return [{
+      id: session.access_token,
+      device: detectDevice(userAgent),
+      browser: browserInfo,
+      ip: 'Não disponível', // Supabase não fornece o IP
+      lastActive: new Date().toISOString(),
+      createdAt: session.created_at || new Date().toISOString()
+    }];
+  } catch (error) {
+    console.error('Error getting user sessions:', error);
+    return [];
+  }
+};
+
+export const terminateSession = async (sessionId: string): Promise<boolean> => {
+  try {
+    // Na API atual, apenas podemos encerrar a sessão atual
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) throw error;
+    
+    toast.success('Sessão encerrada com sucesso!');
+    window.location.href = '/login';
+    return true;
+  } catch (error: any) {
+    console.error('Error terminating session:', error);
+    toast.error(`Erro ao encerrar sessão: ${error.message}`);
+    return false;
+  }
+};
+
+// Funções para gerenciamento de roles e permissões
+export const getUserRole = async (userId: string): Promise<UserRole | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+    
+    if (error) throw error;
+    
+    return data?.role as UserRole || null;
+  } catch (error) {
+    console.error('Error getting user role:', error);
+    return null;
+  }
+};
+
+export const setUserRole = async (userId: string, role: UserRole): Promise<boolean> => {
+  try {
+    // Primeiro verifica se já existe um role para o usuário
+    const { data, error: fetchError } = await supabase
+      .from('user_roles')
+      .select('*')
+      .eq('user_id', userId);
+    
+    if (fetchError) throw fetchError;
+    
+    if (data && data.length > 0) {
+      // Atualiza o role existente
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role })
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+    } else {
+      // Cria um novo role
+      const { error } = await supabase
+        .from('user_roles')
+        .insert({ user_id: userId, role });
+      
+      if (error) throw error;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error setting user role:', error);
+    return false;
+  }
+};
+
+export const hasPermission = async (permission: string): Promise<boolean> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) return false;
+    
+    const role = await getUserRole(user.id);
+    
+    // Mapeamento simples de permissões baseado nos roles
+    const rolePermissions: Record<UserRole, string[]> = {
+      admin: ['manage_users', 'manage_pets', 'approve_adoptions', 'manage_settings', 'manage_admins'],
+      moderator: ['manage_pets', 'approve_adoptions'],
+      staff: ['manage_pets'],
+      user: ['view_pets', 'apply_adoption']
+    };
+    
+    if (!role || !rolePermissions[role]) return false;
+    
+    return rolePermissions[role].includes(permission);
+  } catch (error) {
+    console.error('Error checking permission:', error);
+    return false;
+  }
+};
+
+// Funções de suporte
+function detectDevice(userAgent: string): string {
+  if (/iPad|iPhone|iPod/.test(userAgent)) return 'iOS';
+  if (/Android/.test(userAgent)) return 'Android';
+  if (/Windows/.test(userAgent)) return 'Windows';
+  if (/Mac/.test(userAgent)) return 'Mac';
+  if (/Linux/.test(userAgent)) return 'Linux';
+  return 'Desconhecido';
+}
+
+function detectBrowser(userAgent: string): string {
+  if (/Chrome/.test(userAgent) && !/Chromium|Edge|OPR/.test(userAgent)) return 'Chrome';
+  if (/Firefox/.test(userAgent)) return 'Firefox';
+  if (/Safari/.test(userAgent) && !/Chrome|Chromium|Edge|OPR/.test(userAgent)) return 'Safari';
+  if (/Edge/.test(userAgent)) return 'Edge';
+  if (/OPR/.test(userAgent)) return 'Opera';
+  return 'Desconhecido';
+}

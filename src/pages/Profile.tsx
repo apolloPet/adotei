@@ -1,319 +1,439 @@
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Switch } from "@/components/ui/switch";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { toast } from "@/hooks/use-sonner";
 import { useAuth } from '@/hooks/use-auth';
-import { updateProfile } from '@/services/authService';
+import SessionManagement from '@/components/auth/SessionManagement';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getProfile, updateProfile } from '@/services/authService';
 import { UserProfile } from '@/types/user';
-import { Loader2, Camera } from 'lucide-react';
+import { toast } from '@/hooks/use-sonner';
+import { ArrowLeft, User, LogOut, Shield, MailCheck } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const Profile = () => {
-  const { user, profile, isLoading: isAuthLoading, isAuthenticated } = useAuth();
-  const [formData, setFormData] = useState<Partial<UserProfile>>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const { isAuthenticated, isLoading, user } = useAuth();
   const navigate = useNavigate();
-  
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [activeTab, setActiveTab] = useState('personal');
+
   useEffect(() => {
-    if (!isAuthLoading && !isAuthenticated) {
+    if (!isLoading && !isAuthenticated) {
       navigate('/login');
     }
-    
-    if (profile) {
-      setFormData({
-        firstName: profile.firstName || '',
-        lastName: profile.lastName || '',
-        phone: profile.phone || '',
-        address: profile.address || '',
-        city: profile.city || '',
-        state: profile.state || '',
-        zip: profile.zip || '',
-        housingType: profile.housingType || 'apartment',
-        hasChildren: profile.hasChildren || false,
-        childrenAges: profile.childrenAges || '',
-        hadPetsBefore: profile.hadPetsBefore || false,
-        hasAllergies: profile.hasAllergies || false,
-        allergiesDescription: profile.allergiesDescription || '',
-        workSchedule: profile.workSchedule || ''
-      });
-    }
-  }, [profile, isAuthLoading, isAuthenticated, navigate]);
-  
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  }, [isAuthenticated, isLoading, navigate]);
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (isAuthenticated && user) {
+        const userProfile = await getProfile();
+        setProfile(userProfile);
+      }
+    };
+
+    loadProfile();
+  }, [isAuthenticated, user]);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setProfile((prev) => {
+      if (!prev) return prev;
+      return { ...prev, [name]: value };
+    });
   };
-  
+
+  const handleSwitchChange = (name: string, checked: boolean) => {
+    setProfile((prev) => {
+      if (!prev) return prev;
+      return { ...prev, [name]: checked };
+    });
+  };
+
+  const handleHousingTypeChange = (value: string) => {
+    setProfile((prev) => {
+      if (!prev) return prev;
+      return { ...prev, housingType: value };
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    if (!profile) return;
+
+    setIsUpdating(true);
     try {
-      setIsLoading(true);
-      
-      const success = await updateProfile(formData);
-      
+      const success = await updateProfile(profile);
       if (success) {
-        setIsEditing(false);
+        toast.success('Perfil atualizado com sucesso!');
       }
     } catch (error) {
-      console.error("Profile update error:", error);
-      toast.error("Erro ao atualizar perfil. Por favor, tente novamente.");
+      toast.error('Erro ao atualizar perfil');
+      console.error(error);
     } finally {
-      setIsLoading(false);
+      setIsUpdating(false);
     }
   };
-  
-  if (isAuthLoading) {
+
+  if (isLoading || !profile) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <div className="animate-pulse">Carregando perfil...</div>
+        </div>
       </div>
     );
   }
-  
+
   return (
-    <div className="min-h-screen bg-background py-12 px-4">
-      <div className="max-w-3xl mx-auto bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Meu Perfil</h1>
-          {!isEditing ? (
-            <Button onClick={() => setIsEditing(true)}>
-              Editar Perfil
-            </Button>
-          ) : (
-            <div className="flex space-x-2">
-              <Button variant="outline" onClick={() => setIsEditing(false)} disabled={isLoading}>
-                Cancelar
-              </Button>
-              <Button onClick={handleSubmit} disabled={isLoading}>
-                {isLoading ? 'Salvando...' : 'Salvar Alterações'}
-              </Button>
-            </div>
-          )}
-        </div>
-        
-        <div className="p-6">
-          <div className="flex items-center space-x-4 mb-8">
-            <div className="relative">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={profile?.avatarUrl || ''} />
-                <AvatarFallback className="text-lg">
-                  {profile?.firstName?.[0]}{profile?.lastName?.[0] || ''}
-                </AvatarFallback>
-              </Avatar>
-              {isEditing && (
-                <Button size="icon" variant="secondary" className="absolute bottom-0 right-0 h-6 w-6 rounded-full">
-                  <Camera className="h-3 w-3" />
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6 flex items-center">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mr-4"
+          onClick={() => navigate(-1)}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Voltar
+        </Button>
+        <h1 className="text-2xl font-bold">Meu Perfil</h1>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Sidebar */}
+        <div className="lg:col-span-1">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center mb-6">
+                <Avatar className="h-24 w-24 mb-4">
+                  <AvatarImage src={profile.avatarUrl || ''} />
+                  <AvatarFallback>
+                    {profile.firstName?.charAt(0) || user?.email?.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <h2 className="text-xl font-semibold">
+                  {profile.firstName} {profile.lastName}
+                </h2>
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
+              </div>
+
+              <nav className="space-y-1">
+                <Button
+                  variant={activeTab === 'personal' ? 'default' : 'ghost'}
+                  className="w-full justify-start"
+                  onClick={() => setActiveTab('personal')}
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Informações Pessoais
                 </Button>
-              )}
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold">
-                {profile?.firstName} {profile?.lastName}
-              </h2>
-              <p className="text-gray-500">{user?.email}</p>
-            </div>
-          </div>
-          
-          <form onSubmit={handleSubmit}>
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium mb-4">Informações Pessoais</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">Nome</Label>
-                    <Input 
-                      id="firstName" 
-                      value={formData.firstName || ''}
-                      onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      disabled={!isEditing || isLoading}
-                    />
+                <Button
+                  variant={activeTab === 'sessions' ? 'default' : 'ghost'}
+                  className="w-full justify-start"
+                  onClick={() => setActiveTab('sessions')}
+                >
+                  <Shield className="h-4 w-4 mr-2" />
+                  Sessões & Segurança
+                </Button>
+                <Button
+                  variant={activeTab === 'verification' ? 'default' : 'ghost'}
+                  className="w-full justify-start"
+                  onClick={() => setActiveTab('verification')}
+                >
+                  <MailCheck className="h-4 w-4 mr-2" />
+                  Verificação
+                </Button>
+              </nav>
+
+              <div className="pt-6 mt-6 border-t">
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={() => {
+                    // Lógica para sair
+                    navigate('/logout');
+                  }}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sair
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Main Content */}
+        <div className="lg:col-span-3">
+          {activeTab === 'personal' && (
+            <form onSubmit={handleSubmit}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informações Pessoais</CardTitle>
+                  <CardDescription>
+                    Atualize seus dados pessoais e preferências
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="firstName">Nome</Label>
+                      <Input
+                        id="firstName"
+                        name="firstName"
+                        value={profile.firstName || ''}
+                        onChange={handleInputChange}
+                        placeholder="Seu nome"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="lastName">Sobrenome</Label>
+                      <Input
+                        id="lastName"
+                        name="lastName"
+                        value={profile.lastName || ''}
+                        onChange={handleInputChange}
+                        placeholder="Seu sobrenome"
+                      />
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">Sobrenome</Label>
-                    <Input 
-                      id="lastName" 
-                      value={formData.lastName || ''}
-                      onChange={(e) => handleInputChange('lastName', e.target.value)}
-                      disabled={!isEditing || isLoading}
-                    />
-                  </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="phone">Telefone</Label>
-                    <Input 
-                      id="phone" 
-                      value={formData.phone || ''}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                      disabled={!isEditing || isLoading}
+                    <Input
+                      id="phone"
+                      name="phone"
+                      value={profile.phone || ''}
+                      onChange={handleInputChange}
+                      placeholder="(00) 00000-0000"
                     />
                   </div>
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div>
-                <h3 className="text-lg font-medium mb-4">Endereço</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2 md:col-span-2">
+
+                  <div className="space-y-2">
                     <Label htmlFor="address">Endereço</Label>
-                    <Input 
-                      id="address" 
-                      value={formData.address || ''}
-                      onChange={(e) => handleInputChange('address', e.target.value)}
-                      disabled={!isEditing || isLoading}
+                    <Input
+                      id="address"
+                      name="address"
+                      value={profile.address || ''}
+                      onChange={handleInputChange}
+                      placeholder="Rua, número, complemento"
                     />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="city">Cidade</Label>
-                    <Input 
-                      id="city" 
-                      value={formData.city || ''}
-                      onChange={(e) => handleInputChange('city', e.target.value)}
-                      disabled={!isEditing || isLoading}
-                    />
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="city">Cidade</Label>
+                      <Input
+                        id="city"
+                        name="city"
+                        value={profile.city || ''}
+                        onChange={handleInputChange}
+                        placeholder="Sua cidade"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="state">Estado</Label>
+                      <Input
+                        id="state"
+                        name="state"
+                        value={profile.state || ''}
+                        onChange={handleInputChange}
+                        placeholder="Seu estado"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="zip">CEP</Label>
+                      <Input
+                        id="zip"
+                        name="zip"
+                        value={profile.zip || ''}
+                        onChange={handleInputChange}
+                        placeholder="00000-000"
+                      />
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="state">Estado</Label>
-                    <Input 
-                      id="state" 
-                      value={formData.state || ''}
-                      onChange={(e) => handleInputChange('state', e.target.value)}
-                      disabled={!isEditing || isLoading}
-                    />
+
+                  <div className="space-y-4 pt-4 border-t">
+                    <h3 className="text-lg font-medium">Informações para Adoção</h3>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="housingType">Tipo de Moradia</Label>
+                      <RadioGroup
+                        value={profile.housingType || 'apartment'}
+                        onValueChange={handleHousingTypeChange}
+                        className="flex flex-col space-y-1"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="apartment" id="apartment" />
+                          <Label htmlFor="apartment">Apartamento</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="house" id="house" />
+                          <Label htmlFor="house">Casa</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="other" id="other" />
+                          <Label htmlFor="other">Outro</Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="hasChildren"
+                        checked={profile.hasChildren || false}
+                        onCheckedChange={(checked) =>
+                          handleSwitchChange('hasChildren', checked)
+                        }
+                      />
+                      <Label htmlFor="hasChildren" className="cursor-pointer">
+                        Tem crianças em casa
+                      </Label>
+                    </div>
+
+                    {profile.hasChildren && (
+                      <div className="space-y-2 pl-8">
+                        <Label htmlFor="childrenAges">Idades das crianças</Label>
+                        <Input
+                          id="childrenAges"
+                          name="childrenAges"
+                          value={profile.childrenAges || ''}
+                          onChange={handleInputChange}
+                          placeholder="Ex: 3, 7, 12 anos"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="hadPetsBefore"
+                        checked={profile.hadPetsBefore || false}
+                        onCheckedChange={(checked) =>
+                          handleSwitchChange('hadPetsBefore', checked)
+                        }
+                      />
+                      <Label htmlFor="hadPetsBefore" className="cursor-pointer">
+                        Já teve animais de estimação antes
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="hasAllergies"
+                        checked={profile.hasAllergies || false}
+                        onCheckedChange={(checked) =>
+                          handleSwitchChange('hasAllergies', checked)
+                        }
+                      />
+                      <Label htmlFor="hasAllergies" className="cursor-pointer">
+                        Tem alergias a animais
+                      </Label>
+                    </div>
+
+                    {profile.hasAllergies && (
+                      <div className="space-y-2 pl-8">
+                        <Label htmlFor="allergiesDescription">
+                          Descreva suas alergias
+                        </Label>
+                        <Textarea
+                          id="allergiesDescription"
+                          name="allergiesDescription"
+                          value={profile.allergiesDescription || ''}
+                          onChange={handleInputChange}
+                          placeholder="Descreva suas alergias a animais"
+                        />
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="workSchedule">Horário de Trabalho</Label>
+                      <Input
+                        id="workSchedule"
+                        name="workSchedule"
+                        value={profile.workSchedule || ''}
+                        onChange={handleInputChange}
+                        placeholder="Ex: Segunda a Sexta, 8h às 18h"
+                      />
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="zip">CEP</Label>
-                    <Input 
-                      id="zip" 
-                      value={formData.zip || ''}
-                      onChange={(e) => handleInputChange('zip', e.target.value)}
-                      disabled={!isEditing || isLoading}
-                    />
+
+                  <div className="flex justify-end pt-4">
+                    <Button type="submit" disabled={isUpdating}>
+                      {isUpdating ? 'Salvando...' : 'Salvar Alterações'}
+                    </Button>
                   </div>
-                </div>
-              </div>
-              
-              <Separator />
-              
-              <div>
-                <h3 className="text-lg font-medium mb-4">Moradia e Experiência</h3>
+                </CardContent>
+              </Card>
+            </form>
+          )}
+
+          {activeTab === 'sessions' && <SessionManagement />}
+
+          {activeTab === 'verification' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Verificação e Segurança</CardTitle>
+                <CardDescription>
+                  Gerenciar verificação de email e configurações de segurança da conta
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Tipo de moradia</Label>
-                    <RadioGroup 
-                      value={formData.housingType || 'apartment'} 
-                      onValueChange={(value) => handleInputChange('housingType', value)}
-                      className="flex flex-col space-y-2"
-                      disabled={!isEditing || isLoading}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-medium">Email Verificado</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {user?.email}
+                      </p>
+                    </div>
+                    <div>
+                      {user?.email_confirmed_at ? (
+                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                          Verificado
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+                          Não verificado
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {!user?.email_confirmed_at && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        // Lógica para reenviar email de verificação
+                        if (user?.email) {
+                          // Chamar a função de reenvio
+                        }
+                      }}
                     >
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="apartment" id="apartment" />
-                        <Label htmlFor="apartment">Apartamento</Label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="house" id="house" />
-                        <Label htmlFor="house">Casa</Label>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="other" id="other-housing" />
-                        <Label htmlFor="other-housing">Outro</Label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="has-children">Crianças em casa</Label>
-                      <Switch 
-                        id="has-children" 
-                        checked={formData.hasChildren || false}
-                        onCheckedChange={(checked) => handleInputChange('hasChildren', checked)}
-                        disabled={!isEditing || isLoading}
-                      />
-                    </div>
-                    
-                    {formData.hasChildren && (
-                      <div className="pt-2 animate-fade-in">
-                        <Label htmlFor="children-ages">Idades das crianças</Label>
-                        <Input 
-                          id="children-ages" 
-                          placeholder="Ex: 5, 8, 12 anos" 
-                          value={formData.childrenAges || ''}
-                          onChange={(e) => handleInputChange('childrenAges', e.target.value)}
-                          disabled={!isEditing || isLoading}
-                        />
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="had-pets-before">Já teve animais de estimação</Label>
-                      <Switch 
-                        id="had-pets-before" 
-                        checked={formData.hadPetsBefore || false}
-                        onCheckedChange={(checked) => handleInputChange('hadPetsBefore', checked)}
-                        disabled={!isEditing || isLoading}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="has-allergies">Possui alergias relacionadas a animais</Label>
-                      <Switch 
-                        id="has-allergies" 
-                        checked={formData.hasAllergies || false}
-                        onCheckedChange={(checked) => handleInputChange('hasAllergies', checked)}
-                        disabled={!isEditing || isLoading}
-                      />
-                    </div>
-                    
-                    {formData.hasAllergies && (
-                      <div className="pt-2 animate-fade-in">
-                        <Label htmlFor="allergies-description">Descreva suas alergias</Label>
-                        <Input 
-                          id="allergies-description" 
-                          placeholder="Tipo de alergia, sintomas, etc." 
-                          value={formData.allergiesDescription || ''}
-                          onChange={(e) => handleInputChange('allergiesDescription', e.target.value)}
-                          disabled={!isEditing || isLoading}
-                        />
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="work-schedule">Rotina de trabalho</Label>
-                    <Input 
-                      id="work-schedule" 
-                      placeholder="Ex: Home office, 8h-18h fora de casa, etc." 
-                      value={formData.workSchedule || ''}
-                      onChange={(e) => handleInputChange('workSchedule', e.target.value)}
-                      disabled={!isEditing || isLoading}
-                    />
-                  </div>
+                      <MailCheck className="h-4 w-4 mr-2" />
+                      Reenviar Email de Verificação
+                    </Button>
+                  )}
                 </div>
-              </div>
-            </div>
-          </form>
+
+                <div className="pt-4 border-t">
+                  <h3 className="text-lg font-medium mb-4">Alterar Senha</h3>
+                  <Button 
+                    variant="outline"
+                    onClick={() => navigate('/reset-password')}
+                  >
+                    Redefinir Senha
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
