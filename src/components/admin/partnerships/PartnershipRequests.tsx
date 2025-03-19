@@ -25,7 +25,7 @@ const PartnershipRequests = () => {
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({});
   const [types, setTypes] = useState<string[]>([]);
-  const { logAction } = useAuditLog();
+  const { createLogEntry } = useAuditLog();
 
   useEffect(() => {
     fetchPartnerships();
@@ -62,7 +62,7 @@ const PartnershipRequests = () => {
   const handleStatusChange = (id: string, newStatus: Partnership['status']) => {
     setPartnerships(prevPartnerships =>
       prevPartnerships.map(partnership =>
-        partnership.id === id ? { ...partnership, status: newStatus as Partnership['status'] } : partnership
+        partnership.id === id ? { ...partnership, status: newStatus } : partnership
       )
     );
   };
@@ -70,10 +70,12 @@ const PartnershipRequests = () => {
   const handleRefresh = () => {
     setFilters({});
     fetchPartnerships();
-    logAction({
-      action: 'REFRESH_PARTNERSHIPS',
-      details: { message: 'Admin refreshed partnerships list' }
-    });
+    createLogEntry(
+      'view',
+      'partnerships',
+      undefined,
+      { message: 'Admin refreshed partnerships list' }
+    );
   };
 
   return (
