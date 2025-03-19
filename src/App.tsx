@@ -22,7 +22,6 @@ import { AdminLoginProps } from './components/AdminLoginProps';
 import { AdminPanelProps } from './components/AdminPanelProps';
 import { toast } from '@/hooks/use-sonner';
 import { AuthProvider, useAuth } from './hooks/auth';
-import Profile from './pages/Profile';
 import ResetPasswordConfirm from './pages/ResetPasswordConfirm';
 import ResetPasswordForm from './components/auth/ResetPasswordForm';
 import EmailConfirmation from './pages/EmailConfirmation';
@@ -82,15 +81,6 @@ function AppContent() {
           <Route path="/login" element={<LoginWithProps onLogin={() => {}} />} />
           <Route path="/reset-password" element={<ResetPasswordForm />} />
           <Route path="/reset-password-confirm" element={<ResetPasswordConfirm />} />
-          
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
           
           <Route
             path="/browse"

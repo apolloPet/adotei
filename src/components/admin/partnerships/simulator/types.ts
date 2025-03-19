@@ -1,32 +1,30 @@
 
-export interface CostSimulatorFormData {
+export interface AnimalCostFormData {
   animalType: 'dog' | 'cat' | 'other';
   animalSize: 'small' | 'medium' | 'large';
+  ageYears: number;
   ageMonths: number;
+  activityLevel: 'low' | 'moderate' | 'high';
+  foodType: 'basic' | 'premium' | 'special';
+  foodQuantity: number;
+  groomingFrequency: 'rarely' | 'monthly' | 'biweekly';
   healthConditions: string[];
   specialCareNeeds: string[];
-  foodType: 'basic' | 'premium' | 'special';
-  isSterilized?: boolean;
+  isSterilized: boolean;
+  notes: string;
+}
+
+export interface MonthlyCosts {
+  food: number;
+  medical: number;
+  grooming: number;
+  supplies: number;
+  specialCare: number;
 }
 
 export interface CostResults {
-  id?: string;
-  monthlyCost: number;
-  yearlyCost: number;
-  lifetimeCost: number;
-  details: {
-    monthlyBreakdown: {
-      food: number;
-      healthcare: number;
-      adjustments: {
-        healthConditions: string;
-        specialNeeds: string;
-      }
-    };
-    initialCosts: {
-      accessories: number;
-      procedures: number;
-    };
-    inputParameters: CostSimulatorFormData;
-  };
+  monthlyCosts: MonthlyCosts;
+  monthlyTotal: number;
+  yearlyTotal: number;
+  lifetimeTotal: number;
 }

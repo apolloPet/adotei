@@ -53,7 +53,7 @@ const AdminPanel = () => {
   };
 
   return (
-    <div className="container py-12 max-w-6xl mx-auto mt-16">
+    <div className="container py-8 max-w-7xl mx-auto px-4 mt-16">
       <Card className="w-full">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
@@ -72,31 +72,39 @@ const AdminPanel = () => {
         
         <CardContent className="pt-6">
           <Tabs defaultValue="adoption" className="w-full">
-            <TabsList className="w-full mb-6">
+            <TabsList className="w-full mb-6 overflow-x-auto flex flex-nowrap whitespace-nowrap">
               <TabsTrigger value="adoption" className="flex items-center gap-1">
                 <PawPrint className="h-4 w-4" />
-                Adoção
+                <span className="hidden sm:inline">Adoção</span>
+              </TabsTrigger>
+              <TabsTrigger value="animals" className="flex items-center gap-1">
+                <PawPrint className="h-4 w-4" />
+                <span className="hidden sm:inline">Animais</span>
               </TabsTrigger>
               <TabsTrigger value="partnerships" className="flex items-center gap-1">
                 <Handshake className="h-4 w-4" />
-                Parcerias
+                <span className="hidden sm:inline">Parcerias</span>
               </TabsTrigger>
               <TabsTrigger value="users" className="flex items-center gap-1">
                 <Users className="h-4 w-4" />
-                Usuários
+                <span className="hidden sm:inline">Usuários</span>
               </TabsTrigger>
               <TabsTrigger value="analytics" className="flex items-center gap-1">
                 <BarChart className="h-4 w-4" />
-                Métricas
+                <span className="hidden sm:inline">Métricas</span>
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-1">
                 <Settings className="h-4 w-4" />
-                Configurações
+                <span className="hidden sm:inline">Configurações</span>
               </TabsTrigger>
             </TabsList>
             
             <TabsContent value="adoption">
               <AdoptionManagement />
+            </TabsContent>
+            
+            <TabsContent value="animals">
+              <AnimalRegistrationForm />
             </TabsContent>
             
             <TabsContent value="partnerships">
@@ -117,13 +125,13 @@ const AdminPanel = () => {
                 </CardHeader>
                 <CardContent>
                   <Tabs defaultValue="users" className="w-full">
-                    <TabsList className="w-full mb-4">
+                    <TabsList className="w-full mb-4 overflow-x-auto flex flex-nowrap whitespace-nowrap">
                       <TabsTrigger value="users">Usuários</TabsTrigger>
                       <TabsTrigger value="adoptions">Adoções</TabsTrigger>
                       <TabsTrigger value="followups">
                         <div className="flex items-center gap-1">
                           <Bell className="h-4 w-4" />
-                          Acompanhamentos
+                          <span className="hidden sm:inline">Acompanhamentos</span>
                         </div>
                       </TabsTrigger>
                     </TabsList>
@@ -152,18 +160,19 @@ const AdminPanel = () => {
             
             <TabsContent value="settings">
               <Tabs defaultValue="parameters" className="w-full">
-                <TabsList className="w-full mb-4">
+                <TabsList className="w-full mb-4 overflow-x-auto flex flex-nowrap whitespace-nowrap">
                   <TabsTrigger value="parameters" className="flex items-center gap-1">
                     <Sliders className="h-4 w-4" />
-                    Parâmetros
+                    <span className="hidden sm:inline">Parâmetros</span>
                   </TabsTrigger>
                   <TabsTrigger value="administrators" className="flex items-center gap-1">
                     <ShieldCheck className="h-4 w-4" />
-                    Administradores
+                    <span className="hidden sm:inline">Administradores</span>
                   </TabsTrigger>
-                  <TabsTrigger value="roles">Papéis & Permissões</TabsTrigger>
-                  <TabsTrigger value="register-animal">Cadastrar Animais</TabsTrigger>
-                  <TabsTrigger value="cost-simulator">Simulador de Custos</TabsTrigger>
+                  <TabsTrigger value="roles">
+                    <span className="hidden sm:inline">Papéis & Permissões</span>
+                    <span className="inline sm:hidden">Papéis</span>
+                  </TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="parameters">
@@ -176,14 +185,6 @@ const AdminPanel = () => {
                 
                 <TabsContent value="roles">
                   <AdminRoleManagement />
-                </TabsContent>
-                
-                <TabsContent value="register-animal">
-                  <AnimalRegistrationForm />
-                </TabsContent>
-                
-                <TabsContent value="cost-simulator">
-                  <CostSimulator />
                 </TabsContent>
               </Tabs>
             </TabsContent>
