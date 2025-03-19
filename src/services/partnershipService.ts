@@ -135,7 +135,7 @@ export const getPartnershipById = async (id: string): Promise<Partnership | null
  */
 export const updatePartnershipStatus = async (
   id: string, 
-  status: 'pending' | 'contacted' | 'in_progress' | 'partnered' | 'declined',
+  status: Partnership['status'],
   notes?: string
 ): Promise<boolean> => {
   try {

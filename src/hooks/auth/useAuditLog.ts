@@ -1,187 +1,208 @@
 
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/hooks/auth';
+import { useAuth } from '.';
+import { toast } from '@/hooks/use-sonner';
 
-interface LogEntry {
+// Interface for audit log entry
+export interface AuditLogEntry {
+  id?: string;
+  user_id: string;
   action: string;
-  details?: Record<string, any>;
-  entity_id?: string;
   entity_type?: string;
+  entity_id?: string;
+  details?: Record<string, any>;
+  ip_address?: string;
+  user_agent?: string;
+  created_at?: string;
 }
 
-interface AuditLogOptions {
-  autoInitialize?: boolean;
-  batchingEnabled?: boolean;
-  batchInterval?: number;
-  maxBatchSize?: number;
-}
+// Types of operations for audit logging
+export type AuditAction = 
+  | 'login' 
+  | 'logout' 
+  | 'create' 
+  | 'update' 
+  | 'delete' 
+  | 'view' 
+  | 'approve' 
+  | 'reject'
+  | 'password_reset'
+  | 'role_change';
 
-/**
- * Hook para registrar logs de auditoria para ações administrativas
- */
-export function useAuditLog(options: AuditLogOptions = {}) {
-  const { 
-    autoInitialize = true,
-    batchingEnabled = true, 
-    batchInterval = 10000, // 10 segundos
-    maxBatchSize = 10 
-  } = options;
+// Hook for audit logging
+export const useAuditLog = () => {
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   
-  const { user, isAdmin } = useAuth();
-  const [logQueue, setLogQueue] = useState<LogEntry[]>([]);
-  const [initialized, setInitialized] = useState(false);
-  
-  // A tabela agora já está criada pelo SQL executado anteriormente
-  const initializeLogTable = useCallback(async () => {
-    if (initialized) return;
-    
+  // Function to create an audit log entry
+  const createLogEntry = useCallback(async (
+    action: AuditAction,
+    entityType?: string,
+    entityId?: string,
+    details?: Record<string, any>
+  ): Promise<boolean> => {
     try {
-      console.log('[AuditLog] Verificando se a tabela de logs existe');
-      setInitialized(true);
-    } catch (error) {
-      console.error('[AuditLog] Erro ao inicializar tabela de logs:', error);
-    }
-  }, [initialized]);
-  
-  // Registra uma entrada de log
-  const logAction = useCallback((entry: LogEntry) => {
-    if (!user) {
-      console.warn('[AuditLog] Tentativa de log sem usuário autenticado');
-      return;
-    }
-    
-    const logEntry = {
-      ...entry,
-      user_id: user.id,
-      timestamp: new Date().toISOString()
-    };
-    
-    console.log('[AuditLog] Novo log:', logEntry);
-    
-    if (batchingEnabled) {
-      // Adiciona ao batch para envio posterior
-      setLogQueue(prev => [...prev, entry]);
-    } else {
-      // Envia imediatamente
-      sendLog(entry);
-    }
-  }, [user, batchingEnabled]);
-  
-  // Envia um log individual para o servidor
-  const sendLog = async (entry: LogEntry) => {
-    try {
-      if (!user) return;
+      if (!user?.id) {
+        console.warn('Attempt to log audit without authenticated user');
+        return false;
+      }
       
-      // Usando o tipo any para contornar as limitações do TypeScript com tabelas dinâmicas
+      setIsLoading(true);
+      
+      // Get client info for the log
+      const userAgent = navigator.userAgent;
+      let ipAddress = null;
+      
+      // Try to get IP address from API
+      try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        if (ipResponse.ok) {
+          const data = await ipResponse.json();
+          ipAddress = data.ip;
+        }
+      } catch (ipError) {
+        console.warn('Could not fetch IP address for audit log:', ipError);
+      }
+      
+      // Create log entry object
+      const logEntry: AuditLogEntry = {
+        user_id: user.id,
+        action,
+        entity_type: entityType || '',
+        entity_id: entityId || '',
+        details: details || {},
+        ip_address: ipAddress,
+        user_agent: userAgent
+      };
+      
+      // Insert into audit_logs table
       const { error } = await supabase
-        .from('admin_audit_logs' as any)
-        .insert({
-          user_id: user.id,
-          action: entry.action,
-          details: entry.details || {},
-          entity_id: entry.entity_id,
-          entity_type: entry.entity_type,
-          ip_address: null, // Será preenchido pelo servidor
-          user_agent: navigator.userAgent
-        } as any);
+        .from('admin_audit_logs')
+        .insert(logEntry);
       
       if (error) {
-        console.error('[AuditLog] Erro ao salvar log:', error);
+        console.error('Error creating audit log:', error);
+        
+        // If the table doesn't exist, try to create it
+        if (error.message.includes('relation "admin_audit_logs" does not exist')) {
+          console.log('Attempting to create admin_audit_logs table...');
+          return false;
+        }
+        
+        return false;
       }
-    } catch (error) {
-      console.error('[AuditLog] Erro ao enviar log:', error);
-    }
-  };
-  
-  // Envia todos os logs em batch
-  const flushLogs = useCallback(async () => {
-    if (logQueue.length === 0) return;
-    
-    console.log(`[AuditLog] Enviando batch de ${logQueue.length} logs`);
-    
-    try {
-      if (!user) return;
       
-      const batch = logQueue.map(entry => ({
+      return true;
+    } catch (error) {
+      console.error('Unexpected error creating audit log:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+  
+  // Function to batch create log entries
+  const createBatchLogEntries = useCallback(async (
+    entries: {
+      action: AuditAction;
+      entityType?: string;
+      entityId?: string;
+      details?: Record<string, any>;
+    }[]
+  ): Promise<boolean> => {
+    try {
+      if (!user?.id) {
+        console.warn('Attempt to batch log audit without authenticated user');
+        return false;
+      }
+      
+      if (entries.length === 0) {
+        return true; // Nothing to do
+      }
+      
+      setIsLoading(true);
+      
+      // Get client info for the logs
+      const userAgent = navigator.userAgent;
+      let ipAddress = null;
+      
+      // Try to get IP address from API
+      try {
+        const ipResponse = await fetch('https://api.ipify.org?format=json');
+        if (ipResponse.ok) {
+          const data = await ipResponse.json();
+          ipAddress = data.ip;
+        }
+      } catch (ipError) {
+        console.warn('Could not fetch IP address for audit logs:', ipError);
+      }
+      
+      // Map entries to proper format
+      const logEntries: AuditLogEntry[] = entries.map(entry => ({
         user_id: user.id,
         action: entry.action,
+        entity_type: entry.entityType || '',
+        entity_id: entry.entityId || '',
         details: entry.details || {},
-        entity_id: entry.entity_id,
-        entity_type: entry.entity_type,
-        ip_address: null, // Será preenchido pelo servidor
-        user_agent: navigator.userAgent
+        ip_address: ipAddress,
+        user_agent: userAgent
       }));
       
-      // Processando um por um para garantir compatibilidade
-      for (const item of batch) {
-        // Usando o tipo any para contornar as limitações do TypeScript
-        const { error } = await supabase
-          .from('admin_audit_logs' as any)
-          .insert(item as any);
-        
-        if (error) {
-          console.error('[AuditLog] Erro ao salvar log individual:', error);
-        }
+      // Insert batch into audit_logs table
+      const { error } = await supabase
+        .from('admin_audit_logs')
+        .insert(logEntries);
+      
+      if (error) {
+        console.error('Error creating batch audit logs:', error);
+        return false;
       }
       
-      // Limpa a fila
-      setLogQueue([]);
+      return true;
     } catch (error) {
-      console.error('[AuditLog] Erro ao enviar batch de logs:', error);
+      console.error('Unexpected error creating batch audit logs:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
     }
-  }, [logQueue, user]);
+  }, [user]);
   
-  // Inicializa o hook
-  useEffect(() => {
-    if (autoInitialize && !initialized && isAdmin) {
-      initializeLogTable();
-    }
-  }, [autoInitialize, initialized, initializeLogTable, isAdmin]);
-  
-  // Configura o timer para envio em batch
-  useEffect(() => {
-    if (!batchingEnabled) return;
-    
-    const timer = setInterval(() => {
-      if (logQueue.length > 0) {
-        flushLogs();
+  // Function to get audit logs for a user
+  const getUserLogs = useCallback(async (userId?: string, limit = 100): Promise<AuditLogEntry[]> => {
+    try {
+      setIsLoading(true);
+      
+      const targetUserId = userId || user?.id;
+      if (!targetUserId) {
+        return [];
       }
-    }, batchInterval);
-    
-    return () => clearInterval(timer);
-  }, [batchingEnabled, batchInterval, logQueue, flushLogs]);
-  
-  // Envia logs quando a fila atinge o tamanho máximo
-  useEffect(() => {
-    if (batchingEnabled && logQueue.length >= maxBatchSize) {
-      flushLogs();
+      
+      const { data, error } = await supabase
+        .from('admin_audit_logs')
+        .select('*')
+        .eq('user_id', targetUserId)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      
+      if (error) {
+        console.error('Error fetching user audit logs:', error);
+        return [];
+      }
+      
+      return data as AuditLogEntry[];
+    } catch (error) {
+      console.error('Unexpected error fetching user audit logs:', error);
+      return [];
+    } finally {
+      setIsLoading(false);
     }
-  }, [batchingEnabled, logQueue, maxBatchSize, flushLogs]);
-  
-  // Função auxiliar para log de operações CRUD
-  const logCrudAction = useCallback((
-    action: 'create' | 'read' | 'update' | 'delete',
-    entityType: string,
-    entityId: string,
-    details?: Record<string, any>
-  ) => {
-    logAction({
-      action: `${action.toUpperCase()}_${entityType.toUpperCase()}`,
-      entity_type: entityType,
-      entity_id: entityId,
-      details
-    });
-  }, [logAction]);
+  }, [user]);
   
   return {
-    logAction,
-    logCrudAction,
-    flushLogs,
-    initialized,
-    initializeLogTable,
-    queueSize: logQueue.length
+    createLogEntry,
+    createBatchLogEntries,
+    getUserLogs,
+    isLoading
   };
-}
-
-export default useAuditLog;
+};
