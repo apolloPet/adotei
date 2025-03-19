@@ -1,4 +1,3 @@
-
 export type Json =
   | string
   | number
@@ -301,6 +300,79 @@ export interface Database {
           role?: string
           created_at?: string
           updated_at?: string
+        }
+      }
+      user_roles: {
+        Row: {
+          id: string
+          user_id: string
+          role: string
+          created_at: string
+          updated_at: string
+          permissions?: {
+            manageAnimals?: boolean
+            approveAdoptions?: boolean
+            manageSettings?: boolean
+            manageAdmins?: boolean
+          }
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          role: string
+          created_at?: string
+          updated_at?: string
+          permissions?: {
+            manageAnimals?: boolean
+            approveAdoptions?: boolean
+            manageSettings?: boolean
+            manageAdmins?: boolean
+          }
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          role?: string
+          created_at?: string
+          updated_at?: string
+          permissions?: {
+            manageAnimals?: boolean
+            approveAdoptions?: boolean
+            manageSettings?: boolean
+            manageAdmins?: boolean
+          }
+        }
+      }
+      system_parameters: {
+        Row: {
+          id: string
+          category: string
+          key: string
+          value: Json
+          description?: string
+          created_at: string
+          updated_at: string
+          created_by?: string
+        }
+        Insert: {
+          id?: string
+          category: string
+          key: string
+          value: Json
+          description?: string
+          created_at?: string
+          updated_at?: string
+          created_by?: string
+        }
+        Update: {
+          id?: string
+          category?: string
+          key?: string
+          value?: Json
+          description?: string
+          created_at?: string
+          updated_at?: string
+          created_by?: string
         }
       }
     }

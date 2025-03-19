@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -45,6 +46,7 @@ const RoleManagement = () => {
 
       if (error) throw error;
       
+      // This is where the error was occurring - we need to cast the data to include permissions
       const rolesWithPermissions = (data || []).map(role => ({
         ...role,
         permissions: role.permissions || {}

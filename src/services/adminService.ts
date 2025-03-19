@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 
@@ -90,8 +91,9 @@ export const getAdminUsers = async (): Promise<AdminUser[]> => {
         }
 
         if (userData.user) {
-          // Ensure permissions is a valid object
-          const permissions = role.permissions || {
+          // Ensure permissions is a valid object using as with type assertion
+          const roleWithPermissions = role as unknown as { permissions?: AdminUser['permissions'], user_id: string, role: string };
+          const permissions = roleWithPermissions.permissions || {
             manageAnimals: true,
             approveAdoptions: true,
             manageSettings: false,
