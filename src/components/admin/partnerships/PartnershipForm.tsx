@@ -60,8 +60,16 @@ const PartnershipForm = () => {
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
+      // The form validation ensures required fields are present
       await createPartnership({
-        ...data,
+        company_name: data.company_name,
+        contact_name: data.contact_name,
+        email: data.email,
+        phone: data.phone,
+        company_size: data.company_size,
+        company_website: data.company_website,
+        partnership_type: data.partnership_type,
+        notes: data.notes,
         status: 'pending'
       });
       

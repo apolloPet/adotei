@@ -121,7 +121,18 @@ const PartnerDirectory = () => {
 
   const handleAddSupplier = async (data: z.infer<typeof formSchema>) => {
     try {
-      const newSupplier = await createSupplier(data);
+      // The form validation ensures required fields are present
+      const newSupplier = await createSupplier({
+        name: data.name,
+        type: data.type,
+        description: data.description,
+        phone: data.phone,
+        email: data.email,
+        website: data.website,
+        address: data.address,
+        contact_person: data.contact_person,
+        notes: data.notes
+      });
       
       if (newSupplier) {
         setSuppliers(prev => [...prev, newSupplier]);
