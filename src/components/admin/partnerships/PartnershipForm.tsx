@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,18 +11,23 @@ import { z } from "zod";
 import { toast } from "@/hooks/use-sonner";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { createPartnership } from '@/services/partnershipService';
+import { useAuth } from '@/hooks/auth';
+import { Loader2 } from 'lucide-react';
 
+// Schema de validação aprimorado com mensagens personalizadas
 const formSchema = z.object({
   company_name: z.string().min(2, { message: "Nome da empresa deve ter pelo menos 2 caracteres" }),
   contact_name: z.string().min(2, { message: "Nome do contato deve ter pelo menos 2 caracteres" }),
   email: z.string().email({ message: "Email inválido" }),
-  phone: z.string().min(10, { message: "Telefone deve ter pelo menos 10 dígitos" }),
+  phone: z.string().min(10, { message: "Telefone deve ter pelo menos 10 dígitos" })
+    .regex(/^[0-9()+\-\s]*$/, { message: "Telefone deve conter apenas números, parênteses, traços e espaços" }),
   company_size: z.string().optional(),
   company_website: z.string().url({ message: "URL inválida" }).optional().or(z.literal('')),
   partnership_type: z.string().min(1, { message: "Tipo de parceria é obrigatório" }),
   notes: z.string().optional()
 });
 
+// Tamanhos de empresa - usando constantes para facilitar manutenção
 const COMPANY_SIZES = [
   "Micro (1-9 funcionários)",
   "Pequena (10-49 funcionários)",
@@ -30,6 +35,7 @@ const COMPANY_SIZES = [
   "Grande (250+ funcionários)"
 ];
 
+// Tipos de parceria - usando constantes para facilitar manutenção
 const PARTNERSHIP_TYPES = [
   "Clínica Veterinária",
   "Fornecedor de Produtos",
@@ -44,6 +50,10 @@ const PARTNERSHIP_TYPES = [
 ];
 
 const PartnershipForm = () => {
+  const { user, isAuthenticated } = useAuth();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  // Inicializar formulário com react-hook-form e resolver do zod
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -58,9 +68,25 @@ const PartnershipForm = () => {
     }
   });
 
+  // Efeito para preencher email se o usuário estiver autenticado
+  useEffect(() => {
+    if (isAuthenticated && user?.email) {
+      form.setValue('email', user.email);
+    }
+  }, [isAuthenticated, user, form]);
+
+  // Manipulador de envio com logs aprimorados
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true);
+    
     try {
-      // The form validation ensures required fields are present
+      console.log('[Partnership] Iniciando solicitação de parceria:', {
+        company: data.company_name,
+        type: data.partnership_type,
+        timestamp: new Date().toISOString()
+      });
+      
+      // A validação do formulário garante que os campos obrigatórios estão presentes
       await createPartnership({
         company_name: data.company_name,
         contact_name: data.contact_name,
@@ -73,10 +99,34 @@ const PartnershipForm = () => {
         status: 'pending'
       });
       
+      // Log de sucesso
+      console.log('[Partnership] Solicitação enviada com sucesso:', {
+        company: data.company_name,
+        type: data.partnership_type,
+        timestamp: new Date().toISOString()
+      });
+      
+      toast.success("Solicitação de parceria enviada com sucesso! Entraremos em contato em breve.");
       form.reset();
+      
+      // Dispara evento para webhook (se implementado)
+      try {
+        const event = new CustomEvent('partnership:created', { 
+          detail: { 
+            company: data.company_name,
+            type: data.partnership_type,
+            email: data.email
+          }
+        });
+        window.dispatchEvent(event);
+      } catch (eventError) {
+        console.error('[Partnership] Erro ao disparar evento:', eventError);
+      }
     } catch (error) {
-      console.error("Error submitting partnership form:", error);
-      toast.error("Erro ao enviar formulário");
+      console.error("[Partnership] Erro ao enviar formulário:", error);
+      toast.error("Erro ao enviar formulário. Por favor, tente novamente.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -241,8 +291,19 @@ const PartnershipForm = () => {
               />
             </div>
             
-            <Button type="submit" className="w-full md:w-auto">
-              Enviar Solicitação
+            <Button 
+              type="submit" 
+              className="w-full md:w-auto"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                'Enviar Solicitação'
+              )}
             </Button>
           </form>
         </Form>
