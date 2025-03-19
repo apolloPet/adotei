@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,12 +11,14 @@ interface UserRoleType {
   id: string;
   user_id: string;
   role: string;
-  permissions: {
+  permissions?: {
     manageAnimals?: boolean;
     approveAdoptions?: boolean;
     manageSettings?: boolean;
     manageAdmins?: boolean;
   };
+  created_at?: string;
+  updated_at?: string;
 }
 
 const RoleManagement = () => {
@@ -43,7 +44,13 @@ const RoleManagement = () => {
         .eq('user_id', userId);
 
       if (error) throw error;
-      setUserRoles(data || []);
+      
+      const rolesWithPermissions = (data || []).map(role => ({
+        ...role,
+        permissions: role.permissions || {}
+      })) as UserRoleType[];
+      
+      setUserRoles(rolesWithPermissions);
     } catch (error) {
       console.error("Error fetching user roles:", error);
       toast.error("Erro ao buscar funções do usuário");
@@ -60,7 +67,6 @@ const RoleManagement = () => {
 
     setIsLoading(true);
     try {
-      // Check if user already has this role
       const existingRole = userRoles.find(r => r.role === role);
       
       if (existingRole) {
@@ -68,7 +74,6 @@ const RoleManagement = () => {
         return;
       }
 
-      // Add the new role
       const { error } = await supabase
         .from('user_roles')
         .insert({
@@ -109,7 +114,6 @@ const RoleManagement = () => {
     }
   };
 
-  // Get default permissions based on role
   const getDefaultPermissions = (role: string) => {
     switch (role) {
       case 'admin':

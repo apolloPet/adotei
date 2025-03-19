@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 
@@ -46,12 +45,7 @@ export const createAdminUser = async (
         .insert({
           user_id: authData.user.id,
           role: 'admin',
-          permissions: {
-            manageAnimals: permissions.manageAnimals,
-            approveAdoptions: permissions.approveAdoptions,
-            manageSettings: permissions.manageSettings,
-            manageAdmins: permissions.manageAdmins
-          }
+          permissions
         });
 
       if (roleError) {
@@ -96,16 +90,19 @@ export const getAdminUsers = async (): Promise<AdminUser[]> => {
         }
 
         if (userData.user) {
+          // Ensure permissions is a valid object
+          const permissions = role.permissions || {
+            manageAnimals: true,
+            approveAdoptions: true,
+            manageSettings: false,
+            manageAdmins: false
+          };
+
           adminUsers.push({
             id: userData.user.id,
             email: userData.user.email || '',
             role: role.role,
-            permissions: role.permissions || {
-              manageAnimals: true,
-              approveAdoptions: true,
-              manageSettings: false,
-              manageAdmins: false
-            }
+            permissions
           });
         }
       }
