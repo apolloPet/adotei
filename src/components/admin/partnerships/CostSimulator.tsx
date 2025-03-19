@@ -1,110 +1,152 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calculator, Info } from 'lucide-react';
+import { Form } from "@/components/ui/form";
+import { CostSimulatorFormData, CostResults } from './simulator/types';
+import { toast } from "@/hooks/use-sonner";
+import { useAuth } from '@/hooks/auth';
 import AnimalBasicInfo from './simulator/AnimalBasicInfo';
 import AnimalHealthOptions from './simulator/AnimalHealthOptions';
 import ResultsDisplay from './simulator/ResultsDisplay';
-import { CostSimulatorFormData, CostResults } from './simulator/types';
-import { calculateCosts } from './simulator/costCalculations';
 
-const CostSimulator = () => {
+const CostSimulator: React.FC = () => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState<CostSimulatorFormData>({
     animalType: 'dog',
-    ageYears: 1,
-    weight: 15,
-    hasSpecialNeeds: false,
-    isSterilized: false,
-    vaccineCount: 3
+    animalSize: 'medium',
+    ageMonths: 12,
+    healthConditions: [],
+    specialCareNeeds: [],
+    foodType: 'premium',
+    isSterilized: false
   });
-  
   const [results, setResults] = useState<CostResults | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleAnimalTypeChange = (value: string) => {
+  const handleAnimalTypeChange = (value: 'dog' | 'cat' | 'other') => {
     setFormData(prev => ({ ...prev, animalType: value }));
   };
 
+  const handleAnimalSizeChange = (value: 'small' | 'medium' | 'large') => {
+    setFormData(prev => ({ ...prev, animalSize: value }));
+  };
+
   const handleAgeChange = (value: number) => {
-    setFormData(prev => ({ ...prev, ageYears: value }));
+    setFormData(prev => ({ ...prev, ageMonths: value }));
   };
 
-  const handleWeightChange = (value: number) => {
-    setFormData(prev => ({ ...prev, weight: value }));
-  };
-
-  const handleSpecialNeedsChange = (value: boolean) => {
-    setFormData(prev => ({ ...prev, hasSpecialNeeds: value }));
+  const handleFoodTypeChange = (value: 'basic' | 'premium' | 'special') => {
+    setFormData(prev => ({ ...prev, foodType: value }));
   };
 
   const handleSterilizedChange = (value: boolean) => {
     setFormData(prev => ({ ...prev, isSterilized: value }));
   };
 
-  const handleVaccineCountChange = (value: number) => {
-    setFormData(prev => ({ ...prev, vaccineCount: value }));
+  const handleAddHealthCondition = (condition: string) => {
+    setFormData(prev => ({
+      ...prev,
+      healthConditions: [...prev.healthConditions, condition]
+    }));
   };
 
-  const handleCalculate = () => {
-    const calculatedResults = calculateCosts(
-      formData.animalType,
-      formData.ageYears,
-      formData.weight,
-      formData.hasSpecialNeeds,
-      formData.isSterilized,
-      formData.vaccineCount
-    );
+  const handleRemoveHealthCondition = (condition: string) => {
+    setFormData(prev => ({
+      ...prev,
+      healthConditions: prev.healthConditions.filter(c => c !== condition)
+    }));
+  };
+
+  const handleAddSpecialNeed = (need: string) => {
+    setFormData(prev => ({
+      ...prev,
+      specialCareNeeds: [...prev.specialCareNeeds, need]
+    }));
+  };
+
+  const handleRemoveSpecialNeed = (need: string) => {
+    setFormData(prev => ({
+      ...prev,
+      specialCareNeeds: prev.specialCareNeeds.filter(n => n !== need)
+    }));
+  };
+
+  const handleSimulate = async () => {
+    setIsLoading(true);
     
-    setResults(calculatedResults);
+    try {
+      // Chamar o Edge Function para calcular a simulação
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/cost-simulator`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('supabase.auth.token')}`
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao processar a simulação');
+      }
+
+      const data = await response.json();
+      setResults(data);
+      toast.success('Simulação realizada com sucesso!');
+    } catch (error) {
+      console.error('Erro na simulação:', error);
+      toast.error('Erro ao calcular os custos. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <Card className="w-full">
+    <Card>
       <CardHeader>
-        <CardTitle className="flex items-center text-xl">
-          <Calculator className="h-5 w-5 mr-2" />
-          Simulador de Custos
-        </CardTitle>
+        <CardTitle>Simulador de Custos de Pet</CardTitle>
         <CardDescription>
-          Calcule estimativas de custos mensais e anuais de acordo com as características do animal
+          Calcule o custo estimado de manutenção mensal, anual e vitalício de um animal.
         </CardDescription>
       </CardHeader>
-      
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <AnimalBasicInfo 
-            formData={formData}
-            onAnimalTypeChange={handleAnimalTypeChange}
-            onAgeChange={handleAgeChange}
-            onWeightChange={handleWeightChange}
-          />
-          
-          <AnimalHealthOptions 
-            formData={formData}
-            onSpecialNeedsChange={handleSpecialNeedsChange}
-            onSterilizedChange={handleSterilizedChange}
-            onVaccineCountChange={handleVaccineCountChange}
-          />
-        </div>
+        <Form>
+          <div className="space-y-6">
+            <AnimalBasicInfo
+              animalType={formData.animalType}
+              animalSize={formData.animalSize}
+              ageMonths={formData.ageMonths}
+              foodType={formData.foodType}
+              onAnimalTypeChange={handleAnimalTypeChange}
+              onAnimalSizeChange={handleAnimalSizeChange}
+              onAgeChange={handleAgeChange}
+              onFoodTypeChange={handleFoodTypeChange}
+            />
+            
+            <AnimalHealthOptions
+              healthConditions={formData.healthConditions}
+              specialCareNeeds={formData.specialCareNeeds}
+              onAddHealthCondition={handleAddHealthCondition}
+              onRemoveHealthCondition={handleRemoveHealthCondition}
+              onAddSpecialNeed={handleAddSpecialNeed}
+              onRemoveSpecialNeed={handleRemoveSpecialNeed}
+              isSterilized={formData.isSterilized || false}
+              onSterilizedChange={handleSterilizedChange}
+            />
+          </div>
+        </Form>
         
-        <div className="w-full flex justify-center mt-6">
-          <Button onClick={handleCalculate} className="w-full max-w-xs">
-            Calcular Custos
-          </Button>
-        </div>
-        
-        <ResultsDisplay results={results} />
+        <ResultsDisplay results={results} isLoading={isLoading} />
       </CardContent>
-      
-      <CardFooter className="flex flex-col items-start pt-0">
-        <div className="flex items-start gap-2 text-xs text-muted-foreground">
-          <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <p>
-            Esta é apenas uma estimativa baseada em médias de mercado. 
-            Os custos reais podem variar de acordo com a região, condições específicas do animal 
-            e qualidade dos produtos/serviços contratados.
-          </p>
-        </div>
+      <CardFooter>
+        <Button 
+          onClick={handleSimulate} 
+          className="w-full" 
+          disabled={isLoading}
+        >
+          {isLoading ? 'Calculando...' : 'Simular Custos'}
+        </Button>
       </CardFooter>
     </Card>
   );

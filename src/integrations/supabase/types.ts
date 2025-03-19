@@ -69,6 +69,172 @@ export type Database = {
           },
         ]
       }
+      animal_adoption_requirements: {
+        Row: {
+          created_at: string | null
+          id: string
+          importance: string | null
+          pet_id: string
+          requirement: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          importance?: string | null
+          pet_id: string
+          requirement: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          importance?: string | null
+          pet_id?: string
+          requirement?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "animal_adoption_requirements_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      animal_health_records: {
+        Row: {
+          allergies: string[] | null
+          created_at: string | null
+          id: string
+          last_vet_visit: string | null
+          medical_conditions: string[] | null
+          medications: string[] | null
+          pet_id: string
+          sterilized: boolean | null
+          updated_at: string | null
+          vaccination_status: string | null
+        }
+        Insert: {
+          allergies?: string[] | null
+          created_at?: string | null
+          id?: string
+          last_vet_visit?: string | null
+          medical_conditions?: string[] | null
+          medications?: string[] | null
+          pet_id: string
+          sterilized?: boolean | null
+          updated_at?: string | null
+          vaccination_status?: string | null
+        }
+        Update: {
+          allergies?: string[] | null
+          created_at?: string | null
+          id?: string
+          last_vet_visit?: string | null
+          medical_conditions?: string[] | null
+          medications?: string[] | null
+          pet_id?: string
+          sterilized?: boolean | null
+          updated_at?: string | null
+          vaccination_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "animal_health_records_pet_id_fkey"
+            columns: ["pet_id"]
+            isOneToOne: false
+            referencedRelation: "pets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cost_parameters: {
+        Row: {
+          category: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+          value: number
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+          value: number
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+          value?: number
+        }
+        Relationships: []
+      }
+      cost_simulations: {
+        Row: {
+          age_months: number | null
+          animal_size: string
+          animal_type: string
+          created_at: string | null
+          estimated_lifetime_cost: number | null
+          estimated_monthly_cost: number
+          estimated_yearly_cost: number
+          food_type: string | null
+          health_conditions: string[] | null
+          id: string
+          results_json: Json | null
+          special_care_needs: string[] | null
+          user_id: string | null
+        }
+        Insert: {
+          age_months?: number | null
+          animal_size: string
+          animal_type: string
+          created_at?: string | null
+          estimated_lifetime_cost?: number | null
+          estimated_monthly_cost: number
+          estimated_yearly_cost: number
+          food_type?: string | null
+          health_conditions?: string[] | null
+          id?: string
+          results_json?: Json | null
+          special_care_needs?: string[] | null
+          user_id?: string | null
+        }
+        Update: {
+          age_months?: number | null
+          animal_size?: string
+          animal_type?: string
+          created_at?: string | null
+          estimated_lifetime_cost?: number | null
+          estimated_monthly_cost?: number
+          estimated_yearly_cost?: number
+          food_type?: string | null
+          health_conditions?: string[] | null
+          id?: string
+          results_json?: Json | null
+          special_care_needs?: string[] | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       pet_images: {
         Row: {
           created_at: string
@@ -450,7 +616,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: {
+          uid: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never

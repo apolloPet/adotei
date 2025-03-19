@@ -1,17 +1,32 @@
 
 export interface CostSimulatorFormData {
-  animalType: string;
-  ageYears: number;
-  weight: number;
-  hasSpecialNeeds: boolean;
-  isSterilized: boolean;
-  vaccineCount: number;
+  animalType: 'dog' | 'cat' | 'other';
+  animalSize: 'small' | 'medium' | 'large';
+  ageMonths: number;
+  healthConditions: string[];
+  specialCareNeeds: string[];
+  foodType: 'basic' | 'premium' | 'special';
+  isSterilized?: boolean;
 }
 
 export interface CostResults {
-  foodCost: number;
-  medicalCost: number;
-  specialCost: number;
-  totalMonthly: number;
-  totalYearly: number;
+  id?: string;
+  monthlyCost: number;
+  yearlyCost: number;
+  lifetimeCost: number;
+  details: {
+    monthlyBreakdown: {
+      food: number;
+      healthcare: number;
+      adjustments: {
+        healthConditions: string;
+        specialNeeds: string;
+      }
+    };
+    initialCosts: {
+      accessories: number;
+      procedures: number;
+    };
+    inputParameters: CostSimulatorFormData;
+  };
 }
