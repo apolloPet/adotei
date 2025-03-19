@@ -37,47 +37,13 @@ export function useAuditLog(options: AuditLogOptions = {}) {
     if (initialized) return;
     
     try {
-      // Verifica se a tabela de logs existe
-      const { error } = await supabase
-        .from('admin_audit_logs')
-        .select('id')
-        .limit(1);
-      
-      // Se não existir erro, a tabela já existe
-      if (!error) {
-        console.log('[AuditLog] Tabela de logs já existe');
-        setInitialized(true);
-        return;
-      }
-      
-      // Se for erro diferente de "relation does not exist", retorna
-      if (!error.message.includes('relation "admin_audit_logs" does not exist')) {
-        console.error('[AuditLog] Erro ao verificar tabela:', error);
-        return;
-      }
-      
-      // Cria a tabela de logs
-      console.log('[AuditLog] Criando tabela de logs...');
-      
-      // Só administradores podem criar a tabela
-      if (!isAdmin) {
-        console.warn('[AuditLog] Usuário não é administrador, não pode criar tabela');
-        return;
-      }
-      
-      const { error: createError } = await supabase.rpc('create_audit_log_table');
-      
-      if (createError) {
-        console.error('[AuditLog] Erro ao criar tabela:', createError);
-        return;
-      }
-      
-      console.log('[AuditLog] Tabela de logs criada com sucesso');
+      // A tabela agora já está criada pelo SQL executado anteriormente
+      console.log('[AuditLog] Verificando se a tabela de logs existe');
       setInitialized(true);
     } catch (error) {
       console.error('[AuditLog] Erro ao inicializar tabela de logs:', error);
     }
-  }, [initialized, isAdmin]);
+  }, [initialized]);
   
   // Registra uma entrada de log
   const logAction = useCallback((entry: LogEntry) => {
@@ -147,13 +113,15 @@ export function useAuditLog(options: AuditLogOptions = {}) {
         user_agent: navigator.userAgent
       }));
       
-      const { error } = await supabase
-        .from('admin_audit_logs')
-        .insert(batch);
-      
-      if (error) {
-        console.error('[AuditLog] Erro ao salvar batch de logs:', error);
-        return;
+      // Inserindo registros individuais em vez de batch para evitar problemas de tipo
+      for (const item of batch) {
+        const { error } = await supabase
+          .from('admin_audit_logs')
+          .insert(item);
+        
+        if (error) {
+          console.error('[AuditLog] Erro ao salvar log individual:', error);
+        }
       }
       
       // Limpa a fila

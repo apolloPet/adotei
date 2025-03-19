@@ -2,7 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 
-// Cache para parâmetros de parceria que mudam com pouca frequência
+// Cache for parâmetros de parceria que mudam com pouca frequência
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos em milissegundos
 let partnershipTypesCache = {
   data: null,
@@ -21,7 +21,7 @@ export interface Partnership {
   company_size?: string;
   company_website?: string;
   partnership_type: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'contacted' | 'in_progress' | 'partnered' | 'declined';
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -51,7 +51,7 @@ export const createPartnership = async (
 
     console.log("[PartnershipService] Parceria criada com sucesso:", partnershipData);
     
-    return partnershipData;
+    return partnershipData as Partnership;
   } catch (error) {
     console.error("[PartnershipService] Erro inesperado ao criar parceria:", error);
     toast.error("Erro ao registrar interesse em parceria");
@@ -88,7 +88,7 @@ export const getPartnerships = async (
       throw error;
     }
 
-    return data || [];
+    return data as Partnership[] || [];
   } catch (error) {
     console.error("[PartnershipService] Erro inesperado ao buscar parcerias:", error);
     toast.error("Erro ao carregar parcerias");
@@ -114,7 +114,7 @@ export const getPartnershipById = async (id: string): Promise<Partnership | null
       throw error;
     }
 
-    return data;
+    return data as Partnership;
   } catch (error) {
     console.error(`[PartnershipService] Erro inesperado ao buscar parceria ${id}:`, error);
     toast.error("Erro ao carregar detalhes da parceria");
@@ -127,7 +127,7 @@ export const getPartnershipById = async (id: string): Promise<Partnership | null
  */
 export const updatePartnershipStatus = async (
   id: string, 
-  status: 'pending' | 'approved' | 'rejected',
+  status: 'pending' | 'contacted' | 'in_progress' | 'partnered' | 'declined',
   adminId?: string
 ): Promise<boolean> => {
   try {
@@ -136,7 +136,7 @@ export const updatePartnershipStatus = async (
     const updates: any = { status };
     
     // Se aprovado, adicionar informações de aprovação
-    if (status === 'approved' && adminId) {
+    if (status === 'partnered' && adminId) {
       updates.approved_by = adminId;
       updates.approved_at = new Date().toISOString();
     }
@@ -246,42 +246,43 @@ export const getPartnershipMetrics = async (): Promise<any> => {
   try {
     console.log('[PartnershipService] Buscando métricas de parcerias');
     
-    // Buscar contagem por status
-    const { data: statusCounts, error: statusError } = await supabase
+    // Buscar dados de status
+    const { data: statusData, error: statusError } = await supabase
       .from('partnerships')
-      .select('status, count')
-      .groupBy('status');
+      .select('status');
 
     if (statusError) {
-      console.error('[PartnershipService] Erro ao buscar contagem por status:', statusError);
+      console.error('[PartnershipService] Erro ao buscar status:', statusError);
       throw statusError;
     }
 
-    // Buscar contagem por tipo
-    const { data: typeCounts, error: typeError } = await supabase
+    // Buscar dados de tipo
+    const { data: typeData, error: typeError } = await supabase
       .from('partnerships')
-      .select('partnership_type, count')
-      .groupBy('partnership_type');
+      .select('partnership_type');
 
     if (typeError) {
-      console.error('[PartnershipService] Erro ao buscar contagem por tipo:', typeError);
+      console.error('[PartnershipService] Erro ao buscar tipos:', typeError);
       throw typeError;
     }
 
-    // Formatar resultado
-    const metrics = {
-      byStatus: statusCounts.reduce((acc, curr) => {
-        acc[curr.status] = curr.count;
-        return acc;
-      }, {}),
-      byType: typeCounts.reduce((acc, curr) => {
-        acc[curr.partnership_type] = curr.count;
-        return acc;
-      }, {}),
-      total: statusCounts.reduce((sum, curr) => sum + parseInt(curr.count), 0)
-    };
+    // Processamento manual dos counts
+    const statusCounts = statusData.reduce((acc, curr) => {
+      acc[curr.status] = (acc[curr.status] || 0) + 1;
+      return acc;
+    }, {});
+    
+    const typeCounts = typeData.reduce((acc, curr) => {
+      acc[curr.partnership_type] = (acc[curr.partnership_type] || 0) + 1;
+      return acc;
+    }, {});
 
-    return metrics;
+    // Formatar resultado
+    return {
+      byStatus: statusCounts,
+      byType: typeCounts,
+      total: statusData.length
+    };
   } catch (error) {
     console.error('[PartnershipService] Erro inesperado ao buscar métricas:', error);
     toast.error("Erro ao carregar métricas de parcerias");

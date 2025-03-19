@@ -1,10 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Download, Filter, Search } from 'lucide-react';
 import { Input } from "@/components/ui/input";
-import PartnerRequestCard, { PartnerRequestCardProps } from './PartnerRequestCard';
+import PartnerRequestCard, { PartnerRequestCardProps, statusOptions } from './PartnerRequestCard';
 import { getPartnerships, Partnership } from '@/services/partnershipService';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';

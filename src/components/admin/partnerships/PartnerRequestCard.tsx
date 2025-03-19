@@ -42,13 +42,13 @@ const PartnerRequestCard = ({
   const [currentStatus, setCurrentStatus] = useState(status);
   const [isUpdating, setIsUpdating] = useState(false);
   
-  const handleStatusChange = async (newStatus: string) => {
+  const handleStatusChange = async (newStatus: 'pending' | 'contacted' | 'in_progress' | 'partnered' | 'declined') => {
     setIsUpdating(true);
     try {
       const updated = await updatePartnershipStatus(id, newStatus, notes);
       
       if (updated) {
-        setCurrentStatus(newStatus as any);
+        setCurrentStatus(newStatus);
         onStatusChange(id, newStatus);
         toast.success(`Status alterado para: ${statusOptions.find(option => option.value === newStatus)?.label}`);
       }
@@ -142,7 +142,7 @@ const PartnerRequestCard = ({
         <select 
           className="rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
           value={currentStatus}
-          onChange={(e) => handleStatusChange(e.target.value)}
+          onChange={(e) => handleStatusChange(e.target.value as 'pending' | 'contacted' | 'in_progress' | 'partnered' | 'declined')}
           disabled={isUpdating}
         >
           {statusOptions.map(option => (
