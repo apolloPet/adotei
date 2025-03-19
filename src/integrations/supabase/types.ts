@@ -521,6 +521,39 @@ export type Database = {
           },
         ]
       }
+      system_parameters: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -619,6 +652,13 @@ export type Database = {
       is_admin: {
         Args: {
           uid: string
+        }
+        Returns: boolean
+      }
+      user_has_role: {
+        Args: {
+          user_id: string
+          role_name: string
         }
         Returns: boolean
       }

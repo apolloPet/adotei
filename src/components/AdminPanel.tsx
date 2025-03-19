@@ -8,12 +8,15 @@ import { PaymentSettingsType } from './admin/AdminTabs';
 import AdoptionManagement from './admin/AdoptionManagement';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
-import { LogOut, PawPrint, Settings, Users, Handshake } from 'lucide-react';
+import { LogOut, PawPrint, Settings, Users, Handshake, ShieldCheck, Sliders } from 'lucide-react';
 import PartnershipInterest from './admin/PartnershipInterest';
 import { UsersList } from './admin/users';
 import AdminUserManagement from './admin/AdminUserManagement';
+import AdminRoleManagement from './admin/AdminRoleManagement';
+import SystemParametersManager from './admin/SystemParametersManager';
 import PaymentSettings from './admin/PaymentSettings';
 import AnimalRegistrationForm from './admin/animal-registration';
+import CostSimulator from './admin/partnerships/CostSimulator';
 
 const AdminPanel = () => {
   const [settings, setSettings] = useState<PaymentSettingsType>({
@@ -93,24 +96,37 @@ const AdminPanel = () => {
             <TabsContent value="settings">
               <Tabs defaultValue="parameters" className="w-full">
                 <TabsList className="w-full mb-4">
-                  <TabsTrigger value="parameters">Parâmetros</TabsTrigger>
-                  <TabsTrigger value="administrators">Administradores</TabsTrigger>
+                  <TabsTrigger value="parameters" className="flex items-center gap-1">
+                    <Sliders className="h-4 w-4" />
+                    Parâmetros
+                  </TabsTrigger>
+                  <TabsTrigger value="administrators" className="flex items-center gap-1">
+                    <ShieldCheck className="h-4 w-4" />
+                    Administradores
+                  </TabsTrigger>
+                  <TabsTrigger value="roles">Papéis & Permissões</TabsTrigger>
                   <TabsTrigger value="register-animal">Cadastrar Animais</TabsTrigger>
+                  <TabsTrigger value="cost-simulator">Simulador de Custos</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="parameters">
-                  <PaymentSettings 
-                    settings={settings}
-                    onSave={handleSaveSettings}
-                  />
+                  <SystemParametersManager />
                 </TabsContent>
                 
                 <TabsContent value="administrators">
                   <AdminUserManagement />
                 </TabsContent>
                 
+                <TabsContent value="roles">
+                  <AdminRoleManagement />
+                </TabsContent>
+                
                 <TabsContent value="register-animal">
                   <AnimalRegistrationForm />
+                </TabsContent>
+                
+                <TabsContent value="cost-simulator">
+                  <CostSimulator />
                 </TabsContent>
               </Tabs>
             </TabsContent>

@@ -1,207 +1,262 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
-interface CostSimulationRequest {
+type CostSimulatorFormData = {
   animalType: 'dog' | 'cat' | 'other';
   animalSize: 'small' | 'medium' | 'large';
   ageMonths: number;
   healthConditions: string[];
   specialCareNeeds: string[];
   foodType: 'basic' | 'premium' | 'special';
-  estimatedLifespan?: number; // em anos
-}
+  isSterilized?: boolean;
+};
+
+type CostResults = {
+  monthlyCost: number;
+  yearlyCost: number;
+  lifetimeCost: number;
+  details: {
+    monthlyBreakdown: {
+      food: number;
+      healthcare: number;
+      adjustments: {
+        healthConditions: string;
+        specialNeeds: string;
+      }
+    };
+    initialCosts: {
+      accessories: number;
+      procedures: number;
+    };
+    inputParameters: CostSimulatorFormData;
+  };
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
   }
 
   try {
+    // Create Supabase client using auth from request
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: req.headers.get("Authorization")! },
         },
       }
-    )
+    );
 
-    // Obter o autor da simulação
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser()
-
-    // Verificar permissões em caso de operações sensíveis
-    if (req.method !== 'POST' && req.method !== 'GET') {
-      // Verificar se é administrador para outras operações
-      const { data: isAdmin } = await supabaseClient.rpc('is_admin', { uid: user?.id })
-      if (!isAdmin) {
-        return new Response(
-          JSON.stringify({ error: 'Permissão negada. Apenas administradores podem executar esta operação.' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
-        )
-      }
-    }
-
-    const url = new URL(req.url)
-    const simulationId = url.searchParams.get('id')
-
-    // Carregar uma simulação existente
-    if (req.method === 'GET' && simulationId) {
-      console.log(`Carregando simulação: ${simulationId}`)
-      const { data, error } = await supabaseClient
-        .from('cost_simulations')
-        .select('*')
-        .eq('id', simulationId)
-        .maybeSingle()
-
-      if (error) throw error
-
+    // Parse request body
+    const requestData: CostSimulatorFormData = await req.json();
+    
+    // Get cost parameters from database
+    const { data: costParams, error: paramsError } = await supabaseClient
+      .from('cost_parameters')
+      .select('*')
+      .eq('is_active', true);
+    
+    if (paramsError) {
+      console.error("Error fetching cost parameters:", paramsError);
       return new Response(
-        JSON.stringify({ data }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+        JSON.stringify({ error: "Failed to fetch cost parameters" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
-    // Realizar nova simulação
-    if (req.method === 'POST') {
-      const requestData: CostSimulationRequest = await req.json()
+    // Calculate costs based on parameters and input
+    const {
+      animalType,
+      animalSize,
+      ageMonths,
+      healthConditions,
+      specialCareNeeds,
+      foodType,
+      isSterilized,
+    } = requestData;
 
-      console.log(`Iniciando simulação de custos para animal: ${requestData.animalType}, porte: ${requestData.animalSize}`)
+    // Define base costs (these would ideally come from costParams)
+    const getParamValue = (category: string, name: string, defaultValue: number) => {
+      const param = costParams?.find(p => p.category === category && p.name === name);
+      return param ? Number(param.value) : defaultValue;
+    };
 
-      // Buscar parâmetros de custo do banco de dados
-      const { data: costParams, error: costParamsError } = await supabaseClient
-        .from('cost_parameters')
-        .select('*')
-        .eq('is_active', true)
-
-      if (costParamsError) throw costParamsError
-
-      // Converter array de parâmetros para um objeto para facilitar o acesso
-      const params = costParams.reduce((acc, param) => {
-        if (!acc[param.category]) {
-          acc[param.category] = {}
-        }
-        acc[param.category][param.name] = param.value
-        return acc
-      }, {} as Record<string, Record<string, number>>)
-
-      // Calcular custo mensal de alimentação
-      let sizeKey = 'pequeno'
-      if (requestData.animalSize === 'medium') sizeKey = 'médio'
-      if (requestData.animalSize === 'large') sizeKey = 'grande'
-
-      const foodTypePrefix = requestData.foodType === 'premium' ? 'ração_premium' : 
-                             requestData.foodType === 'special' ? 'ração_especial' : 'ração_básica'
-      
-      // Valor padrão caso não exista o parâmetro específico
-      let monthlyCost = params.alimentação?.[`${foodTypePrefix}_${sizeKey}`] || 0
-      
-      // Adicionar custos de saúde
-      const annualHealthCare = (params.saúde?.vacinas_anuais || 0) + 
-                              (params.saúde?.anti_pulgas || 0) * 12 +
-                              (params.saúde?.consulta_veterinária || 0) * 2 // 2 consultas por ano
-
-      // Custos mensais totais
-      monthlyCost += annualHealthCare / 12
-
-      // Adicionar custos especiais baseados nas condições de saúde
-      for (const condition of requestData.healthConditions) {
-        // Aumentar custos em 15% para cada condição de saúde
-        monthlyCost *= 1.15
-      }
-
-      // Adicionar custos especiais baseados nas necessidades especiais
-      for (const need of requestData.specialCareNeeds) {
-        // Aumentar custos em 10% para cada necessidade especial
-        monthlyCost *= 1.10
-      }
-
-      // Arredondar para 2 casas decimais
-      monthlyCost = parseFloat(monthlyCost.toFixed(2))
-      const yearlyCost = parseFloat((monthlyCost * 12).toFixed(2))
-
-      // Calcular custo de vida estimado
-      const estimatedLifespan = requestData.estimatedLifespan || 
-                              (requestData.animalType === 'dog' ? 12 : 
-                               requestData.animalType === 'cat' ? 15 : 10)
-      
-      const estimatedAgeInYears = requestData.ageMonths / 12
-      const remainingYears = Math.max(0, estimatedLifespan - estimatedAgeInYears)
-      const lifetimeCost = parseFloat((yearlyCost * remainingYears).toFixed(2))
-
-      // Preparar resultado detalhado
-      const resultsJson = {
+    // Food costs per month
+    const baseFoodCostSmall = getParamValue('food', 'small_base', 50);
+    const baseFoodCostMedium = getParamValue('food', 'medium_base', 100);
+    const baseFoodCostLarge = getParamValue('food', 'large_base', 150);
+    
+    // Multipliers for food type
+    const basicFoodMultiplier = getParamValue('food', 'basic_multiplier', 0.8);
+    const premiumFoodMultiplier = getParamValue('food', 'premium_multiplier', 1.0);
+    const specialFoodMultiplier = getParamValue('food', 'special_multiplier', 1.5);
+    
+    // Healthcare costs per month
+    const baseHealthcareCost = getParamValue('healthcare', 'base', 30);
+    const healthConditionCost = getParamValue('healthcare', 'condition_cost', 20);
+    const specialCareNeedCost = getParamValue('healthcare', 'special_need_cost', 25);
+    
+    // Initial costs
+    const accessoriesCostSmall = getParamValue('initial', 'accessories_small', 100);
+    const accessoriesCostMedium = getParamValue('initial', 'accessories_medium', 150);
+    const accessoriesCostLarge = getParamValue('initial', 'accessories_large', 200);
+    const sterilizationCost = getParamValue('initial', 'sterilization', 150);
+    
+    // Life expectancy in years
+    const lifeExpectancyDog = getParamValue('life', 'dog', 12);
+    const lifeExpectancyDogSmall = getParamValue('life', 'dog_small', 14);
+    const lifeExpectancyCat = getParamValue('life', 'cat', 15);
+    const lifeExpectancyOther = getParamValue('life', 'other', 8);
+    
+    // Calculate food cost based on size
+    let monthlyFoodCost = 0;
+    switch (animalSize) {
+      case 'small':
+        monthlyFoodCost = baseFoodCostSmall;
+        break;
+      case 'medium':
+        monthlyFoodCost = baseFoodCostMedium;
+        break;
+      case 'large':
+        monthlyFoodCost = baseFoodCostLarge;
+        break;
+    }
+    
+    // Apply food type multiplier
+    switch (foodType) {
+      case 'basic':
+        monthlyFoodCost *= basicFoodMultiplier;
+        break;
+      case 'premium':
+        monthlyFoodCost *= premiumFoodMultiplier;
+        break;
+      case 'special':
+        monthlyFoodCost *= specialFoodMultiplier;
+        break;
+    }
+    
+    // Calculate healthcare costs
+    let monthlyHealthcareCost = baseHealthcareCost;
+    const healthConditionAdjustment = healthConditions.length * healthConditionCost;
+    const specialNeedsAdjustment = specialCareNeeds.length * specialCareNeedCost;
+    monthlyHealthcareCost += healthConditionAdjustment + specialNeedsAdjustment;
+    
+    // Calculate initial costs
+    let accessoriesCost = 0;
+    switch (animalSize) {
+      case 'small':
+        accessoriesCost = accessoriesCostSmall;
+        break;
+      case 'medium':
+        accessoriesCost = accessoriesCostMedium;
+        break;
+      case 'large':
+        accessoriesCost = accessoriesCostLarge;
+        break;
+    }
+    
+    // Calculate sterilization cost if not already sterilized
+    const proceduresCost = isSterilized ? 0 : sterilizationCost;
+    
+    // Total monthly cost
+    const monthlyCost = monthlyFoodCost + monthlyHealthcareCost;
+    
+    // Calculate yearly cost
+    const yearlyCost = monthlyCost * 12;
+    
+    // Estimate remaining lifetime based on animal type, size, and current age
+    let lifeExpectancyYears = 0;
+    switch (animalType) {
+      case 'dog':
+        lifeExpectancyYears = animalSize === 'small' ? lifeExpectancyDogSmall : lifeExpectancyDog;
+        break;
+      case 'cat':
+        lifeExpectancyYears = lifeExpectancyCat;
+        break;
+      case 'other':
+        lifeExpectancyYears = lifeExpectancyOther;
+        break;
+    }
+    
+    // Convert current age from months to years and subtract from life expectancy
+    const currentAgeYears = ageMonths / 12;
+    const remainingLifeYears = Math.max(0, lifeExpectancyYears - currentAgeYears);
+    
+    // Calculate lifetime cost
+    const lifetimeCost = yearlyCost * remainingLifeYears + accessoriesCost + proceduresCost;
+    
+    // Format results
+    const results: CostResults = {
+      monthlyCost: Math.round(monthlyCost),
+      yearlyCost: Math.round(yearlyCost),
+      lifetimeCost: Math.round(lifetimeCost),
+      details: {
         monthlyBreakdown: {
-          food: params.alimentação?.[`${foodTypePrefix}_${sizeKey}`] || 0,
-          healthcare: annualHealthCare / 12,
+          food: Math.round(monthlyFoodCost),
+          healthcare: Math.round(monthlyHealthcareCost),
           adjustments: {
-            healthConditions: requestData.healthConditions.length > 0 ? 
-              `+${((1.15 ** requestData.healthConditions.length - 1) * 100).toFixed(0)}%` : '0%',
-            specialNeeds: requestData.specialCareNeeds.length > 0 ?
-              `+${((1.10 ** requestData.specialCareNeeds.length - 1) * 100).toFixed(0)}%` : '0%'
+            healthConditions: healthConditions.length > 0 ? `+${healthConditionAdjustment}` : "N/A",
+            specialNeeds: specialCareNeeds.length > 0 ? `+${specialNeedsAdjustment}` : "N/A"
           }
         },
         initialCosts: {
-          accessories: (params.acessórios?.cama || 0) + (params.acessórios?.coleira || 0),
-          procedures: params.procedimentos?.[`castração_${sizeKey}`] || 0
+          accessories: accessoriesCost,
+          procedures: proceduresCost
         },
         inputParameters: requestData
       }
-
-      // Salvar resultado no banco de dados
-      const { data: savedSimulation, error: saveError } = await supabaseClient
-        .from('cost_simulations')
-        .insert({
-          user_id: user?.id,
-          animal_type: requestData.animalType,
-          animal_size: requestData.animalSize,
-          age_months: requestData.ageMonths,
-          health_conditions: requestData.healthConditions,
-          special_care_needs: requestData.specialCareNeeds,
-          food_type: requestData.foodType,
-          estimated_monthly_cost: monthlyCost,
-          estimated_yearly_cost: yearlyCost,
-          estimated_lifetime_cost: lifetimeCost,
-          results_json: resultsJson
-        })
-        .select()
-        .single()
-
-      if (saveError) throw saveError
-
-      console.log(`Simulação concluída. ID: ${savedSimulation.id}`)
-
-      return new Response(
-        JSON.stringify({
-          id: savedSimulation.id,
-          monthlyCost,
-          yearlyCost,
-          lifetimeCost,
-          details: resultsJson
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+    };
+    
+    // Save simulation results to database
+    const { data: savedSimulation, error: saveError } = await supabaseClient
+      .from('cost_simulations')
+      .insert({
+        animal_type: animalType,
+        animal_size: animalSize,
+        age_months: ageMonths,
+        food_type: foodType,
+        health_conditions: healthConditions,
+        special_care_needs: specialCareNeeds,
+        estimated_monthly_cost: results.monthlyCost,
+        estimated_yearly_cost: results.yearlyCost,
+        estimated_lifetime_cost: results.lifetimeCost,
+        results_json: results
+      })
+      .select()
+      .single();
+    
+    if (saveError) {
+      console.error("Error saving simulation results:", saveError);
+      // Continue anyway, just log the error
+    } else {
+      // Add the ID from the saved record to the results
+      results.id = savedSimulation.id;
     }
 
-    // Caso de método HTTP não suportado
-    return new Response(
-      JSON.stringify({ error: 'Método não suportado' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 405 }
-    )
+    return new Response(JSON.stringify(results), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
-    console.error('Erro no simulador de custos:', error)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    )
+    console.error("Error processing request:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
-})
+});

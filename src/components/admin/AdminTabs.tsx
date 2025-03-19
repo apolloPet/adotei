@@ -4,11 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import PaymentSettings from './PaymentSettings';
 import { Match } from './MatchCard';
-import { Settings, Users, PawPrint, ChartBar, Building2 } from 'lucide-react';
+import { Settings, Users, PawPrint, ChartBar, Building2, ShieldCheck, Sliders } from 'lucide-react';
 import AnimalRegistrationForm from './animal-registration';
 import { UsersList } from './users';
 import AdminUserManagement from './AdminUserManagement';
 import AdoptionManagement from './AdoptionManagement';
+import AdminRoleManagement from './AdminRoleManagement';
+import SystemParametersManager from './SystemParametersManager';
+import CostSimulator from './partnerships/CostSimulator';
 
 interface AdminTabsProps {
   matches: Match[];
@@ -66,22 +69,29 @@ const AdminTabs = ({
             <TabsList className="w-full mb-4">
               <TabsTrigger value="parameters">Parâmetros</TabsTrigger>
               <TabsTrigger value="administrators">Administradores</TabsTrigger>
+              <TabsTrigger value="roles">Papéis & Permissões</TabsTrigger>
               <TabsTrigger value="register-animal">Cadastrar Animais</TabsTrigger>
+              <TabsTrigger value="cost-simulator">Simulador de Custos</TabsTrigger>
             </TabsList>
             
             <TabsContent value="parameters">
-              <PaymentSettings 
-                settings={settings}
-                onSave={onSaveSettings}
-              />
+              <SystemParametersManager />
             </TabsContent>
             
             <TabsContent value="administrators">
               <AdminUserManagement />
             </TabsContent>
             
+            <TabsContent value="roles">
+              <AdminRoleManagement />
+            </TabsContent>
+            
             <TabsContent value="register-animal">
               <AnimalRegistrationForm />
+            </TabsContent>
+            
+            <TabsContent value="cost-simulator">
+              <CostSimulator />
             </TabsContent>
           </Tabs>
         </TabsContent>
