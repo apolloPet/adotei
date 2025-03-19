@@ -8,7 +8,17 @@ import { PaymentSettingsType } from './admin/AdminTabs';
 import AdoptionManagement from './admin/AdoptionManagement';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
-import { LogOut, PawPrint, Settings, Users, Handshake, ShieldCheck, Sliders } from 'lucide-react';
+import { 
+  LogOut, 
+  PawPrint, 
+  Settings, 
+  Users, 
+  Handshake, 
+  ShieldCheck, 
+  Sliders,
+  BarChart, 
+  Bell 
+} from 'lucide-react';
 import PartnershipInterest from './admin/PartnershipInterest';
 import { UsersList } from './admin/users';
 import AdminUserManagement from './admin/AdminUserManagement';
@@ -75,6 +85,10 @@ const AdminPanel = () => {
                 <Users className="h-4 w-4" />
                 Usuários
               </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex items-center gap-1">
+                <BarChart className="h-4 w-4" />
+                Métricas
+              </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-1">
                 <Settings className="h-4 w-4" />
                 Configurações
@@ -91,6 +105,49 @@ const AdminPanel = () => {
             
             <TabsContent value="users">
               <UsersList />
+            </TabsContent>
+            
+            <TabsContent value="analytics">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Métricas e Análises</CardTitle>
+                  <CardDescription>
+                    Visualize estatísticas e tendências do sistema
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Tabs defaultValue="users" className="w-full">
+                    <TabsList className="w-full mb-4">
+                      <TabsTrigger value="users">Usuários</TabsTrigger>
+                      <TabsTrigger value="adoptions">Adoções</TabsTrigger>
+                      <TabsTrigger value="followups">
+                        <div className="flex items-center gap-1">
+                          <Bell className="h-4 w-4" />
+                          Acompanhamentos
+                        </div>
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="users">
+                      <div className="grid gap-6">
+                        <UsersList />
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="adoptions">
+                      <div className="grid gap-6">
+                        <AdoptionManagement />
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="followups">
+                      <div className="grid gap-6">
+                        <AdoptionManagement />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </CardContent>
+              </Card>
             </TabsContent>
             
             <TabsContent value="settings">

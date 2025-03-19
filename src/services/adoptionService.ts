@@ -37,10 +37,15 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
           currentStage: adoption.current_stage as AdoptionStage,
           createdAt: adoption.created_at,
           updatedAt: adoption.updated_at,
-          notes: adoption.notes,
+          notes: adoption.notes || '',
           responsibleId: adoption.responsible_id || '',
           responsibleName: '',
-          matchPoints: []
+          matchPoints: [],
+          followUpStatus: adoption.follow_up_status || 'pending',
+          lastFollowUpDate: adoption.last_follow_up_date || null,
+          nextFollowUpDate: adoption.next_follow_up_date || null,
+          approvedBy: adoption.approved_by || null,
+          rejectionReason: adoption.rejection_reason || ''
         };
       })
     );
@@ -91,10 +96,15 @@ export const createAdoption = async (
       currentStage: adoption.current_stage as AdoptionStage,
       createdAt: adoption.created_at,
       updatedAt: adoption.updated_at,
-      notes: adoption.notes,
+      notes: adoption.notes || '',
       responsibleId: adoption.responsible_id || '',
       responsibleName: '',
-      matchPoints: []
+      matchPoints: [],
+      followUpStatus: adoption.follow_up_status || 'pending',
+      lastFollowUpDate: adoption.last_follow_up_date || null,
+      nextFollowUpDate: adoption.next_follow_up_date || null,
+      approvedBy: adoption.approved_by || null,
+      rejectionReason: adoption.rejection_reason || ''
     };
   } catch (error) {
     console.error('Error creating adoption:', error);
@@ -110,7 +120,8 @@ export const updateAdoptionStage = async (
   visitDate?: string,
   inspectionDate?: string,
   contractSigned?: boolean,
-  paymentComplete?: boolean
+  paymentComplete?: boolean,
+  rejectionReason?: string
 ): Promise<boolean> => {
   try {
     const updates: any = {
@@ -124,12 +135,39 @@ export const updateAdoptionStage = async (
     if (contractSigned !== undefined) updates.contract_signed = contractSigned;
     if (paymentComplete !== undefined) updates.adoption_fee_paid = paymentComplete;
     
+    // Handle approval
+    if (stage === 'approved') {
+      const currentUser = (await supabase.auth.getUser()).data.user;
+      if (currentUser) {
+        updates.approved_by = currentUser.id;
+      }
+    }
+    
+    // Handle rejection
+    if (stage === 'rejected' && rejectionReason) {
+      updates.rejection_reason = rejectionReason;
+    }
+    
     const { error } = await supabase
       .from('adoptions')
       .update(updates)
       .eq('id', id);
     
     if (error) throw error;
+    
+    // Set up follow-up dates for completed adoptions
+    if (stage === 'completed') {
+      const nextFollowUpDate = new Date();
+      nextFollowUpDate.setDate(nextFollowUpDate.getDate() + 14); // First follow-up after 14 days
+      
+      await supabase
+        .from('adoptions')
+        .update({
+          next_follow_up_date: nextFollowUpDate.toISOString().split('T')[0],
+          follow_up_status: 'pending'
+        })
+        .eq('id', id);
+    }
     
     return true;
   } catch (error) {
@@ -163,6 +201,131 @@ export const recordPetMatch = async (
   } catch (error) {
     console.error('Error recording pet match:', error);
     toast.error('Erro ao registrar match com o pet');
+    return false;
+  }
+};
+
+export const getAdoptionsByStage = async (stage: AdoptionStage): Promise<AdoptionMatch[]> => {
+  try {
+    const { data: adoptions, error } = await supabase
+      .from('adoptions')
+      .select('*')
+      .eq('current_stage', stage);
+    
+    if (error) throw error;
+    if (!adoptions) return [];
+    
+    const adoptionMatches = await Promise.all(
+      adoptions.map(async (adoption) => {
+        const pet = await fetchPetById(adoption.pet_id);
+        const user = await fetchUserById(adoption.user_id);
+        
+        if (!pet || !user) return null;
+        
+        return {
+          id: adoption.id,
+          petId: pet.id,
+          petName: pet.name,
+          petImage: pet.images[0] || '',
+          userId: user.id,
+          userName: user.name,
+          userPhone: user.phone,
+          userEmail: user.email,
+          currentStage: adoption.current_stage as AdoptionStage,
+          createdAt: adoption.created_at,
+          updatedAt: adoption.updated_at,
+          notes: adoption.notes || '',
+          responsibleId: adoption.responsible_id || '',
+          responsibleName: '',
+          matchPoints: [],
+          followUpStatus: adoption.follow_up_status || 'pending',
+          lastFollowUpDate: adoption.last_follow_up_date || null,
+          nextFollowUpDate: adoption.next_follow_up_date || null,
+          approvedBy: adoption.approved_by || null,
+          rejectionReason: adoption.rejection_reason || ''
+        };
+      })
+    );
+    
+    return adoptionMatches.filter(Boolean) as AdoptionMatch[];
+  } catch (error) {
+    console.error(`Error fetching adoptions by stage ${stage}:`, error);
+    toast.error(`Erro ao buscar adoções no estágio ${stage}`);
+    return [];
+  }
+};
+
+export const getPendingFollowUps = async (): Promise<AdoptionMatch[]> => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { data: adoptions, error } = await supabase
+      .from('adoptions')
+      .select('*')
+      .eq('follow_up_status', 'pending')
+      .lte('next_follow_up_date', today)
+      .eq('current_stage', 'completed');
+    
+    if (error) throw error;
+    if (!adoptions) return [];
+    
+    const adoptionMatches = await Promise.all(
+      adoptions.map(async (adoption) => {
+        const pet = await fetchPetById(adoption.pet_id);
+        const user = await fetchUserById(adoption.user_id);
+        
+        if (!pet || !user) return null;
+        
+        return {
+          id: adoption.id,
+          petId: pet.id,
+          petName: pet.name,
+          petImage: pet.images[0] || '',
+          userId: user.id,
+          userName: user.name,
+          userPhone: user.phone,
+          userEmail: user.email,
+          currentStage: adoption.current_stage as AdoptionStage,
+          createdAt: adoption.created_at,
+          updatedAt: adoption.updated_at,
+          notes: adoption.notes || '',
+          responsibleId: adoption.responsible_id || '',
+          responsibleName: '',
+          matchPoints: [],
+          followUpStatus: adoption.follow_up_status || 'pending',
+          lastFollowUpDate: adoption.last_follow_up_date || null,
+          nextFollowUpDate: adoption.next_follow_up_date || null,
+          approvedBy: adoption.approved_by || null,
+          rejectionReason: adoption.rejection_reason || ''
+        };
+      })
+    );
+    
+    return adoptionMatches.filter(Boolean) as AdoptionMatch[];
+  } catch (error) {
+    console.error('Error fetching pending follow-ups:', error);
+    toast.error('Erro ao buscar acompanhamentos pendentes');
+    return [];
+  }
+};
+
+export const assignResponsible = async (
+  adoptionId: string,
+  responsibleId: string
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('adoptions')
+      .update({ responsible_id: responsibleId })
+      .eq('id', adoptionId);
+    
+    if (error) throw error;
+    
+    toast.success('Responsável atribuído com sucesso');
+    return true;
+  } catch (error) {
+    console.error('Error assigning responsible:', error);
+    toast.error('Erro ao atribuir responsável');
     return false;
   }
 };

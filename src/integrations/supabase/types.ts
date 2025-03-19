@@ -9,16 +9,62 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      adoption_follow_ups: {
+        Row: {
+          adoption_id: string | null
+          created_at: string | null
+          created_by: string | null
+          follow_up_date: string
+          id: string
+          notes: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          adoption_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          follow_up_date: string
+          id?: string
+          notes?: string | null
+          status: string
+          updated_at?: string | null
+        }
+        Update: {
+          adoption_id?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          follow_up_date?: string
+          id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adoption_follow_ups_adoption_id_fkey"
+            columns: ["adoption_id"]
+            isOneToOne: false
+            referencedRelation: "adoptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       adoptions: {
         Row: {
           adoption_fee_paid: boolean | null
+          approved_by: string | null
           contract_signed: boolean | null
           created_at: string
           current_stage: string
+          follow_up_status: string | null
           home_inspection_date: string | null
           id: string
+          last_follow_up_date: string | null
+          next_follow_up_date: string | null
           notes: string | null
           pet_id: string
+          rejection_reason: string | null
           responsible_id: string | null
           scheduled_visit_date: string | null
           updated_at: string
@@ -26,13 +72,18 @@ export type Database = {
         }
         Insert: {
           adoption_fee_paid?: boolean | null
+          approved_by?: string | null
           contract_signed?: boolean | null
           created_at?: string
           current_stage: string
+          follow_up_status?: string | null
           home_inspection_date?: string | null
           id?: string
+          last_follow_up_date?: string | null
+          next_follow_up_date?: string | null
           notes?: string | null
           pet_id: string
+          rejection_reason?: string | null
           responsible_id?: string | null
           scheduled_visit_date?: string | null
           updated_at?: string
@@ -40,13 +91,18 @@ export type Database = {
         }
         Update: {
           adoption_fee_paid?: boolean | null
+          approved_by?: string | null
           contract_signed?: boolean | null
           created_at?: string
           current_stage?: string
+          follow_up_status?: string | null
           home_inspection_date?: string | null
           id?: string
+          last_follow_up_date?: string | null
+          next_follow_up_date?: string | null
           notes?: string | null
           pet_id?: string
+          rejection_reason?: string | null
           responsible_id?: string | null
           scheduled_visit_date?: string | null
           updated_at?: string
@@ -554,6 +610,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_metrics: {
+        Row: {
+          active_users: number
+          completed_adoptions: number
+          created_at: string | null
+          date: string
+          id: string
+          new_users: number
+          pending_adoptions: number
+          rejected_adoptions: number
+          total_users: number
+          updated_at: string | null
+        }
+        Insert: {
+          active_users: number
+          completed_adoptions: number
+          created_at?: string | null
+          date: string
+          id?: string
+          new_users: number
+          pending_adoptions: number
+          rejected_adoptions: number
+          total_users: number
+          updated_at?: string | null
+        }
+        Update: {
+          active_users?: number
+          completed_adoptions?: number
+          created_at?: string | null
+          date?: string
+          id?: string
+          new_users?: number
+          pending_adoptions?: number
+          rejected_adoptions?: number
+          total_users?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -652,6 +747,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_daily_user_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       is_admin: {
         Args: {
           uid: string

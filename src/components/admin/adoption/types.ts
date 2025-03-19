@@ -23,6 +23,11 @@ export interface AdoptionMatch {
   responsibleId?: string;
   responsibleName?: string;
   matchPoints?: MatchPoint[];
+  followUpStatus?: string;
+  lastFollowUpDate?: string | null;
+  nextFollowUpDate?: string | null;
+  approvedBy?: string | null;
+  rejectionReason?: string;
 }
 
 export interface MatchCardProps {
@@ -31,6 +36,8 @@ export interface MatchCardProps {
   onScheduleVisit: (match: AdoptionMatch, date: Date, time: string, notes: string) => void;
   onScheduleHomeInspection: (match: AdoptionMatch, date: Date, time: string, notes: string) => void;
   onCompleteAdoption: (matchId: string) => void;
+  onRejectAdoption?: (matchId: string, reason: string) => void;
+  onScheduleFollowUp?: (match: AdoptionMatch, date: Date, notes: string) => void;
   getStageLabel: (stage: AdoptionStage) => string;
   getStageColor: (stage: AdoptionStage) => string;
   formatDate: (dateString: string) => string;
