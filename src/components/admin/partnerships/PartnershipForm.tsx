@@ -1,65 +1,98 @@
 
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "@/hooks/use-sonner";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { createPartnership } from '@/services/partnershipService';
 
-const partnerFormSchema = z.object({
-  companyName: z.string().min(2, { message: 'Nome da empresa é obrigatório' }),
-  contactName: z.string().min(2, { message: 'Nome do contato é obrigatório' }),
-  email: z.string().email({ message: 'E-mail inválido' }),
-  phone: z.string().min(10, { message: 'Telefone inválido' }),
-  companySize: z.string().min(1, { message: 'Selecione o tamanho da empresa' }),
-  message: z.string().optional()
+const formSchema = z.object({
+  company_name: z.string().min(2, { message: "Nome da empresa deve ter pelo menos 2 caracteres" }),
+  contact_name: z.string().min(2, { message: "Nome do contato deve ter pelo menos 2 caracteres" }),
+  email: z.string().email({ message: "Email inválido" }),
+  phone: z.string().min(10, { message: "Telefone deve ter pelo menos 10 dígitos" }),
+  company_size: z.string().optional(),
+  company_website: z.string().url({ message: "URL inválida" }).optional().or(z.literal('')),
+  partnership_type: z.string().min(1, { message: "Tipo de parceria é obrigatório" }),
+  notes: z.string().optional()
 });
 
-export type PartnerFormValues = z.infer<typeof partnerFormSchema>;
+const COMPANY_SIZES = [
+  "Micro (1-9 funcionários)",
+  "Pequena (10-49 funcionários)",
+  "Média (50-249 funcionários)",
+  "Grande (250+ funcionários)"
+];
+
+const PARTNERSHIP_TYPES = [
+  "Clínica Veterinária",
+  "Fornecedor de Produtos",
+  "Abrigo de Animais",
+  "Loja de Pets",
+  "Serviço de Adestramento",
+  "ONG",
+  "Empresa de Tecnologia",
+  "Marketing e Divulgação",
+  "Financeiro",
+  "Outros"
+];
 
 const PartnershipForm = () => {
-  const form = useForm<PartnerFormValues>({
-    resolver: zodResolver(partnerFormSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      companyName: '',
-      contactName: '',
-      email: '',
-      phone: '',
-      companySize: '',
-      message: ''
+      company_name: "",
+      contact_name: "",
+      email: "",
+      phone: "",
+      company_size: "",
+      company_website: "",
+      partnership_type: "",
+      notes: ""
     }
   });
 
-  const onSubmit = (data: PartnerFormValues) => {
-    console.log('Form data:', data);
-    toast.success('Formulário enviado com sucesso! Entraremos em contato em breve.');
-    form.reset();
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    try {
+      await createPartnership({
+        ...data,
+        status: 'pending'
+      });
+      
+      form.reset();
+    } catch (error) {
+      console.error("Error submitting partnership form:", error);
+      toast.error("Erro ao enviar formulário");
+    }
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
-        <CardTitle>Formulário de Interesse em Parceria</CardTitle>
+        <CardTitle>Registro de Interesse em Parceria</CardTitle>
         <CardDescription>
-          Preencha o formulário abaixo para manifestar interesse em se tornar um parceiro tech animal.
+          Preencha o formulário abaixo para registrar seu interesse em estabelecer uma parceria com nossa plataforma
         </CardDescription>
       </CardHeader>
+      
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
-                name="companyName"
+                name="company_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome da Empresa</FormLabel>
+                    <FormLabel>Nome da Empresa *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nome da sua empresa" {...field} />
+                      <Input placeholder="Pet Tech Solutions" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -68,12 +101,12 @@ const PartnershipForm = () => {
               
               <FormField
                 control={form.control}
-                name="contactName"
+                name="contact_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome do Contato</FormLabel>
+                    <FormLabel>Nome do Contato *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Seu nome" {...field} />
+                      <Input placeholder="João Silva" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -85,9 +118,9 @@ const PartnershipForm = () => {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>Email *</FormLabel>
                     <FormControl>
-                      <Input placeholder="seu.email@empresa.com" {...field} />
+                      <Input placeholder="contato@empresa.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -99,7 +132,7 @@ const PartnershipForm = () => {
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Telefone</FormLabel>
+                    <FormLabel>Telefone *</FormLabel>
                     <FormControl>
                       <Input placeholder="(11) 99999-9999" {...field} />
                     </FormControl>
@@ -110,50 +143,98 @@ const PartnershipForm = () => {
               
               <FormField
                 control={form.control}
-                name="companySize"
+                name="company_size"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tamanho da Empresa</FormLabel>
-                    <select
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-                      {...field}
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
                     >
-                      <option value="">Selecione...</option>
-                      <option value="1-10">1-10 funcionários</option>
-                      <option value="11-50">11-50 funcionários</option>
-                      <option value="51-200">51-200 funcionários</option>
-                      <option value="201-500">201-500 funcionários</option>
-                      <option value="501+">501+ funcionários</option>
-                    </select>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tamanho da empresa" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {COMPANY_SIZES.map((size) => (
+                          <SelectItem key={size} value={size}>
+                            {size}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="company_website"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://www.empresa.com" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Se disponível, informe o website da sua empresa
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="partnership_type"
+                render={({ field }) => (
+                  <FormItem className="col-span-1 md:col-span-2">
+                    <FormLabel>Tipo de Parceria *</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o tipo de parceria" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {PARTNERSHIP_TYPES.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem className="col-span-1 md:col-span-2">
+                    <FormLabel>Observações</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Descreva com mais detalhes sua proposta de parceria..."
+                        rows={4}
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
             
-            <FormField
-              control={form.control}
-              name="message"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Mensagem (opcional)</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Conte-nos como sua empresa poderia contribuir para o ecossistema tech animal..." 
-                      className="h-32"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Compartilhe detalhes sobre seu interesse na parceria, tecnologias que utiliza ou propostas de colaboração.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
             <Button type="submit" className="w-full md:w-auto">
-              Enviar Interesse
+              Enviar Solicitação
             </Button>
           </form>
         </Form>

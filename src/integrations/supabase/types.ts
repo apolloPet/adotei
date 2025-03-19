@@ -291,6 +291,98 @@ export type Database = {
         }
         Relationships: []
       }
+      partnership_metrics: {
+        Row: {
+          created_at: string | null
+          id: string
+          metric_type: string
+          partnership_id: string
+          period_end: string
+          period_start: string
+          updated_at: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metric_type: string
+          partnership_id: string
+          period_end: string
+          period_start: string
+          updated_at?: string | null
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metric_type?: string
+          partnership_id?: string
+          period_end?: string
+          period_start?: string
+          updated_at?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_metrics_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partnerships: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          company_name: string
+          company_size: string | null
+          company_website: string | null
+          contact_name: string
+          created_at: string | null
+          email: string
+          id: string
+          notes: string | null
+          partnership_type: string
+          phone: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_name: string
+          company_size?: string | null
+          company_website?: string | null
+          contact_name: string
+          created_at?: string | null
+          email: string
+          id?: string
+          notes?: string | null
+          partnership_type: string
+          phone: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          company_name?: string
+          company_size?: string | null
+          company_website?: string | null
+          contact_name?: string
+          created_at?: string | null
+          email?: string
+          id?: string
+          notes?: string | null
+          partnership_type?: string
+          phone?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       pet_images: {
         Row: {
           created_at: string
@@ -576,6 +668,92 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      supplier_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          id: string
+          rating: number
+          supplier_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating: number
+          supplier_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          rating?: number
+          supplier_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplier_ratings_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          contact_person: string | null
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          email: string
+          id: string
+          name: string
+          notes: string | null
+          phone: string
+          type: string
+          updated_at: string | null
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          email: string
+          id?: string
+          name: string
+          notes?: string | null
+          phone: string
+          type: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          contact_person?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          email?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          phone?: string
+          type?: string
+          updated_at?: string | null
+          website?: string | null
+        }
+        Relationships: []
       }
       system_parameters: {
         Row: {

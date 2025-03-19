@@ -3,8 +3,10 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Mail } from 'lucide-react';
-import { toast } from "sonner";
+import { Mail, MessageSquare } from 'lucide-react';
+import { toast } from "@/hooks/use-sonner";
+import { updatePartnershipStatus } from '@/services/partnershipService';
+import { sendWhatsAppMessage } from '@/utils/whatsappUtils';
 
 export interface PartnerRequestCardProps {
   id: string;
@@ -13,12 +15,13 @@ export interface PartnerRequestCardProps {
   email: string;
   phone: string;
   date: string;
-  status: 'new' | 'contacted' | 'in_progress' | 'partnered' | 'declined';
+  status: 'pending' | 'contacted' | 'in_progress' | 'partnered' | 'declined';
+  notes?: string;
   onStatusChange: (id: string, status: string) => void;
 }
 
 export const statusOptions = [
-  { value: 'new', label: 'Novo' },
+  { value: 'pending', label: 'Novo' },
   { value: 'contacted', label: 'Contatado' },
   { value: 'in_progress', label: 'Em Progresso' },
   { value: 'partnered', label: 'Parceria Fechada' },
@@ -33,19 +36,33 @@ const PartnerRequestCard = ({
   phone, 
   date, 
   status, 
+  notes,
   onStatusChange 
 }: PartnerRequestCardProps) => {
   const [currentStatus, setCurrentStatus] = useState(status);
+  const [isUpdating, setIsUpdating] = useState(false);
   
-  const handleStatusChange = (newStatus: string) => {
-    setCurrentStatus(newStatus as any);
-    onStatusChange(id, newStatus);
-    toast.success(`Status alterado para: ${statusOptions.find(option => option.value === newStatus)?.label}`);
+  const handleStatusChange = async (newStatus: string) => {
+    setIsUpdating(true);
+    try {
+      const updated = await updatePartnershipStatus(id, newStatus, notes);
+      
+      if (updated) {
+        setCurrentStatus(newStatus as any);
+        onStatusChange(id, newStatus);
+        toast.success(`Status alterado para: ${statusOptions.find(option => option.value === newStatus)?.label}`);
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Erro ao atualizar status');
+    } finally {
+      setIsUpdating(false);
+    }
   };
   
   const getStatusBadgeClass = () => {
     switch(currentStatus) {
-      case 'new': return 'bg-blue-100 text-blue-800';
+      case 'pending': return 'bg-blue-100 text-blue-800';
       case 'contacted': return 'bg-yellow-100 text-yellow-800';
       case 'in_progress': return 'bg-purple-100 text-purple-800';
       case 'partnered': return 'bg-green-100 text-green-800';
@@ -61,6 +78,15 @@ const PartnerRequestCard = ({
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('pt-BR');
+  };
+
+  const handleWhatsAppContact = () => {
+    const message = `Olá ${contactName}, estamos entrando em contato sobre sua solicitação de parceria com nossa plataforma.`;
+    sendWhatsAppMessage(phone, message);
+  };
+
+  const handleEmailContact = () => {
+    window.location.href = `mailto:${email}?subject=Solicitação%20de%20Parceria&body=Olá%20${contactName},%0A%0AEstamos%20entrando%20em%20contato%20sobre%20sua%20solicitação%20de%20parceria%20com%20nossa%20plataforma.%0A%0AAtenciosamente,%0AEquipe%20Pet%20Match`;
   };
 
   return (
@@ -87,16 +113,37 @@ const PartnerRequestCard = ({
             <p className="font-medium">{phone}</p>
           </div>
         </div>
+        {notes && (
+          <div className="mt-3">
+            <Label className="text-muted-foreground text-xs">Observações</Label>
+            <p className="text-sm mt-1">{notes}</p>
+          </div>
+        )}
       </CardContent>
       <CardFooter className="pt-2 flex justify-between">
-        <Button variant="outline" size="sm">
-          <Mail className="h-4 w-4 mr-2" />
-          Enviar Email
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleEmailContact}
+          >
+            <Mail className="h-4 w-4 mr-2" />
+            Email
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={handleWhatsAppContact}
+          >
+            <MessageSquare className="h-4 w-4 mr-2" />
+            WhatsApp
+          </Button>
+        </div>
         <select 
           className="rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
           value={currentStatus}
           onChange={(e) => handleStatusChange(e.target.value)}
+          disabled={isUpdating}
         >
           {statusOptions.map(option => (
             <option key={option.value} value={option.value}>

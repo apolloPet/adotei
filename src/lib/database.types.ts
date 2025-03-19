@@ -375,6 +375,164 @@ export interface Database {
           created_by?: string
         }
       }
+      partnerships: {
+        Row: {
+          id: string
+          company_name: string
+          contact_name: string
+          email: string
+          phone: string
+          company_size?: string
+          company_website?: string
+          partnership_type: string
+          status: string
+          notes?: string
+          created_at: string
+          updated_at: string
+          approved_by?: string
+          approved_at?: string
+        }
+        Insert: {
+          id?: string
+          company_name: string
+          contact_name: string
+          email: string
+          phone: string
+          company_size?: string
+          company_website?: string
+          partnership_type: string
+          status?: string
+          notes?: string
+          created_at?: string
+          updated_at?: string
+          approved_by?: string
+          approved_at?: string
+        }
+        Update: {
+          id?: string
+          company_name?: string
+          contact_name?: string
+          email?: string
+          phone?: string
+          company_size?: string
+          company_website?: string
+          partnership_type?: string
+          status?: string
+          notes?: string
+          created_at?: string
+          updated_at?: string
+          approved_by?: string
+          approved_at?: string
+        }
+      }
+      suppliers: {
+        Row: {
+          id: string
+          name: string
+          type: string
+          description?: string
+          phone: string
+          email: string
+          website?: string
+          address?: string
+          contact_person?: string
+          notes?: string
+          created_at: string
+          updated_at: string
+          created_by?: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          type: string
+          description?: string
+          phone: string
+          email: string
+          website?: string
+          address?: string
+          contact_person?: string
+          notes?: string
+          created_at?: string
+          updated_at?: string
+          created_by?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          type?: string
+          description?: string
+          phone?: string
+          email?: string
+          website?: string
+          address?: string
+          contact_person?: string
+          notes?: string
+          created_at?: string
+          updated_at?: string
+          created_by?: string
+        }
+      }
+      supplier_ratings: {
+        Row: {
+          id: string
+          supplier_id: string
+          user_id: string
+          rating: number
+          comment?: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          supplier_id: string
+          user_id: string
+          rating: number
+          comment?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          supplier_id?: string
+          user_id?: string
+          rating?: number
+          comment?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      partnership_metrics: {
+        Row: {
+          id: string
+          partnership_id: string
+          metric_type: string
+          value: number
+          period_start: string
+          period_end: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          partnership_id: string
+          metric_type: string
+          value: number
+          period_start: string
+          period_end: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          partnership_id?: string
+          metric_type?: string
+          value?: number
+          period_start?: string
+          period_end?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never

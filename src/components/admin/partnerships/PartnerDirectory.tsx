@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Search, ExternalLink, Phone, Mail, MessageSquare } from "lucide-react";
+import { Plus, Search, ExternalLink, Phone, Mail, MessageSquare, Star } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,20 +20,11 @@ import { toast } from "@/hooks/use-sonner";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { sendWhatsAppMessage } from '@/utils/whatsappUtils';
-
-// Definição de tipos
-interface Partner {
-  id: string;
-  name: string;
-  type: string;
-  description: string;
-  phone: string;
-  email: string;
-  website?: string;
-  address?: string;
-  contactPerson?: string;
-  notes?: string;
-}
+import { createSupplier, getSuppliers, rateSupplier, Supplier } from '@/services/supplierService';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 
 const PARTNER_TYPES = [
   "Clínica Veterinária",
@@ -47,90 +38,33 @@ const PARTNER_TYPES = [
   "Outro"
 ];
 
-// Mock data inicial
-const INITIAL_PARTNERS: Partner[] = [
-  {
-    id: "1",
-    name: "Clínica Veterinária PetVida",
-    type: "Clínica Veterinária",
-    description: "Clínica veterinária especializada em cães e gatos com atendimento 24h.",
-    phone: "11912345678",
-    email: "contato@petvida.com",
-    website: "https://www.petvida.com",
-    address: "Rua das Flores, 123 - São Paulo, SP",
-    contactPerson: "Dra. Ana Silva",
-    notes: "Parceria com desconto de 15% para pets do abrigo."
-  },
-  {
-    id: "2",
-    name: "Rações Premium",
-    type: "Fornecedor de Ração",
-    description: "Fornecedor de rações premium para cães e gatos.",
-    phone: "11987654321",
-    email: "vendas@racoespremium.com",
-    website: "https://www.racoespremium.com",
-    contactPerson: "Carlos Oliveira",
-    notes: "Entrega grátis para pedidos acima de R$300."
-  },
-  {
-    id: "3",
-    name: "PetTaxi",
-    type: "Transporte de Animais",
-    description: "Serviço de transporte especializado para animais de estimação.",
-    phone: "11955556666",
-    email: "contato@pettaxi.com",
-    contactPerson: "Roberto Almeida"
-  }
-];
+const formSchema = z.object({
+  name: z.string().min(2, { message: "Nome deve ter pelo menos 2 caracteres" }),
+  type: z.string().min(1, { message: "Tipo é obrigatório" }),
+  description: z.string().optional(),
+  phone: z.string().min(10, { message: "Telefone deve ter pelo menos 10 dígitos" }),
+  email: z.string().email({ message: "Email inválido" }),
+  website: z.string().url({ message: "URL inválida" }).optional().or(z.literal('')),
+  address: z.string().optional(),
+  contact_person: z.string().optional(),
+  notes: z.string().optional()
+});
 
 const PartnerDirectory = () => {
-  const [partners, setPartners] = useState<Partner[]>(INITIAL_PARTNERS);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [filteredSuppliers, setFilteredSuppliers] = useState<Supplier[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [newPartner, setNewPartner] = useState<Omit<Partner, 'id'>>({
-    name: "",
-    type: "",
-    description: "",
-    phone: "",
-    email: "",
-    website: "",
-    address: "",
-    contactPerson: "",
-    notes: ""
-  });
+  const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
+  const [currentSupplier, setCurrentSupplier] = useState<Supplier | null>(null);
+  const [ratingValue, setRatingValue] = useState(0);
+  const [ratingComment, setRatingComment] = useState("");
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Filtrar parceiros com base no termo de pesquisa
-  const filteredPartners = partners.filter(partner => 
-    partner.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    partner.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    partner.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Manipular mudanças no formulário
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setNewPartner(prev => ({ ...prev, [name]: value }));
-  };
-
-  // Manipular seleção de tipo
-  const handleTypeSelect = (value: string) => {
-    setNewPartner(prev => ({ ...prev, type: value }));
-  };
-
-  // Adicionar novo parceiro
-  const handleAddPartner = () => {
-    if (!newPartner.name || !newPartner.type || !newPartner.phone || !newPartner.email) {
-      toast.error("Por favor, preencha todos os campos obrigatórios.");
-      return;
-    }
-
-    const newId = (partners.length + 1).toString();
-    const partnerToAdd = { ...newPartner, id: newId };
-    
-    setPartners(prev => [...prev, partnerToAdd as Partner]);
-    
-    // Reset form
-    setNewPartner({
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
       name: "",
       type: "",
       description: "",
@@ -138,20 +72,124 @@ const PartnerDirectory = () => {
       email: "",
       website: "",
       address: "",
-      contactPerson: "",
+      contact_person: "",
       notes: ""
-    });
-    
-    setIsAddDialogOpen(false);
-    toast.success("Fornecedor adicionado com sucesso!");
+    }
+  });
+
+  useEffect(() => {
+    fetchSuppliers();
+  }, []);
+
+  useEffect(() => {
+    filterSuppliers();
+  }, [suppliers, searchTerm, typeFilter]);
+
+  const fetchSuppliers = async () => {
+    setLoading(true);
+    try {
+      const data = await getSuppliers();
+      setSuppliers(data);
+      setFilteredSuppliers(data);
+    } catch (error) {
+      console.error('Error fetching suppliers:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Enviar mensagem via WhatsApp
-  const handleWhatsAppContact = (partner: Partner) => {
-    const message = `Olá ${partner.contactPerson || partner.name}, gostaria de mais informações sobre seus serviços.`;
+  const filterSuppliers = () => {
+    let filtered = [...suppliers];
+    
+    // Apply search term filter
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(supplier => 
+        supplier.name.toLowerCase().includes(term) ||
+        supplier.type.toLowerCase().includes(term) ||
+        (supplier.description && supplier.description.toLowerCase().includes(term))
+      );
+    }
+    
+    // Apply type filter
+    if (typeFilter) {
+      filtered = filtered.filter(supplier => supplier.type === typeFilter);
+    }
+    
+    setFilteredSuppliers(filtered);
+  };
+
+  const handleAddSupplier = async (data: z.infer<typeof formSchema>) => {
+    try {
+      const newSupplier = await createSupplier(data);
+      
+      if (newSupplier) {
+        setSuppliers(prev => [...prev, newSupplier]);
+        setIsAddDialogOpen(false);
+        form.reset();
+      }
+    } catch (error) {
+      console.error("Error adding supplier:", error);
+      toast.error("Erro ao adicionar fornecedor");
+    }
+  };
+
+  const handleRateSupplier = async () => {
+    if (!currentSupplier) return;
+    
+    try {
+      const success = await rateSupplier(
+        currentSupplier.id,
+        ratingValue,
+        ratingComment
+      );
+      
+      if (success) {
+        // Refresh suppliers to get updated ratings
+        fetchSuppliers();
+        setIsRatingDialogOpen(false);
+        setRatingValue(0);
+        setRatingComment("");
+        setCurrentSupplier(null);
+      }
+    } catch (error) {
+      console.error("Error rating supplier:", error);
+      toast.error("Erro ao avaliar fornecedor");
+    }
+  };
+
+  const openRatingDialog = (supplier: Supplier) => {
+    setCurrentSupplier(supplier);
+    setRatingValue(0);
+    setRatingComment("");
+    setIsRatingDialogOpen(true);
+  };
+
+  const handleWhatsAppContact = (partner: Supplier) => {
+    const message = `Olá ${partner.contact_person || partner.name}, gostaria de mais informações sobre seus serviços.`;
     const phone = partner.phone.replace(/\D/g, '');
     
     sendWhatsAppMessage(phone, message);
+  };
+
+  const renderRatingStars = (rating: number) => {
+    return (
+      <div className="flex items-center mt-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`h-4 w-4 ${
+              star <= rating
+                ? 'text-yellow-400 fill-yellow-400'
+                : 'text-gray-300'
+            }`}
+          />
+        ))}
+        <span className="ml-1 text-sm">
+          {rating ? rating.toFixed(1) : 'Sem avaliações'}
+        </span>
+      </div>
+    );
   };
 
   return (
@@ -178,115 +216,174 @@ const PartnerDirectory = () => {
                 </DialogDescription>
               </DialogHeader>
               
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="name">Nome *</Label>
-                  <Input
-                    id="name"
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleAddSupplier)} className="space-y-4">
+                  <FormField
+                    control={form.control}
                     name="name"
-                    value={newPartner.name}
-                    onChange={handleInputChange}
-                    placeholder="Nome da empresa"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nome *</FormLabel>
+                        <FormControl>
+                          <Input {...field} placeholder="Nome da empresa" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="type">Tipo *</Label>
-                  <Select value={newPartner.type} onValueChange={handleTypeSelect}>
-                    <SelectTrigger id="type">
-                      <SelectValue placeholder="Selecione o tipo de fornecedor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PARTNER_TYPES.map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="description">Descrição</Label>
-                  <Textarea
-                    id="description"
+                  
+                  <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo *</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o tipo de fornecedor" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {PARTNER_TYPES.map(type => (
+                              <SelectItem key={type} value={type}>{type}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
                     name="description"
-                    value={newPartner.description}
-                    onChange={handleInputChange}
-                    placeholder="Breve descrição dos serviços oferecidos"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Descrição</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            placeholder="Breve descrição dos serviços oferecidos"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="phone">Telefone/WhatsApp *</Label>
-                    <Input
-                      id="phone"
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
                       name="phone"
-                      value={newPartner.phone}
-                      onChange={handleInputChange}
-                      placeholder="Ex: 11912345678"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Telefone/WhatsApp *</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder="Ex: 11912345678"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email *</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder="email@exemplo.com"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                   </div>
                   
-                  <div className="grid gap-2">
-                    <Label htmlFor="email">Email *</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      value={newPartner.email}
-                      onChange={handleInputChange}
-                      placeholder="email@exemplo.com"
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="website">Website</Label>
-                  <Input
-                    id="website"
+                  <FormField
+                    control={form.control}
                     name="website"
-                    value={newPartner.website}
-                    onChange={handleInputChange}
-                    placeholder="https://www.exemplo.com"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Website</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="https://www.exemplo.com"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="address">Endereço</Label>
-                  <Input
-                    id="address"
+                  
+                  <FormField
+                    control={form.control}
                     name="address"
-                    value={newPartner.address}
-                    onChange={handleInputChange}
-                    placeholder="Rua, número, cidade, estado"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Endereço</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="Rua, número, cidade, estado"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="contactPerson">Pessoa de Contato</Label>
-                  <Input
-                    id="contactPerson"
-                    name="contactPerson"
-                    value={newPartner.contactPerson}
-                    onChange={handleInputChange}
-                    placeholder="Nome da pessoa de contato"
+                  
+                  <FormField
+                    control={form.control}
+                    name="contact_person"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pessoa de Contato</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="Nome da pessoa de contato"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                
-                <div className="grid gap-2">
-                  <Label htmlFor="notes">Observações</Label>
-                  <Textarea
-                    id="notes"
+                  
+                  <FormField
+                    control={form.control}
                     name="notes"
-                    value={newPartner.notes}
-                    onChange={handleInputChange}
-                    placeholder="Condições especiais, descontos, observações gerais..."
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Observações</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            {...field}
+                            placeholder="Condições especiais, descontos, observações gerais..."
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-              </div>
-              
-              <DialogFooter>
-                <Button type="submit" onClick={handleAddPartner}>Adicionar Fornecedor</Button>
-              </DialogFooter>
+                  
+                  <DialogFooter>
+                    <Button type="submit">Adicionar Fornecedor</Button>
+                  </DialogFooter>
+                </form>
+              </Form>
             </DialogContent>
           </Dialog>
         </div>
@@ -303,73 +400,193 @@ const PartnerDirectory = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
+          <div className="flex gap-2 mt-3 flex-wrap">
+            <Badge 
+              variant={!typeFilter ? "default" : "outline"} 
+              className="cursor-pointer"
+              onClick={() => setTypeFilter(null)}
+            >
+              Todos
+            </Badge>
+            {PARTNER_TYPES.map(type => (
+              <Badge 
+                key={type}
+                variant={typeFilter === type ? "default" : "outline"}
+                className="cursor-pointer"
+                onClick={() => setTypeFilter(type)}
+              >
+                {type}
+              </Badge>
+            ))}
+          </div>
         </div>
         
         <ScrollArea className="h-[500px] pr-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredPartners.length > 0 ? (
-              filteredPartners.map(partner => (
-                <Card key={partner.id} className="overflow-hidden">
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {Array(4).fill(0).map((_, i) => (
+                <Card key={i} className="overflow-hidden">
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{partner.name}</CardTitle>
-                        <Badge variant="outline" className="mt-1">{partner.type}</Badge>
+                      <div className="space-y-2">
+                        <Skeleton className="h-6 w-40" />
+                        <Skeleton className="h-4 w-20" />
                       </div>
                     </div>
                   </CardHeader>
                   
                   <CardContent className="pb-2">
-                    <p className="text-sm text-muted-foreground mb-3">{partner.description}</p>
+                    <Skeleton className="h-16 w-full mb-3" />
                     
                     <div className="space-y-2">
-                      {partner.contactPerson && (
-                        <div className="text-sm">
-                          <span className="font-medium">Contato:</span> {partner.contactPerson}
-                        </div>
-                      )}
-                      
                       <div className="flex items-center text-sm">
-                        <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span>{partner.phone}</span>
+                        <Skeleton className="h-4 w-4 mr-2" />
+                        <Skeleton className="h-4 w-24" />
                       </div>
                       
                       <div className="flex items-center text-sm">
-                        <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                        <span>{partner.email}</span>
+                        <Skeleton className="h-4 w-4 mr-2" />
+                        <Skeleton className="h-4 w-32" />
                       </div>
-                      
-                      {partner.website && (
-                        <div className="flex items-center text-sm">
-                          <ExternalLink className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <a href={partner.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                            Website
-                          </a>
-                        </div>
-                      )}
                     </div>
                   </CardContent>
                   
                   <CardFooter className="flex justify-end pt-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleWhatsAppContact(partner)}
-                      className="flex items-center"
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Contato WhatsApp
-                    </Button>
+                    <Skeleton className="h-9 w-32" />
                   </CardFooter>
                 </Card>
-              ))
-            ) : (
-              <div className="col-span-2 py-10 text-center">
-                <p className="text-muted-foreground">Nenhum fornecedor encontrado.</p>
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredSuppliers.length > 0 ? (
+                filteredSuppliers.map(supplier => (
+                  <Card key={supplier.id} className="overflow-hidden">
+                    <CardHeader className="pb-2">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <CardTitle className="text-lg">{supplier.name}</CardTitle>
+                          <Badge variant="outline" className="mt-1">{supplier.type}</Badge>
+                          {renderRatingStars(supplier.average_rating || 0)}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent className="pb-2">
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {supplier.description || "Sem descrição disponível"}
+                      </p>
+                      
+                      <div className="space-y-2">
+                        {supplier.contact_person && (
+                          <div className="text-sm">
+                            <span className="font-medium">Contato:</span> {supplier.contact_person}
+                          </div>
+                        )}
+                        
+                        <div className="flex items-center text-sm">
+                          <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <span>{supplier.phone}</span>
+                        </div>
+                        
+                        <div className="flex items-center text-sm">
+                          <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
+                          <span>{supplier.email}</span>
+                        </div>
+                        
+                        {supplier.website && (
+                          <div className="flex items-center text-sm">
+                            <ExternalLink className="h-4 w-4 mr-2 text-muted-foreground" />
+                            <a href={supplier.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                              Website
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                    
+                    <CardFooter className="flex justify-between pt-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+                        onClick={() => openRatingDialog(supplier)}
+                      >
+                        <Star className="h-4 w-4 mr-2" />
+                        Avaliar
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => handleWhatsAppContact(supplier)}
+                        className="flex items-center"
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />
+                        Contato WhatsApp
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))
+              ) : (
+                <div className="col-span-2 py-10 text-center">
+                  <p className="text-muted-foreground">Nenhum fornecedor encontrado.</p>
+                </div>
+              )}
+            </div>
+          )}
         </ScrollArea>
+        
+        <Dialog open={isRatingDialogOpen} onOpenChange={setIsRatingDialogOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Avaliar Fornecedor</DialogTitle>
+              <DialogDescription>
+                {currentSupplier?.name}
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="py-4 space-y-4">
+              <div>
+                <Label>Sua avaliação</Label>
+                <div className="flex items-center mt-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={`h-6 w-6 cursor-pointer ${
+                        star <= ratingValue
+                          ? 'text-yellow-400 fill-yellow-400'
+                          : 'text-gray-300'
+                      }`}
+                      onClick={() => setRatingValue(star)}
+                    />
+                  ))}
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="comment">Comentário (opcional)</Label>
+                <Textarea
+                  id="comment"
+                  value={ratingComment}
+                  onChange={(e) => setRatingComment(e.target.value)}
+                  placeholder="Compartilhe sua experiência com este fornecedor..."
+                  className="mt-1"
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button
+                type="button"
+                onClick={handleRateSupplier}
+                disabled={ratingValue === 0}
+              >
+                Enviar Avaliação
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
