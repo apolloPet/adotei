@@ -9,67 +9,66 @@ import { useAuth } from '@/hooks/auth';
 import AnimalBasicInfo from './simulator/AnimalBasicInfo';
 import AnimalHealthOptions from './simulator/AnimalHealthOptions';
 import ResultsDisplay from './simulator/ResultsDisplay';
+import { useForm } from "react-hook-form";
 
 const CostSimulator: React.FC = () => {
   const { user } = useAuth();
-  const [formData, setFormData] = useState<CostSimulatorFormData>({
-    animalType: 'dog',
-    animalSize: 'medium',
-    ageMonths: 12,
-    healthConditions: [],
-    specialCareNeeds: [],
-    foodType: 'premium',
-    isSterilized: false
-  });
   const [results, setResults] = useState<CostResults | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  const form = useForm<CostSimulatorFormData>({
+    defaultValues: {
+      animalType: 'dog',
+      animalSize: 'medium',
+      ageMonths: 12,
+      healthConditions: [],
+      specialCareNeeds: [],
+      foodType: 'premium',
+      isSterilized: false
+    }
+  });
+
+  const { watch, setValue } = form;
+  const formData = watch();
 
   const handleAnimalTypeChange = (value: 'dog' | 'cat' | 'other') => {
-    setFormData(prev => ({ ...prev, animalType: value }));
+    setValue('animalType', value);
   };
 
   const handleAnimalSizeChange = (value: 'small' | 'medium' | 'large') => {
-    setFormData(prev => ({ ...prev, animalSize: value }));
+    setValue('animalSize', value);
   };
 
   const handleAgeChange = (value: number) => {
-    setFormData(prev => ({ ...prev, ageMonths: value }));
+    setValue('ageMonths', value);
   };
 
   const handleFoodTypeChange = (value: 'basic' | 'premium' | 'special') => {
-    setFormData(prev => ({ ...prev, foodType: value }));
+    setValue('foodType', value);
   };
 
   const handleSterilizedChange = (value: boolean) => {
-    setFormData(prev => ({ ...prev, isSterilized: value }));
+    setValue('isSterilized', value);
   };
 
   const handleAddHealthCondition = (condition: string) => {
-    setFormData(prev => ({
-      ...prev,
-      healthConditions: [...prev.healthConditions, condition]
-    }));
+    const currentConditions = form.getValues('healthConditions') || [];
+    setValue('healthConditions', [...currentConditions, condition]);
   };
 
   const handleRemoveHealthCondition = (condition: string) => {
-    setFormData(prev => ({
-      ...prev,
-      healthConditions: prev.healthConditions.filter(c => c !== condition)
-    }));
+    const currentConditions = form.getValues('healthConditions') || [];
+    setValue('healthConditions', currentConditions.filter(c => c !== condition));
   };
 
   const handleAddSpecialNeed = (need: string) => {
-    setFormData(prev => ({
-      ...prev,
-      specialCareNeeds: [...prev.specialCareNeeds, need]
-    }));
+    const currentNeeds = form.getValues('specialCareNeeds') || [];
+    setValue('specialCareNeeds', [...currentNeeds, need]);
   };
 
   const handleRemoveSpecialNeed = (need: string) => {
-    setFormData(prev => ({
-      ...prev,
-      specialCareNeeds: prev.specialCareNeeds.filter(n => n !== need)
-    }));
+    const currentNeeds = form.getValues('specialCareNeeds') || [];
+    setValue('specialCareNeeds', currentNeeds.filter(n => n !== need));
   };
 
   const handleSimulate = async () => {
@@ -111,7 +110,7 @@ const CostSimulator: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Form>
+        <Form {...form}>
           <div className="space-y-6">
             <AnimalBasicInfo
               animalType={formData.animalType}
