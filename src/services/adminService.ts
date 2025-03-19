@@ -41,13 +41,16 @@ export const createAdminUser = async (
 
     // If user created successfully, assign admin role
     if (authData.user) {
+      // Use a type assertion to ensure TypeScript recognizes the permissions object
+      const roleData = {
+        user_id: authData.user.id,
+        role: 'admin',
+        permissions
+      };
+
       const { error: roleError } = await supabase
         .from('user_roles')
-        .insert({
-          user_id: authData.user.id,
-          role: 'admin',
-          permissions
-        });
+        .insert(roleData);
 
       if (roleError) {
         console.error('Error assigning admin role:', roleError);
@@ -91,9 +94,14 @@ export const getAdminUsers = async (): Promise<AdminUser[]> => {
         }
 
         if (userData.user) {
-          // Ensure permissions is a valid object using as with type assertion
-          const roleWithPermissions = role as unknown as { permissions?: AdminUser['permissions'], user_id: string, role: string };
-          const permissions = roleWithPermissions.permissions || {
+          // Ensure permissions is a valid object using type assertion
+          const typedRole = role as unknown as { 
+            permissions?: AdminUser['permissions'], 
+            user_id: string, 
+            role: string 
+          };
+          
+          const permissions = typedRole.permissions || {
             manageAnimals: true,
             approveAdoptions: true,
             manageSettings: false,
@@ -129,9 +137,14 @@ export const updateAdminPermissions = async (
   }
 ): Promise<boolean> => {
   try {
+    // Create an update object that TypeScript will accept
+    const updateData = {
+      permissions
+    };
+
     const { error } = await supabase
       .from('user_roles')
-      .update({ permissions })
+      .update(updateData)
       .eq('user_id', userId)
       .eq('role', 'admin');
 

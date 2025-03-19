@@ -46,11 +46,19 @@ const RoleManagement = () => {
 
       if (error) throw error;
       
-      // This is where the error was occurring - we need to cast the data to include permissions
-      const rolesWithPermissions = (data || []).map(role => ({
-        ...role,
-        permissions: role.permissions || {}
-      })) as UserRoleType[];
+      // Properly cast the data with permissions handling
+      const rolesWithPermissions = (data || []).map(role => {
+        const typedRole = role as unknown as UserRoleType;
+        return {
+          ...typedRole,
+          permissions: typedRole.permissions || {
+            manageAnimals: false,
+            approveAdoptions: false,
+            manageSettings: false,
+            manageAdmins: false
+          }
+        };
+      });
       
       setUserRoles(rolesWithPermissions);
     } catch (error) {
