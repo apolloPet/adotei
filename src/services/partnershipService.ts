@@ -2,7 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 
-// Cache for parâmetros de parceria que mudam com pouca frequência
+// Cache para parâmetros de parceria que mudam com pouca frequência
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos em milissegundos
 let partnershipTypesCache = {
   data: null,
@@ -128,7 +128,7 @@ export const getPartnershipById = async (id: string): Promise<Partnership | null
 export const updatePartnershipStatus = async (
   id: string, 
   status: 'pending' | 'contacted' | 'in_progress' | 'partnered' | 'declined',
-  adminId?: string
+  notes?: string
 ): Promise<boolean> => {
   try {
     console.log(`[PartnershipService] Atualizando status da parceria ${id} para ${status}`);
@@ -136,9 +136,13 @@ export const updatePartnershipStatus = async (
     const updates: any = { status };
     
     // Se aprovado, adicionar informações de aprovação
-    if (status === 'partnered' && adminId) {
-      updates.approved_by = adminId;
+    if (status === 'partnered') {
+      updates.approved_by = 'system'; // Idealmente, usar ID do admin
       updates.approved_at = new Date().toISOString();
+    }
+    
+    if (notes) {
+      updates.notes = notes;
     }
     
     const { error } = await supabase
@@ -266,7 +270,7 @@ export const getPartnershipMetrics = async (): Promise<any> => {
       throw typeError;
     }
 
-    // Processamento manual dos counts
+    // Processamento manual dos counts (client-side aggregation)
     const statusCounts = statusData.reduce((acc, curr) => {
       acc[curr.status] = (acc[curr.status] || 0) + 1;
       return acc;

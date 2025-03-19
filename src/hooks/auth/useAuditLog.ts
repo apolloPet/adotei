@@ -32,12 +32,11 @@ export function useAuditLog(options: AuditLogOptions = {}) {
   const [logQueue, setLogQueue] = useState<LogEntry[]>([]);
   const [initialized, setInitialized] = useState(false);
   
-  // Inicializa a tabela de logs se necessário
+  // A tabela agora já está criada pelo SQL executado anteriormente
   const initializeLogTable = useCallback(async () => {
     if (initialized) return;
     
     try {
-      // A tabela agora já está criada pelo SQL executado anteriormente
       console.log('[AuditLog] Verificando se a tabela de logs existe');
       setInitialized(true);
     } catch (error) {
@@ -74,8 +73,9 @@ export function useAuditLog(options: AuditLogOptions = {}) {
     try {
       if (!user) return;
       
+      // Usando o tipo any para contornar as limitações do TypeScript com tabelas dinâmicas
       const { error } = await supabase
-        .from('admin_audit_logs')
+        .from('admin_audit_logs' as any)
         .insert({
           user_id: user.id,
           action: entry.action,
@@ -84,7 +84,7 @@ export function useAuditLog(options: AuditLogOptions = {}) {
           entity_type: entry.entity_type,
           ip_address: null, // Será preenchido pelo servidor
           user_agent: navigator.userAgent
-        });
+        } as any);
       
       if (error) {
         console.error('[AuditLog] Erro ao salvar log:', error);
@@ -113,11 +113,12 @@ export function useAuditLog(options: AuditLogOptions = {}) {
         user_agent: navigator.userAgent
       }));
       
-      // Inserindo registros individuais em vez de batch para evitar problemas de tipo
+      // Processando um por um para garantir compatibilidade
       for (const item of batch) {
+        // Usando o tipo any para contornar as limitações do TypeScript
         const { error } = await supabase
-          .from('admin_audit_logs')
-          .insert(item);
+          .from('admin_audit_logs' as any)
+          .insert(item as any);
         
         if (error) {
           console.error('[AuditLog] Erro ao salvar log individual:', error);
