@@ -1,5 +1,5 @@
 
-import { Check, Clock, Eye, Heart, Home, MapPin, ShieldCheck } from "lucide-react";
+import { Check, Clock, Eye, Heart, Home, MapPin, ShieldCheck, X } from "lucide-react";
 
 export type AdoptionStage = 
   | "interested" 
@@ -7,7 +7,8 @@ export type AdoptionStage =
   | "approved" 
   | "visit_scheduled" 
   | "home_inspection" 
-  | "completed";
+  | "completed"
+  | "rejected";
 
 export type AdoptionStageInfo = {
   id: AdoptionStage;
@@ -59,6 +60,13 @@ export const adoptionStages: AdoptionStageInfo[] = [
     description: "Parabéns! A adoção foi concluída com sucesso",
     icon: <ShieldCheck className="h-5 w-5" />,
     color: "text-primary"
+  },
+  {
+    id: "rejected",
+    label: "Adoção Rejeitada",
+    description: "Esta adoção foi rejeitada",
+    icon: <X className="h-5 w-5" />,
+    color: "text-destructive"
   }
 ];
 

@@ -56,7 +56,7 @@ export const createFollowUpRecord = async (params: FollowUpCreateParams): Promis
     }
     
     toast.success('Acompanhamento registrado com sucesso');
-    return data;
+    return data as FollowUpRecord;
   } catch (error) {
     console.error('Error creating follow-up record:', error);
     toast.error('Erro ao registrar acompanhamento');
@@ -73,7 +73,7 @@ export const getFollowUpsByAdoption = async (adoptionId: string): Promise<Follow
       .order('follow_up_date', { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as FollowUpRecord[];
   } catch (error) {
     console.error('Error fetching follow-up records:', error);
     toast.error('Erro ao buscar registros de acompanhamento');
@@ -93,7 +93,7 @@ export const getPendingFollowUps = async (): Promise<FollowUpRecord[]> => {
       .order('follow_up_date', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as FollowUpRecord[];
   } catch (error) {
     console.error('Error fetching pending follow-ups:', error);
     toast.error('Erro ao buscar acompanhamentos pendentes');
