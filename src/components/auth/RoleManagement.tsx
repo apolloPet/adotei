@@ -48,6 +48,7 @@ const RoleManagement = () => {
       
       // Properly cast the data with permissions handling
       const rolesWithPermissions = (data || []).map(role => {
+        // First convert using type assertion to include permissions property
         const typedRole = role as unknown as UserRoleType;
         return {
           ...typedRole,

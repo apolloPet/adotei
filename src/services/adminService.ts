@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 
@@ -137,14 +136,13 @@ export const updateAdminPermissions = async (
   }
 ): Promise<boolean> => {
   try {
-    // Create an update object that TypeScript will accept
-    const updateData = {
-      permissions
-    };
+    // We need to use a more general type assertion here to avoid TypeScript errors
+    // Since we're updating a JSONB column that TypeScript doesn't know about in the type definition
+    const updateObj: Record<string, any> = { permissions };
 
     const { error } = await supabase
       .from('user_roles')
-      .update(updateData)
+      .update(updateObj)
       .eq('user_id', userId)
       .eq('role', 'admin');
 
