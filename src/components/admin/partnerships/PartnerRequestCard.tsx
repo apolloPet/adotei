@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Mail, MessageSquare } from 'lucide-react';
 import { toast } from "@/hooks/use-sonner";
-import { updatePartnershipStatus } from '@/services/partnershipService';
+import { updatePartnershipStatus, Partnership } from '@/services/partnershipService';
 import { sendWhatsAppMessage } from '@/utils/whatsappUtils';
 
 export interface PartnerRequestCardProps {
@@ -15,9 +15,9 @@ export interface PartnerRequestCardProps {
   email: string;
   phone: string;
   date: string;
-  status: 'pending' | 'contacted' | 'in_progress' | 'partnered' | 'declined';
+  status: Partnership['status'];
   notes?: string;
-  onStatusChange: (id: string, status: string) => void;
+  onStatusChange: (id: string, status: Partnership['status']) => void;
 }
 
 export const statusOptions = [
@@ -39,10 +39,10 @@ const PartnerRequestCard = ({
   notes,
   onStatusChange 
 }: PartnerRequestCardProps) => {
-  const [currentStatus, setCurrentStatus] = useState(status);
+  const [currentStatus, setCurrentStatus] = useState<Partnership['status']>(status);
   const [isUpdating, setIsUpdating] = useState(false);
   
-  const handleStatusChange = async (newStatus: 'pending' | 'contacted' | 'in_progress' | 'partnered' | 'declined') => {
+  const handleStatusChange = async (newStatus: Partnership['status']) => {
     setIsUpdating(true);
     try {
       const updated = await updatePartnershipStatus(id, newStatus, notes);
@@ -142,7 +142,7 @@ const PartnerRequestCard = ({
         <select 
           className="rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm"
           value={currentStatus}
-          onChange={(e) => handleStatusChange(e.target.value as 'pending' | 'contacted' | 'in_progress' | 'partnered' | 'declined')}
+          onChange={(e) => handleStatusChange(e.target.value as Partnership['status'])}
           disabled={isUpdating}
         >
           {statusOptions.map(option => (

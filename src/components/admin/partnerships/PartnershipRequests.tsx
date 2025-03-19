@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,10 +59,10 @@ const PartnershipRequests = () => {
     setFilters(prevFilters => ({ ...prevFilters, ...newFilters }));
   };
 
-  const handleStatusChange = (id: string, newStatus: string) => {
+  const handleStatusChange = (id: string, newStatus: Partnership['status']) => {
     setPartnerships(prevPartnerships =>
       prevPartnerships.map(partnership =>
-        partnership.id === id ? { ...partnership, status: newStatus } : partnership
+        partnership.id === id ? { ...partnership, status: newStatus as Partnership['status'] } : partnership
       )
     );
   };
@@ -163,7 +164,7 @@ const PartnershipRequests = () => {
                           email={partnership.email}
                           phone={partnership.phone}
                           date={partnership.created_at}
-                          status={partnership.status as 'pending' | 'contacted' | 'in_progress' | 'partnered' | 'declined'}
+                          status={partnership.status}
                           notes={partnership.notes}
                           onStatusChange={handleStatusChange}
                         />
@@ -191,7 +192,7 @@ const PartnershipRequests = () => {
                         email={partnership.email}
                         phone={partnership.phone}
                         date={partnership.created_at}
-                        status={partnership.status as 'pending' | 'contacted' | 'in_progress' | 'partnered' | 'declined'}
+                        status={partnership.status}
                         notes={partnership.notes}
                         onStatusChange={handleStatusChange}
                       />

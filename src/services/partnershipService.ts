@@ -88,7 +88,11 @@ export const getPartnerships = async (
       throw error;
     }
 
-    return data as Partnership[] || [];
+    // Garantir que o tipo status está correto
+    return (data as any[] || []).map(item => ({
+      ...item,
+      status: item.status as Partnership['status']
+    })) as Partnership[];
   } catch (error) {
     console.error("[PartnershipService] Erro inesperado ao buscar parcerias:", error);
     toast.error("Erro ao carregar parcerias");
@@ -114,7 +118,11 @@ export const getPartnershipById = async (id: string): Promise<Partnership | null
       throw error;
     }
 
-    return data as Partnership;
+    // Garantir que o tipo status está correto
+    return {
+      ...data,
+      status: data.status as Partnership['status']
+    } as Partnership;
   } catch (error) {
     console.error(`[PartnershipService] Erro inesperado ao buscar parceria ${id}:`, error);
     toast.error("Erro ao carregar detalhes da parceria");
