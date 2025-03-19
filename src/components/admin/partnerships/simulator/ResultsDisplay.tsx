@@ -8,9 +8,10 @@ import { Separator } from "@/components/ui/separator";
 interface ResultsDisplayProps {
   results: CostResults | null;
   isLoading?: boolean;
+  onNewSimulation?: () => void;
 }
 
-const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, isLoading = false }) => {
+const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, isLoading = false, onNewSimulation }) => {
   if (isLoading) {
     return (
       <Card className="mt-6">
@@ -32,69 +33,93 @@ const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, isLoading = fa
 
   return (
     <Card className="mt-6">
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg">Resultados da Simulação</CardTitle>
+        {onNewSimulation && (
+          <button
+            onClick={onNewSimulation}
+            className="text-sm text-primary hover:underline"
+          >
+            Nova simulação
+          </button>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label className="text-muted-foreground text-xs">Custo Mensal</Label>
-            <p className="font-medium">R$ {results.monthlyCost.toFixed(2)}</p>
+            <p className="font-medium">R$ {results.monthlyTotal.toFixed(2)}</p>
           </div>
           <div>
             <Label className="text-muted-foreground text-xs">Custo Anual</Label>
-            <p className="font-medium">R$ {results.yearlyCost.toFixed(2)}</p>
+            <p className="font-medium">R$ {results.yearlyTotal.toFixed(2)}</p>
           </div>
         </div>
 
         <div>
           <Label className="text-muted-foreground text-xs">Custo Estimado ao Longo da Vida</Label>
-          <p className="font-medium text-xl text-primary">R$ {results.lifetimeCost.toFixed(2)}</p>
+          <p className="font-medium text-xl text-primary">R$ {results.lifetimeTotal.toFixed(2)}</p>
         </div>
 
         <Separator />
 
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium">Detalhamento Mensal</h4>
-          
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <Label className="text-muted-foreground text-xs">Alimentação</Label>
-              <p>R$ {results.details.monthlyBreakdown.food.toFixed(2)}</p>
-            </div>
-            <div>
-              <Label className="text-muted-foreground text-xs">Saúde</Label>
-              <p>R$ {results.details.monthlyBreakdown.healthcare.toFixed(2)}</p>
-            </div>
-          </div>
+        {results.details && (
+          <>
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">Detalhamento Mensal</h4>
+              
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <Label className="text-muted-foreground text-xs">Alimentação</Label>
+                  <p>R$ {results.monthlyCosts.food.toFixed(2)}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-xs">Saúde</Label>
+                  <p>R$ {results.monthlyCosts.medical.toFixed(2)}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-xs">Banho e Tosa</Label>
+                  <p>R$ {results.monthlyCosts.grooming.toFixed(2)}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-xs">Suprimentos</Label>
+                  <p>R$ {results.monthlyCosts.supplies.toFixed(2)}</p>
+                </div>
+              </div>
 
-          <div className="text-sm">
-            <Label className="text-muted-foreground text-xs">Ajustes por Condições de Saúde</Label>
-            <p>{results.details.monthlyBreakdown.adjustments.healthConditions}</p>
-          </div>
+              {results.details.monthlyBreakdown.adjustments && (
+                <>
+                  <div className="text-sm">
+                    <Label className="text-muted-foreground text-xs">Ajustes por Condições de Saúde</Label>
+                    <p>{results.details.monthlyBreakdown.adjustments.healthConditions}</p>
+                  </div>
 
-          <div className="text-sm">
-            <Label className="text-muted-foreground text-xs">Ajustes por Necessidades Especiais</Label>
-            <p>{results.details.monthlyBreakdown.adjustments.specialNeeds}</p>
-          </div>
-        </div>
-
-        <Separator />
-
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium">Custos Iniciais (Únicos)</h4>
-          
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <Label className="text-muted-foreground text-xs">Acessórios</Label>
-              <p>R$ {results.details.initialCosts.accessories.toFixed(2)}</p>
+                  <div className="text-sm">
+                    <Label className="text-muted-foreground text-xs">Ajustes por Necessidades Especiais</Label>
+                    <p>{results.details.monthlyBreakdown.adjustments.specialNeeds}</p>
+                  </div>
+                </>
+              )}
             </div>
-            <div>
-              <Label className="text-muted-foreground text-xs">Procedimentos (caso necessário)</Label>
-              <p>R$ {results.details.initialCosts.procedures.toFixed(2)}</p>
+
+            <Separator />
+
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">Custos Iniciais (Únicos)</h4>
+              
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <Label className="text-muted-foreground text-xs">Acessórios</Label>
+                  <p>R$ {results.details.initialCosts.accessories.toFixed(2)}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-xs">Procedimentos (caso necessário)</Label>
+                  <p>R$ {results.details.initialCosts.procedures.toFixed(2)}</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </>
+        )}
         
         {results.id && (
           <div className="text-xs text-muted-foreground mt-4">

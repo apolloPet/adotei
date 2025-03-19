@@ -12,7 +12,12 @@ import { toast } from "@/hooks/use-sonner";
 import AnimalBasicInfo from "./simulator/AnimalBasicInfo";
 import AnimalHealthOptions from "./simulator/AnimalHealthOptions";
 import ResultsDisplay from "./simulator/ResultsDisplay";
-import { calculateMonthlyFoodCost, calculateMedicalCost, calculateGroomingCost, calculateTotalCosts } from "./simulator/costCalculations";
+import { 
+  calculateMonthlyFoodCost, 
+  calculateMedicalCost, 
+  calculateGroomingCost,
+  calculateTotalCosts
+} from "./simulator/costCalculations";
 import { AnimalCostFormData, CostResults } from "./simulator/types";
 
 interface CostSimulatorProps {
@@ -141,10 +146,10 @@ const CostSimulator: React.FC<CostSimulatorProps> = ({ onSimulationComplete }) =
     // Determine supplies cost based on animal type and size
     if (formData.animalType === 'dog') {
       monthlyCosts.supplies = formData.animalSize === 'small' ? 50 : 
-                        formData.animalSize === 'medium' ? 75 : 100;
+                              formData.animalSize === 'medium' ? 75 : 100;
     } else {
       monthlyCosts.supplies = formData.animalSize === 'small' ? 40 : 
-                        formData.animalSize === 'medium' ? 60 : 80;
+                              formData.animalSize === 'medium' ? 60 : 80;
     }
     
     // Add costs for special care needs
@@ -161,7 +166,29 @@ const CostSimulator: React.FC<CostSimulatorProps> = ({ onSimulationComplete }) =
       monthlyCosts,
       monthlyTotal,
       yearlyTotal,
-      lifetimeTotal
+      lifetimeTotal,
+      details: {
+        monthlyBreakdown: {
+          food: monthlyCosts.food,
+          healthcare: monthlyCosts.medical,
+          adjustments: {
+            healthConditions: formData.healthConditions.length > 0 
+              ? `+R$ ${(formData.healthConditions.length * 40).toFixed(2)}`
+              : "Sem ajustes",
+            specialNeeds: formData.specialCareNeeds.length > 0
+              ? `+R$ ${monthlyCosts.specialCare.toFixed(2)}`
+              : "Sem ajustes"
+          }
+        },
+        initialCosts: {
+          accessories: formData.animalType === 'dog' 
+            ? (formData.animalSize === 'small' ? 300 : formData.animalSize === 'medium' ? 450 : 600)
+            : 250,
+          procedures: !formData.isSterilized 
+            ? (formData.animalType === 'dog' ? 400 : 250)
+            : 0
+        }
+      }
     });
     
     setShowResults(true);
@@ -318,11 +345,7 @@ const CostSimulator: React.FC<CostSimulatorProps> = ({ onSimulationComplete }) =
         </>
       ) : (
         <ResultsDisplay
-          results={results!}
-          animalType={formData.animalType}
-          animalSize={formData.animalSize}
-          ageYears={formData.ageYears}
-          ageMonths={formData.ageMonths}
+          results={results}
           onNewSimulation={resetForm}
         />
       )}

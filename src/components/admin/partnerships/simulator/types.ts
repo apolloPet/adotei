@@ -27,4 +27,19 @@ export interface CostResults {
   monthlyTotal: number;
   yearlyTotal: number;
   lifetimeTotal: number;
+  id?: string; // Optional ID for saved simulations
+  details?: {
+    monthlyBreakdown: {
+      food: number;
+      healthcare: number;
+      adjustments: {
+        healthConditions: string;
+        specialNeeds: string;
+      }
+    };
+    initialCosts: {
+      accessories: number;
+      procedures: number;
+    }
+  };
 }
