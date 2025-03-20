@@ -1,3 +1,4 @@
+
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { useState } from "react";
 import { PaymentSettingsType } from "./AdminTabs";
+import { toast } from "@/hooks/use-sonner";
+import { DollarSign } from "lucide-react";
+import { FeesSection, BankDetailsSection, ContractSection } from "./payment-settings";
 
 export interface PaymentSettingsProps {
   settings: PaymentSettingsType;
