@@ -201,3 +201,36 @@ export const getMonthlyMedicalCost = (animalType: string, ageYears: number, vacc
   
   return cost;
 };
+
+// Get food costs based on animal size and brand type
+export const getFoodCostsByAnimalAttributes = (
+  animalType: string,
+  animalSize: string,
+  brandType: string,
+  foodParameters: FoodCostParameter[]
+): number => {
+  // Find matching parameter
+  const matchingParam = foodParameters.find(
+    param => 
+      param.animalType === animalType && 
+      param.animalSize === animalSize && 
+      param.brandType === brandType
+  );
+  
+  // Return cost or default value
+  return matchingParam?.costPerKg || 
+    (animalType === 'dog' ? 
+      (brandType === 'basic' ? 15 : 
+       brandType === 'premium' ? 25 : 40) : 
+      (brandType === 'basic' ? 20 : 
+       brandType === 'premium' ? 35 : 50)
+    );
+};
+
+// Type for food cost parameters
+interface FoodCostParameter {
+  brandType: 'basic' | 'premium' | 'special';
+  animalSize: 'small' | 'medium' | 'large';
+  animalType: string;
+  costPerKg: number;
+}

@@ -43,3 +43,10 @@ export interface CostResults {
     }
   };
 }
+
+export interface FoodCostParameter {
+  brandType: 'basic' | 'premium' | 'special';
+  animalSize: 'small' | 'medium' | 'large';
+  animalType: 'dog' | 'cat' | 'other';
+  costPerKg: number;
+}

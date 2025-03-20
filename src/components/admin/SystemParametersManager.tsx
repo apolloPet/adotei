@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-sonner";
-import { Plus, RefreshCw, Edit, Save } from "lucide-react";
+import { Plus, RefreshCw, Edit, Save, Dog, Cat, Utensils } from "lucide-react";
 import { getSystemParameters, updateSystemParameter, createSystemParameter } from '@/services/adminService';
 import { Textarea } from "@/components/ui/textarea";
 
@@ -28,11 +28,18 @@ const SystemParametersManager = () => {
   const [categories, setCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isFoodCostDialogOpen, setIsFoodCostDialogOpen] = useState(false);
   const [newParameter, setNewParameter] = useState({
     category: '',
     key: '',
     value: '',
     description: ''
+  });
+  const [newFoodCost, setNewFoodCost] = useState({
+    animalType: 'dog',
+    animalSize: 'small',
+    brandType: 'basic',
+    costPerKg: '15'
   });
   const [editMode, setEditMode] = useState<Record<string, boolean>>({});
   const [editValues, setEditValues] = useState<Record<string, { value: string, description: string }>>({});
@@ -80,6 +87,13 @@ const SystemParametersManager = () => {
     }));
   };
 
+  const handleFoodCostChange = (name: string, value: string) => {
+    setNewFoodCost(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const handleAddParameter = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -122,6 +136,54 @@ const SystemParametersManager = () => {
     } catch (error) {
       console.error('Error adding parameter:', error);
       toast.error('Erro ao adicionar parâmetro');
+    }
+  };
+
+  const handleAddFoodCost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      // Validate input
+      const costPerKg = parseFloat(newFoodCost.costPerKg);
+      if (isNaN(costPerKg) || costPerKg <= 0) {
+        toast.error('Custo por kg deve ser um número positivo');
+        return;
+      }
+
+      // Create a structured key for food cost
+      const key = `food_${newFoodCost.animalType}_${newFoodCost.animalSize}_${newFoodCost.brandType}`;
+      
+      // Create description
+      const animalTypeDisplay = newFoodCost.animalType === 'dog' ? 'Cachorro' : 
+                               newFoodCost.animalType === 'cat' ? 'Gato' : 'Outro';
+      const animalSizeDisplay = newFoodCost.animalSize === 'small' ? 'Pequeno' : 
+                               newFoodCost.animalSize === 'medium' ? 'Médio' : 'Grande';
+      const brandTypeDisplay = newFoodCost.brandType === 'basic' ? 'Básica' : 
+                              newFoodCost.brandType === 'premium' ? 'Premium' : 'Especial';
+      
+      const description = `Custo de ração ${brandTypeDisplay} para ${animalTypeDisplay} de porte ${animalSizeDisplay}`;
+
+      await createSystemParameter(
+        'food_costs',
+        key,
+        costPerKg,
+        description
+      );
+
+      // Reset form and refresh parameters
+      setNewFoodCost({
+        animalType: 'dog',
+        animalSize: 'small',
+        brandType: 'basic',
+        costPerKg: '15'
+      });
+      setIsFoodCostDialogOpen(false);
+      fetchParameters();
+
+      toast.success('Parâmetro de ração adicionado com sucesso');
+    } catch (error) {
+      console.error('Error adding food cost parameter:', error);
+      toast.error('Erro ao adicionar parâmetro de ração');
     }
   };
 
@@ -224,6 +286,94 @@ const SystemParametersManager = () => {
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
+          
+          <Dialog open={isFoodCostDialogOpen} onOpenChange={setIsFoodCostDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="secondary" className="flex items-center gap-2">
+                <Utensils className="h-4 w-4" />
+                Custos de Ração
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Configurar Custo de Ração</DialogTitle>
+                <DialogDescription>
+                  Adicione parâmetros de custo de ração para diferentes tipos e tamanhos de animais.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <form onSubmit={handleAddFoodCost} className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="animalType">Tipo de Animal</Label>
+                  <Select
+                    value={newFoodCost.animalType}
+                    onValueChange={(value) => handleFoodCostChange('animalType', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo de animal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="dog">Cachorro</SelectItem>
+                      <SelectItem value="cat">Gato</SelectItem>
+                      <SelectItem value="other">Outro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="animalSize">Porte do Animal</Label>
+                  <Select
+                    value={newFoodCost.animalSize}
+                    onValueChange={(value) => handleFoodCostChange('animalSize', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o porte do animal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="small">Pequeno</SelectItem>
+                      <SelectItem value="medium">Médio</SelectItem>
+                      <SelectItem value="large">Grande</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="brandType">Tipo de Ração</Label>
+                  <Select
+                    value={newFoodCost.brandType}
+                    onValueChange={(value) => handleFoodCostChange('brandType', value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o tipo de ração" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="basic">Básica</SelectItem>
+                      <SelectItem value="premium">Premium</SelectItem>
+                      <SelectItem value="special">Especial (Medicinal)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="costPerKg">Custo por Kg (R$)</Label>
+                  <Input
+                    id="costPerKg"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={newFoodCost.costPerKg}
+                    onChange={(e) => handleFoodCostChange('costPerKg', e.target.value)}
+                    placeholder="Custo por Kg"
+                  />
+                </div>
+                
+                <DialogFooter className="pt-4">
+                  <Button type="submit">Adicionar Parâmetro de Ração</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+          
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
             <DialogTrigger asChild>
               <Button className="flex items-center gap-2">
@@ -316,7 +466,14 @@ const SystemParametersManager = () => {
               <TabsList className="w-full mb-6 flex flex-wrap">
                 {categories.map(category => (
                   <TabsTrigger key={category} value={category} className="capitalize">
-                    {category}
+                    {category === 'food_costs' ? (
+                      <div className="flex items-center gap-1">
+                        <Utensils className="h-4 w-4" />
+                        <span>Custos de Ração</span>
+                      </div>
+                    ) : (
+                      category
+                    )}
                   </TabsTrigger>
                 ))}
               </TabsList>

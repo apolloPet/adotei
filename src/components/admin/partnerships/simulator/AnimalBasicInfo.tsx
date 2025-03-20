@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
 
 interface AnimalBasicInfoProps {
   animalType: 'dog' | 'cat' | 'other';
@@ -87,30 +87,11 @@ const AnimalBasicInfo: React.FC<AnimalBasicInfoProps> = ({
           step={1} 
           value={[ageYears]} 
           onValueChange={onAgeYearsChange} 
+          className="mb-6"
         />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>0 anos</span>
-          <span>20 anos</span>
-        </div>
-      </div>
 
-      <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <Label htmlFor="age-months">Idade (Meses)</Label>
-          <span className="text-sm font-medium">{ageMonths} {ageMonths === 1 ? 'mês' : 'meses'}</span>
-        </div>
-        <Slider 
-          id="age-months" 
-          min={0} 
-          max={11} 
-          step={1} 
-          value={[ageMonths]} 
-          onValueChange={onAgeMonthsChange} 
-        />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>0 meses</span>
-          <span>11 meses</span>
-        </div>
+        {/* Optional: You can uncomment this if you want to keep a hidden months field */}
+        <input type="hidden" value={ageMonths} />
       </div>
 
       <div className="space-y-2">
