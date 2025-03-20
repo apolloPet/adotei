@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +13,7 @@ import AnimalHealthInfo from "./AnimalHealthInfo";
 import AnimalLocationStaff from "./AnimalLocationStaff";
 import CostSimulator from "../partnerships/CostSimulator";
 import AnimalList from "./AnimalList";
+import { createAnimal, saveCostSimulation } from '@/services/animalService';
 
 const AnimalRegistrationForm = () => {
   const [formData, setFormData] = useState<AnimalFormData>(defaultFormData);
@@ -22,6 +24,8 @@ const AnimalRegistrationForm = () => {
   const [activeTab, setActiveTab] = useState('animal-list');
   const [registrationStep, setRegistrationStep] = useState<1 | 2>(1);
   const [costSimulationCompleted, setCostSimulationCompleted] = useState(false);
+  const [costSimulationData, setCostSimulationData] = useState<any>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -136,8 +140,9 @@ const AnimalRegistrationForm = () => {
     setImagePreviewUrls(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleCostSimulationComplete = () => {
+  const handleCostSimulationComplete = (simulationData: any) => {
     setCostSimulationCompleted(true);
+    setCostSimulationData(simulationData);
     toast.success("Simulação de custos concluída com sucesso!");
   };
 
@@ -153,7 +158,7 @@ const AnimalRegistrationForm = () => {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate form
@@ -172,25 +177,61 @@ const AnimalRegistrationForm = () => {
       return;
     }
     
-    // Here you would typically send the data to an API
-    console.log("Animal data:", formData);
-    console.log("Images:", images);
-    
-    // Success feedback
-    toast.success("Animal cadastrado com sucesso!");
+    try {
+      setIsSubmitting(true);
+      
+      // Prepare data for the API
+      const animalData = {
+        nome: formData.name,
+        idade: parseInt(formData.age),
+        tipo: formData.type,
+        porte: formData.size,
+        sexo: formData.gender,
+        castrado: formData.characteristics.includes('Castrado'),
+        vacinas: formData.characteristics.filter(c => c.includes('Vacinado')),
+        responsavel_id: formData.responsibleId || undefined,
+        descricao: formData.description,
+        // Photo handling will need to be adjusted based on your storage solution
+        // For now, we'll just use the first image URL if available
+        fotoPrincipal: imagePreviewUrls.length > 0 ? imagePreviewUrls[0] : undefined,
+        fotos: imagePreviewUrls
+      };
 
-    // Reset form
-    setFormData(defaultFormData);
-    setRegistrationStep(1);
-    setCostSimulationCompleted(false);
-    
-    // Clean up image previews
-    imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
-    setImages([]);
-    setImagePreviewUrls([]);
-    
-    // Switch to animal list tab
-    setActiveTab('animal-list');
+      // Call the service to create the animal
+      const newAnimal = await createAnimal(animalData);
+      
+      if (newAnimal && costSimulationData) {
+        // Save the cost simulation with the animal ID
+        await saveCostSimulation(newAnimal.id, costSimulationData);
+      }
+      
+      // Success feedback
+      toast.success("Animal cadastrado com sucesso!");
+
+      // Reset form
+      setFormData(defaultFormData);
+      setRegistrationStep(1);
+      setCostSimulationCompleted(false);
+      setCostSimulationData(null);
+      
+      // Clean up image previews
+      imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
+      setImages([]);
+      setImagePreviewUrls([]);
+      
+      // Switch to animal list tab
+      setActiveTab('animal-list');
+      
+    } catch (error) {
+      console.error("Erro ao cadastrar animal:", error);
+      if (error instanceof Error) {
+        toast.error(`Erro ao cadastrar animal: ${error.message}`);
+      } else {
+        toast.error("Erro ao cadastrar animal. Tente novamente mais tarde.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -315,9 +356,9 @@ const AnimalRegistrationForm = () => {
                       <Button 
                         type="button" 
                         onClick={handleSubmit}
-                        disabled={!isFormValid()}
+                        disabled={!isFormValid() || isSubmitting}
                       >
-                        Finalizar Cadastro
+                        {isSubmitting ? 'Cadastrando...' : 'Finalizar Cadastro'}
                       </Button>
                     </div>
                   </div>

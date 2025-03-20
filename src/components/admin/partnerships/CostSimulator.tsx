@@ -1,339 +1,203 @@
 
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { toast } from "@/hooks/use-sonner";
-import NutritionInfo from './simulator/NutritionInfo';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AnimalBasicInfo from './simulator/AnimalBasicInfo';
 import HealthInfo from './simulator/HealthInfo';
+import NutritionInfo from './simulator/NutritionInfo';
 import SpecialNeeds from './simulator/SpecialNeeds';
 import ResultsDisplay from './simulator/ResultsDisplay';
-import { AnimalCostFormData, CostResults } from './simulator/types';
-import { calculateCosts, saveCostSimulation } from './simulator/costCalculations';
-import { supabase } from '@/lib/supabase';
+import { toast } from '@/hooks/use-sonner';
+import { calculateTotalCosts } from './simulator/costCalculations';
 
 interface CostSimulatorProps {
-  onSimulationComplete?: () => void;
-  animalId?: string;
+  onSimulationComplete?: (simulationData: any) => void;
 }
 
-const CostSimulator = ({ onSimulationComplete, animalId }: CostSimulatorProps) => {
-  const [formStep, setFormStep] = useState(1);
-  const [formData, setFormData] = useState<AnimalCostFormData>({
+const CostSimulator = ({ onSimulationComplete }: CostSimulatorProps) => {
+  const [step, setStep] = useState(1);
+  const [activeTab, setActiveTab] = useState('step1');
+  const [formData, setFormData] = useState({
     animalType: 'dog',
     animalSize: 'medium',
-    ageYears: 2,
-    ageMonths: 0,
-    activityLevel: 'moderate',
-    foodType: 'basic',
-    foodQuantity: 10,
-    groomingFrequency: 'monthly',
-    healthConditions: [],
-    specialCareNeeds: [],
-    isSterilized: false,
-    notes: ''
+    animalAge: 2,
+    healthConditions: [] as string[],
+    foodType: 'premium',
+    specialNeeds: [] as string[],
   });
-  
-  const [results, setResults] = useState<CostResults | null>(null);
-  const [simulationDone, setSimulationDone] = useState(false);
-  
-  const handleSimulation = () => {
-    const calculatedResults = calculateCosts(formData);
-    setResults(calculatedResults);
-    setSimulationDone(true);
-    
-    // Call onSimulationComplete if provided
-    if (onSimulationComplete) {
-      onSimulationComplete();
-    }
-    
-    // If animalId is provided, save the simulation to the database
-    if (animalId) {
-      saveSimulation(calculatedResults);
-    }
+  const [results, setResults] = useState({
+    monthlyTotal: 0,
+    yearlyTotal: 0,
+    lifetimeTotal: 0,
+    breakdown: {} as Record<string, number>,
+  });
+  const [simulationCompleted, setSimulationCompleted] = useState(false);
+
+  const handleInputChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
-  
-  const saveSimulation = async (results: CostResults) => {
-    try {
-      // Prepare data for saving
-      const simData = {
-        ...formData,
-        monthlyTotal: results.monthlyTotal,
-        yearlyTotal: results.yearlyTotal,
-        lifetimeTotal: results.lifetimeTotal,
-        monthlyCosts: results.monthlyCosts,
-        details: results.details
-      };
-      
-      // Convert to a JSON-serializable object
-      const serializableData = JSON.parse(JSON.stringify(simData));
-      
-      // Save to database
-      const { data, error } = await supabase
-        .from('cost_simulations')
-        .insert({
-          animal_type: formData.animalType,
-          animal_size: formData.animalSize,
-          age_months: formData.ageYears * 12 + formData.ageMonths,
-          food_type: formData.foodType,
-          health_conditions: formData.healthConditions,
-          special_care_needs: formData.specialCareNeeds,
-          estimated_monthly_cost: results.monthlyTotal,
-          estimated_yearly_cost: results.yearlyTotal,
-          estimated_lifetime_cost: results.lifetimeTotal,
-          results_json: serializableData
-        });
-      
-      if (error) {
-        console.error('Error saving simulation:', error);
-        toast.error('Erro ao salvar simulação');
-      } else {
-        toast.success('Simulação salva com sucesso!');
+
+  const handleArrayToggle = (field: string, value: string) => {
+    setFormData(prev => {
+      const arr = prev[field as keyof typeof prev] as string[];
+      if (Array.isArray(arr)) {
+        const exists = arr.includes(value);
+        return {
+          ...prev,
+          [field]: exists
+            ? arr.filter(item => item !== value)
+            : [...arr, value],
+        };
       }
-    } catch (err) {
-      console.error('Error saving simulation:', err);
-      toast.error('Erro ao salvar simulação');
+      return prev;
+    });
+  };
+
+  const calculateResults = () => {
+    try {
+      const totals = calculateTotalCosts(formData);
+      setResults(totals);
+      setSimulationCompleted(true);
+
+      if (onSimulationComplete) {
+        onSimulationComplete({
+          ...formData,
+          ...totals,
+        });
+      }
+
+      return totals;
+    } catch (error) {
+      toast.error("Erro ao calcular custos");
+      console.error("Error calculating costs:", error);
+      return null;
     }
   };
-  
+
+  const nextStep = () => {
+    if (step < 4) {
+      setStep(step + 1);
+      setActiveTab(`step${step + 1}`);
+    } else {
+      const results = calculateResults();
+      if (results) {
+        setStep(5);
+        setActiveTab('results');
+      }
+    }
+  };
+
+  const prevStep = () => {
+    if (step > 1) {
+      setStep(step - 1);
+      setActiveTab(`step${step - 1}`);
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      animalType: 'dog',
+      animalSize: 'medium',
+      animalAge: 2,
+      healthConditions: [],
+      foodType: 'premium',
+      specialNeeds: [],
+    });
+    setResults({
+      monthlyTotal: 0,
+      yearlyTotal: 0,
+      lifetimeTotal: 0,
+      breakdown: {},
+    });
+    setStep(1);
+    setActiveTab('step1');
+    setSimulationCompleted(false);
+  };
+
   return (
-    <div className="space-y-6">
-      {!simulationDone ? (
-        <div className="space-y-6">
-          {formStep === 1 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Informações Básicas do Animal</CardTitle>
-                <CardDescription>Forneça os detalhes básicos para a simulação</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Tipo de Animal</Label>
-                    <Select 
-                      value={formData.animalType} 
-                      onValueChange={(value) => setFormData({...formData, animalType: value as 'dog' | 'cat' | 'other'})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="dog">Cachorro</SelectItem>
-                        <SelectItem value="cat">Gato</SelectItem>
-                        <SelectItem value="other">Outro</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Porte</Label>
-                    <Select 
-                      value={formData.animalSize} 
-                      onValueChange={(value) => setFormData({...formData, animalSize: value as 'small' | 'medium' | 'large'})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="small">Pequeno</SelectItem>
-                        <SelectItem value="medium">Médio</SelectItem>
-                        <SelectItem value="large">Grande</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Idade (Anos)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="30"
-                      value={formData.ageYears}
-                      onChange={(e) => setFormData({...formData, ageYears: parseInt(e.target.value) || 0})}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Idade (Meses)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="11"
-                      value={formData.ageMonths}
-                      onChange={(e) => setFormData({...formData, ageMonths: parseInt(e.target.value) || 0})}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Nível de Atividade</Label>
-                    <Select 
-                      value={formData.activityLevel} 
-                      onValueChange={(value) => setFormData({...formData, activityLevel: value as 'low' | 'moderate' | 'high'})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Baixo</SelectItem>
-                        <SelectItem value="moderate">Moderado</SelectItem>
-                        <SelectItem value="high">Alto</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label>Frequência de Banho/Tosa</Label>
-                    <Select 
-                      value={formData.groomingFrequency} 
-                      onValueChange={(value) => setFormData({...formData, groomingFrequency: value as 'rarely' | 'monthly' | 'biweekly'})}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="rarely">Raramente (a cada 3 meses)</SelectItem>
-                        <SelectItem value="monthly">Mensal</SelectItem>
-                        <SelectItem value="biweekly">Quinzenal</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-end">
-                <Button onClick={() => setFormStep(2)}>
-                  Próximo: Nutrição
-                </Button>
-              </CardFooter>
-            </Card>
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle className="text-xl">Simulador de Custos de Adoção</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="w-full mb-4">
+            <TabsTrigger value="step1" onClick={() => setStep(1)}>
+              Animal
+            </TabsTrigger>
+            <TabsTrigger value="step2" onClick={() => setStep(2)}>
+              Saúde
+            </TabsTrigger>
+            <TabsTrigger value="step3" onClick={() => setStep(3)}>
+              Alimentação
+            </TabsTrigger>
+            <TabsTrigger value="step4" onClick={() => setStep(4)}>
+              Cuidados Especiais
+            </TabsTrigger>
+            <TabsTrigger value="results" onClick={() => setStep(5)} disabled={!simulationCompleted}>
+              Resultados
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="step1">
+            <AnimalBasicInfo
+              formData={formData}
+              handleInputChange={handleInputChange}
+            />
+          </TabsContent>
+
+          <TabsContent value="step2">
+            <HealthInfo
+              formData={formData}
+              handleArrayToggle={handleArrayToggle}
+            />
+          </TabsContent>
+
+          <TabsContent value="step3">
+            <NutritionInfo
+              formData={formData}
+              handleInputChange={handleInputChange}
+            />
+          </TabsContent>
+
+          <TabsContent value="step4">
+            <SpecialNeeds
+              formData={formData}
+              handleArrayToggle={handleArrayToggle}
+            />
+          </TabsContent>
+
+          <TabsContent value="results">
+            <ResultsDisplay results={results} />
+          </TabsContent>
+        </Tabs>
+
+        <div className="flex justify-between mt-6">
+          {step > 1 && step < 5 && (
+            <Button variant="outline" onClick={prevStep}>
+              Anterior
+            </Button>
           )}
           
-          {formStep === 2 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Alimentação</CardTitle>
-                <CardDescription>Informe detalhes sobre a alimentação do animal</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <NutritionInfo 
-                  foodType={formData.foodType}
-                  foodQuantity={formData.foodQuantity}
-                  onFoodTypeChange={(value) => setFormData({...formData, foodType: value as 'basic' | 'premium' | 'special'})}
-                  onFoodQuantityChange={(values) => setFormData({...formData, foodQuantity: values[0]})}
-                />
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={() => setFormStep(1)}>
-                  Voltar
-                </Button>
-                <Button onClick={() => setFormStep(3)}>
-                  Próximo: Saúde
-                </Button>
-              </CardFooter>
-            </Card>
+          {step === 1 && (
+            <div className="flex-1"></div>
           )}
           
-          {formStep === 3 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Saúde</CardTitle>
-                <CardDescription>Forneça informações sobre a saúde do animal</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <HealthInfo 
-                  healthConditions={formData.healthConditions}
-                  isSterilized={formData.isSterilized}
-                  onConditionAdd={(condition) => 
-                    setFormData({...formData, healthConditions: [...formData.healthConditions, condition]})}
-                  onConditionRemove={(condition) => 
-                    setFormData({...formData, healthConditions: formData.healthConditions.filter(c => c !== condition)})}
-                  onSterilizedChange={(value) => setFormData({...formData, isSterilized: value})}
-                />
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={() => setFormStep(2)}>
-                  Voltar
-                </Button>
-                <Button onClick={() => setFormStep(4)}>
-                  Próximo: Necessidades Especiais
-                </Button>
-              </CardFooter>
-            </Card>
+          {step < 5 && (
+            <Button onClick={nextStep}>
+              {step === 4 ? 'Calcular' : 'Próximo'}
+            </Button>
           )}
           
-          {formStep === 4 && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Necessidades Especiais</CardTitle>
-                <CardDescription>Adicione necessidades especiais ou observações</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <SpecialNeeds 
-                  specialCareNeeds={formData.specialCareNeeds}
-                  notes={formData.notes}
-                  onSpecialNeedsAdd={(need) => 
-                    setFormData({...formData, specialCareNeeds: [...formData.specialCareNeeds, need]})}
-                  onSpecialNeedsRemove={(need) => 
-                    setFormData({...formData, specialCareNeeds: formData.specialCareNeeds.filter(n => n !== need)})}
-                  onNotesChange={(notes) => setFormData({...formData, notes})}
-                />
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" onClick={() => setFormStep(3)}>
-                  Voltar
-                </Button>
-                <Button onClick={handleSimulation}>
-                  Calcular Custos
-                </Button>
-              </CardFooter>
-            </Card>
-          )}
-        </div>
-      ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Resultados da Simulação</CardTitle>
-            <CardDescription>
-              Custos estimados para {formData.animalType === 'dog' ? 'um cachorro' : 
-                                     formData.animalType === 'cat' ? 'um gato' : 
-                                     'um animal'} de porte {
-                                       formData.animalSize === 'small' ? 'pequeno' : 
-                                       formData.animalSize === 'medium' ? 'médio' : 
-                                       'grande'
-                                     }
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {results && <ResultsDisplay results={results} />}
-          </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button 
-              variant="outline" 
-              onClick={() => {
-                setSimulationDone(false);
-                setFormStep(1);
-              }}
-            >
+          {step === 5 && (
+            <Button variant="outline" onClick={resetForm}>
               Nova Simulação
             </Button>
-            
-            {!animalId && (
-              <Button 
-                onClick={() => {
-                  if (results) {
-                    saveSimulation(results);
-                  }
-                }}
-              >
-                Salvar Simulação
-              </Button>
-            )}
-          </CardFooter>
-        </Card>
-      )}
-    </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
