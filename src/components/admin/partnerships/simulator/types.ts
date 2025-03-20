@@ -24,7 +24,7 @@ export interface MonthlyCosts {
 
 export interface CostDetails {
   monthlyBreakdown: {
-    food: number;
+    food: number | string;
     healthcare: number;
     adjustments: {
       healthConditions: string;

@@ -7,7 +7,6 @@ export interface AnimalFormData {
   gender: 'male' | 'female';
   size: 'small' | 'medium' | 'large';
   description: string;
-  medicalInfo: string;
   location: string;
   characteristics: string[];
   requirements: string[];
@@ -29,7 +28,6 @@ export const defaultFormData: AnimalFormData = {
   gender: 'male',
   size: 'medium',
   description: '',
-  medicalInfo: '',
   location: '',
   characteristics: [],
   requirements: [],
@@ -52,5 +50,5 @@ export const staffMembers = [
   { id: "staff-5", name: "Juliana Costa" }
 ];
 
-export const commonCharacteristics = ['Dócil', 'Castrado', 'Vacinado', 'Sociável', 'Brincalhão', 'Calmo', 'Independente'];
+export const commonCharacteristics = ['Dócil', 'Vacinado', 'Sociável', 'Brincalhão', 'Calmo', 'Independente'];
 export const commonRequirements = ['Tela nas janelas', 'Ambiente calmo', 'Passeios diários', 'Visitas de acompanhamento', 'Sem outros animais'];
