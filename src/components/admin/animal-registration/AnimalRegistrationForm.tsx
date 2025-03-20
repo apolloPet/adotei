@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -152,6 +153,29 @@ const AnimalRegistrationForm = () => {
       images.length > 0 &&
       costSimulationCompleted
     );
+  };
+
+  const goToNextStep = () => {
+    if (formData.name && formData.description && formData.breed && formData.age) {
+      // Set correct tab ID for the cost simulator
+      setRegistrationStep(2);
+      // Force the tab change to the cost simulator
+      const costSimulatorTab = document.querySelector('[value="cost-simulator"]') as HTMLButtonElement;
+      if (costSimulatorTab) {
+        costSimulatorTab.click();
+      }
+    } else {
+      toast.error("Por favor, preencha todos os campos obrigatórios antes de prosseguir.");
+    }
+  };
+
+  const goToPreviousStep = () => {
+    setRegistrationStep(1);
+    // Force the tab change back to animal info
+    const animalInfoTab = document.querySelector('[value="animal-info"]') as HTMLButtonElement;
+    if (animalInfoTab) {
+      animalInfoTab.click();
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -322,13 +346,7 @@ const AnimalRegistrationForm = () => {
                     <div className="flex justify-end">
                       <Button 
                         type="button" 
-                        onClick={() => {
-                          if (formData.name && formData.description && formData.breed && formData.age) {
-                            setRegistrationStep(2);
-                          } else {
-                            toast.error("Por favor, preencha todos os campos obrigatórios antes de prosseguir.");
-                          }
-                        }}
+                        onClick={goToNextStep}
                       >
                         Próximo: Simulador de Custos
                       </Button>
@@ -354,7 +372,7 @@ const AnimalRegistrationForm = () => {
                       <Button 
                         type="button" 
                         variant="outline" 
-                        onClick={() => setRegistrationStep(1)}
+                        onClick={goToPreviousStep}
                       >
                         Voltar
                       </Button>

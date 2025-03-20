@@ -12,6 +12,23 @@ interface AnimalBasicInfoProps {
 }
 
 const AnimalBasicInfo = ({ formData, handleInputChange, handleRadioChange }: AnimalBasicInfoProps) => {
+  // Handler for age field to accept only numbers
+  const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Only allow numbers
+    if (value === '' || /^[0-9]+$/.test(value)) {
+      handleInputChange(e);
+    }
+  };
+
+  // Handler for description field to limit to 200 characters
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    if (value.length <= 200) {
+      handleInputChange(e);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
@@ -62,14 +79,15 @@ const AnimalBasicInfo = ({ formData, handleInputChange, handleRadioChange }: Ani
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="age">Idade*</Label>
+          <Label htmlFor="age">Idade* (apenas números)</Label>
           <Input 
             id="age" 
             name="age" 
             value={formData.age} 
-            onChange={handleInputChange} 
-            placeholder="Ex: 2 anos" 
+            onChange={handleAgeChange} 
+            placeholder="Ex: 2" 
             required 
+            inputMode="numeric"
           />
         </div>
         
@@ -115,16 +133,20 @@ const AnimalBasicInfo = ({ formData, handleInputChange, handleRadioChange }: Ani
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="description">Descrição*</Label>
+        <Label htmlFor="description">Descrição* (máximo 200 caracteres)</Label>
         <Textarea 
           id="description" 
           name="description" 
           value={formData.description} 
-          onChange={handleInputChange} 
+          onChange={handleDescriptionChange} 
           placeholder="Descreva o animal, seu comportamento e características" 
           required 
           rows={4}
+          maxLength={200}
         />
+        <div className="text-xs text-gray-500 text-right">
+          {formData.description.length}/200 caracteres
+        </div>
       </div>
     </div>
   );

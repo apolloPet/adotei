@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -156,7 +157,7 @@ serve(async (req) => {
       }
 
       // Set responsible_id to current user if not provided and user is not admin
-      if (!requestData.responsavel_id && !isAdmin) {
+      if (!requestData.responsavel_id) {
         requestData.responsavel_id = user.id;
       }
 
