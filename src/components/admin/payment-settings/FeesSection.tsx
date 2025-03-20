@@ -1,93 +1,88 @@
 
-import { useState, useEffect } from 'react';
-import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
-import { DollarSign } from "lucide-react";
-import { PaymentSettingsType } from '../AdminTabs';
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { formatCurrency } from "@/lib/utils";
+
+interface FeesProps {
+  adoptionFee: number;
+  ngoPercentage: number;
+  platformPercentage: number;
+}
 
 interface FeesSectionProps {
-  initialFees: {
-    adoptionFee: number;
-    ngoPercentage: number;
-    platformPercentage: number;
-  };
-  onFeesChange: (fees: {
-    adoptionFee: number;
-    ngoPercentage: number;
-    platformPercentage: number;
-  }) => void;
+  initialFees: FeesProps;
+  onFeesChange: (fees: FeesProps) => void;
 }
 
 const FeesSection = ({ initialFees, onFeesChange }: FeesSectionProps) => {
-  const [adoptionFee, setAdoptionFee] = useState(initialFees.adoptionFee.toString());
-  const [ngoPercentage, setNgoPercentage] = useState(initialFees.ngoPercentage.toString());
-  const [platformPercentage, setPlatformPercentage] = useState(initialFees.platformPercentage.toString());
+  const [adoptionFee, setAdoptionFee] = useState(initialFees.adoptionFee);
+  const [ngoPercentage, setNgoPercentage] = useState(initialFees.ngoPercentage);
+  const [platformPercentage, setPlatformPercentage] = useState(initialFees.platformPercentage);
 
+  // Update parent component when values change
   useEffect(() => {
     onFeesChange({
-      adoptionFee: parseFloat(adoptionFee) || 0,
-      ngoPercentage: parseFloat(ngoPercentage) || 0,
-      platformPercentage: parseFloat(platformPercentage) || 0
+      adoptionFee,
+      ngoPercentage,
+      platformPercentage
     });
   }, [adoptionFee, ngoPercentage, platformPercentage, onFeesChange]);
 
+  // Handle adoption fee change
+  const handleAdoptionFeeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value);
+    if (!isNaN(value) && value >= 0) {
+      setAdoptionFee(value);
+    }
+  };
+
+  // Handle NGO percentage change
+  const handleNgoPercentageChange = (values: number[]) => {
+    const value = values[0];
+    setNgoPercentage(value);
+    setPlatformPercentage(100 - value);
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="space-y-4">
+      <h3 className="text-lg font-medium">Taxas e Valores</h3>
+      
       <div className="space-y-2">
-        <Label htmlFor="adoptionFee">Taxa de Adoção Base (R$)</Label>
-        <div className="flex">
-          <span className="inline-flex items-center px-3 border border-r-0 border-input rounded-l-md bg-muted text-muted-foreground">R$</span>
+        <Label htmlFor="adoptionFee">Taxa de Adoção</Label>
+        <div className="flex items-center gap-2">
           <Input
             id="adoptionFee"
             type="number"
-            min="0"
-            step="0.01"
             value={adoptionFee}
-            onChange={(e) => setAdoptionFee(e.target.value)}
-            className="rounded-l-none"
+            onChange={handleAdoptionFeeChange}
+            min={0}
+            className="max-w-[180px]"
           />
+          <span className="text-sm text-muted-foreground">
+            {formatCurrency(adoptionFee)}
+          </span>
         </div>
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="ngoPercentage">Porcentagem para ONG (%)</Label>
-        <div className="flex">
-          <Input
-            id="ngoPercentage"
-            type="number"
-            min="0"
-            max="100"
-            step="1"
-            value={ngoPercentage}
-            onChange={(e) => {
-              setNgoPercentage(e.target.value);
-              // Auto-calculate platform percentage
-              const newNgoPercent = parseFloat(e.target.value) || 0;
-              setPlatformPercentage((100 - newNgoPercent).toString());
-            }}
-          />
-          <span className="inline-flex items-center px-3 border border-l-0 border-input rounded-r-md bg-muted text-muted-foreground">%</span>
+        <div className="flex justify-between items-center">
+          <Label>Distribuição da Taxa</Label>
+          <span className="text-sm text-muted-foreground">
+            ONG: {ngoPercentage}% | Plataforma: {platformPercentage}%
+          </span>
         </div>
-      </div>
-      
-      <div className="space-y-2">
-        <Label htmlFor="platformPercentage">Porcentagem para Plataforma (%)</Label>
-        <div className="flex">
-          <Input
-            id="platformPercentage"
-            type="number"
-            min="0"
-            max="100"
-            step="1"
-            value={platformPercentage}
-            onChange={(e) => {
-              setPlatformPercentage(e.target.value);
-              // Auto-calculate NGO percentage
-              const newPlatformPercent = parseFloat(e.target.value) || 0;
-              setNgoPercentage((100 - newPlatformPercent).toString());
-            }}
-          />
-          <span className="inline-flex items-center px-3 border border-l-0 border-input rounded-r-md bg-muted text-muted-foreground">%</span>
+        <Slider
+          value={[ngoPercentage]}
+          onValueChange={handleNgoPercentageChange}
+          min={0}
+          max={100}
+          step={1}
+        />
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>ONG: {formatCurrency((adoptionFee * ngoPercentage) / 100)}</span>
+          <span>Plataforma: {formatCurrency((adoptionFee * platformPercentage) / 100)}</span>
         </div>
       </div>
     </div>

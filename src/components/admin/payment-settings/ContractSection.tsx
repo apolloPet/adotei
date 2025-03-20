@@ -1,66 +1,63 @@
 
-import { useState, useEffect } from 'react';
-import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FileText, Clock } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+
+interface ContractDetailsProps {
+  contractText: string;
+  followUpPeriod: number;
+}
 
 interface ContractSectionProps {
-  initialContractDetails: {
-    contractText: string;
-    followUpPeriod: number;
-  };
-  onContractDetailsChange: (contractDetails: {
-    contractText: string;
-    followUpPeriod: number;
-  }) => void;
+  initialContractDetails: ContractDetailsProps;
+  onContractDetailsChange: (contractDetails: ContractDetailsProps) => void;
 }
 
 const ContractSection = ({ initialContractDetails, onContractDetailsChange }: ContractSectionProps) => {
   const [contractText, setContractText] = useState(initialContractDetails.contractText);
-  const [followUpPeriod, setFollowUpPeriod] = useState(initialContractDetails.followUpPeriod.toString());
+  const [followUpPeriod, setFollowUpPeriod] = useState(initialContractDetails.followUpPeriod);
 
+  // Update parent component when values change
   useEffect(() => {
     onContractDetailsChange({
       contractText,
-      followUpPeriod: parseInt(followUpPeriod) || 0
+      followUpPeriod
     });
   }, [contractText, followUpPeriod, onContractDetailsChange]);
 
   return (
     <div className="space-y-4">
+      <h3 className="text-lg font-medium">Termos do Contrato</h3>
+      
       <div className="space-y-2">
-        <Label htmlFor="followUpPeriod" className="flex items-center gap-2">
-          <Clock className="h-4 w-4" />
-          Período de Acompanhamento (dias)
-        </Label>
-        <Input
-          id="followUpPeriod"
-          type="number"
-          min="0"
-          step="1"
-          value={followUpPeriod}
-          onChange={(e) => setFollowUpPeriod(e.target.value)}
+        <Label htmlFor="contractText">Texto do Contrato de Adoção</Label>
+        <Textarea
+          id="contractText"
+          value={contractText}
+          onChange={(e) => setContractText(e.target.value)}
+          placeholder="Termos e condições para a adoção..."
+          rows={6}
         />
         <p className="text-sm text-muted-foreground">
-          Por quanto tempo a ONG acompanhará o animal após a adoção.
+          Este texto será exibido para os adotantes no momento da confirmação da adoção.
         </p>
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="contractText" className="flex items-center gap-2">
-          <FileText className="h-4 w-4" />
-          Texto do Contrato de Compromisso
-        </Label>
-        <Textarea
-          id="contractText"
-          placeholder="Digite o texto do contrato de compromisso..."
-          value={contractText}
-          onChange={(e) => setContractText(e.target.value)}
-          rows={8}
+        <div className="flex justify-between items-center">
+          <Label>Período de Acompanhamento</Label>
+          <span className="text-sm text-muted-foreground">{followUpPeriod} dias</span>
+        </div>
+        <Slider
+          value={[followUpPeriod]}
+          onValueChange={(values) => setFollowUpPeriod(values[0])}
+          min={30}
+          max={180}
+          step={15}
         />
         <p className="text-sm text-muted-foreground">
-          Este texto será exibido para o adotante antes da confirmação do pagamento.
+          Período durante o qual a ONG realizará visitas de acompanhamento após a adoção.
         </p>
       </div>
     </div>

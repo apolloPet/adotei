@@ -25,7 +25,6 @@ import AdminUserManagement from './admin/AdminUserManagement';
 import SystemParametersManager from './admin/SystemParametersManager';
 import PaymentSettings from './admin/PaymentSettings';
 import AnimalRegistrationForm from './admin/animal-registration';
-import CostSimulator from './admin/partnerships/CostSimulator';
 
 const AdminPanel = () => {
   const [settings, setSettings] = useState<PaymentSettingsType>({
@@ -168,8 +167,6 @@ const AdminPanel = () => {
                     <ShieldCheck className="h-4 w-4" />
                     <span className="hidden sm:inline">Administradores</span>
                   </TabsTrigger>
-                  <TabsTrigger value="register-animal">Cadastrar Animais</TabsTrigger>
-                  <TabsTrigger value="cost-simulator">Simulador de Custos</TabsTrigger>
                   <TabsTrigger value="payment-settings">Configurações de Pagamento</TabsTrigger>
                 </TabsList>
                 
@@ -181,14 +178,6 @@ const AdminPanel = () => {
                   <AdminUserManagement />
                 </TabsContent>
                 
-                <TabsContent value="register-animal">
-                  <AnimalRegistrationForm />
-                </TabsContent>
-                
-                <TabsContent value="cost-simulator">
-                  <CostSimulator />
-                </TabsContent>
-
                 <TabsContent value="payment-settings">
                   <PaymentSettings 
                     settings={settings}

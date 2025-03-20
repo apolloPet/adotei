@@ -1,25 +1,24 @@
 
-import { useState, useEffect } from 'react';
-import { Input } from "@/components/ui/input";
+import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { CreditCard, Building2 } from "lucide-react";
+
+interface BankDetailsProps {
+  pixKey: string;
+  companyBankInfo: string;
+}
 
 interface BankDetailsSectionProps {
-  initialBankDetails: {
-    pixKey: string;
-    companyBankInfo: string;
-  };
-  onBankDetailsChange: (bankDetails: {
-    pixKey: string;
-    companyBankInfo: string;
-  }) => void;
+  initialBankDetails: BankDetailsProps;
+  onBankDetailsChange: (bankDetails: BankDetailsProps) => void;
 }
 
 const BankDetailsSection = ({ initialBankDetails, onBankDetailsChange }: BankDetailsSectionProps) => {
   const [pixKey, setPixKey] = useState(initialBankDetails.pixKey);
   const [companyBankInfo, setCompanyBankInfo] = useState(initialBankDetails.companyBankInfo);
 
+  // Update parent component when values change
   useEffect(() => {
     onBankDetailsChange({
       pixKey,
@@ -29,36 +28,32 @@ const BankDetailsSection = ({ initialBankDetails, onBankDetailsChange }: BankDet
 
   return (
     <div className="space-y-4">
+      <h3 className="text-lg font-medium">Dados Bancários</h3>
+      
       <div className="space-y-2">
-        <Label htmlFor="companyBankInfo" className="flex items-center gap-2">
-          <Building2 className="h-4 w-4" />
-          Dados Bancários da Empresa
-        </Label>
-        <Textarea
-          id="companyBankInfo"
-          placeholder="Digite os dados bancários da empresa para transferências automáticas..."
-          value={companyBankInfo}
-          onChange={(e) => setCompanyBankInfo(e.target.value)}
-          rows={4}
+        <Label htmlFor="pixKey">Chave PIX</Label>
+        <Input
+          id="pixKey"
+          value={pixKey}
+          onChange={(e) => setPixKey(e.target.value)}
+          placeholder="CPF, CNPJ, telefone, e-mail ou chave aleatória"
         />
         <p className="text-sm text-muted-foreground">
-          Estas informações serão usadas para transferências automáticas da porcentagem da plataforma.
+          A chave PIX será utilizada para receber os pagamentos das taxas de adoção.
         </p>
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="pixKey" className="flex items-center gap-2">
-          <CreditCard className="h-4 w-4" />
-          Chave PIX da ONG
-        </Label>
-        <Input
-          id="pixKey"
-          placeholder="CPF, CNPJ, email ou chave aleatória"
-          value={pixKey}
-          onChange={(e) => setPixKey(e.target.value)}
+        <Label htmlFor="companyBankInfo">Informações Bancárias Adicionais</Label>
+        <Textarea
+          id="companyBankInfo"
+          value={companyBankInfo}
+          onChange={(e) => setCompanyBankInfo(e.target.value)}
+          placeholder="Banco, agência, conta, etc."
+          rows={3}
         />
         <p className="text-sm text-muted-foreground">
-          Esta chave será usada para transferências via PIX para a ONG.
+          Estas informações serão utilizadas como alternativa para pagamentos que não são realizados via PIX.
         </p>
       </div>
     </div>

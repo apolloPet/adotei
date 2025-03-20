@@ -43,12 +43,14 @@ const dbAnimalToAnimal = (dbAnimal: any): Animal => {
     porte: dbAnimal.porte as 'pequeno' | 'medio' | 'grande',
     sexo: dbAnimal.sexo as 'macho' | 'femea',
     castrado: dbAnimal.castrado,
-    vacinas: Array.isArray(dbAnimal.vacinas) ? dbAnimal.vacinas : [],
+    vacinas: Array.isArray(dbAnimal.vacinas) ? dbAnimal.vacinas : 
+             (dbAnimal.vacinas as Json) ? (dbAnimal.vacinas as any) : [],
     responsavel_id: dbAnimal.responsavel_id,
     data_cadastro: dbAnimal.data_cadastro,
     descricao: dbAnimal.descricao,
     fotoPrincipal: dbAnimal.fotoprincipal,
-    fotos: Array.isArray(dbAnimal.fotos) ? dbAnimal.fotos : []
+    fotos: Array.isArray(dbAnimal.fotos) ? dbAnimal.fotos : 
+           (dbAnimal.fotos as Json) ? (dbAnimal.fotos as any) : []
   };
 };
 
@@ -86,7 +88,7 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
         vacinas: animalData.vacinas || [],
         responsavel_id: animalData.responsavel_id,
         descricao: animalData.descricao,
-        fotoPrincipal: animalData.fotoPrincipal,
+        fotoprincipal: animalData.fotoPrincipal,
         fotos: animalData.fotos || []
       })
       .select();
@@ -231,6 +233,48 @@ export const deleteAnimal = async (id: string): Promise<boolean> => {
       toast.error(error.message);
     } else {
       toast.error('Erro ao excluir animal');
+    }
+    throw error;
+  }
+};
+
+// Save cost simulation for an animal
+export const saveCostSimulation = async (animalId: string, simulationData: any): Promise<boolean> => {
+  try {
+    // Make sure the animal exists
+    const animal = await getAnimalById(animalId);
+    if (!animal) {
+      throw new Error('Animal não encontrado');
+    }
+
+    const { error } = await supabase
+      .from('cost_simulations')
+      .insert({
+        animal_id: animalId,
+        animal_type: animal.tipo,
+        animal_size: animal.porte,
+        age_months: animal.idade * 12, // Convert years to months for consistency
+        estimated_monthly_cost: simulationData.monthlyTotal,
+        estimated_yearly_cost: simulationData.yearlyTotal,
+        estimated_lifetime_cost: simulationData.lifetimeTotal,
+        food_type: simulationData.foodType || 'basic',
+        health_conditions: simulationData.healthConditions || [],
+        special_care_needs: simulationData.specialCareNeeds || [],
+        results_json: simulationData
+      });
+
+    if (error) {
+      console.error('Error saving cost simulation:', error);
+      throw new Error(error.message);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error in saveCostSimulation:', error);
+    if (error instanceof Error) {
+      toast.error(error.message);
+    } else {
+      toast.error('Erro ao salvar simulação de custos');
     }
     throw error;
   }

@@ -234,21 +234,23 @@ export const saveCostSimulation = async (formData: AnimalCostFormData, results: 
       }
     };
     
+    // Create a simplified object for database storage
+    const dbRecord = {
+      animal_type: formData.animalType,
+      animal_size: formData.animalSize,
+      age_months: formData.ageYears * 12 + formData.ageMonths,
+      food_type: formData.foodType,
+      health_conditions: formData.healthConditions,
+      special_care_needs: formData.specialCareNeeds,
+      estimated_monthly_cost: results.monthlyTotal,
+      estimated_yearly_cost: results.yearlyTotal,
+      estimated_lifetime_cost: results.lifetimeTotal,
+      results_json: resultsForStorage
+    };
+    
     const { data, error } = await supabase
       .from('cost_simulations')
-      .insert({
-        animal_type: formData.animalType,
-        animal_size: formData.animalSize,
-        age_months: formData.ageYears * 12 + formData.ageMonths,
-        food_type: formData.foodType,
-        health_conditions: formData.healthConditions,
-        special_care_needs: formData.specialCareNeeds,
-        estimated_monthly_cost: results.monthlyTotal,
-        estimated_yearly_cost: results.yearlyTotal,
-        estimated_lifetime_cost: results.lifetimeTotal,
-        results_json: resultsForStorage
-      })
-      .select();
+      .insert(dbRecord);
     
     if (error) {
       console.error('Error saving simulation:', error);
