@@ -84,17 +84,7 @@ const AnimalHealthInfo = ({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <Label htmlFor="medicalInfo">Informações Médicas</Label>
-        <Textarea 
-          id="medicalInfo" 
-          name="medicalInfo" 
-          value={formData.medicalInfo} 
-          onChange={handleInputChange} 
-          placeholder="Vacinas, castração, condições médicas, etc."
-          rows={3}
-        />
-      </div>
+      {/* Removed the medicalInfo Textarea that was causing the error */}
       
       <Card>
         <CardHeader>
