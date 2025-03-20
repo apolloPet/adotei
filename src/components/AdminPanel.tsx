@@ -22,7 +22,6 @@ import {
 import PartnershipInterest from './admin/PartnershipInterest';
 import { UsersList } from './admin/users';
 import AdminUserManagement from './admin/AdminUserManagement';
-import AdminRoleManagement from './admin/AdminRoleManagement';
 import SystemParametersManager from './admin/SystemParametersManager';
 import PaymentSettings from './admin/PaymentSettings';
 import AnimalRegistrationForm from './admin/animal-registration';
@@ -169,10 +168,9 @@ const AdminPanel = () => {
                     <ShieldCheck className="h-4 w-4" />
                     <span className="hidden sm:inline">Administradores</span>
                   </TabsTrigger>
-                  <TabsTrigger value="roles">
-                    <span className="hidden sm:inline">Papéis & Permissões</span>
-                    <span className="inline sm:hidden">Papéis</span>
-                  </TabsTrigger>
+                  <TabsTrigger value="register-animal">Cadastrar Animais</TabsTrigger>
+                  <TabsTrigger value="cost-simulator">Simulador de Custos</TabsTrigger>
+                  <TabsTrigger value="payment-settings">Configurações de Pagamento</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="parameters">
@@ -183,8 +181,19 @@ const AdminPanel = () => {
                   <AdminUserManagement />
                 </TabsContent>
                 
-                <TabsContent value="roles">
-                  <AdminRoleManagement />
+                <TabsContent value="register-animal">
+                  <AnimalRegistrationForm />
+                </TabsContent>
+                
+                <TabsContent value="cost-simulator">
+                  <CostSimulator />
+                </TabsContent>
+
+                <TabsContent value="payment-settings">
+                  <PaymentSettings 
+                    settings={settings}
+                    onSaveSettings={handleSaveSettings}
+                  />
                 </TabsContent>
               </Tabs>
             </TabsContent>

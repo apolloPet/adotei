@@ -27,7 +27,7 @@ export interface CostResults {
   monthlyTotal: number;
   yearlyTotal: number;
   lifetimeTotal: number;
-  id?: string; // Optional ID for saved simulations
+  id?: string;
   details?: {
     monthlyBreakdown: {
       food: number;

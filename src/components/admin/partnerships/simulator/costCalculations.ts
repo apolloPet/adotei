@@ -1,236 +1,235 @@
 
-// Cost calculator utilities
+import { AnimalCostFormData, CostResults, MonthlyCosts } from "./types";
+import { supabase } from "@/lib/supabase";
 
-// Food cost calculation
-export const getFoodCostPerKg = (animalType: string): number => {
-  return animalType === 'dog' ? 20 : 40; // Cats typically have more expensive food per kg
-};
-
-// Calculate daily food consumption in grams
-export const getDailyFoodConsumption = (animalType: string, weight: number, ageYears: number): number => {
-  // Simple formula: 
-  // Dogs: ~20g per kg of weight
-  // Cats: ~30g per kg of weight
-  // Puppies and kittens (< 1 year) eat more (1.5x)
-  const baseConsumption = animalType === 'dog' ? 20 : 30;
-  const ageMultiplier = ageYears < 1 ? 1.5 : 1;
+export const calculateFoodCost = (formData: AnimalCostFormData): number => {
+  // Base cost per kg based on food type
+  let baseCostPerKg = 0;
   
-  return (baseConsumption * weight * ageMultiplier);
-};
-
-// Calculate monthly food costs based on animal type, size, food type, and quantity
-export const calculateMonthlyFoodCost = (
-  animalType: string, 
-  animalSize: string, 
-  foodType: string, 
-  foodQuantityKg: number
-): number => {
-  // Base food cost per kg
-  let costPerKg = 0;
+  // Try to fetch cost from system parameters
+  const foodCostKey = `food_${formData.animalType}_${formData.animalSize}_${formData.foodType}`;
   
-  if (animalType === 'dog') {
-    if (foodType === 'basic') costPerKg = 15;
-    else if (foodType === 'premium') costPerKg = 25;
-    else if (foodType === 'special') costPerKg = 40; // Special diet food
-  } else { // Cat
-    if (foodType === 'basic') costPerKg = 20;
-    else if (foodType === 'premium') costPerKg = 35;
-    else if (foodType === 'special') costPerKg = 50;
+  // Fallback values if not in database
+  switch (formData.foodType) {
+    case 'basic':
+      baseCostPerKg = 15;
+      break;
+    case 'premium':
+      baseCostPerKg = 35;
+      break;
+    case 'special':
+      baseCostPerKg = 60;
+      break;
   }
   
-  // Monthly food cost (30 days)
-  return foodQuantityKg * costPerKg * 30;
+  // Quantity per month based on animal size (in kg)
+  let monthlyQuantity = 0;
+  switch (formData.animalSize) {
+    case 'small':
+      monthlyQuantity = formData.animalType === 'dog' ? 5 : 2;
+      break;
+    case 'medium':
+      monthlyQuantity = formData.animalType === 'dog' ? 10 : 4;
+      break;
+    case 'large':
+      monthlyQuantity = formData.animalType === 'dog' ? 15 : 6;
+      break;
+  }
+  
+  // Activity level adjustment
+  switch (formData.activityLevel) {
+    case 'low':
+      monthlyQuantity *= 0.8;
+      break;
+    case 'high':
+      monthlyQuantity *= 1.3;
+      break;
+  }
+  
+  return baseCostPerKg * monthlyQuantity;
 };
 
-// Calculate monthly medical costs
-export const calculateMedicalCost = (
-  animalType: string, 
-  ageInMonths: number, 
-  healthConditions: string[], 
-  isSterilized: boolean
-): number => {
-  // Base costs
-  let cost = animalType === 'dog' ? 50 : 30;
+export const calculateMedicalCost = (formData: AnimalCostFormData): number => {
+  // Base monthly medical cost
+  let baseCost = formData.animalType === 'dog' ? 50 : 40;
   
-  // Age adjustments - older animals need more care
-  if (ageInMonths > 84) { // Senior (7+ years)
-    cost *= 1.5;
-  } else if (ageInMonths > 36) { // Adult (3+ years)
-    cost *= 1.2;
+  // Adjust based on animal size
+  switch (formData.animalSize) {
+    case 'small':
+      baseCost *= 0.8;
+      break;
+    case 'large':
+      baseCost *= 1.5;
+      break;
   }
   
-  // Add costs for health conditions (each condition adds some cost)
-  cost += healthConditions.length * 40;
-  
-  // One-time sterilization cost (amortized over 2 years) if not already sterilized
-  if (!isSterilized) {
-    const sterilizationCost = animalType === 'dog' ? 400 : 250;
-    cost += sterilizationCost / 24; // Divided by 24 months
+  // Adjust based on age
+  const ageInYears = formData.ageYears + formData.ageMonths / 12;
+  if (ageInYears < 1) {
+    baseCost *= 1.5; // Puppies/kittens need more care
+  } else if (ageInYears > 8) {
+    baseCost *= 2; // Senior pets need more care
   }
   
-  return cost;
+  // Add cost for each health condition
+  const conditionCost = formData.healthConditions.length * 50;
+  
+  return baseCost + conditionCost;
 };
 
-// Calculate grooming costs
-export const calculateGroomingCost = (
-  animalType: string, 
-  animalSize: string, 
-  groomingFrequency: string
-): number => {
-  let baseCost = 0;
+export const calculateGroomingCost = (formData: AnimalCostFormData): number => {
+  // Base cost for one grooming session
+  let sessionCost = 0;
   
-  // Base cost for dogs depends on size
-  if (animalType === 'dog') {
-    if (animalSize === 'small') baseCost = 50;
-    else if (animalSize === 'medium') baseCost = 70;
-    else baseCost = 90; // large
-  } else { // Cats have fixed grooming cost
-    baseCost = 60;
+  if (formData.animalType === 'dog') {
+    switch (formData.animalSize) {
+      case 'small':
+        sessionCost = 60;
+        break;
+      case 'medium':
+        sessionCost = 90;
+        break;
+      case 'large':
+        sessionCost = 120;
+        break;
+    }
+  } else if (formData.animalType === 'cat') {
+    sessionCost = 80; // Cats usually have fixed prices
+  } else {
+    sessionCost = 50; // Basic cost for other animals
   }
   
-  // Frequency multiplier
-  let frequencyMultiplier = 0;
-  if (groomingFrequency === 'rarely') frequencyMultiplier = 0.33; // Once every 3 months
-  else if (groomingFrequency === 'monthly') frequencyMultiplier = 1; // Once a month
-  else frequencyMultiplier = 2; // Biweekly
+  // Monthly cost based on frequency
+  let monthlyCost = 0;
+  switch (formData.groomingFrequency) {
+    case 'rarely':
+      monthlyCost = sessionCost / 3; // Once every 3 months
+      break;
+    case 'monthly':
+      monthlyCost = sessionCost; // Once a month
+      break;
+    case 'biweekly':
+      monthlyCost = sessionCost * 2; // Twice a month
+      break;
+  }
   
-  return baseCost * frequencyMultiplier;
+  return monthlyCost;
 };
 
-// Calculate special needs costs if applicable
-export const getSpecialNeedsCost = (hasSpecialNeeds: boolean, animalType: string, weight: number): number => {
-  if (!hasSpecialNeeds) return 0;
+export const calculateSuppliesCost = (formData: AnimalCostFormData): number => {
+  // Base monthly supplies cost (toys, litter, accessories, etc.)
+  let baseCost = formData.animalType === 'dog' ? 60 : 50;
   
-  // Base special needs cost
-  let cost = animalType === 'dog' ? 150 : 100;
-  
-  // Adjust for weight for dogs (bigger dogs = more expensive medication)
-  if (animalType === 'dog' && weight > 20) {
-    cost *= 1.5;
+  // Adjust based on animal size
+  switch (formData.animalSize) {
+    case 'small':
+      baseCost *= 0.7;
+      break;
+    case 'large':
+      baseCost *= 1.3;
+      break;
   }
   
-  return cost;
+  return baseCost;
 };
 
-// Calculate total costs (monthly, yearly, and lifetime)
-export const calculateTotalCosts = (
-  ageInMonths: number,
-  monthlyCosts: {
-    food: number;
-    medical: number;
-    grooming: number;
-    supplies: number;
-    specialCare: number;
-  }
-) => {
-  // Calculate monthly total
-  const monthlyTotal = Object.values(monthlyCosts).reduce((total, cost) => total + cost, 0);
+export const calculateSpecialCareCost = (formData: AnimalCostFormData): number => {
+  // Base cost is zero
+  let specialCareCost = 0;
   
-  // Calculate yearly total
-  const yearlyTotal = monthlyTotal * 12;
+  // Add cost for each special care need
+  specialCareCost += formData.specialCareNeeds.length * 80;
   
-  // Estimate remaining lifespan in months (15 years max lifespan - current age)
-  const estimatedRemainingMonths = Math.max(180 - ageInMonths, 12); // Minimum 1 year remaining
+  return specialCareCost;
+};
+
+export const calculateCosts = (formData: AnimalCostFormData): CostResults => {
+  // Calculate each cost component
+  const foodCost = calculateFoodCost(formData);
+  const medicalCost = calculateMedicalCost(formData);
+  const groomingCost = calculateGroomingCost(formData);
+  const suppliesCost = calculateSuppliesCost(formData);
+  const specialCareCost = calculateSpecialCareCost(formData);
   
-  // Calculate lifetime cost
-  const lifetimeTotal = monthlyTotal * estimatedRemainingMonths;
-  
-  return {
-    monthlyTotal,
-    yearlyTotal,
-    lifetimeTotal
+  // Create monthly costs object
+  const monthlyCosts: MonthlyCosts = {
+    food: foodCost,
+    medical: medicalCost,
+    grooming: groomingCost,
+    supplies: suppliesCost,
+    specialCare: specialCareCost
   };
-};
-
-// All-in-one cost calculation function (legacy support)
-export const calculateCosts = (
-  animalType: string,
-  ageYears: number,
-  weight: number,
-  hasSpecialNeeds: boolean,
-  isSterilized: boolean,
-  vaccineCount: number
-) => {
-  // Calculate food cost (monthly)
-  const dailyFoodGrams = getDailyFoodConsumption(animalType, weight, ageYears);
-  const dailyFoodKg = dailyFoodGrams / 1000;
-  const dailyFoodCost = dailyFoodKg * getFoodCostPerKg(animalType);
-  const monthlyFoodCost = dailyFoodCost * 30;
-  
-  // Calculate medical costs
-  const monthlyMedicalCost = getMonthlyMedicalCost(animalType, ageYears, vaccineCount, isSterilized, weight);
-  
-  // Calculate special needs costs
-  const monthlySpecialCost = getSpecialNeedsCost(hasSpecialNeeds, animalType, weight);
   
   // Calculate totals
-  const totalMonthly = monthlyFoodCost + monthlyMedicalCost + monthlySpecialCost;
-  const totalYearly = totalMonthly * 12;
+  const monthlyTotal = Object.values(monthlyCosts).reduce((sum, cost) => sum + cost, 0);
+  const yearlyTotal = monthlyTotal * 12;
   
+  // Calculate estimated lifetime total
+  let estimatedLifespan = 0;
+  if (formData.animalType === 'dog') {
+    estimatedLifespan = formData.animalSize === 'small' ? 15 : (formData.animalSize === 'medium' ? 12 : 10);
+  } else if (formData.animalType === 'cat') {
+    estimatedLifespan = 15;
+  } else {
+    estimatedLifespan = 10; // Default for other animals
+  }
+  
+  // Adjust based on current age
+  const remainingYears = Math.max(1, estimatedLifespan - formData.ageYears);
+  const lifetimeTotal = yearlyTotal * remainingYears;
+  
+  // Create and return results
   return {
-    foodCost: parseFloat(monthlyFoodCost.toFixed(2)),
-    medicalCost: parseFloat(monthlyMedicalCost.toFixed(2)),
-    specialCost: parseFloat(monthlySpecialCost.toFixed(2)),
-    totalMonthly: parseFloat(totalMonthly.toFixed(2)),
-    totalYearly: parseFloat(totalYearly.toFixed(2))
+    monthlyCosts,
+    monthlyTotal,
+    yearlyTotal,
+    lifetimeTotal,
+    details: {
+      monthlyBreakdown: {
+        food: foodCost,
+        healthcare: medicalCost + specialCareCost,
+        adjustments: {
+          healthConditions: formData.healthConditions.join(', '),
+          specialNeeds: formData.specialCareNeeds.join(', ')
+        }
+      },
+      initialCosts: {
+        accessories: suppliesCost * 3,
+        procedures: formData.isSterilized ? 0 : 500
+      }
+    }
   };
 };
 
-// Legacy support function
-export const getMonthlyMedicalCost = (animalType: string, ageYears: number, vaccineCount: number, isSterilized: boolean, weight: number): number => {
-  // Base costs
-  let cost = animalType === 'dog' ? 50 : 30;
+// Function to save the cost simulation to Supabase
+export const saveCostSimulation = async (formData: AnimalCostFormData, results: CostResults) => {
+  if (!supabase) return null;
   
-  // Age adjustments - older animals need more care
-  if (ageYears > 7) { // Senior
-    cost *= 1.5;
-  } else if (ageYears > 3) { // Adult
-    cost *= 1.2;
+  try {
+    const { data, error } = await supabase
+      .from('cost_simulations')
+      .insert({
+        animal_type: formData.animalType,
+        animal_size: formData.animalSize,
+        age_months: formData.ageYears * 12 + formData.ageMonths,
+        food_type: formData.foodType,
+        health_conditions: formData.healthConditions,
+        special_care_needs: formData.specialCareNeeds,
+        estimated_monthly_cost: results.monthlyTotal,
+        estimated_yearly_cost: results.yearlyTotal,
+        estimated_lifetime_cost: results.lifetimeTotal,
+        results_json: results
+      })
+      .select();
+    
+    if (error) {
+      console.error('Error saving simulation:', error);
+      return null;
+    }
+    
+    return data ? data[0] : null;
+  } catch (err) {
+    console.error('Error saving simulation:', err);
+    return null;
   }
-  
-  // Vaccine costs (amortized monthly)
-  const yearlyVaccineCost = vaccineCount * (animalType === 'dog' ? 80 : 60);
-  cost += yearlyVaccineCost / 12;
-  
-  // One-time sterilization cost (amortized over 2 years)
-  if (!isSterilized) {
-    const sterilizationCost = animalType === 'dog' ? 
-      (weight > 10 ? 500 : 350) : 250;
-    cost += sterilizationCost / 24;
-  }
-  
-  return cost;
 };
-
-// Get food costs based on animal size and brand type
-export const getFoodCostsByAnimalAttributes = (
-  animalType: string,
-  animalSize: string,
-  brandType: string,
-  foodParameters: FoodCostParameter[]
-): number => {
-  // Find matching parameter
-  const matchingParam = foodParameters.find(
-    param => 
-      param.animalType === animalType && 
-      param.animalSize === animalSize && 
-      param.brandType === brandType
-  );
-  
-  // Return cost or default value
-  return matchingParam?.costPerKg || 
-    (animalType === 'dog' ? 
-      (brandType === 'basic' ? 15 : 
-       brandType === 'premium' ? 25 : 40) : 
-      (brandType === 'basic' ? 20 : 
-       brandType === 'premium' ? 35 : 50)
-    );
-};
-
-// Type for food cost parameters
-interface FoodCostParameter {
-  brandType: 'basic' | 'premium' | 'special';
-  animalSize: 'small' | 'medium' | 'large';
-  animalType: string;
-  costPerKg: number;
-}

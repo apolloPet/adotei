@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-sonner";
-import { Plus, RefreshCw, Edit, Save, Dog, Cat, Utensils } from "lucide-react";
+import { RefreshCw, Edit, Save, Dog, Cat, Utensils } from "lucide-react";
 import { getSystemParameters, updateSystemParameter, createSystemParameter } from '@/services/adminService';
 import { Textarea } from "@/components/ui/textarea";
 
@@ -27,14 +27,7 @@ const SystemParametersManager = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isFoodCostDialogOpen, setIsFoodCostDialogOpen] = useState(false);
-  const [newParameter, setNewParameter] = useState({
-    category: '',
-    key: '',
-    value: '',
-    description: ''
-  });
   const [newFoodCost, setNewFoodCost] = useState({
     animalType: 'dog',
     animalSize: 'small',
@@ -79,64 +72,11 @@ const SystemParametersManager = () => {
     setActiveCategory(category);
   };
 
-  const handleAddParameterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setNewParameter(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
   const handleFoodCostChange = (name: string, value: string) => {
     setNewFoodCost(prev => ({
       ...prev,
       [name]: value
     }));
-  };
-
-  const handleAddParameter = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      // Validate input
-      if (!newParameter.category || !newParameter.key || !newParameter.value) {
-        toast.error('Todos os campos são obrigatórios');
-        return;
-      }
-
-      // Try to parse as JSON if it looks like JSON
-      let parsedValue: any = newParameter.value;
-      if (newParameter.value.trim().startsWith('{') || newParameter.value.trim().startsWith('[')) {
-        try {
-          parsedValue = JSON.parse(newParameter.value);
-        } catch (e) {
-          toast.error('Valor JSON inválido');
-          return;
-        }
-      }
-
-      await createSystemParameter(
-        newParameter.category,
-        newParameter.key,
-        parsedValue,
-        newParameter.description || undefined
-      );
-
-      // Reset form and refresh parameters
-      setNewParameter({
-        category: '',
-        key: '',
-        value: '',
-        description: ''
-      });
-      setIsAddDialogOpen(false);
-      fetchParameters();
-
-      toast.success('Parâmetro adicionado com sucesso');
-    } catch (error) {
-      console.error('Error adding parameter:', error);
-      toast.error('Erro ao adicionar parâmetro');
-    }
   };
 
   const handleAddFoodCost = async (e: React.FormEvent) => {
@@ -373,81 +313,6 @@ const SystemParametersManager = () => {
               </form>
             </DialogContent>
           </Dialog>
-          
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Novo Parâmetro
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Adicionar Novo Parâmetro</DialogTitle>
-                <DialogDescription>
-                  Defina um novo parâmetro para o sistema.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <form onSubmit={handleAddParameter} className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category">Categoria</Label>
-                  <Input 
-                    id="category"
-                    name="category"
-                    value={newParameter.category}
-                    onChange={handleAddParameterChange}
-                    placeholder="Ex: adoption, payment, email"
-                    list="categories"
-                  />
-                  <datalist id="categories">
-                    {categories.map(cat => (
-                      <option key={cat} value={cat} />
-                    ))}
-                  </datalist>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="key">Chave</Label>
-                  <Input 
-                    id="key"
-                    name="key"
-                    value={newParameter.key}
-                    onChange={handleAddParameterChange}
-                    placeholder="Ex: base_fee, contract_text"
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="value">Valor (JSON para objetos/arrays)</Label>
-                  <Textarea 
-                    id="value"
-                    name="value"
-                    value={newParameter.value}
-                    onChange={handleAddParameterChange}
-                    placeholder='Ex: 100 ou {"key": "value"}'
-                    rows={3}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="description">Descrição (opcional)</Label>
-                  <Textarea 
-                    id="description"
-                    name="description"
-                    value={newParameter.description}
-                    onChange={handleAddParameterChange}
-                    placeholder="Descreva este parâmetro"
-                    rows={2}
-                  />
-                </div>
-                
-                <DialogFooter className="pt-4">
-                  <Button type="submit">Adicionar Parâmetro</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
         </div>
       </CardHeader>
       
@@ -551,7 +416,7 @@ const SystemParametersManager = () => {
         ) : (
           <div className="text-center py-8 text-muted-foreground">
             <p>Nenhum parâmetro configurado.</p>
-            <p className="text-sm mt-1">Clique em "Novo Parâmetro" para adicionar.</p>
+            <p className="text-sm mt-1">Configure os parâmetros do sistema usando o botão "Custos de Ração".</p>
           </div>
         )}
       </CardContent>

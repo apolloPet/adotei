@@ -1,133 +1,126 @@
 
-import React from 'react';
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CostResults } from './types';
-import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { CostResults } from "../types";
+import { Badge } from "@/components/ui/badge";
+import { DownloadCloud, RotateCcw } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 interface ResultsDisplayProps {
-  results: CostResults | null;
-  isLoading?: boolean;
-  onNewSimulation?: () => void;
+  results: CostResults;
+  onNewSimulation: () => void;
 }
 
-const ResultsDisplay: React.FC<ResultsDisplayProps> = ({ results, isLoading = false, onNewSimulation }) => {
-  if (isLoading) {
-    return (
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="text-lg">Calculando resultados...</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="animate-pulse space-y-3">
-            <div className="h-4 bg-muted rounded w-3/4"></div>
-            <div className="h-4 bg-muted rounded w-1/2"></div>
-            <div className="h-4 bg-muted rounded w-5/6"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
+const ResultsDisplay = ({ results, onNewSimulation }: ResultsDisplayProps) => {
+  const getAnimalTypeText = (type: string): string => {
+    switch (type) {
+      case 'dog': return 'Cachorro';
+      case 'cat': return 'Gato';
+      default: return 'Animal';
+    }
+  };
 
-  if (!results) return null;
+  const getSizeText = (size: string): string => {
+    switch (size) {
+      case 'small': return 'pequeno';
+      case 'medium': return 'médio';
+      case 'large': return 'grande';
+      default: return size;
+    }
+  };
 
   return (
-    <Card className="mt-6">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">Resultados da Simulação</CardTitle>
-        {onNewSimulation && (
-          <button
-            onClick={onNewSimulation}
-            className="text-sm text-primary hover:underline"
-          >
-            Nova simulação
-          </button>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label className="text-muted-foreground text-xs">Custo Mensal</Label>
-            <p className="font-medium">R$ {results.monthlyTotal.toFixed(2)}</p>
-          </div>
-          <div>
-            <Label className="text-muted-foreground text-xs">Custo Anual</Label>
-            <p className="font-medium">R$ {results.yearlyTotal.toFixed(2)}</p>
-          </div>
+    <div className="space-y-8">
+      <Card className="relative overflow-hidden">
+        <div className="absolute top-0 right-0 p-4">
+          <Badge variant="outline" className="bg-green-100 text-green-800">
+            Simulação Completa
+          </Badge>
         </div>
-
-        <div>
-          <Label className="text-muted-foreground text-xs">Custo Estimado ao Longo da Vida</Label>
-          <p className="font-medium text-xl text-primary">R$ {results.lifetimeTotal.toFixed(2)}</p>
-        </div>
-
-        <Separator />
-
-        {results.details && (
-          <>
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">Detalhamento Mensal</h4>
-              
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <Label className="text-muted-foreground text-xs">Alimentação</Label>
-                  <p>R$ {results.monthlyCosts.food.toFixed(2)}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs">Saúde</Label>
-                  <p>R$ {results.monthlyCosts.medical.toFixed(2)}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs">Banho e Tosa</Label>
-                  <p>R$ {results.monthlyCosts.grooming.toFixed(2)}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs">Suprimentos</Label>
-                  <p>R$ {results.monthlyCosts.supplies.toFixed(2)}</p>
-                </div>
-              </div>
-
-              {results.details.monthlyBreakdown.adjustments && (
-                <>
-                  <div className="text-sm">
-                    <Label className="text-muted-foreground text-xs">Ajustes por Condições de Saúde</Label>
-                    <p>{results.details.monthlyBreakdown.adjustments.healthConditions}</p>
-                  </div>
-
-                  <div className="text-sm">
-                    <Label className="text-muted-foreground text-xs">Ajustes por Necessidades Especiais</Label>
-                    <p>{results.details.monthlyBreakdown.adjustments.specialNeeds}</p>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <Separator />
-
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">Custos Iniciais (Únicos)</h4>
-              
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <Label className="text-muted-foreground text-xs">Acessórios</Label>
-                  <p>R$ {results.details.initialCosts.accessories.toFixed(2)}</p>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground text-xs">Procedimentos (caso necessário)</Label>
-                  <p>R$ {results.details.initialCosts.procedures.toFixed(2)}</p>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
         
-        {results.id && (
-          <div className="text-xs text-muted-foreground mt-4">
-            ID da simulação: {results.id}
+        <CardHeader>
+          <CardTitle className="text-xl">Resultados da Simulação</CardTitle>
+          <CardDescription>
+            Estimativa de custos com base nos parâmetros fornecidos
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card>
+                <CardHeader className="py-4">
+                  <CardTitle className="text-base font-medium text-muted-foreground">Custo Mensal</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{formatCurrency(results.monthlyTotal)}</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="py-4">
+                  <CardTitle className="text-base font-medium text-muted-foreground">Custo Anual</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{formatCurrency(results.yearlyTotal)}</p>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="py-4">
+                  <CardTitle className="text-base font-medium text-muted-foreground">Custo ao Longo da Vida</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold">{formatCurrency(results.lifetimeTotal)}</p>
+                </CardContent>
+              </Card>
+            </div>
+            
+            <div className="pt-4 border-t">
+              <h3 className="text-lg font-medium mb-3">Detalhamento de Custos Mensais</h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Alimentação</span>
+                  <span className="font-medium">{formatCurrency(results.monthlyCosts.food)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Saúde</span>
+                  <span className="font-medium">{formatCurrency(results.monthlyCosts.medical)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Higiene e Estética</span>
+                  <span className="font-medium">{formatCurrency(results.monthlyCosts.grooming)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Itens Diversos</span>
+                  <span className="font-medium">{formatCurrency(results.monthlyCosts.supplies)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Cuidados Especiais</span>
+                  <span className="font-medium">{formatCurrency(results.monthlyCosts.specialCare)}</span>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardContent>
+        
+        <CardFooter className="flex flex-col sm:flex-row gap-3 justify-between border-t pt-6">
+          <Button 
+            variant="outline" 
+            className="w-full sm:w-auto"
+            onClick={onNewSimulation}
+          >
+            <RotateCcw className="mr-2 h-4 w-4" />
+            Nova Simulação
+          </Button>
+          
+          <Button className="w-full sm:w-auto">
+            <DownloadCloud className="mr-2 h-4 w-4" />
+            Exportar Relatório
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
   );
 };
 

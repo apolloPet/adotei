@@ -243,6 +243,60 @@ export type Database = {
           },
         ]
       }
+      animals: {
+        Row: {
+          castrado: boolean
+          created_at: string | null
+          data_cadastro: string | null
+          descricao: string | null
+          fotoprincipal: string | null
+          fotos: Json | null
+          id: string
+          idade: number
+          nome: string
+          porte: string
+          responsavel_id: string | null
+          sexo: string
+          tipo: string
+          updated_at: string | null
+          vacinas: Json | null
+        }
+        Insert: {
+          castrado?: boolean
+          created_at?: string | null
+          data_cadastro?: string | null
+          descricao?: string | null
+          fotoprincipal?: string | null
+          fotos?: Json | null
+          id?: string
+          idade: number
+          nome: string
+          porte: string
+          responsavel_id?: string | null
+          sexo: string
+          tipo: string
+          updated_at?: string | null
+          vacinas?: Json | null
+        }
+        Update: {
+          castrado?: boolean
+          created_at?: string | null
+          data_cadastro?: string | null
+          descricao?: string | null
+          fotoprincipal?: string | null
+          fotos?: Json | null
+          id?: string
+          idade?: number
+          nome?: string
+          porte?: string
+          responsavel_id?: string | null
+          sexo?: string
+          tipo?: string
+          updated_at?: string | null
+          vacinas?: Json | null
+        }
+        Relationships: []
+      }
       cost_parameters: {
         Row: {
           category: string

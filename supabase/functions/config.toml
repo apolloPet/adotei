@@ -1,0 +1,4 @@
+
+project_id = "jwbcrddblmiurmeziszp"
+[functions.animals]
+verify_jwt = true
