@@ -1,6 +1,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
+import { Json } from '@/lib/database.types';
 
 export interface Animal {
   id: string;
@@ -31,6 +32,25 @@ export interface AnimalCreateData {
   fotoPrincipal?: string;
   fotos?: string[];
 }
+
+// Helper function to convert database type to interface type
+const dbAnimalToAnimal = (dbAnimal: any): Animal => {
+  return {
+    id: dbAnimal.id,
+    nome: dbAnimal.nome,
+    idade: dbAnimal.idade,
+    tipo: dbAnimal.tipo as 'cachorro' | 'gato' | 'outro',
+    porte: dbAnimal.porte as 'pequeno' | 'medio' | 'grande',
+    sexo: dbAnimal.sexo as 'macho' | 'femea',
+    castrado: dbAnimal.castrado,
+    vacinas: Array.isArray(dbAnimal.vacinas) ? dbAnimal.vacinas : [],
+    responsavel_id: dbAnimal.responsavel_id,
+    data_cadastro: dbAnimal.data_cadastro,
+    descricao: dbAnimal.descricao,
+    fotoPrincipal: dbAnimal.fotoprincipal,
+    fotos: Array.isArray(dbAnimal.fotos) ? dbAnimal.fotos : []
+  };
+};
 
 // Create a new animal
 export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal | null> => {
@@ -76,7 +96,7 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
       throw new Error(error.message);
     }
 
-    return data?.[0] || null;
+    return data?.[0] ? dbAnimalToAnimal(data[0]) : null;
   } catch (error) {
     console.error('Error in createAnimal:', error);
     if (error instanceof Error) {
@@ -123,7 +143,7 @@ export const getAnimals = async (filters?: {
       throw new Error(error.message);
     }
 
-    return data || [];
+    return data ? data.map(dbAnimalToAnimal) : [];
   } catch (error) {
     console.error('Error in getAnimals:', error);
     if (error instanceof Error) {
@@ -153,7 +173,7 @@ export const getAnimalById = async (id: string): Promise<Animal | null> => {
       throw new Error(error.message);
     }
 
-    return data;
+    return data ? dbAnimalToAnimal(data) : null;
   } catch (error) {
     console.error('Error in getAnimalById:', error);
     if (error instanceof Error) {
@@ -179,7 +199,7 @@ export const updateAnimal = async (id: string, animalData: Partial<AnimalCreateD
       throw new Error(error.message);
     }
 
-    return data?.[0] || null;
+    return data?.[0] ? dbAnimalToAnimal(data[0]) : null;
   } catch (error) {
     console.error('Error in updateAnimal:', error);
     if (error instanceof Error) {

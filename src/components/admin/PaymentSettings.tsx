@@ -1,19 +1,19 @@
-
-import { useState } from 'react';
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { DollarSign } from "lucide-react";
-import { toast } from "@/hooks/use-sonner";
-import { PaymentSettingsType } from './AdminTabs';
-import { FeesSection, BankDetailsSection, ContractSection } from './payment-settings';
+import { Textarea } from "@/components/ui/textarea";
+import { Slider } from "@/components/ui/slider";
+import { useState } from "react";
+import { PaymentSettingsType } from "./AdminTabs";
 
-interface PaymentSettingsProps {
+export interface PaymentSettingsProps {
   settings: PaymentSettingsType;
-  onSave: (settings: PaymentSettingsType) => void;
+  onSaveSettings: (newSettings: PaymentSettingsType) => void;
 }
 
-const PaymentSettings = ({ settings, onSave }: PaymentSettingsProps) => {
+const PaymentSettings = ({ settings, onSaveSettings }: PaymentSettingsProps) => {
   const [formData, setFormData] = useState<PaymentSettingsType>({
     ...settings,
     companyBankInfo: settings.companyBankInfo || ''
@@ -55,7 +55,7 @@ const PaymentSettings = ({ settings, onSave }: PaymentSettingsProps) => {
     }
     
     // Save settings
-    onSave(formData);
+    onSaveSettings(formData);
     
     toast.success("Configurações salvas com sucesso!");
   };

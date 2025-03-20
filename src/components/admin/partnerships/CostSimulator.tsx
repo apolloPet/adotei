@@ -9,12 +9,15 @@ import NutritionInfo from "./simulator/NutritionInfo";
 import HealthInfo from "./simulator/HealthInfo";
 import SpecialNeeds from "./simulator/SpecialNeeds";
 import ResultsDisplay from "./simulator/ResultsDisplay";
-import { calculateCosts } from "./simulator/costCalculations";
+import { calculateCosts, saveCostSimulation } from "./simulator/costCalculations";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-sonner";
-import { supabase } from "@/lib/supabase";
 
-const CostSimulator = () => {
+interface CostSimulatorProps {
+  onSimulationComplete?: () => void;
+}
+
+const CostSimulator = ({ onSimulationComplete }: CostSimulatorProps = {}) => {
   const [step, setStep] = useState<"basic" | "nutrition" | "health" | "special" | "results">("basic");
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<AnimalCostFormData>({
@@ -51,41 +54,16 @@ const CostSimulator = () => {
       const costs = calculateCosts(formData);
       setResults(costs);
       
-      // Save the simulation to Supabase
-      if (supabase) {
-        try {
-          const { data, error } = await supabase
-            .from('cost_simulations')
-            .insert({
-              animal_type: formData.animalType,
-              animal_size: formData.animalSize,
-              age_months: formData.ageYears * 12 + formData.ageMonths,
-              food_type: formData.foodType,
-              health_conditions: formData.healthConditions,
-              special_care_needs: formData.specialCareNeeds,
-              estimated_monthly_cost: costs.monthlyTotal,
-              estimated_yearly_cost: costs.yearlyTotal,
-              estimated_lifetime_cost: costs.lifetimeTotal,
-              results_json: costs
-            })
-            .select();
-          
-          if (error) {
-            console.error('Error saving simulation:', error);
-          } else if (data && data[0]) {
-            // Update results with ID for future reference
-            setResults({
-              ...costs,
-              id: data[0].id
-            });
-          }
-        } catch (err) {
-          console.error('Error saving simulation to Supabase:', err);
-        }
-      }
+      // Save the simulation
+      await saveCostSimulation(formData, costs);
       
       // Move to results step
       setStep("results");
+      
+      // Call the callback if provided
+      if (onSimulationComplete) {
+        onSimulationComplete();
+      }
     } catch (error) {
       console.error('Error calculating costs:', error);
       toast.error("Erro ao calcular custos. Tente novamente.");

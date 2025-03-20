@@ -206,6 +206,34 @@ export const saveCostSimulation = async (formData: AnimalCostFormData, results: 
   if (!supabase) return null;
   
   try {
+    // Create a serializable version of the results for storage
+    const resultsForStorage = {
+      monthlyTotal: results.monthlyTotal,
+      yearlyTotal: results.yearlyTotal,
+      lifetimeTotal: results.lifetimeTotal,
+      monthlyCosts: {
+        food: results.monthlyCosts.food,
+        medical: results.monthlyCosts.medical,
+        grooming: results.monthlyCosts.grooming,
+        supplies: results.monthlyCosts.supplies,
+        specialCare: results.monthlyCosts.specialCare
+      },
+      details: {
+        monthlyBreakdown: {
+          food: results.details?.monthlyBreakdown.food,
+          healthcare: results.details?.monthlyBreakdown.healthcare,
+          adjustments: {
+            healthConditions: results.details?.monthlyBreakdown.adjustments.healthConditions,
+            specialNeeds: results.details?.monthlyBreakdown.adjustments.specialNeeds
+          }
+        },
+        initialCosts: {
+          accessories: results.details?.initialCosts.accessories,
+          procedures: results.details?.initialCosts.procedures
+        }
+      }
+    };
+    
     const { data, error } = await supabase
       .from('cost_simulations')
       .insert({
@@ -218,7 +246,7 @@ export const saveCostSimulation = async (formData: AnimalCostFormData, results: 
         estimated_monthly_cost: results.monthlyTotal,
         estimated_yearly_cost: results.yearlyTotal,
         estimated_lifetime_cost: results.lifetimeTotal,
-        results_json: results
+        results_json: resultsForStorage
       })
       .select();
     
