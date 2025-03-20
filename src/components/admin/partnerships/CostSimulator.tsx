@@ -10,7 +10,7 @@ import SpecialNeeds from './simulator/SpecialNeeds';
 import ResultsDisplay from './simulator/ResultsDisplay';
 import { toast } from '@/hooks/use-sonner';
 import { calculateCosts } from './simulator/costCalculations';
-import { AnimalCostFormData } from './simulator/types';
+import { AnimalCostFormData, CostResults } from './simulator/types';
 
 interface CostSimulatorProps {
   onSimulationComplete?: (simulationData: any) => void;
@@ -34,7 +34,7 @@ const CostSimulator = ({ onSimulationComplete }: CostSimulatorProps) => {
     notes: '',
   });
   
-  const [results, setResults] = useState({
+  const [results, setResults] = useState<CostResults>({
     monthlyCosts: {
       food: 0,
       medical: 0,
@@ -85,18 +85,38 @@ const CostSimulator = ({ onSimulationComplete }: CostSimulatorProps) => {
 
   const calculateResults = () => {
     try {
-      const totals = calculateCosts(formData);
-      setResults(totals);
+      const calculatedResults = calculateCosts(formData);
+      
+      // Ensure results has all required properties by adding default values for optional properties
+      const completeResults: CostResults = {
+        ...calculatedResults,
+        details: calculatedResults.details || {
+          monthlyBreakdown: {
+            food: 0,
+            healthcare: 0,
+            adjustments: {
+              healthConditions: '',
+              specialNeeds: ''
+            }
+          },
+          initialCosts: {
+            accessories: 0,
+            procedures: 0
+          }
+        }
+      };
+      
+      setResults(completeResults);
       setSimulationCompleted(true);
 
       if (onSimulationComplete) {
         onSimulationComplete({
           ...formData,
-          ...totals,
+          ...completeResults,
         });
       }
 
-      return totals;
+      return completeResults;
     } catch (error) {
       toast.error("Erro ao calcular custos");
       console.error("Error calculating costs:", error);

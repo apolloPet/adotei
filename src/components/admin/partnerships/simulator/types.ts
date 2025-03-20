@@ -22,26 +22,28 @@ export interface MonthlyCosts {
   specialCare: number;
 }
 
+export interface CostDetails {
+  monthlyBreakdown: {
+    food: number;
+    healthcare: number;
+    adjustments: {
+      healthConditions: string;
+      specialNeeds: string;
+    }
+  };
+  initialCosts: {
+    accessories: number;
+    procedures: number;
+  };
+}
+
 export interface CostResults {
   monthlyCosts: MonthlyCosts;
   monthlyTotal: number;
   yearlyTotal: number;
   lifetimeTotal: number;
   id?: string;
-  details?: {
-    monthlyBreakdown: {
-      food: number;
-      healthcare: number;
-      adjustments: {
-        healthConditions: string;
-        specialNeeds: string;
-      }
-    };
-    initialCosts: {
-      accessories: number;
-      procedures: number;
-    }
-  };
+  details?: CostDetails;
 }
 
 export interface FoodCostParameter {
