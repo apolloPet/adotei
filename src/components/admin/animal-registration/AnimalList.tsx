@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -158,7 +157,7 @@ const AnimalList = () => {
                       {animal.tipo === 'cachorro' ? 'Cachorro' : 
                        animal.tipo === 'gato' ? 'Gato' : 'Outro'}
                     </TableCell>
-                    <TableCell>{animal.breed || '-'}</TableCell>
+                    <TableCell>{animal.descricao || '-'}</TableCell>
                     <TableCell>{animal.idade} {animal.idade === 1 ? 'ano' : 'anos'}</TableCell>
                     <TableCell>
                       {animal.porte === 'pequeno' ? 'Pequeno' : 

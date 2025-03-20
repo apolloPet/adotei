@@ -9,7 +9,8 @@ import NutritionInfo from './simulator/NutritionInfo';
 import SpecialNeeds from './simulator/SpecialNeeds';
 import ResultsDisplay from './simulator/ResultsDisplay';
 import { toast } from '@/hooks/use-sonner';
-import { calculateTotalCosts } from './simulator/costCalculations';
+import { calculateCosts } from './simulator/costCalculations';
+import { AnimalCostFormData } from './simulator/types';
 
 interface CostSimulatorProps {
   onSimulationComplete?: (simulationData: any) => void;
@@ -18,20 +19,48 @@ interface CostSimulatorProps {
 const CostSimulator = ({ onSimulationComplete }: CostSimulatorProps) => {
   const [step, setStep] = useState(1);
   const [activeTab, setActiveTab] = useState('step1');
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<AnimalCostFormData>({
     animalType: 'dog',
     animalSize: 'medium',
-    animalAge: 2,
-    healthConditions: [] as string[],
+    ageYears: 2,
+    ageMonths: 0,
+    activityLevel: 'moderate',
     foodType: 'premium',
-    specialNeeds: [] as string[],
+    foodQuantity: 0,
+    groomingFrequency: 'monthly',
+    healthConditions: [],
+    specialCareNeeds: [],
+    isSterilized: false,
+    notes: '',
   });
+  
   const [results, setResults] = useState({
+    monthlyCosts: {
+      food: 0,
+      medical: 0,
+      grooming: 0,
+      supplies: 0,
+      specialCare: 0
+    },
     monthlyTotal: 0,
     yearlyTotal: 0,
     lifetimeTotal: 0,
-    breakdown: {} as Record<string, number>,
+    details: {
+      monthlyBreakdown: {
+        food: 0,
+        healthcare: 0,
+        adjustments: {
+          healthConditions: '',
+          specialNeeds: ''
+        }
+      },
+      initialCosts: {
+        accessories: 0,
+        procedures: 0
+      }
+    }
   });
+  
   const [simulationCompleted, setSimulationCompleted] = useState(false);
 
   const handleInputChange = (field: string, value: any) => {
@@ -56,7 +85,7 @@ const CostSimulator = ({ onSimulationComplete }: CostSimulatorProps) => {
 
   const calculateResults = () => {
     try {
-      const totals = calculateTotalCosts(formData);
+      const totals = calculateCosts(formData);
       setResults(totals);
       setSimulationCompleted(true);
 
@@ -99,16 +128,42 @@ const CostSimulator = ({ onSimulationComplete }: CostSimulatorProps) => {
     setFormData({
       animalType: 'dog',
       animalSize: 'medium',
-      animalAge: 2,
-      healthConditions: [],
+      ageYears: 2,
+      ageMonths: 0,
+      activityLevel: 'moderate',
       foodType: 'premium',
-      specialNeeds: [],
+      foodQuantity: 0,
+      groomingFrequency: 'monthly',
+      healthConditions: [],
+      specialCareNeeds: [],
+      isSterilized: false,
+      notes: '',
     });
     setResults({
+      monthlyCosts: {
+        food: 0,
+        medical: 0,
+        grooming: 0,
+        supplies: 0,
+        specialCare: 0
+      },
       monthlyTotal: 0,
       yearlyTotal: 0,
       lifetimeTotal: 0,
-      breakdown: {},
+      details: {
+        monthlyBreakdown: {
+          food: 0,
+          healthcare: 0,
+          adjustments: {
+            healthConditions: '',
+            specialNeeds: ''
+          }
+        },
+        initialCosts: {
+          accessories: 0,
+          procedures: 0
+        }
+      }
     });
     setStep(1);
     setActiveTab('step1');
@@ -143,28 +198,28 @@ const CostSimulator = ({ onSimulationComplete }: CostSimulatorProps) => {
           <TabsContent value="step1">
             <AnimalBasicInfo
               formData={formData}
-              handleInputChange={handleInputChange}
+              onInputChange={handleInputChange}
             />
           </TabsContent>
 
           <TabsContent value="step2">
             <HealthInfo
               formData={formData}
-              handleArrayToggle={handleArrayToggle}
+              onToggleCondition={handleArrayToggle}
             />
           </TabsContent>
 
           <TabsContent value="step3">
             <NutritionInfo
               formData={formData}
-              handleInputChange={handleInputChange}
+              onInputChange={handleInputChange}
             />
           </TabsContent>
 
           <TabsContent value="step4">
             <SpecialNeeds
               formData={formData}
-              handleArrayToggle={handleArrayToggle}
+              onToggleNeed={handleArrayToggle}
             />
           </TabsContent>
 

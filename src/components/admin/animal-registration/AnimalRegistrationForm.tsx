@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -118,13 +117,11 @@ const AnimalRegistrationForm = () => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
       
-      // Limit to 5 images max
       if (images.length + newFiles.length > 5) {
         toast.error("Máximo de 5 imagens permitido.");
         return;
       }
       
-      // Create preview URLs
       const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file));
       
       setImages(prev => [...prev, ...newFiles]);
@@ -133,7 +130,6 @@ const AnimalRegistrationForm = () => {
   };
 
   const removeImage = (index: number) => {
-    // Release object URL to avoid memory leaks
     URL.revokeObjectURL(imagePreviewUrls[index]);
     
     setImages(prev => prev.filter((_, i) => i !== index));
@@ -161,7 +157,6 @@ const AnimalRegistrationForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate form
     if (!formData.name || !formData.description || !formData.breed || !formData.age) {
       toast.error("Por favor, preencha todos os campos obrigatórios.");
       return;
@@ -180,46 +175,57 @@ const AnimalRegistrationForm = () => {
     try {
       setIsSubmitting(true);
       
-      // Prepare data for the API
+      const mapAnimalType = (type: string): 'cachorro' | 'gato' | 'outro' => {
+        switch(type) {
+          case 'dog': return 'cachorro';
+          case 'cat': return 'gato';
+          default: return 'outro';
+        }
+      };
+      
+      const mapAnimalSize = (size: string): 'pequeno' | 'medio' | 'grande' => {
+        switch(size) {
+          case 'small': return 'pequeno';
+          case 'large': return 'grande';
+          default: return 'medio';
+        }
+      };
+      
+      const mapAnimalGender = (gender: string): 'macho' | 'femea' => {
+        return gender === 'male' ? 'macho' : 'femea';
+      };
+      
       const animalData = {
         nome: formData.name,
         idade: parseInt(formData.age),
-        tipo: formData.type,
-        porte: formData.size,
-        sexo: formData.gender,
+        tipo: mapAnimalType(formData.type),
+        porte: mapAnimalSize(formData.size),
+        sexo: mapAnimalGender(formData.gender),
         castrado: formData.characteristics.includes('Castrado'),
         vacinas: formData.characteristics.filter(c => c.includes('Vacinado')),
         responsavel_id: formData.responsibleId || undefined,
         descricao: formData.description,
-        // Photo handling will need to be adjusted based on your storage solution
-        // For now, we'll just use the first image URL if available
         fotoPrincipal: imagePreviewUrls.length > 0 ? imagePreviewUrls[0] : undefined,
         fotos: imagePreviewUrls
       };
 
-      // Call the service to create the animal
       const newAnimal = await createAnimal(animalData);
       
       if (newAnimal && costSimulationData) {
-        // Save the cost simulation with the animal ID
         await saveCostSimulation(newAnimal.id, costSimulationData);
       }
       
-      // Success feedback
       toast.success("Animal cadastrado com sucesso!");
 
-      // Reset form
       setFormData(defaultFormData);
       setRegistrationStep(1);
       setCostSimulationCompleted(false);
       setCostSimulationData(null);
       
-      // Clean up image previews
       imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
       setImages([]);
       setImagePreviewUrls([]);
       
-      // Switch to animal list tab
       setActiveTab('animal-list');
       
     } catch (error) {

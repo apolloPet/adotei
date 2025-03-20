@@ -1,86 +1,58 @@
 
-import React, { useState } from 'react';
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AnimalCostFormData } from "./types";
 import { Switch } from "@/components/ui/switch";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
 
 interface HealthInfoProps {
-  healthConditions: string[];
-  isSterilized: boolean;
-  onConditionAdd: (condition: string) => void;
-  onConditionRemove: (condition: string) => void;
-  onSterilizedChange: (value: boolean) => void;
+  formData: AnimalCostFormData;
+  onToggleCondition: (field: string, value: string) => void;
 }
 
-const HealthInfo = ({
-  healthConditions,
-  isSterilized,
-  onConditionAdd,
-  onConditionRemove,
-  onSterilizedChange
-}: HealthInfoProps) => {
-  const [newCondition, setNewCondition] = React.useState("");
-
-  const handleAddCondition = () => {
-    if (newCondition.trim()) {
-      onConditionAdd(newCondition.trim());
-      setNewCondition("");
-    }
-  };
+const HealthInfo = ({ formData, onToggleCondition }: HealthInfoProps) => {
+  const commonHealthConditions = [
+    { id: "cardiac", label: "Problemas Cardíacos" },
+    { id: "dermatological", label: "Problemas Dermatológicos" },
+    { id: "respiratory", label: "Problemas Respiratórios" },
+    { id: "orthopedic", label: "Problemas Ortopédicos" },
+    { id: "dental", label: "Problemas Dentários" },
+    { id: "renal", label: "Problemas Renais" },
+    { id: "allergies", label: "Alergias" },
+    { id: "chronic_disease", label: "Doença Crônica" },
+  ];
 
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="sterilized">Castrado/Esterilizado</Label>
-          <Switch
-            id="sterilized"
-            checked={isSterilized}
-            onCheckedChange={onSterilizedChange}
+        <div className="flex items-center space-x-2">
+          <Switch 
+            id="sterilized" 
+            checked={formData.isSterilized}
+            onCheckedChange={(checked) => onToggleCondition('isSterilized', checked.toString())}
           />
+          <Label htmlFor="sterilized">Animal já castrado/esterilizado</Label>
         </div>
 
-        <Separator />
-
-        <div className="space-y-2">
-          <Label>Condições de Saúde</Label>
-          
-          <div className="flex gap-2">
-            <Input
-              value={newCondition}
-              onChange={(e) => setNewCondition(e.target.value)}
-              placeholder="Adicionar condição (ex: alergia, diabetes)"
-            />
-            <Button type="button" onClick={handleAddCondition} variant="outline">
-              Adicionar
-            </Button>
+        <div className="space-y-3">
+          <Label>Condições de Saúde (selecione todas as aplicáveis)</Label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+            {commonHealthConditions.map((condition) => (
+              <div key={condition.id} className="flex items-center space-x-2">
+                <Checkbox 
+                  id={condition.id} 
+                  checked={formData.healthConditions.includes(condition.label)}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      onToggleCondition('healthConditions', condition.label);
+                    } else {
+                      onToggleCondition('healthConditions', condition.label);
+                    }
+                  }}
+                />
+                <Label htmlFor={condition.id}>{condition.label}</Label>
+              </div>
+            ))}
           </div>
-          
-          {healthConditions.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {healthConditions.map((condition) => (
-                <Badge 
-                  key={condition} 
-                  variant="secondary"
-                  className="flex items-center gap-1 py-1 px-2"
-                >
-                  {condition}
-                  <button
-                    type="button"
-                    onClick={() => onConditionRemove(condition)}
-                    className="ml-1 text-muted-foreground hover:text-foreground"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>
