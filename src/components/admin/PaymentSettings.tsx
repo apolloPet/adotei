@@ -1,116 +1,86 @@
 
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Textarea } from "@/components/ui/textarea";
-import { Slider } from "@/components/ui/slider";
 import { useState } from "react";
-import { PaymentSettingsType } from "./AdminTabs";
-import { toast } from "@/hooks/use-sonner";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { DollarSign } from "lucide-react";
+import { toast } from "@/hooks/use-sonner";
 import { FeesSection, BankDetailsSection, ContractSection } from "./payment-settings";
+import type { PaymentSettingsProps } from "./payment-settings";
 
-export interface PaymentSettingsProps {
-  settings: PaymentSettingsType;
-  onSaveSettings: (newSettings: PaymentSettingsType) => void;
-}
+export const PaymentSettings = ({ settings, onSaveSettings }: PaymentSettingsProps) => {
+  const [fees, setFees] = useState(settings.fees);
+  const [bankDetails, setBankDetails] = useState(settings.bankDetails);
+  const [contractDetails, setContractDetails] = useState(settings.contractDetails);
+  const [isSaving, setIsSaving] = useState(false);
 
-const PaymentSettings = ({ settings, onSaveSettings }: PaymentSettingsProps) => {
-  const [formData, setFormData] = useState<PaymentSettingsType>({
-    ...settings,
-    companyBankInfo: settings.companyBankInfo || ''
-  });
-  
-  const handleFeesChange = (fees: {
-    adoptionFee: number;
-    ngoPercentage: number;
-    platformPercentage: number;
-  }) => {
-    setFormData(prev => ({ ...prev, ...fees }));
-  };
-
-  const handleBankDetailsChange = (bankDetails: {
-    pixKey: string;
-    companyBankInfo: string;
-  }) => {
-    setFormData(prev => ({ ...prev, ...bankDetails }));
-  };
-
-  const handleContractDetailsChange = (contractDetails: {
-    contractText: string;
-    followUpPeriod: number;
-  }) => {
-    setFormData(prev => ({ ...prev, ...contractDetails }));
-  };
-  
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate percentages add up to 100%
-    const { ngoPercentage, platformPercentage } = formData;
-    
-    if (ngoPercentage + platformPercentage !== 100) {
-      toast("Porcentagens devem somar 100%", {
-        description: "Ajuste os valores para que o total seja 100%."
-      });
-      return;
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      
+      // In a real app, you would save the settings to your backend here
+      // Simulating a delay for the API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      const newSettings = {
+        fees,
+        bankDetails,
+        contractDetails
+      };
+      
+      onSaveSettings(newSettings);
+      toast.success("Configurações de pagamento salvas com sucesso!");
+    } catch (error) {
+      console.error("Erro ao salvar configurações:", error);
+      toast.error("Erro ao salvar configurações de pagamento. Tente novamente.");
+    } finally {
+      setIsSaving(false);
     }
-    
-    // Save settings
-    onSaveSettings(formData);
-    
-    toast.success("Configurações salvas com sucesso!");
   };
 
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Configurações de Pagamento
-          </CardTitle>
-          <CardDescription>
-            Configure os valores, percentuais e dados bancários para taxas de adoção
-          </CardDescription>
+        <CardHeader className="flex flex-row items-center">
+          <div className="flex items-center space-x-2">
+            <div className="p-2 bg-primary/10 rounded-md">
+              <DollarSign className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <CardTitle>Configurações de Pagamento</CardTitle>
+              <CardDescription>
+                Gerencie taxas, dados bancários e termos contratuais para adoções
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <FeesSection 
-              initialFees={{
-                adoptionFee: settings.adoptionFee,
-                ngoPercentage: settings.ngoPercentage,
-                platformPercentage: settings.platformPercentage
-              }}
-              onFeesChange={handleFeesChange}
-            />
-            
-            <Separator className="my-4" />
-            
-            <BankDetailsSection 
-              initialBankDetails={{
-                pixKey: settings.pixKey,
-                companyBankInfo: settings.companyBankInfo || ''
-              }}
-              onBankDetailsChange={handleBankDetailsChange}
-            />
-            
-            <Separator className="my-4" />
-            
-            <ContractSection 
-              initialContractDetails={{
-                contractText: settings.contractText,
-                followUpPeriod: settings.followUpPeriod
-              }}
-              onContractDetailsChange={handleContractDetailsChange}
-            />
-            
-            <Button type="submit" className="w-full mt-6">
-              Salvar Configurações
+        <CardContent className="space-y-8">
+          <FeesSection 
+            initialFees={fees} 
+            onFeesChange={setFees}
+          />
+          
+          <div className="border-t pt-6"></div>
+          
+          <BankDetailsSection 
+            initialBankDetails={bankDetails}
+            onBankDetailsChange={setBankDetails}
+          />
+          
+          <div className="border-t pt-6"></div>
+          
+          <ContractSection 
+            initialContractDetails={contractDetails}
+            onContractDetailsChange={setContractDetails}
+          />
+          
+          <div className="flex justify-end">
+            <Button
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? "Salvando..." : "Salvar Configurações"}
             </Button>
-          </form>
+          </div>
         </CardContent>
       </Card>
     </div>

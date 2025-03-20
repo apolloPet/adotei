@@ -2,13 +2,11 @@
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
-import { formatCurrency } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 
 interface FeesProps {
   adoptionFee: number;
-  ngoPercentage: number;
-  platformPercentage: number;
+  enableAdoptionFee: boolean;
 }
 
 interface FeesSectionProps {
@@ -18,73 +16,46 @@ interface FeesSectionProps {
 
 const FeesSection = ({ initialFees, onFeesChange }: FeesSectionProps) => {
   const [adoptionFee, setAdoptionFee] = useState(initialFees.adoptionFee);
-  const [ngoPercentage, setNgoPercentage] = useState(initialFees.ngoPercentage);
-  const [platformPercentage, setPlatformPercentage] = useState(initialFees.platformPercentage);
+  const [enableAdoptionFee, setEnableAdoptionFee] = useState(initialFees.enableAdoptionFee);
 
   // Update parent component when values change
   useEffect(() => {
     onFeesChange({
       adoptionFee,
-      ngoPercentage,
-      platformPercentage
+      enableAdoptionFee
     });
-  }, [adoptionFee, ngoPercentage, platformPercentage, onFeesChange]);
-
-  // Handle adoption fee change
-  const handleAdoptionFeeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    if (!isNaN(value) && value >= 0) {
-      setAdoptionFee(value);
-    }
-  };
-
-  // Handle NGO percentage change
-  const handleNgoPercentageChange = (values: number[]) => {
-    const value = values[0];
-    setNgoPercentage(value);
-    setPlatformPercentage(100 - value);
-  };
+  }, [adoptionFee, enableAdoptionFee, onFeesChange]);
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-medium">Taxas e Valores</h3>
+      <h3 className="text-lg font-medium">Taxas de Adoção</h3>
       
-      <div className="space-y-2">
-        <Label htmlFor="adoptionFee">Taxa de Adoção</Label>
-        <div className="flex items-center gap-2">
+      <div className="flex items-center space-x-2">
+        <Switch
+          id="enableFee"
+          checked={enableAdoptionFee}
+          onCheckedChange={setEnableAdoptionFee}
+        />
+        <Label htmlFor="enableFee">Cobrar Taxa de Adoção</Label>
+      </div>
+      
+      {enableAdoptionFee && (
+        <div className="space-y-2">
+          <Label htmlFor="adoptionFee">Valor da Taxa de Adoção (R$)</Label>
           <Input
             id="adoptionFee"
             type="number"
+            min="0"
+            step="5"
             value={adoptionFee}
-            onChange={handleAdoptionFeeChange}
-            min={0}
-            className="max-w-[180px]"
+            onChange={(e) => setAdoptionFee(Number(e.target.value))}
+            placeholder="0.00"
           />
-          <span className="text-sm text-muted-foreground">
-            {formatCurrency(adoptionFee)}
-          </span>
+          <p className="text-sm text-muted-foreground">
+            Esta taxa será cobrada durante o processo de adoção para ajudar a cobrir custos operacionais.
+          </p>
         </div>
-      </div>
-      
-      <div className="space-y-2">
-        <div className="flex justify-between items-center">
-          <Label>Distribuição da Taxa</Label>
-          <span className="text-sm text-muted-foreground">
-            ONG: {ngoPercentage}% | Plataforma: {platformPercentage}%
-          </span>
-        </div>
-        <Slider
-          value={[ngoPercentage]}
-          onValueChange={handleNgoPercentageChange}
-          min={0}
-          max={100}
-          step={1}
-        />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>ONG: {formatCurrency((adoptionFee * ngoPercentage) / 100)}</span>
-          <span>Plataforma: {formatCurrency((adoptionFee * platformPercentage) / 100)}</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
