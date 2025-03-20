@@ -14,24 +14,27 @@ import { AnimalCostFormData, CostResults } from './simulator/types';
 
 interface CostSimulatorProps {
   onSimulationComplete?: (simulationData: any) => void;
+  initialData?: Partial<AnimalCostFormData>;
+  onBack?: () => void;
+  onNext?: (data: AnimalCostFormData) => void;
 }
 
-const CostSimulator = ({ onSimulationComplete }: CostSimulatorProps) => {
+const CostSimulator = ({ onSimulationComplete, initialData, onBack, onNext }: CostSimulatorProps) => {
   const [step, setStep] = useState(1);
   const [activeTab, setActiveTab] = useState('step1');
   const [formData, setFormData] = useState<AnimalCostFormData>({
-    animalType: 'dog',
-    animalSize: 'medium',
-    ageYears: 2,
-    ageMonths: 0,
-    activityLevel: 'moderate',
-    foodType: 'premium',
-    foodQuantity: 0,
-    groomingFrequency: 'monthly',
-    healthConditions: [],
-    specialCareNeeds: [],
-    isSterilized: false,
-    notes: '',
+    animalType: initialData?.animalType || 'dog',
+    animalSize: initialData?.animalSize || 'medium',
+    ageYears: initialData?.ageYears || 2,
+    ageMonths: initialData?.ageMonths || 0,
+    activityLevel: initialData?.activityLevel || 'moderate',
+    foodType: initialData?.foodType || 'premium',
+    foodQuantity: initialData?.foodQuantity || 0,
+    groomingFrequency: initialData?.groomingFrequency || 'monthly',
+    healthConditions: initialData?.healthConditions || [],
+    specialCareNeeds: initialData?.specialCareNeeds || [],
+    isSterilized: initialData?.isSterilized || false,
+    notes: initialData?.notes || '',
   });
   
   const [results, setResults] = useState<CostResults>({
@@ -133,6 +136,11 @@ const CostSimulator = ({ onSimulationComplete }: CostSimulatorProps) => {
       if (results) {
         setStep(5);
         setActiveTab('results');
+        
+        // Call the onNext prop if provided and on the final step
+        if (onNext && step === 4) {
+          onNext(formData);
+        }
       }
     }
   };
@@ -141,6 +149,9 @@ const CostSimulator = ({ onSimulationComplete }: CostSimulatorProps) => {
     if (step > 1) {
       setStep(step - 1);
       setActiveTab(`step${step - 1}`);
+    } else if (onBack) {
+      // Call the onBack prop if we're at step 1 and trying to go back
+      onBack();
     }
   };
 
@@ -249,13 +260,13 @@ const CostSimulator = ({ onSimulationComplete }: CostSimulatorProps) => {
         </Tabs>
 
         <div className="flex justify-between mt-6">
-          {step > 1 && step < 5 && (
+          {(step > 1 || onBack) && (
             <Button variant="outline" onClick={prevStep}>
               Anterior
             </Button>
           )}
           
-          {step === 1 && (
+          {step === 1 && !onBack && (
             <div className="flex-1"></div>
           )}
           

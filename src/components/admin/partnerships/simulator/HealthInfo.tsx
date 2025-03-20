@@ -1,58 +1,43 @@
 
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { AnimalCostFormData } from "./types";
-import { Switch } from "@/components/ui/switch";
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 interface HealthInfoProps {
-  formData: AnimalCostFormData;
+  formData: {
+    healthConditions: string[];
+  };
   onToggleCondition: (field: string, value: string) => void;
 }
 
 const HealthInfo = ({ formData, onToggleCondition }: HealthInfoProps) => {
-  const commonHealthConditions = [
-    { id: "cardiac", label: "Problemas Cardíacos" },
-    { id: "dermatological", label: "Problemas Dermatológicos" },
-    { id: "respiratory", label: "Problemas Respiratórios" },
-    { id: "orthopedic", label: "Problemas Ortopédicos" },
-    { id: "dental", label: "Problemas Dentários" },
-    { id: "renal", label: "Problemas Renais" },
-    { id: "allergies", label: "Alergias" },
-    { id: "chronic_disease", label: "Doença Crônica" },
+  const healthConditions = [
+    { id: 'allergies', label: 'Alergias' },
+    { id: 'arthritis', label: 'Artrite' },
+    { id: 'dental', label: 'Problemas Dentários' },
+    { id: 'diabetes', label: 'Diabetes' },
+    { id: 'heart', label: 'Problemas Cardíacos' },
+    { id: 'kidney', label: 'Problemas Renais' },
+    { id: 'obesity', label: 'Obesidade' },
+    { id: 'thyroid', label: 'Problemas de Tireoide' },
   ];
 
   return (
     <div className="space-y-6">
-      <div className="space-y-4">
-        <div className="flex items-center space-x-2">
-          <Switch 
-            id="sterilized" 
-            checked={formData.isSterilized}
-            onCheckedChange={(checked) => onToggleCondition('isSterilized', checked.toString())}
-          />
-          <Label htmlFor="sterilized">Animal já castrado/esterilizado</Label>
-        </div>
-
-        <div className="space-y-3">
-          <Label>Condições de Saúde (selecione todas as aplicáveis)</Label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-            {commonHealthConditions.map((condition) => (
-              <div key={condition.id} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={condition.id} 
-                  checked={formData.healthConditions.includes(condition.label)}
-                  onCheckedChange={(checked) => {
-                    if (checked) {
-                      onToggleCondition('healthConditions', condition.label);
-                    } else {
-                      onToggleCondition('healthConditions', condition.label);
-                    }
-                  }}
-                />
-                <Label htmlFor={condition.id}>{condition.label}</Label>
-              </div>
-            ))}
-          </div>
+      <div>
+        <h3 className="text-lg font-medium mb-4">Condições de Saúde</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {healthConditions.map((condition) => (
+            <div className="flex items-center space-x-2" key={condition.id}>
+              <Checkbox
+                id={condition.id}
+                checked={formData.healthConditions.includes(condition.id)}
+                onCheckedChange={() =>
+                  onToggleCondition('healthConditions', condition.id)
+                }
+              />
+              <Label htmlFor={condition.id}>{condition.label}</Label>
+            </div>
+          ))}
         </div>
       </div>
     </div>

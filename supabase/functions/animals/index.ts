@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -139,6 +138,21 @@ serve(async (req) => {
             status: 400,
           });
         }
+      }
+
+      // Additional validation
+      if (typeof requestData.idade !== 'number' || isNaN(requestData.idade) || requestData.idade < 0) {
+        return new Response(JSON.stringify({ error: 'Idade deve ser um número positivo' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+      
+      if (requestData.descricao && requestData.descricao.length > 200) {
+        return new Response(JSON.stringify({ error: 'Descrição deve ter no máximo 200 caracteres' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
       }
 
       // Set responsible_id to current user if not provided and user is not admin

@@ -1,167 +1,137 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { formatCurrency } from "@/lib/utils";
-import { CostResults } from "./types";
+import { Card, CardContent } from '@/components/ui/card';
+import { CostResults } from './types';
 
 interface ResultsDisplayProps {
   results: CostResults;
 }
 
 const ResultsDisplay = ({ results }: ResultsDisplayProps) => {
+  const { monthlyCosts, monthlyTotal, yearlyTotal, lifetimeTotal, details } = results;
+  
+  // Format currency
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(value);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg text-center">Custo Mensal</CardTitle>
-          </CardHeader>
-          <CardContent>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4">
+        <Card className="bg-gray-50">
+          <CardContent className="pt-6">
+            <h3 className="text-lg font-semibold text-center">Custo Mensal</h3>
             <p className="text-2xl font-bold text-center text-primary">
-              {formatCurrency(results.monthlyTotal)}
+              {formatCurrency(monthlyTotal)}
             </p>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg text-center">Custo Anual</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card className="bg-gray-50">
+          <CardContent className="pt-6">
+            <h3 className="text-lg font-semibold text-center">Custo Anual</h3>
             <p className="text-2xl font-bold text-center text-primary">
-              {formatCurrency(results.yearlyTotal)}
+              {formatCurrency(yearlyTotal)}
             </p>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg text-center">Custo Estimado Total</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <Card className="bg-gray-50">
+          <CardContent className="pt-6">
+            <h3 className="text-lg font-semibold text-center">Custo de Vida Estimado</h3>
             <p className="text-2xl font-bold text-center text-primary">
-              {formatCurrency(results.lifetimeTotal)}
-            </p>
-            <p className="text-xs text-center text-muted-foreground mt-1">
-              (Baseado na expectativa de vida)
+              {formatCurrency(lifetimeTotal)}
             </p>
           </CardContent>
         </Card>
       </div>
       
-      <Separator />
-      
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Detalhamento Mensal</h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <h4 className="text-sm font-medium mb-2">Alimentação</h4>
-                <p className="text-xl font-bold">{formatCurrency(results.monthlyCosts.food)}</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <h4 className="text-sm font-medium mb-2">Saúde</h4>
-                <p className="text-xl font-bold">{formatCurrency(results.monthlyCosts.medical)}</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <h4 className="text-sm font-medium mb-2">Higiene</h4>
-                <p className="text-xl font-bold">{formatCurrency(results.monthlyCosts.grooming)}</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <h4 className="text-sm font-medium mb-2">Suprimentos</h4>
-                <p className="text-xl font-bold">{formatCurrency(results.monthlyCosts.supplies)}</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-center">
-                <h4 className="text-sm font-medium mb-2">Cuidados Especiais</h4>
-                <p className="text-xl font-bold">{formatCurrency(results.monthlyCosts.specialCare)}</p>
-              </div>
-            </CardContent>
-          </Card>
+      <div className="border rounded-lg p-4">
+        <h3 className="text-lg font-semibold mb-4">Detalhamento de Custos Mensais</h3>
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <span>Alimentação</span>
+            <span className="font-medium">{formatCurrency(monthlyCosts.food)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Saúde/Veterinário</span>
+            <span className="font-medium">{formatCurrency(monthlyCosts.medical)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Higiene e Estética</span>
+            <span className="font-medium">{formatCurrency(monthlyCosts.grooming)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Suprimentos</span>
+            <span className="font-medium">{formatCurrency(monthlyCosts.supplies)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Cuidados Especiais</span>
+            <span className="font-medium">{formatCurrency(monthlyCosts.specialCare)}</span>
+          </div>
+          <div className="border-t pt-2 mt-2 flex justify-between font-semibold">
+            <span>Total Mensal</span>
+            <span>{formatCurrency(monthlyTotal)}</span>
+          </div>
         </div>
       </div>
       
-      {results.details && (
+      {details && (
         <>
-          <Separator />
-          
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Custos Iniciais</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <h4 className="text-sm font-medium mb-2">Acessórios Iniciais</h4>
-                    <p className="text-xl font-bold">{formatCurrency(results.details.initialCosts.accessories)}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      (Cama, brinquedos, comedouros, etc)
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card>
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <h4 className="text-sm font-medium mb-2">Procedimentos Iniciais</h4>
-                    <p className="text-xl font-bold">{formatCurrency(results.details.initialCosts.procedures)}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {results.details.initialCosts.procedures > 0 
-                        ? "(Castração, vacinação inicial, etc)" 
-                        : "(Animal já castrado e vacinado)"}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+          <div className="border rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-4">Detalhes da Alimentação</h3>
+            <p className="text-sm text-gray-600 mb-2">
+              Baseado no tipo de alimentação {details.monthlyBreakdown.food} e nas características do animal.
+            </p>
           </div>
           
-          {(results.details.monthlyBreakdown.adjustments.healthConditions || 
-            results.details.monthlyBreakdown.adjustments.specialNeeds) && (
-            <>
-              <Separator />
-              
-              <div className="space-y-2">
-                <h3 className="text-lg font-medium">Observações</h3>
-                
-                {results.details.monthlyBreakdown.adjustments.healthConditions && (
-                  <p className="text-sm">
-                    <span className="font-medium">Condições de saúde:</span> {results.details.monthlyBreakdown.adjustments.healthConditions}
-                  </p>
-                )}
-                
-                {results.details.monthlyBreakdown.adjustments.specialNeeds && (
-                  <p className="text-sm">
-                    <span className="font-medium">Necessidades especiais:</span> {results.details.monthlyBreakdown.adjustments.specialNeeds}
-                  </p>
-                )}
+          <div className="border rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-4">Condições de Saúde e Necessidades Especiais</h3>
+            {details.monthlyBreakdown.adjustments.healthConditions && (
+              <div className="mb-3">
+                <h4 className="font-medium">Condições de Saúde:</h4>
+                <p className="text-sm text-gray-600">{details.monthlyBreakdown.adjustments.healthConditions}</p>
               </div>
-            </>
-          )}
+            )}
+            {details.monthlyBreakdown.adjustments.specialNeeds && (
+              <div>
+                <h4 className="font-medium">Necessidades Especiais:</h4>
+                <p className="text-sm text-gray-600">{details.monthlyBreakdown.adjustments.specialNeeds}</p>
+              </div>
+            )}
+          </div>
+          
+          <div className="border rounded-lg p-4">
+            <h3 className="text-lg font-semibold mb-4">Custos Iniciais Estimados</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span>Acessórios e Equipamentos</span>
+                <span className="font-medium">{formatCurrency(details.initialCosts.accessories)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Procedimentos Médicos Iniciais</span>
+                <span className="font-medium">{formatCurrency(details.initialCosts.procedures)}</span>
+              </div>
+              <div className="border-t pt-2 mt-2 flex justify-between font-semibold">
+                <span>Total Inicial</span>
+                <span>{formatCurrency(details.initialCosts.accessories + details.initialCosts.procedures)}</span>
+              </div>
+            </div>
+          </div>
         </>
       )}
+      
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h3 className="text-lg font-semibold text-blue-800 mb-2">Dicas para Economizar</h3>
+        <ul className="list-disc list-inside space-y-1 text-sm text-blue-700">
+          <li>Considere adquirir ração em maior quantidade para obter descontos</li>
+          <li>Planos de saúde veterinários podem reduzir os custos de consultas e procedimentos</li>
+          <li>Aprenda a fazer a higiene básica do animal em casa</li>
+          <li>Procure promoções em lojas online para acessórios e brinquedos</li>
+        </ul>
+      </div>
     </div>
   );
 };
