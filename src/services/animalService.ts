@@ -57,6 +57,8 @@ const dbAnimalToAnimal = (dbAnimal: any): Animal => {
 // Create a new animal
 export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal | null> => {
   try {
+    console.log('Creating animal with data:', animalData);
+    
     // Check for duplicated animal with same name and responsible
     if (animalData.responsavel_id) {
       const { data: existingAnimals, error: checkError } = await supabase
@@ -98,6 +100,7 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
       throw new Error(error.message);
     }
 
+    console.log('Animal created successfully:', data);
     return data?.[0] ? dbAnimalToAnimal(data[0]) : null;
   } catch (error) {
     console.error('Error in createAnimal:', error);

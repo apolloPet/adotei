@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -204,14 +205,14 @@ const AnimalRegistrationForm = () => {
         goodWith: [],
         energyLevel: "medium",
         trainability: "moderate",
-        characteristics: [], // Add this missing field
+        characteristics: [], // Garantindo que está incluído
         images: [],
         previewImages: [],
         location: "",
         responsible: "",
         responsibleContact: "",
         adoptionRequirements: [],
-        requirements: [] // Add this missing field
+        requirements: [] // Garantindo que está incluído
       });
       
       // Reset to first step

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
@@ -38,7 +39,9 @@ const AnimalList = () => {
         filters.porte = filterSize;
       }
       
+      console.log("Fetching animals with filters:", filters);
       const data = await getAnimals(filters);
+      console.log("Animals fetched:", data);
       setAnimals(data);
     } catch (error) {
       console.error('Erro ao buscar animais:', error);
@@ -142,7 +145,7 @@ const AnimalList = () => {
                 <TableRow>
                   <TableHead>Nome</TableHead>
                   <TableHead>Tipo</TableHead>
-                  <TableHead>Raça</TableHead>
+                  <TableHead>Descrição</TableHead>
                   <TableHead>Idade</TableHead>
                   <TableHead>Porte</TableHead>
                   <TableHead>Sexo</TableHead>
