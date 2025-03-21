@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +12,7 @@ import AnimalLocationStaff from "./AnimalLocationStaff";
 import AnimalRequirements from "./AnimalRequirements";
 import { useAuth } from '@/hooks/auth';
 import { supabase } from '@/lib/supabase';
+import { createAnimal } from '@/services/animalService';
 
 const steps: FormStep[] = [
   {
@@ -153,7 +153,7 @@ const AnimalRegistrationForm = () => {
         return;
       }
       
-      // Format animal data for Supabase
+      // Format animal data for database
       const animalData = {
         nome: formData.name,
         tipo: formData.type,
@@ -162,27 +162,25 @@ const AnimalRegistrationForm = () => {
         sexo: formData.gender,
         descricao: formData.description,
         responsavel_id: user?.id,
-        // Convert other form data as needed
-        // Use the fields that match your database schema
+        // Additional fields can be added here
       };
       
       console.log('Submitting animal data:', animalData);
       
-      // Use the animals edge function to create the animal
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/animals`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-        },
-        body: JSON.stringify(animalData),
+      // Using the animalService instead of directly calling the edge function
+      const result = await createAnimal({
+        nome: formData.name,
+        tipo: formData.type as any, // Cast to match the expected type
+        porte: formData.size as any, // Cast to match the expected type
+        idade: parseInt(formData.age, 10),
+        sexo: formData.gender as any, // Cast to match the expected type
+        castrado: false, // Default value
+        descricao: formData.description,
+        responsavel_id: user?.id,
+        // Map other fields as needed
       });
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao cadastrar animal');
-      }
+      console.log('Animal created:', result);
       
       toast.success("Animal cadastrado com sucesso!");
       
