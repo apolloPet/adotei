@@ -2,7 +2,7 @@
 import { Label } from "@/components/ui/label";
 import { Upload, X } from "lucide-react";
 
-interface AnimalImagesProps {
+export interface AnimalImagesProps {
   images: File[];
   previewImages: string[]; 
   onChange: (images: File[], previews: string[]) => void;

@@ -5,13 +5,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AnimalFormData } from "./types";
 
-interface AnimalBasicInfoProps {
+export interface AnimalBasicInfoProps {
   formData: AnimalFormData;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  handleRadioChange: (name: string, value: string) => void;
+  onFormChange: (updates: Partial<AnimalFormData>) => void;
 }
 
-const AnimalBasicInfo = ({ formData, handleInputChange, handleRadioChange }: AnimalBasicInfoProps) => {
+const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
   // Handler for age field to accept only numbers
   const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -27,6 +26,15 @@ const AnimalBasicInfo = ({ formData, handleInputChange, handleRadioChange }: Ani
     if (value.length <= 200) {
       handleInputChange(e);
     }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    onFormChange({ [name]: value });
+  };
+
+  const handleRadioChange = (name: string, value: string) => {
+    onFormChange({ [name]: value });
   };
 
   return (

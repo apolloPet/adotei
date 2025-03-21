@@ -4,17 +4,21 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AnimalFormData, staffMembers } from "./types";
 
-interface AnimalLocationStaffProps {
+export interface AnimalLocationStaffProps {
   formData: AnimalFormData;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  handleResponsibleChange: (value: string) => void;
+  onFormChange: (updates: Partial<AnimalFormData>) => void;
 }
 
-const AnimalLocationStaff = ({ 
-  formData, 
-  handleInputChange, 
-  handleResponsibleChange 
-}: AnimalLocationStaffProps) => {
+const AnimalLocationStaff = ({ formData, onFormChange }: AnimalLocationStaffProps) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    onFormChange({ [name]: value });
+  };
+
+  const handleResponsibleChange = (value: string) => {
+    onFormChange({ responsible: value });
+  };
+
   return (
     <div className="grid gap-4 md:grid-cols-2">
       <div className="space-y-2">

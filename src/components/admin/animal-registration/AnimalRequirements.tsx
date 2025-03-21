@@ -7,15 +7,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { X } from "lucide-react";
 import { AnimalFormData, commonRequirements } from "./types";
 
-interface AnimalRequirementsProps {
+export interface AnimalRequirementsProps {
   formData: AnimalFormData;
-  handleArrayChange: (name: string, values: string[]) => void;
+  onFormChange: (updates: Partial<AnimalFormData>) => void;
 }
 
-const AnimalRequirements = ({ 
-  formData, 
-  handleArrayChange
-}: AnimalRequirementsProps) => {
+const AnimalRequirements = ({ formData, onFormChange }: AnimalRequirementsProps) => {
   const [customRequirement, setCustomRequirement] = useState("");
 
   const handleRequirementToggle = (requirement: string) => {
@@ -23,12 +20,12 @@ const AnimalRequirements = ({
       ? formData.requirements.filter(req => req !== requirement)
       : [...formData.requirements, requirement];
     
-    handleArrayChange('requirements', updatedRequirements);
+    onFormChange({ requirements: updatedRequirements });
   };
 
   const addCustomRequirement = () => {
     if (customRequirement.trim() && !formData.requirements.includes(customRequirement.trim())) {
-      handleArrayChange('requirements', [...formData.requirements, customRequirement.trim()]);
+      onFormChange({ requirements: [...formData.requirements, customRequirement.trim()] });
       setCustomRequirement("");
     }
   };

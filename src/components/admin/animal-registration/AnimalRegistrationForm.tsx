@@ -10,7 +10,7 @@ import AnimalHealthInfo from './AnimalHealthInfo';
 import AnimalImages from './AnimalImages';
 import AnimalLocationStaff from './AnimalLocationStaff';
 import AnimalRequirements from './AnimalRequirements';
-import { Animal, AnimalFormData } from './types';
+import { AnimalFormData } from './types';
 import AnimalList from './AnimalList';
 import { createAnimal } from '@/services/animalService';
 
@@ -31,12 +31,15 @@ const AnimalRegistrationForm = () => {
     specialNeeds: false,
     specialNeedsDescription: '',
     sterilized: false,
+    tutorName: '',
+    tutorContact: '',
     goodWithChildren: false,
     goodWithOtherAnimals: false,
     goodWithSeniors: false,
     goodWith: [],
     energyLevel: 'medium',
     trainability: 'moderate',
+    temperament: [],
     characteristics: [],
     images: [],
     previewImages: [],
@@ -168,12 +171,15 @@ const AnimalRegistrationForm = () => {
         specialNeeds: false,
         specialNeedsDescription: '',
         sterilized: false,
+        tutorName: '',
+        tutorContact: '',
         goodWithChildren: false,
         goodWithOtherAnimals: false,
         goodWithSeniors: false,
         goodWith: [],
         energyLevel: 'medium',
         trainability: 'moderate',
+        temperament: [],
         characteristics: [],
         images: [],
         previewImages: [],
@@ -260,8 +266,14 @@ const AnimalRegistrationForm = () => {
                   
                   {currentStep === 4 && (
                     <AnimalImages 
-                      formData={formData}
-                      onFormChange={handleChangeMultiple}
+                      images={formData.images}
+                      previewImages={formData.previewImages}
+                      onChange={(images, previews) => {
+                        handleChangeMultiple({
+                          images,
+                          previewImages: previews
+                        });
+                      }}
                     />
                   )}
                   

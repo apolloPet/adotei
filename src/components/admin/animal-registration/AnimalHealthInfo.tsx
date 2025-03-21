@@ -6,19 +6,25 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { AnimalFormData } from "./types";
 
-interface AnimalHealthInfoProps {
+export interface AnimalHealthInfoProps {
   formData: AnimalFormData;
-  handleInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  handleSwitchChange: (name: string, checked: boolean) => void;
-  handleRadioChange: (name: string, value: string) => void;
+  onFormChange: (updates: Partial<AnimalFormData>) => void;
 }
 
-const AnimalHealthInfo = ({
-  formData,
-  handleInputChange,
-  handleSwitchChange,
-  handleRadioChange,
-}: AnimalHealthInfoProps) => {
+const AnimalHealthInfo = ({ formData, onFormChange }: AnimalHealthInfoProps) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    onFormChange({ [name]: value });
+  };
+
+  const handleSwitchChange = (name: string, checked: boolean) => {
+    onFormChange({ [name]: checked });
+  };
+
+  const handleRadioChange = (name: string, value: string) => {
+    onFormChange({ [name]: value });
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
@@ -92,6 +98,15 @@ const AnimalHealthInfo = ({
               rows={3}
             />
           )}
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="sterilized"
+            checked={formData.sterilized}
+            onCheckedChange={(checked) => handleSwitchChange('sterilized', checked)}
+          />
+          <Label htmlFor="sterilized">Castrado/Esterilizado</Label>
         </div>
       </div>
       

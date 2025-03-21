@@ -7,17 +7,12 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { X } from "lucide-react";
 import { AnimalFormData, commonCharacteristics } from "./types";
 
-interface AnimalCharacteristicsProps {
+export interface AnimalCharacteristicsProps {
   formData: AnimalFormData;
-  handleArrayChange: (name: string, values: string[]) => void;
-  handleRadioChange: (name: string, value: string) => void;
+  onFormChange: (updates: Partial<AnimalFormData>) => void;
 }
 
-const AnimalCharacteristics = ({ 
-  formData, 
-  handleArrayChange,
-  handleRadioChange
-}: AnimalCharacteristicsProps) => {
+const AnimalCharacteristics = ({ formData, onFormChange }: AnimalCharacteristicsProps) => {
   const [customCharacteristic, setCustomCharacteristic] = useState("");
 
   const handleCharacteristicToggle = (characteristic: string) => {
@@ -25,14 +20,28 @@ const AnimalCharacteristics = ({
       ? formData.characteristics.filter(char => char !== characteristic)
       : [...formData.characteristics, characteristic];
     
-    handleArrayChange('characteristics', updatedCharacteristics);
+    onFormChange({ characteristics: updatedCharacteristics });
   };
 
   const addCustomCharacteristic = () => {
     if (customCharacteristic.trim() && !formData.characteristics.includes(customCharacteristic.trim())) {
-      handleArrayChange('characteristics', [...formData.characteristics, customCharacteristic.trim()]);
+      onFormChange({ characteristics: [...formData.characteristics, customCharacteristic.trim()] });
       setCustomCharacteristic("");
     }
+  };
+
+  const handleGoodWithChange = (type: 'children' | 'animals' | 'seniors', checked: boolean) => {
+    if (type === 'children') {
+      onFormChange({ goodWithChildren: checked });
+    } else if (type === 'animals') {
+      onFormChange({ goodWithOtherAnimals: checked });
+    } else if (type === 'seniors') {
+      onFormChange({ goodWithSeniors: checked });
+    }
+  };
+
+  const handleRadioChange = (name: string, value: string) => {
+    onFormChange({ [name]: value });
   };
 
   return (
@@ -85,6 +94,39 @@ const AnimalCharacteristics = ({
           ))}
         </div>
       )}
+
+      <div className="pt-4 border-t">
+        <h3 className="text-lg font-medium mb-4">Bom com</h3>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="goodWithChildren" 
+              checked={formData.goodWithChildren}
+              onCheckedChange={(checked) => handleGoodWithChange('children', checked as boolean)}
+            />
+            <Label htmlFor="goodWithChildren">Crianças</Label>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="goodWithOtherAnimals" 
+              checked={formData.goodWithOtherAnimals}
+              onCheckedChange={(checked) => handleGoodWithChange('animals', checked as boolean)}
+            />
+            <Label htmlFor="goodWithOtherAnimals">Outros animais</Label>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <Checkbox 
+              id="goodWithSeniors" 
+              checked={formData.goodWithSeniors}
+              onCheckedChange={(checked) => handleGoodWithChange('seniors', checked as boolean)}
+            />
+            <Label htmlFor="goodWithSeniors">Idosos</Label>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

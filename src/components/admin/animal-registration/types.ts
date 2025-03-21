@@ -15,15 +15,19 @@ export interface AnimalFormData {
   healthConditions: string;
   specialNeeds: boolean;
   specialNeedsDescription: string;
+  sterilized: boolean; // Adding this missing property
   tutorName: string;
   tutorContact: string;
   
   // Characteristics
   temperament: string[];
   goodWith: string[];
+  goodWithChildren: boolean; // Adding this missing property
+  goodWithOtherAnimals: boolean; // Adding this missing property
+  goodWithSeniors: boolean; // Adding this missing property
   energyLevel: string;
   trainability: string;
-  characteristics: string[]; // Added this field
+  characteristics: string[];
   
   // Images
   images: File[];
@@ -36,7 +40,7 @@ export interface AnimalFormData {
   
   // Requirements
   adoptionRequirements: string[];
-  requirements: string[]; // Added this field
+  requirements: string[];
 }
 
 export interface FormStep {
@@ -80,3 +84,6 @@ export const staffMembers = [
   { id: "3", name: "Mariana Santos" },
   { id: "4", name: "Pedro Mendes" }
 ];
+
+// Re-export Animal type from animalService to fix the import error
+export type { Animal } from '@/services/animalService';
