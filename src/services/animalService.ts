@@ -78,24 +78,6 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
       }
     }
     
-    // Check for duplicated animal with same name and responsible
-    if (animalData.responsavel_id) {
-      const { data: existingAnimals, error: checkError } = await supabase
-        .from('animals')
-        .select('id')
-        .eq('nome', animalData.nome)
-        .eq('responsavel_id', animalData.responsavel_id);
-
-      if (checkError) {
-        console.error('Error checking for duplicate animal:', checkError);
-        throw new Error('Erro ao verificar animal duplicado');
-      }
-
-      if (existingAnimals && existingAnimals.length > 0) {
-        throw new Error('Já existe um animal com esse nome para este responsável');
-      }
-    }
-
     // Prepare animal data for insertion, ensuring arrays are properly handled
     const animalForInsertion = {
       nome: animalData.nome,
@@ -113,9 +95,12 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
     
     console.log('Preparing to insert animal with data:', animalForInsertion);
 
-    // Use RPC call for more control
+    // Use regular insert to work with TypeScript definitions
     const { data, error } = await supabase
-      .rpc('create_animal', animalForInsertion);
+      .from('animals')
+      .insert(animalForInsertion)
+      .select()
+      .single();
 
     if (error) {
       console.error('Error creating animal:', error);
