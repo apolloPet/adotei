@@ -1,397 +1,316 @@
 
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-sonner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AnimalFormData, defaultFormData } from "./types";
+import { AnimalFormData, FormStep } from "./types";
 import AnimalBasicInfo from "./AnimalBasicInfo";
-import AnimalCharacteristics from "./AnimalCharacteristics";
-import AnimalRequirements from "./AnimalRequirements";
-import AnimalImages from "./AnimalImages";
 import AnimalHealthInfo from "./AnimalHealthInfo";
+import AnimalCharacteristics from "./AnimalCharacteristics";
+import AnimalImages from "./AnimalImages";
 import AnimalLocationStaff from "./AnimalLocationStaff";
-import CostSimulator from "../partnerships/CostSimulator";
-import AnimalList from "./AnimalList";
-import { createAnimal, saveCostSimulation } from '@/services/animalService';
+import AnimalRequirements from "./AnimalRequirements";
+import { useAuth } from '@/hooks/auth';
+import { supabase } from '@/lib/supabase';
+
+const steps: FormStep[] = [
+  {
+    id: "basic-info",
+    title: "Informações Básicas",
+    description: "Cadastre os dados básicos do animal"
+  },
+  {
+    id: "health-info",
+    title: "Saúde",
+    description: "Informe dados sobre a saúde do animal"
+  },
+  {
+    id: "characteristics",
+    title: "Características",
+    description: "Descreva o temperamento e comportamento"
+  },
+  {
+    id: "images",
+    title: "Imagens",
+    description: "Carregue fotos do animal"
+  },
+  {
+    id: "location-staff",
+    title: "Localização",
+    description: "Informe onde o animal está"
+  },
+  {
+    id: "requirements",
+    title: "Requisitos",
+    description: "Defina requisitos para adoção"
+  }
+];
 
 const AnimalRegistrationForm = () => {
-  const [formData, setFormData] = useState<AnimalFormData>(defaultFormData);
-  const [images, setImages] = useState<File[]>([]);
-  const [imagePreviewUrls, setImagePreviewUrls] = useState<string[]>([]);
-  const [customCharacteristic, setCustomCharacteristic] = useState('');
-  const [customRequirement, setCustomRequirement] = useState('');
-  const [activeTab, setActiveTab] = useState('animal-list');
-  const [registrationStep, setRegistrationStep] = useState<1 | 2>(1);
-  const [costSimulationCompleted, setCostSimulationCompleted] = useState(false);
-  const [costSimulationData, setCostSimulationData] = useState<any>(null);
+  const { user } = useAuth();
+  const [activeStep, setActiveStep] = useState("basic-info");
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  
+  const [formData, setFormData] = useState<AnimalFormData>({
+    // Basic info
+    name: "",
+    type: "dog",
+    breed: "",
+    age: "",
+    gender: "male",
+    size: "medium",
+    description: "",
+    
+    // Health info
+    vaccinationStatus: "unknown",
+    veterinaryInfo: "",
+    healthConditions: "",
+    specialNeeds: false,
+    specialNeedsDescription: "",
+    tutorName: "",
+    tutorContact: "",
+    
+    // Characteristics
+    temperament: [],
+    goodWith: [],
+    energyLevel: "medium",
+    trainability: "moderate",
+    
+    // Images
+    images: [],
+    previewImages: [],
+    
+    // Location and staff
+    location: "",
+    responsible: "",
+    responsibleContact: "",
+    
+    // Requirements
+    adoptionRequirements: []
+  });
+  
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
-    if (name.startsWith('caretaker')) {
-      const caretakerField = name.replace('caretaker', '').charAt(0).toLowerCase() + name.replace('caretaker', '').slice(1);
-      setFormData({
-        ...formData,
-        caretaker: {
-          ...formData.caretaker!,
-          [caretakerField]: value
-        }
-      });
-    } else {
-      setFormData({
-        ...formData,
-        [name]: value
-      });
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
-
+  
+  const handleSwitchChange = (name: string, checked: boolean) => {
+    setFormData(prev => ({ ...prev, [name]: checked }));
+  };
+  
   const handleRadioChange = (name: string, value: string) => {
-    setFormData({
-      ...formData,
-      [name]: value
-    });
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
-
-  const handleCharacteristicToggle = (characteristic: string) => {
-    setFormData(prev => {
-      const isSelected = prev.characteristics.includes(characteristic);
-      
-      return {
-        ...prev,
-        characteristics: isSelected
-          ? prev.characteristics.filter(c => c !== characteristic)
-          : [...prev.characteristics, characteristic]
-      };
-    });
+  
+  const handleArrayChange = (name: string, values: string[]) => {
+    setFormData(prev => ({ ...prev, [name]: values }));
   };
-
-  const handleRequirementToggle = (requirement: string) => {
-    setFormData(prev => {
-      const isSelected = prev.requirements.includes(requirement);
-      
-      return {
-        ...prev,
-        requirements: isSelected
-          ? prev.requirements.filter(r => r !== requirement)
-          : [...prev.requirements, requirement]
-      };
-    });
+  
+  const handleImageChange = (images: File[], previews: string[]) => {
+    setFormData(prev => ({
+      ...prev,
+      images,
+      previewImages: previews
+    }));
   };
-
-  const addCustomCharacteristic = () => {
-    if (customCharacteristic.trim() && !formData.characteristics.includes(customCharacteristic.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        characteristics: [...prev.characteristics, customCharacteristic.trim()]
-      }));
-      setCustomCharacteristic('');
-    }
+  
+  const getCurrentStepIndex = () => {
+    return steps.findIndex(step => step.id === activeStep);
   };
-
-  const addCustomRequirement = () => {
-    if (customRequirement.trim() && !formData.requirements.includes(customRequirement.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        requirements: [...prev.requirements, customRequirement.trim()]
-      }));
-      setCustomRequirement('');
-    }
-  };
-
-  const handleResponsibleChange = (value: string) => {
-    setFormData({
-      ...formData,
-      responsibleId: value
-    });
-  };
-
-  const handleTutorSelect = (tutorId: string) => {
-    setFormData({
-      ...formData,
-      responsibleId: tutorId
-    });
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      
-      if (images.length + newFiles.length > 5) {
-        toast.error("Máximo de 5 imagens permitido.");
-        return;
-      }
-      
-      const newPreviewUrls = newFiles.map(file => URL.createObjectURL(file));
-      
-      setImages(prev => [...prev, ...newFiles]);
-      setImagePreviewUrls(prev => [...prev, ...newPreviewUrls]);
-    }
-  };
-
-  const removeImage = (index: number) => {
-    URL.revokeObjectURL(imagePreviewUrls[index]);
-    
-    setImages(prev => prev.filter((_, i) => i !== index));
-    setImagePreviewUrls(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleCostSimulationComplete = (simulationData: any) => {
-    setCostSimulationCompleted(true);
-    setCostSimulationData(simulationData);
-    toast.success("Simulação de custos concluída com sucesso!");
-  };
-
-  const isFormValid = () => {
-    return (
-      formData.name.trim() !== '' &&
-      formData.description.trim() !== '' &&
-      formData.breed.trim() !== '' &&
-      formData.age.trim() !== '' &&
-      formData.location.trim() !== '' &&
-      images.length > 0 &&
-      costSimulationCompleted
-    );
-  };
-
+  
   const goToNextStep = () => {
-    if (formData.name && formData.description && formData.breed && formData.age) {
-      // Set correct tab ID for the cost simulator
-      setRegistrationStep(2);
-      // Force the tab change to the cost simulator
-      const costSimulatorTab = document.querySelector('[value="cost-simulator"]') as HTMLButtonElement;
-      if (costSimulatorTab) {
-        costSimulatorTab.click();
-      }
-    } else {
-      toast.error("Por favor, preencha todos os campos obrigatórios antes de prosseguir.");
+    const currentIndex = getCurrentStepIndex();
+    if (currentIndex < steps.length - 1) {
+      setActiveStep(steps[currentIndex + 1].id);
     }
   };
-
-  const goToPreviousStep = () => {
-    setRegistrationStep(1);
-    // Force the tab change back to animal info
-    const animalInfoTab = document.querySelector('[value="animal-info"]') as HTMLButtonElement;
-    if (animalInfoTab) {
-      animalInfoTab.click();
+  
+  const goToPrevStep = () => {
+    const currentIndex = getCurrentStepIndex();
+    if (currentIndex > 0) {
+      setActiveStep(steps[currentIndex - 1].id);
     }
   };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!formData.name || !formData.description || !formData.breed || !formData.age) {
-      toast.error("Por favor, preencha todos os campos obrigatórios.");
-      return;
-    }
-
-    if (images.length === 0) {
-      toast.error("Pelo menos uma imagem é necessária.");
-      return;
-    }
-
-    if (!costSimulationCompleted) {
-      toast.error("Por favor, complete a simulação de custos antes de cadastrar o animal.");
-      return;
-    }
-    
+  
+  const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
       
-      const mapAnimalType = (type: string): 'cachorro' | 'gato' | 'outro' => {
-        switch(type) {
-          case 'dog': return 'cachorro';
-          case 'cat': return 'gato';
-          default: return 'outro';
-        }
-      };
+      // Validate required fields
+      if (!formData.name || !formData.type || !formData.breed || !formData.age || !formData.description) {
+        toast.error("Por favor, preencha todos os campos obrigatórios");
+        setActiveStep("basic-info");
+        return;
+      }
       
-      const mapAnimalSize = (size: string): 'pequeno' | 'medio' | 'grande' => {
-        switch(size) {
-          case 'small': return 'pequeno';
-          case 'large': return 'grande';
-          default: return 'medio';
-        }
-      };
-      
-      const mapAnimalGender = (gender: string): 'macho' | 'femea' => {
-        return gender === 'male' ? 'macho' : 'femea';
-      };
-      
+      // Format animal data for Supabase
       const animalData = {
         nome: formData.name,
-        idade: parseInt(formData.age),
-        tipo: mapAnimalType(formData.type),
-        porte: mapAnimalSize(formData.size),
-        sexo: mapAnimalGender(formData.gender),
-        castrado: formData.characteristics.includes('Castrado'),
-        vacinas: formData.characteristics.filter(c => c.includes('Vacinado')),
-        responsavel_id: formData.responsibleId || undefined,
+        tipo: formData.type,
+        porte: formData.size,
+        idade: parseInt(formData.age, 10),
+        sexo: formData.gender,
         descricao: formData.description,
-        fotoPrincipal: imagePreviewUrls.length > 0 ? imagePreviewUrls[0] : undefined,
-        fotos: imagePreviewUrls
+        responsavel_id: user?.id,
+        // Convert other form data as needed
+        // Use the fields that match your database schema
       };
-
-      const newAnimal = await createAnimal(animalData);
       
-      if (newAnimal && costSimulationData) {
-        await saveCostSimulation(newAnimal.id, costSimulationData);
+      console.log('Submitting animal data:', animalData);
+      
+      // Use the animals edge function to create the animal
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/animals`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify(animalData),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao cadastrar animal');
       }
       
       toast.success("Animal cadastrado com sucesso!");
-
-      setFormData(defaultFormData);
-      setRegistrationStep(1);
-      setCostSimulationCompleted(false);
-      setCostSimulationData(null);
       
-      imagePreviewUrls.forEach(url => URL.revokeObjectURL(url));
-      setImages([]);
-      setImagePreviewUrls([]);
+      // Reset form
+      setFormData({
+        name: "",
+        type: "dog",
+        breed: "",
+        age: "",
+        gender: "male",
+        size: "medium",
+        description: "",
+        vaccinationStatus: "unknown",
+        veterinaryInfo: "",
+        healthConditions: "",
+        specialNeeds: false,
+        specialNeedsDescription: "",
+        tutorName: "",
+        tutorContact: "",
+        temperament: [],
+        goodWith: [],
+        energyLevel: "medium",
+        trainability: "moderate",
+        images: [],
+        previewImages: [],
+        location: "",
+        responsible: "",
+        responsibleContact: "",
+        adoptionRequirements: []
+      });
       
-      setActiveTab('animal-list');
+      // Reset to first step
+      setActiveStep("basic-info");
       
     } catch (error) {
-      console.error("Erro ao cadastrar animal:", error);
-      if (error instanceof Error) {
-        toast.error(`Erro ao cadastrar animal: ${error.message}`);
-      } else {
-        toast.error("Erro ao cadastrar animal. Tente novamente mais tarde.");
-      }
+      console.error('Error submitting animal:', error);
+      toast.error(`Erro ao cadastrar animal: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
-        <CardTitle>Gerenciamento de Animais</CardTitle>
-        <CardDescription>Visualize, cadastre e gerencie os animais disponíveis para adoção</CardDescription>
+        <CardTitle>Cadastro de Animais</CardTitle>
+        <CardDescription>
+          Adicione informações sobre o animal para adoção
+        </CardDescription>
       </CardHeader>
+      
       <CardContent>
-        <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="animal-list">Lista de Animais</TabsTrigger>
-            <TabsTrigger value="register-animal" id="register-animal">Cadastrar Animal</TabsTrigger>
+        <Tabs value={activeStep} onValueChange={setActiveStep} className="w-full">
+          <TabsList className="grid grid-cols-3 md:grid-cols-6 mb-4">
+            {steps.map((step) => (
+              <TabsTrigger key={step.id} value={step.id} className="text-xs md:text-sm">
+                {step.title}
+              </TabsTrigger>
+            ))}
           </TabsList>
           
-          <TabsContent value="animal-list">
-            <AnimalList />
-          </TabsContent>
-          
-          <TabsContent value="register-animal">
-            <div className="space-y-6">
-              <Tabs defaultValue={registrationStep === 1 ? "animal-info" : "cost-simulator"}>
-                <TabsList className="mb-4">
-                  <TabsTrigger 
-                    value="animal-info" 
-                    onClick={() => setRegistrationStep(1)}
-                    disabled={registrationStep === 2 && !costSimulationCompleted}
-                  >
-                    1. Informações do Animal
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="cost-simulator" 
-                    onClick={() => setRegistrationStep(2)}
-                  >
-                    2. Simulador de Custos
-                  </TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="animal-info">
-                  <form className="space-y-6">
-                    <AnimalBasicInfo 
-                      formData={formData}
-                      handleInputChange={handleInputChange}
-                      handleRadioChange={handleRadioChange}
-                    />
-                    
-                    <AnimalHealthInfo 
-                      formData={formData}
-                      handleInputChange={handleInputChange}
-                      handleTutorSelect={handleTutorSelect}
-                    />
-                    
-                    <AnimalLocationStaff 
-                      formData={formData}
-                      handleInputChange={handleInputChange}
-                      handleResponsibleChange={handleResponsibleChange}
-                    />
-                    
-                    <AnimalCharacteristics 
-                      formData={formData}
-                      customCharacteristic={customCharacteristic}
-                      setCustomCharacteristic={setCustomCharacteristic}
-                      handleCharacteristicToggle={handleCharacteristicToggle}
-                      addCustomCharacteristic={addCustomCharacteristic}
-                    />
-                    
-                    <AnimalRequirements 
-                      formData={formData}
-                      customRequirement={customRequirement}
-                      setCustomRequirement={setCustomRequirement}
-                      handleRequirementToggle={handleRequirementToggle}
-                      addCustomRequirement={addCustomRequirement}
-                    />
-                    
-                    <AnimalImages 
-                      images={images}
-                      imagePreviewUrls={imagePreviewUrls}
-                      handleImageUpload={handleImageUpload}
-                      removeImage={removeImage}
-                    />
-                    
-                    <div className="flex justify-end">
-                      <Button 
-                        type="button" 
-                        onClick={goToNextStep}
-                      >
-                        Próximo: Simulador de Custos
-                      </Button>
-                    </div>
-                  </form>
-                </TabsContent>
-                
-                <TabsContent value="cost-simulator">
-                  <div className="space-y-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-lg">Simulador de Custos</CardTitle>
-                        <CardDescription>
-                          Complete a simulação de custos para este animal. Esta informação é importante para potenciais adotantes.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <CostSimulator onSimulationComplete={handleCostSimulationComplete} />
-                      </CardContent>
-                    </Card>
-                    
-                    <div className="flex justify-between">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={goToPreviousStep}
-                      >
-                        Voltar
-                      </Button>
-                      
-                      <Button 
-                        type="button" 
-                        onClick={handleSubmit}
-                        disabled={!isFormValid() || isSubmitting}
-                      >
-                        {isSubmitting ? 'Cadastrando...' : 'Finalizar Cadastro'}
-                      </Button>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          </TabsContent>
+          <div className="mt-4 space-y-4">
+            <TabsContent value="basic-info">
+              <AnimalBasicInfo
+                formData={formData}
+                handleInputChange={handleInputChange}
+                handleRadioChange={handleRadioChange}
+              />
+            </TabsContent>
+            
+            <TabsContent value="health-info">
+              <AnimalHealthInfo
+                formData={formData}
+                handleInputChange={handleInputChange}
+                handleSwitchChange={handleSwitchChange}
+                handleRadioChange={handleRadioChange}
+              />
+            </TabsContent>
+            
+            <TabsContent value="characteristics">
+              <AnimalCharacteristics
+                formData={formData}
+                handleArrayChange={handleArrayChange}
+                handleRadioChange={handleRadioChange}
+              />
+            </TabsContent>
+            
+            <TabsContent value="images">
+              <AnimalImages
+                images={formData.images}
+                previewImages={formData.previewImages}
+                onChange={handleImageChange}
+              />
+            </TabsContent>
+            
+            <TabsContent value="location-staff">
+              <AnimalLocationStaff
+                formData={formData}
+                handleInputChange={handleInputChange}
+              />
+            </TabsContent>
+            
+            <TabsContent value="requirements">
+              <AnimalRequirements
+                requirements={formData.adoptionRequirements}
+                onChange={(requirements) => handleArrayChange('adoptionRequirements', requirements)}
+              />
+            </TabsContent>
+          </div>
         </Tabs>
       </CardContent>
+      
+      <CardFooter className="flex justify-between">
+        <Button 
+          variant="outline" 
+          onClick={goToPrevStep}
+          disabled={activeStep === "basic-info" || isSubmitting}
+        >
+          Voltar
+        </Button>
+        
+        <div className="flex gap-2">
+          {activeStep !== steps[steps.length - 1].id ? (
+            <Button onClick={goToNextStep} disabled={isSubmitting}>
+              Próximo
+            </Button>
+          ) : (
+            <Button 
+              onClick={handleSubmit} 
+              disabled={isSubmitting}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {isSubmitting ? "Enviando..." : "Cadastrar Animal"}
+            </Button>
+          )}
+        </div>
+      </CardFooter>
     </Card>
   );
 };

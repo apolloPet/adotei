@@ -31,8 +31,10 @@ serve(async (req) => {
       data: { user },
     } = await supabaseClient.auth.getUser();
 
+    // Handle unauthenticated requests - ensure we return 401 for unauthorized access
     if (!user) {
-      return new Response(JSON.stringify({ error: 'Não autorizado' }), {
+      console.error('Unauthorized: No user found in request');
+      return new Response(JSON.stringify({ error: 'Não autorizado', status: 401 }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
       });
@@ -127,13 +129,16 @@ serve(async (req) => {
 
     // POST /animals - Create a new animal
     if (req.method === 'POST' && !animalId) {
+      console.log('Creating new animal...');
       // Parse request body
       const requestData = await req.json();
+      console.log('Request data:', JSON.stringify(requestData));
 
       // Validate required fields
-      const requiredFields = ['nome', 'idade', 'tipo', 'porte', 'sexo', 'castrado'];
+      const requiredFields = ['nome', 'idade', 'tipo', 'porte', 'sexo'];
       for (const field of requiredFields) {
         if (!requestData[field]) {
+          console.error(`Missing required field: ${field}`);
           return new Response(JSON.stringify({ error: `Campo obrigatório: ${field}` }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 400,
@@ -143,6 +148,7 @@ serve(async (req) => {
 
       // Additional validation
       if (typeof requestData.idade !== 'number' || isNaN(requestData.idade) || requestData.idade < 0) {
+        console.error('Invalid age value:', requestData.idade);
         return new Response(JSON.stringify({ error: 'Idade deve ser um número positivo' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
@@ -150,19 +156,26 @@ serve(async (req) => {
       }
       
       if (requestData.descricao && requestData.descricao.length > 200) {
+        console.error('Description too long:', requestData.descricao.length);
         return new Response(JSON.stringify({ error: 'Descrição deve ter no máximo 200 caracteres' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
         });
       }
 
-      // Set responsible_id to current user if not provided and user is not admin
+      // Set responsible_id to current user if not provided
       if (!requestData.responsavel_id) {
         requestData.responsavel_id = user.id;
+        console.log(`Setting responsavel_id to current user: ${user.id}`);
+      }
+
+      // Remove castrado field if it doesn't exist (was mentioned as needing removal)
+      if (requestData.hasOwnProperty('castrado') && requestData.castrado === undefined) {
+        delete requestData.castrado;
       }
 
       // Check for duplicated animal with same name and responsible
-      if (requestData.responsavel_id) {
+      if (requestData.responsavel_id && requestData.nome) {
         const { data: existingAnimals, error: checkError } = await supabaseClient
           .from('animals')
           .select('id')
@@ -178,6 +191,7 @@ serve(async (req) => {
         }
 
         if (existingAnimals && existingAnimals.length > 0) {
+          console.error('Duplicate animal found');
           return new Response(JSON.stringify({ error: 'Já existe um animal com esse nome para este responsável' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 400,
@@ -185,6 +199,7 @@ serve(async (req) => {
         }
       }
 
+      console.log('Inserting animal into database...');
       // Insert the new animal
       const { data, error } = await supabaseClient
         .from('animals')
@@ -199,6 +214,7 @@ serve(async (req) => {
         });
       }
 
+      console.log('Animal created successfully:', data);
       return new Response(JSON.stringify(data[0]), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 201,

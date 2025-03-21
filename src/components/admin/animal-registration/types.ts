@@ -1,54 +1,44 @@
 
 export interface AnimalFormData {
+  // Basic info
   name: string;
-  type: 'dog' | 'cat' | 'other';
+  type: string;
   breed: string;
   age: string;
-  gender: 'male' | 'female';
-  size: 'small' | 'medium' | 'large';
+  gender: string;
+  size: string;
   description: string;
+  
+  // Health info
+  vaccinationStatus: string;
+  veterinaryInfo: string;
+  healthConditions: string;
+  specialNeeds: boolean;
+  specialNeedsDescription: string;
+  tutorName: string;
+  tutorContact: string;
+  
+  // Characteristics
+  temperament: string[];
+  goodWith: string[];
+  energyLevel: string;
+  trainability: string;
+  
+  // Images
+  images: File[];
+  previewImages: string[];
+  
+  // Location and staff
   location: string;
-  characteristics: string[];
-  requirements: string[];
-  responsibleId: string;
-  caretaker?: {
-    name: string;
-    role: string;
-    phone: string;
-    email: string;
-    notes?: string;
-  };
+  responsible: string;
+  responsibleContact: string;
+  
+  // Requirements
+  adoptionRequirements: string[];
 }
 
-export const defaultFormData: AnimalFormData = {
-  name: '',
-  type: 'dog',
-  breed: '',
-  age: '',
-  gender: 'male',
-  size: 'medium',
-  description: '',
-  location: '',
-  characteristics: [],
-  requirements: [],
-  responsibleId: '',
-  caretaker: {
-    name: '',
-    role: '',
-    phone: '',
-    email: '',
-    notes: ''
-  }
-};
-
-// Mock staff members for the dropdown
-export const staffMembers = [
-  { id: "staff-1", name: "Mariana Silva" },
-  { id: "staff-2", name: "Lucas Pereira" },
-  { id: "staff-3", name: "Camila Santos" },
-  { id: "staff-4", name: "Rafael Oliveira" },
-  { id: "staff-5", name: "Juliana Costa" }
-];
-
-export const commonCharacteristics = ['Dócil', 'Vacinado', 'Sociável', 'Brincalhão', 'Calmo', 'Independente'];
-export const commonRequirements = ['Tela nas janelas', 'Ambiente calmo', 'Passeios diários', 'Visitas de acompanhamento', 'Sem outros animais'];
+export interface FormStep {
+  id: string;
+  title: string;
+  description: string;
+}
