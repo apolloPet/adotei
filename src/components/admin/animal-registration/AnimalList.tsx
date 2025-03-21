@@ -19,6 +19,7 @@ const AnimalList = () => {
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean, id: string | null }>({ open: false, id: null });
 
   useEffect(() => {
+    console.log('AnimalList component mounted - fetching animals');
     fetchAnimals();
   }, []);
 

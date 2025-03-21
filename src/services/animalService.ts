@@ -35,6 +35,7 @@ export interface AnimalCreateData {
 
 // Helper function to convert database type to interface type
 const dbAnimalToAnimal = (dbAnimal: any): Animal => {
+  console.log('Converting DB animal to interface:', dbAnimal);
   return {
     id: dbAnimal.id,
     nome: dbAnimal.nome,
@@ -77,22 +78,27 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
       }
     }
 
+    // Prepare animal data for insertion, ensuring arrays are properly handled
+    const animalForInsertion = {
+      nome: animalData.nome,
+      idade: animalData.idade,
+      tipo: animalData.tipo,
+      porte: animalData.porte,
+      sexo: animalData.sexo, 
+      castrado: animalData.castrado,
+      vacinas: animalData.vacinas || [],
+      responsavel_id: animalData.responsavel_id,
+      descricao: animalData.descricao,
+      fotoprincipal: animalData.fotoPrincipal,
+      fotos: animalData.fotos || []
+    };
+    
+    console.log('Preparing to insert animal with data:', animalForInsertion);
+
     // Insert the new animal
     const { data, error } = await supabase
       .from('animals')
-      .insert({
-        nome: animalData.nome,
-        idade: animalData.idade,
-        tipo: animalData.tipo,
-        porte: animalData.porte,
-        sexo: animalData.sexo, 
-        castrado: animalData.castrado,
-        vacinas: animalData.vacinas || [],
-        responsavel_id: animalData.responsavel_id,
-        descricao: animalData.descricao,
-        fotoprincipal: animalData.fotoPrincipal,
-        fotos: animalData.fotos || []
-      })
+      .insert(animalForInsertion)
       .select();
 
     if (error) {
@@ -100,8 +106,13 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
       throw new Error(error.message);
     }
 
-    console.log('Animal created successfully:', data);
-    return data?.[0] ? dbAnimalToAnimal(data[0]) : null;
+    if (!data || data.length === 0) {
+      console.error('No data returned after inserting animal');
+      throw new Error('Falha ao criar animal: Nenhum dado retornado');
+    }
+
+    console.log('Animal created successfully. Raw data:', data);
+    return data[0] ? dbAnimalToAnimal(data[0]) : null;
   } catch (error) {
     console.error('Error in createAnimal:', error);
     if (error instanceof Error) {
@@ -121,6 +132,8 @@ export const getAnimals = async (filters?: {
   responsavel_id?: string;
 }): Promise<Animal[]> => {
   try {
+    console.log('Getting animals with filters:', filters);
+    
     let query = supabase
       .from('animals')
       .select('*');
@@ -148,7 +161,17 @@ export const getAnimals = async (filters?: {
       throw new Error(error.message);
     }
 
-    return data ? data.map(dbAnimalToAnimal) : [];
+    console.log('Animals fetched successfully. Raw data:', data);
+    
+    if (!data || data.length === 0) {
+      console.log('No animals found with the given filters');
+      return [];
+    }
+    
+    const mappedAnimals = data.map(dbAnimalToAnimal);
+    console.log('Mapped animals:', mappedAnimals);
+    
+    return mappedAnimals;
   } catch (error) {
     console.error('Error in getAnimals:', error);
     if (error instanceof Error) {
