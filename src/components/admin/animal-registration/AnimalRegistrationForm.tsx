@@ -76,7 +76,7 @@ const AnimalRegistrationForm = () => {
     goodWith: [],
     energyLevel: "medium",
     trainability: "moderate",
-    characteristics: [], // Added this field initialization
+    characteristics: [], // Ensure this is initialized
     
     // Images
     images: [],
@@ -89,7 +89,7 @@ const AnimalRegistrationForm = () => {
     
     // Requirements
     adoptionRequirements: [],
-    requirements: [] // Added this field initialization
+    requirements: [] // Ensure this is initialized
   });
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -186,7 +186,7 @@ const AnimalRegistrationForm = () => {
       
       toast.success("Animal cadastrado com sucesso!");
       
-      // Reset form
+      // Reset form - Make sure to include all required fields
       setFormData({
         name: "",
         type: "dog",
@@ -206,12 +206,14 @@ const AnimalRegistrationForm = () => {
         goodWith: [],
         energyLevel: "medium",
         trainability: "moderate",
+        characteristics: [], // Add this missing field
         images: [],
         previewImages: [],
         location: "",
         responsible: "",
         responsibleContact: "",
-        adoptionRequirements: []
+        adoptionRequirements: [],
+        requirements: [] // Add this missing field
       });
       
       // Reset to first step
