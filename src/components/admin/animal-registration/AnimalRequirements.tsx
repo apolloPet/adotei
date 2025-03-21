@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,19 +9,30 @@ import { AnimalFormData, commonRequirements } from "./types";
 
 interface AnimalRequirementsProps {
   formData: AnimalFormData;
-  customRequirement: string;
-  setCustomRequirement: (value: string) => void;
-  handleRequirementToggle: (requirement: string) => void;
-  addCustomRequirement: () => void;
+  handleArrayChange: (name: string, values: string[]) => void;
 }
 
 const AnimalRequirements = ({ 
   formData, 
-  customRequirement, 
-  setCustomRequirement,
-  handleRequirementToggle,
-  addCustomRequirement
+  handleArrayChange
 }: AnimalRequirementsProps) => {
+  const [customRequirement, setCustomRequirement] = useState("");
+
+  const handleRequirementToggle = (requirement: string) => {
+    const updatedRequirements = formData.requirements.includes(requirement)
+      ? formData.requirements.filter(req => req !== requirement)
+      : [...formData.requirements, requirement];
+    
+    handleArrayChange('requirements', updatedRequirements);
+  };
+
+  const addCustomRequirement = () => {
+    if (customRequirement.trim() && !formData.requirements.includes(customRequirement.trim())) {
+      handleArrayChange('requirements', [...formData.requirements, customRequirement.trim()]);
+      setCustomRequirement("");
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Label>Requisitos para Adoção</Label>

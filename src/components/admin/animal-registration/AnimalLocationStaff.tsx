@@ -32,7 +32,7 @@ const AnimalLocationStaff = ({
       <div className="space-y-2">
         <Label htmlFor="responsible">Responsável na ONG</Label>
         <Select 
-          value={formData.responsibleId} 
+          value={formData.responsible} 
           onValueChange={handleResponsibleChange}
         >
           <SelectTrigger>

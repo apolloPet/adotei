@@ -4,22 +4,45 @@ import { Upload, X } from "lucide-react";
 
 interface AnimalImagesProps {
   images: File[];
-  imagePreviewUrls: string[];
-  handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  removeImage: (index: number) => void;
+  previewImages: string[]; 
+  onChange: (images: File[], previews: string[]) => void;
 }
 
 const AnimalImages = ({ 
   images, 
-  imagePreviewUrls, 
-  handleImageUpload, 
-  removeImage 
+  previewImages, 
+  onChange 
 }: AnimalImagesProps) => {
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files);
+      const maxSelection = 5 - images.length;
+      const newImages = selectedFiles.slice(0, maxSelection);
+      
+      const newImagePreviews = newImages.map(file => URL.createObjectURL(file));
+      
+      onChange([...images, ...newImages], [...previewImages, ...newImagePreviews]);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const updatedImages = [...images];
+    const updatedPreviews = [...previewImages];
+    
+    // Remove image URL from memory to prevent memory leaks
+    URL.revokeObjectURL(previewImages[index]);
+    
+    updatedImages.splice(index, 1);
+    updatedPreviews.splice(index, 1);
+    
+    onChange(updatedImages, updatedPreviews);
+  };
+  
   return (
     <div className="space-y-4">
       <Label>Fotos do Animal*</Label>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {imagePreviewUrls.map((url, index) => (
+        {previewImages.map((url, index) => (
           <div key={index} className="relative aspect-square bg-muted rounded-md overflow-hidden">
             <img 
               src={url} 
@@ -36,7 +59,7 @@ const AnimalImages = ({
           </div>
         ))}
         
-        {imagePreviewUrls.length < 5 && (
+        {previewImages.length < 5 && (
           <label className="aspect-square border-2 border-dashed rounded-md border-input flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50">
             <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">Upload</span>

@@ -23,6 +23,7 @@ export interface AnimalFormData {
   goodWith: string[];
   energyLevel: string;
   trainability: string;
+  characteristics: string[]; // Added this field
   
   // Images
   images: File[];
@@ -35,6 +36,7 @@ export interface AnimalFormData {
   
   // Requirements
   adoptionRequirements: string[];
+  requirements: string[]; // Added this field
 }
 
 export interface FormStep {
@@ -42,3 +44,39 @@ export interface FormStep {
   title: string;
   description: string;
 }
+
+// Common characteristics for animal selection
+export const commonCharacteristics = [
+  "Brincalhão",
+  "Calmo",
+  "Carinhoso",
+  "Curioso",
+  "Independente",
+  "Sociável",
+  "Protetor",
+  "Tímido",
+  "Ativo",
+  "Dorminhoco",
+  "Adaptável",
+  "Territorial"
+];
+
+// Common requirements for adoption
+export const commonRequirements = [
+  "Visita prévia",
+  "Termo de adoção assinado",
+  "Casa telada",
+  "Não ter crianças pequenas",
+  "Avaliação financeira",
+  "Transporte adequado",
+  "Disponibilidade para acompanhamento",
+  "Ambiente adequado"
+];
+
+// Staff members for selection
+export const staffMembers = [
+  { id: "1", name: "Ana Silva" },
+  { id: "2", name: "Carlos Oliveira" },
+  { id: "3", name: "Mariana Santos" },
+  { id: "4", name: "Pedro Mendes" }
+];

@@ -76,6 +76,7 @@ const AnimalRegistrationForm = () => {
     goodWith: [],
     energyLevel: "medium",
     trainability: "moderate",
+    characteristics: [], // Added this field initialization
     
     // Images
     images: [],
@@ -87,7 +88,8 @@ const AnimalRegistrationForm = () => {
     responsibleContact: "",
     
     // Requirements
-    adoptionRequirements: []
+    adoptionRequirements: [],
+    requirements: [] // Added this field initialization
   });
   
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -112,6 +114,13 @@ const AnimalRegistrationForm = () => {
       ...prev,
       images,
       previewImages: previews
+    }));
+  };
+
+  const handleResponsibleChange = (value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      responsible: value
     }));
   };
   
@@ -273,13 +282,14 @@ const AnimalRegistrationForm = () => {
               <AnimalLocationStaff
                 formData={formData}
                 handleInputChange={handleInputChange}
+                handleResponsibleChange={handleResponsibleChange}
               />
             </TabsContent>
             
             <TabsContent value="requirements">
               <AnimalRequirements
-                requirements={formData.adoptionRequirements}
-                onChange={(requirements) => handleArrayChange('adoptionRequirements', requirements)}
+                formData={formData}
+                handleArrayChange={handleArrayChange}
               />
             </TabsContent>
           </div>

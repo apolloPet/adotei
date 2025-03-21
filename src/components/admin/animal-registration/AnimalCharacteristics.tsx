@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,19 +9,32 @@ import { AnimalFormData, commonCharacteristics } from "./types";
 
 interface AnimalCharacteristicsProps {
   formData: AnimalFormData;
-  customCharacteristic: string;
-  setCustomCharacteristic: (value: string) => void;
-  handleCharacteristicToggle: (characteristic: string) => void;
-  addCustomCharacteristic: () => void;
+  handleArrayChange: (name: string, values: string[]) => void;
+  handleRadioChange: (name: string, value: string) => void;
 }
 
 const AnimalCharacteristics = ({ 
   formData, 
-  customCharacteristic, 
-  setCustomCharacteristic,
-  handleCharacteristicToggle,
-  addCustomCharacteristic
+  handleArrayChange,
+  handleRadioChange
 }: AnimalCharacteristicsProps) => {
+  const [customCharacteristic, setCustomCharacteristic] = useState("");
+
+  const handleCharacteristicToggle = (characteristic: string) => {
+    const updatedCharacteristics = formData.characteristics.includes(characteristic)
+      ? formData.characteristics.filter(char => char !== characteristic)
+      : [...formData.characteristics, characteristic];
+    
+    handleArrayChange('characteristics', updatedCharacteristics);
+  };
+
+  const addCustomCharacteristic = () => {
+    if (customCharacteristic.trim() && !formData.characteristics.includes(customCharacteristic.trim())) {
+      handleArrayChange('characteristics', [...formData.characteristics, customCharacteristic.trim()]);
+      setCustomCharacteristic("");
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Label>Características</Label>
