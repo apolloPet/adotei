@@ -1,8 +1,6 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { Json } from '@/lib/database.types';
-import { useAuth } from '@/hooks/auth';
 
 export interface Animal {
   id: string;
@@ -54,18 +52,6 @@ const dbAnimalToAnimal = (dbAnimal: any): Animal => {
     fotos: Array.isArray(dbAnimal.fotos) ? dbAnimal.fotos : 
            (dbAnimal.fotos as Json) ? (dbAnimal.fotos as any) : []
   };
-};
-
-// Get current user's ID from local storage for demo mode
-const getCurrentUserId = (): string | null => {
-  // For demo admin, use a hardcoded ID
-  if (localStorage.getItem("isAdmin") === "true") {
-    return "00000000-0000-0000-0000-000000000000"; // Demo admin ID
-  }
-  
-  // Try to get from auth session
-  const session = supabase.auth.session();
-  return session?.user?.id || null;
 };
 
 // Create a new animal
