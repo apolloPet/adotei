@@ -2,6 +2,7 @@
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { Json } from '@/lib/database.types';
+import { useAuth } from '@/hooks/auth';
 
 export interface Animal {
   id: string;
@@ -55,10 +56,41 @@ const dbAnimalToAnimal = (dbAnimal: any): Animal => {
   };
 };
 
+// Get current user's ID from local storage for demo mode
+const getCurrentUserId = (): string | null => {
+  // For demo admin, use a hardcoded ID
+  if (localStorage.getItem("isAdmin") === "true") {
+    return "00000000-0000-0000-0000-000000000000"; // Demo admin ID
+  }
+  
+  // Try to get from auth session
+  const session = supabase.auth.session();
+  return session?.user?.id || null;
+};
+
 // Create a new animal
 export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal | null> => {
   try {
     console.log('Creating animal with data:', animalData);
+    
+    // IMPORTANT: Set the responsavel_id to the current user if not provided
+    // This is critical for RLS policies
+    if (!animalData.responsavel_id) {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      
+      if (userId) {
+        animalData.responsavel_id = userId;
+        console.log(`Setting responsavel_id to current authenticated user: ${userId}`);
+      } else if (localStorage.getItem("isAdmin") === "true") {
+        // For demo admin mode, use a hardcoded ID
+        animalData.responsavel_id = "00000000-0000-0000-0000-000000000000";
+        console.log(`Setting responsavel_id to demo admin: ${animalData.responsavel_id}`);
+      } else {
+        console.error('No user ID available for animal creation');
+        throw new Error('Você precisa estar autenticado para cadastrar um animal');
+      }
+    }
     
     // Check for duplicated animal with same name and responsible
     if (animalData.responsavel_id) {
@@ -95,24 +127,22 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
     
     console.log('Preparing to insert animal with data:', animalForInsertion);
 
-    // Insert the new animal
+    // Use RPC call for more control
     const { data, error } = await supabase
-      .from('animals')
-      .insert(animalForInsertion)
-      .select();
+      .rpc('create_animal', animalForInsertion);
 
     if (error) {
       console.error('Error creating animal:', error);
       throw new Error(error.message);
     }
 
-    if (!data || data.length === 0) {
+    if (!data) {
       console.error('No data returned after inserting animal');
       throw new Error('Falha ao criar animal: Nenhum dado retornado');
     }
 
     console.log('Animal created successfully. Raw data:', data);
-    return data[0] ? dbAnimalToAnimal(data[0]) : null;
+    return data ? dbAnimalToAnimal(data) : null;
   } catch (error) {
     console.error('Error in createAnimal:', error);
     if (error instanceof Error) {

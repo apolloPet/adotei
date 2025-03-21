@@ -1,4 +1,8 @@
 
 project_id = "jwbcrddblmiurmeziszp"
+
+[functions.cost-simulator]
+verify_jwt = true
+
 [functions.animals]
 verify_jwt = true
