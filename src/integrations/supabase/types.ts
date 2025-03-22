@@ -385,6 +385,7 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          is_active: boolean | null
           metric_type: string
           partnership_id: string
           period_end: string
@@ -395,6 +396,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           metric_type: string
           partnership_id: string
           period_end: string
@@ -405,6 +407,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          is_active?: boolean | null
           metric_type?: string
           partnership_id?: string
           period_end?: string
@@ -433,6 +436,7 @@ export type Database = {
           created_at: string | null
           email: string
           id: string
+          is_active: boolean | null
           notes: string | null
           partnership_type: string
           phone: string
@@ -449,6 +453,7 @@ export type Database = {
           created_at?: string | null
           email: string
           id?: string
+          is_active?: boolean | null
           notes?: string | null
           partnership_type: string
           phone: string
@@ -465,6 +470,7 @@ export type Database = {
           created_at?: string | null
           email?: string
           id?: string
+          is_active?: boolean | null
           notes?: string | null
           partnership_type?: string
           phone?: string
@@ -852,6 +858,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          is_active: boolean | null
           key: string
           updated_at: string
           value: Json
@@ -862,6 +869,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_active?: boolean | null
           key: string
           updated_at?: string
           value: Json
@@ -872,6 +880,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_active?: boolean | null
           key?: string
           updated_at?: string
           value?: Json
@@ -885,6 +894,7 @@ export type Database = {
           created_at: string | null
           date: string
           id: string
+          is_active: boolean | null
           new_users: number
           pending_adoptions: number
           rejected_adoptions: number
@@ -897,6 +907,7 @@ export type Database = {
           created_at?: string | null
           date: string
           id?: string
+          is_active?: boolean | null
           new_users: number
           pending_adoptions: number
           rejected_adoptions: number
@@ -909,6 +920,7 @@ export type Database = {
           created_at?: string | null
           date?: string
           id?: string
+          is_active?: boolean | null
           new_users?: number
           pending_adoptions?: number
           rejected_adoptions?: number
