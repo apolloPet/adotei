@@ -101,13 +101,13 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
     // Check if we're using admin demo mode and need to use edge function
     if (localStorage.getItem("isAdmin") === "true" && !session?.user) {
       try {
-        // Get the API URL and key for the edge function call
+        // Get the API URL from environment variable or use the fallback
         const apiUrl = import.meta.env.VITE_SUPABASE_URL || 'https://jwbcrddblmiurmeziszp.supabase.co';
         const apiKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
         
         if (!apiKey) {
           console.error('Missing API key for edge function call');
-          throw new Error('Configuração incompleta para cadastro de animal');
+          throw new Error('Configuração incompleta para cadastro de animal - API key não encontrada');
         }
         
         console.log(`Calling edge function at ${apiUrl}/functions/v1/animals`);
@@ -123,9 +123,15 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
         });
         
         if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Error from edge function:', errorData);
-          throw new Error(errorData.error || 'Falha ao criar animal via edge function');
+          let errorMessage = 'Falha ao criar animal via edge function';
+          try {
+            const errorData = await response.json();
+            console.error('Error from edge function:', errorData);
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            console.error('Could not parse error response:', e);
+          }
+          throw new Error(errorMessage);
         }
         
         const data = await response.json();

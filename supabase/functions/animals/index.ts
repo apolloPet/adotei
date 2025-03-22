@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -29,10 +28,32 @@ serve(async (req) => {
     console.log('SUPABASE_SERVICE_ROLE_KEY available:', !!supabaseServiceRoleKey);
     console.log('SUPABASE_ANON_KEY available:', !!supabaseAnonKey);
     
-    if (!supabaseUrl || !supabaseServiceRoleKey || !supabaseAnonKey) {
-      console.error('Missing required environment variables');
+    if (!supabaseUrl) {
+      console.error('Missing SUPABASE_URL environment variable');
       return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
+        JSON.stringify({ error: 'Configuração incompleta para cadastro de animal - URL não configurada' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 500 
+        }
+      );
+    }
+    
+    if (!supabaseServiceRoleKey) {
+      console.error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
+      return new Response(
+        JSON.stringify({ error: 'Configuração incompleta para cadastro de animal - Service role key não configurada' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 500 
+        }
+      );
+    }
+    
+    if (!supabaseAnonKey) {
+      console.error('Missing SUPABASE_ANON_KEY environment variable');
+      return new Response(
+        JSON.stringify({ error: 'Configuração incompleta para cadastro de animal - Anon key não configurada' }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
           status: 500 
@@ -222,25 +243,41 @@ serve(async (req) => {
       console.log('Inserting animal into database...');
       console.log('Using client:', isAdminMode ? 'Admin client (bypassing RLS)' : 'Regular client');
       
-      // Insert the new animal using the appropriate client
-      const { data, error } = await clientToUse
-        .from('animals')
-        .insert(requestData)
-        .select();
+      try {
+        // Insert the new animal using the appropriate client
+        const { data, error } = await clientToUse
+          .from('animals')
+          .insert(requestData)
+          .select();
 
-      if (error) {
-        console.error('Error creating animal:', error);
-        return new Response(JSON.stringify({ error: error.message }), {
+        if (error) {
+          console.error('Error creating animal:', error);
+          return new Response(JSON.stringify({ error: error.message }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          });
+        }
+
+        if (!data || data.length === 0) {
+          console.error('No data returned after insertion');
+          return new Response(JSON.stringify({ error: 'Nenhum dado retornado após inserção' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          });
+        }
+
+        console.log('Animal created successfully:', data);
+        return new Response(JSON.stringify(data[0]), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 201,
+        });
+      } catch (dbError) {
+        console.error('Unexpected database error:', dbError);
+        return new Response(JSON.stringify({ error: 'Erro ao salvar o animal no banco de dados' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,
         });
       }
-
-      console.log('Animal created successfully:', data);
-      return new Response(JSON.stringify(data[0]), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 201,
-      });
     }
 
     // PUT /animals/:id - Update an animal
