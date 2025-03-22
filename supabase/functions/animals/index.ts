@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -14,14 +15,39 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Edge function invoked with method:', req.method);
+    console.log('Request URL:', req.url);
+    console.log('Auth header present:', !!req.headers.get('Authorization'));
+    
+    // Get Supabase URL and service role key from environment variables
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    
+    // Log environment variable status (without exposing actual values)
+    console.log('SUPABASE_URL available:', !!supabaseUrl);
+    console.log('SUPABASE_SERVICE_ROLE_KEY available:', !!supabaseServiceRoleKey);
+    console.log('SUPABASE_ANON_KEY available:', !!supabaseAnonKey);
+    
+    if (!supabaseUrl || !supabaseServiceRoleKey || !supabaseAnonKey) {
+      console.error('Missing required environment variables');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
+          status: 500 
+        }
+      );
+    }
+
     // Create a Supabase client with the Admin role to bypass RLS
     // When called from demo mode
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      supabaseUrl,
+      supabaseServiceRoleKey,
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: req.headers.get('Authorization') ?? '' },
         },
         auth: {
           autoRefreshToken: false,
@@ -32,11 +58,11 @@ serve(async (req) => {
 
     // Create a regular client with user auth context
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      supabaseUrl,
+      supabaseAnonKey,
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: req.headers.get('Authorization') ?? '' },
         },
       }
     );
@@ -46,8 +72,13 @@ serve(async (req) => {
       data: { user },
     } = await supabaseClient.auth.getUser();
 
+    console.log('User authenticated:', !!user);
+    
     // Determine if we're in admin mode without user session
-    const isAdminMode = !user && req.headers.get('Authorization')?.includes(Deno.env.get('SUPABASE_ANON_KEY') || '');
+    const authHeader = req.headers.get('Authorization') || '';
+    const isAdminMode = !user && authHeader.includes(supabaseAnonKey);
+    
+    console.log('Is admin mode:', isAdminMode);
     
     // Choose the appropriate client based on context
     const clientToUse = isAdminMode ? supabaseAdmin : supabaseClient;
@@ -55,6 +86,9 @@ serve(async (req) => {
     const url = new URL(req.url);
     const path = url.pathname.split('/').filter(Boolean);
     const animalId = path.length > 1 ? path[1] : null;
+
+    console.log('Request path:', path);
+    console.log('Animal ID from path:', animalId);
 
     // Handle different endpoints based on HTTP method and path
     // GET /animals - List all animals (with optional filters)
@@ -66,7 +100,9 @@ serve(async (req) => {
       const porte = params.get('porte');
       const responsavel_id = params.get('responsavel_id');
 
-      let query = supabaseClient.from('animals').select('*');
+      console.log('Filtering parameters:', { nome, tipo, porte, responsavel_id });
+
+      let query = clientToUse.from('animals').select('*');
 
       // Apply filters if provided
       if (nome) query = query.ilike('nome', `%${nome}%`);
@@ -79,6 +115,7 @@ serve(async (req) => {
         query = query.eq('responsavel_id', user.id);
       }
 
+      console.log('Executing GET animals query...');
       const { data, error } = await query.order('data_cadastro', { ascending: false });
 
       if (error) {
@@ -89,6 +126,7 @@ serve(async (req) => {
         });
       }
 
+      console.log(`GET animals successful: ${data?.length} animals found`);
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -97,17 +135,19 @@ serve(async (req) => {
 
     // GET /animals/:id - Get a specific animal
     if (req.method === 'GET' && animalId) {
-      let query = supabaseClient.from('animals').select('*').eq('id', animalId);
+      let query = clientToUse.from('animals').select('*').eq('id', animalId);
 
       // If not admin, only allow access to their own animals
       if (!isAdminMode && user) {
         query = query.eq('responsavel_id', user.id);
       }
 
+      console.log('Executing GET single animal query...');
       const { data, error } = await query.single();
 
       if (error) {
         if (error.code === 'PGRST116') {
+          console.log('Animal not found:', animalId);
           return new Response(JSON.stringify({ error: 'Animal não encontrado' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 404,
@@ -120,6 +160,7 @@ serve(async (req) => {
         });
       }
 
+      console.log('GET animal successful:', animalId);
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -129,6 +170,7 @@ serve(async (req) => {
     // POST /animals - Create a new animal
     if (req.method === 'POST' && !animalId) {
       console.log('Creating new animal...');
+      
       // Parse request body
       const requestData = await req.json();
       console.log('Request data:', JSON.stringify(requestData));
@@ -204,17 +246,19 @@ serve(async (req) => {
     // PUT /animals/:id - Update an animal
     if (req.method === 'PUT' && animalId) {
       // Check if animal exists and user has permission
-      let query = supabaseClient.from('animals').select('*').eq('id', animalId);
+      let query = clientToUse.from('animals').select('*').eq('id', animalId);
 
       // If not admin, only allow access to their own animals
       if (!isAdminMode && user) {
         query = query.eq('responsavel_id', user.id);
       }
 
+      console.log('Checking if animal exists before update...');
       const { data: existingAnimal, error: fetchError } = await query.single();
 
       if (fetchError) {
         if (fetchError.code === 'PGRST116') {
+          console.log('Animal not found or permission denied:', animalId);
           return new Response(JSON.stringify({ error: 'Animal não encontrado ou sem permissão' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 404,
@@ -229,6 +273,7 @@ serve(async (req) => {
 
       // Parse request body
       const requestData = await req.json();
+      console.log('Update data:', JSON.stringify(requestData));
 
       // Don't allow changing the responsavel_id if user is not admin
       if (!isAdminMode && user && requestData.responsavel_id && requestData.responsavel_id !== user.id) {
@@ -236,7 +281,8 @@ serve(async (req) => {
       }
 
       // Update animal
-      const { data, error } = await supabaseClient
+      console.log('Updating animal:', animalId);
+      const { data, error } = await clientToUse
         .from('animals')
         .update(requestData)
         .eq('id', animalId)
@@ -250,6 +296,7 @@ serve(async (req) => {
         });
       }
 
+      console.log('Animal updated successfully');
       return new Response(JSON.stringify(data[0]), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -259,17 +306,19 @@ serve(async (req) => {
     // DELETE /animals/:id - Delete an animal
     if (req.method === 'DELETE' && animalId) {
       // Check if animal exists and user has permission
-      let query = supabaseClient.from('animals').select('*').eq('id', animalId);
+      let query = clientToUse.from('animals').select('*').eq('id', animalId);
 
       // If not admin, only allow access to their own animals
       if (!isAdminMode && user) {
         query = query.eq('responsavel_id', user.id);
       }
 
+      console.log('Checking if animal exists before deletion...');
       const { data: existingAnimal, error: fetchError } = await query.single();
 
       if (fetchError) {
         if (fetchError.code === 'PGRST116') {
+          console.log('Animal not found or permission denied:', animalId);
           return new Response(JSON.stringify({ error: 'Animal não encontrado ou sem permissão' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 404,
@@ -283,7 +332,8 @@ serve(async (req) => {
       }
 
       // Delete animal
-      const { error } = await supabaseClient
+      console.log('Deleting animal:', animalId);
+      const { error } = await clientToUse
         .from('animals')
         .delete()
         .eq('id', animalId);
@@ -296,6 +346,7 @@ serve(async (req) => {
         });
       }
 
+      console.log('Animal deleted successfully');
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -303,13 +354,14 @@ serve(async (req) => {
     }
 
     // Endpoint not found
+    console.log('Endpoint not found');
     return new Response(JSON.stringify({ error: 'Endpoint não encontrado' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 404,
     });
   } catch (err) {
     console.error('Unexpected error:', err);
-    return new Response(JSON.stringify({ error: 'Erro interno no servidor' }), {
+    return new Response(JSON.stringify({ error: 'Erro interno no servidor', details: err.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });

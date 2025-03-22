@@ -100,30 +100,41 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
 
     // Check if we're using admin demo mode and need to use edge function
     if (localStorage.getItem("isAdmin") === "true" && !session?.user) {
-      // Get the API URL and key for the edge function call
-      // Instead of accessing protected properties, use environment variables or build a URL manually
-      const apiUrl = import.meta.env.VITE_SUPABASE_URL || 'https://jwbcrddblmiurmeziszp.supabase.co';
-      const apiKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      // For demo admin, use the edge function that has bypass_rls capability
-      const response = await fetch(`${apiUrl}/functions/v1/animals`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
-        body: JSON.stringify(animalForInsertion)
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('Error from edge function:', errorData);
-        throw new Error(errorData.error || 'Falha ao criar animal via edge function');
+      try {
+        // Get the API URL and key for the edge function call
+        const apiUrl = import.meta.env.VITE_SUPABASE_URL || 'https://jwbcrddblmiurmeziszp.supabase.co';
+        const apiKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        
+        if (!apiKey) {
+          console.error('Missing API key for edge function call');
+          throw new Error('Configuração incompleta para cadastro de animal');
+        }
+        
+        console.log(`Calling edge function at ${apiUrl}/functions/v1/animals`);
+        
+        // For demo admin, use the edge function that has bypass_rls capability
+        const response = await fetch(`${apiUrl}/functions/v1/animals`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify(animalForInsertion)
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Error from edge function:', errorData);
+          throw new Error(errorData.error || 'Falha ao criar animal via edge function');
+        }
+        
+        const data = await response.json();
+        console.log('Animal created successfully via edge function. Raw data:', data);
+        return data ? dbAnimalToAnimal(data) : null;
+      } catch (error) {
+        console.error('Error with edge function call:', error);
+        throw error;
       }
-      
-      const data = await response.json();
-      console.log('Animal created successfully via edge function. Raw data:', data);
-      return data ? dbAnimalToAnimal(data) : null;
     } else {
       // For authenticated users, use the regular Supabase client
       const { data, error } = await supabase
