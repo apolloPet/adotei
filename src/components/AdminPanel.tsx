@@ -12,16 +12,10 @@ import {
   PawPrint, 
   Settings, 
   Users, 
-  Handshake, 
-  ShieldCheck, 
-  Sliders,
-  BarChart, 
-  Bell 
+  ShieldCheck
 } from 'lucide-react';
-import PartnershipInterest from './admin/PartnershipInterest';
 import { UsersList } from './admin/users';
 import AdminUserManagement from './admin/AdminUserManagement';
-import SystemParametersManager from './admin/SystemParametersManager';
 import PaymentSettings from './admin/PaymentSettings';
 import AnimalRegistrationForm from './admin/animal-registration';
 
@@ -85,18 +79,6 @@ const AdminPanel = () => {
                 <PawPrint className="h-4 w-4" />
                 <span className="hidden sm:inline">Animais</span>
               </TabsTrigger>
-              <TabsTrigger value="partnerships" className="flex items-center gap-1">
-                <Handshake className="h-4 w-4" />
-                <span className="hidden sm:inline">Parcerias</span>
-              </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-1">
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Usuários</span>
-              </TabsTrigger>
-              <TabsTrigger value="analytics" className="flex items-center gap-1">
-                <BarChart className="h-4 w-4" />
-                <span className="hidden sm:inline">Métricas</span>
-              </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-1">
                 <Settings className="h-4 w-4" />
                 <span className="hidden sm:inline">Configurações</span>
@@ -111,77 +93,26 @@ const AdminPanel = () => {
               <AnimalRegistrationForm />
             </TabsContent>
             
-            <TabsContent value="partnerships">
-              <PartnershipInterest />
-            </TabsContent>
-            
-            <TabsContent value="users">
-              <UsersList />
-            </TabsContent>
-            
-            <TabsContent value="analytics">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Métricas e Análises</CardTitle>
-                  <CardDescription>
-                    Visualize estatísticas e tendências do sistema
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Tabs defaultValue="users" className="w-full">
-                    <TabsList className="w-full mb-4 overflow-x-auto flex flex-nowrap whitespace-nowrap">
-                      <TabsTrigger value="users">Usuários</TabsTrigger>
-                      <TabsTrigger value="adoptions">Adoções</TabsTrigger>
-                      <TabsTrigger value="followups">
-                        <div className="flex items-center gap-1">
-                          <Bell className="h-4 w-4" />
-                          <span className="hidden sm:inline">Acompanhamentos</span>
-                        </div>
-                      </TabsTrigger>
-                    </TabsList>
-                    
-                    <TabsContent value="users">
-                      <div className="grid gap-6">
-                        <UsersList />
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="adoptions">
-                      <div className="grid gap-6">
-                        <AdoptionManagement />
-                      </div>
-                    </TabsContent>
-                    
-                    <TabsContent value="followups">
-                      <div className="grid gap-6">
-                        <AdoptionManagement />
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
             <TabsContent value="settings">
-              <Tabs defaultValue="parameters" className="w-full">
+              <Tabs defaultValue="administrators" className="w-full">
                 <TabsList className="w-full mb-4 overflow-x-auto flex flex-nowrap whitespace-nowrap">
-                  <TabsTrigger value="parameters" className="flex items-center gap-1">
-                    <Sliders className="h-4 w-4" />
-                    <span className="hidden sm:inline">Parâmetros</span>
-                  </TabsTrigger>
                   <TabsTrigger value="administrators" className="flex items-center gap-1">
                     <ShieldCheck className="h-4 w-4" />
                     <span className="hidden sm:inline">Administradores</span>
                   </TabsTrigger>
+                  <TabsTrigger value="users" className="flex items-center gap-1">
+                    <Users className="h-4 w-4" />
+                    <span className="hidden sm:inline">Usuários</span>
+                  </TabsTrigger>
                   <TabsTrigger value="payment-settings">Configurações de Pagamento</TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="parameters">
-                  <SystemParametersManager />
-                </TabsContent>
-                
                 <TabsContent value="administrators">
                   <AdminUserManagement />
+                </TabsContent>
+                
+                <TabsContent value="users">
+                  <UsersList />
                 </TabsContent>
                 
                 <TabsContent value="payment-settings">
