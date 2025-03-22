@@ -100,12 +100,17 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
 
     // Check if we're using admin demo mode and need to use edge function
     if (localStorage.getItem("isAdmin") === "true" && !session?.user) {
+      // Get the API URL and key for the edge function call
+      // Instead of accessing protected properties, use environment variables or build a URL manually
+      const apiUrl = import.meta.env.VITE_SUPABASE_URL || 'https://jwbcrddblmiurmeziszp.supabase.co';
+      const apiKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
       // For demo admin, use the edge function that has bypass_rls capability
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/animals`, {
+      const response = await fetch(`${apiUrl}/functions/v1/animals`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabase.supabaseKey}`
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify(animalForInsertion)
       });
