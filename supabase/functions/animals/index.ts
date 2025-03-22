@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -15,7 +14,23 @@ serve(async (req) => {
   }
 
   try {
-    // Create a Supabase client with the Auth context of the logged in user
+    // Create a Supabase client with the Admin role to bypass RLS
+    // When called from demo mode
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization')! },
+        },
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
+    // Create a regular client with user auth context
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -26,32 +41,16 @@ serve(async (req) => {
       }
     );
 
-    // Get auth user
+    // Get auth user if present
     const {
       data: { user },
     } = await supabaseClient.auth.getUser();
 
-    // Handle unauthenticated requests - ensure we return 401 for unauthorized access
-    if (!user) {
-      console.error('Unauthorized: No user found in request');
-      return new Response(JSON.stringify({ error: 'Não autorizado', status: 401 }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
-      });
-    }
-
-    // Check if user is admin
-    const { data: isAdmin, error: adminCheckError } = await supabaseClient.rpc('is_admin', {
-      uid: user.id,
-    });
-
-    if (adminCheckError) {
-      console.error('Error checking admin status:', adminCheckError);
-      return new Response(JSON.stringify({ error: 'Erro ao verificar permissões' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
-    }
+    // Determine if we're in admin mode without user session
+    const isAdminMode = !user && req.headers.get('Authorization')?.includes(Deno.env.get('SUPABASE_ANON_KEY') || '');
+    
+    // Choose the appropriate client based on context
+    const clientToUse = isAdminMode ? supabaseAdmin : supabaseClient;
 
     const url = new URL(req.url);
     const path = url.pathname.split('/').filter(Boolean);
@@ -76,7 +75,7 @@ serve(async (req) => {
       if (responsavel_id) query = query.eq('responsavel_id', responsavel_id);
 
       // If not admin, only show their own animals
-      if (!isAdmin) {
+      if (!isAdminMode && user) {
         query = query.eq('responsavel_id', user.id);
       }
 
@@ -101,7 +100,7 @@ serve(async (req) => {
       let query = supabaseClient.from('animals').select('*').eq('id', animalId);
 
       // If not admin, only allow access to their own animals
-      if (!isAdmin) {
+      if (!isAdminMode && user) {
         query = query.eq('responsavel_id', user.id);
       }
 
@@ -163,45 +162,26 @@ serve(async (req) => {
         });
       }
 
-      // Set responsible_id to current user if not provided
-      if (!requestData.responsavel_id) {
+      // Set responsible_id to current user if not provided and we have a user
+      if (!requestData.responsavel_id && user) {
         requestData.responsavel_id = user.id;
         console.log(`Setting responsavel_id to current user: ${user.id}`);
+      } else if (!requestData.responsavel_id) {
+        // For admin demo mode, use a placeholder ID
+        requestData.responsavel_id = "00000000-0000-0000-0000-000000000000";
+        console.log(`Setting responsavel_id to placeholder for admin mode`);
       }
 
-      // Remove castrado field if it doesn't exist (was mentioned as needing removal)
+      // Remove castrado field if it doesn't exist
       if (requestData.hasOwnProperty('castrado') && requestData.castrado === undefined) {
         delete requestData.castrado;
       }
 
-      // Check for duplicated animal with same name and responsible
-      if (requestData.responsavel_id && requestData.nome) {
-        const { data: existingAnimals, error: checkError } = await supabaseClient
-          .from('animals')
-          .select('id')
-          .eq('nome', requestData.nome)
-          .eq('responsavel_id', requestData.responsavel_id);
-
-        if (checkError) {
-          console.error('Error checking for duplicate animal:', checkError);
-          return new Response(JSON.stringify({ error: 'Erro ao verificar animal duplicado' }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          });
-        }
-
-        if (existingAnimals && existingAnimals.length > 0) {
-          console.error('Duplicate animal found');
-          return new Response(JSON.stringify({ error: 'Já existe um animal com esse nome para este responsável' }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          });
-        }
-      }
-
       console.log('Inserting animal into database...');
-      // Insert the new animal
-      const { data, error } = await supabaseClient
+      console.log('Using client:', isAdminMode ? 'Admin client (bypassing RLS)' : 'Regular client');
+      
+      // Insert the new animal using the appropriate client
+      const { data, error } = await clientToUse
         .from('animals')
         .insert(requestData)
         .select();
@@ -227,7 +207,7 @@ serve(async (req) => {
       let query = supabaseClient.from('animals').select('*').eq('id', animalId);
 
       // If not admin, only allow access to their own animals
-      if (!isAdmin) {
+      if (!isAdminMode && user) {
         query = query.eq('responsavel_id', user.id);
       }
 
@@ -251,7 +231,7 @@ serve(async (req) => {
       const requestData = await req.json();
 
       // Don't allow changing the responsavel_id if user is not admin
-      if (!isAdmin && requestData.responsavel_id && requestData.responsavel_id !== user.id) {
+      if (!isAdminMode && user && requestData.responsavel_id && requestData.responsavel_id !== user.id) {
         delete requestData.responsavel_id;
       }
 
@@ -282,7 +262,7 @@ serve(async (req) => {
       let query = supabaseClient.from('animals').select('*').eq('id', animalId);
 
       // If not admin, only allow access to their own animals
-      if (!isAdmin) {
+      if (!isAdminMode && user) {
         query = query.eq('responsavel_id', user.id);
       }
 

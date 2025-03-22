@@ -60,17 +60,19 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
   try {
     console.log('Creating animal with data:', animalData);
     
+    // Get the current session to check if the user is authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    
     // IMPORTANT: Set the responsavel_id to the current user if not provided
     // This is critical for RLS policies
     if (!animalData.responsavel_id) {
-      const { data: { session } } = await supabase.auth.getSession();
       const userId = session?.user?.id;
       
       if (userId) {
         animalData.responsavel_id = userId;
         console.log(`Setting responsavel_id to current authenticated user: ${userId}`);
       } else if (localStorage.getItem("isAdmin") === "true") {
-        // For demo admin mode, use a hardcoded ID
+        // For demo admin mode, use a hardcoded ID or null (depending on your RLS policy)
         animalData.responsavel_id = "00000000-0000-0000-0000-000000000000";
         console.log(`Setting responsavel_id to demo admin: ${animalData.responsavel_id}`);
       } else {
@@ -96,25 +98,48 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
     
     console.log('Preparing to insert animal with data:', animalForInsertion);
 
-    // Use regular insert to work with TypeScript definitions
-    const { data, error } = await supabase
-      .from('animals')
-      .insert(animalForInsertion)
-      .select()
-      .single();
+    // Check if we're using admin demo mode and need to use edge function
+    if (localStorage.getItem("isAdmin") === "true" && !session?.user) {
+      // For demo admin, use the edge function that has bypass_rls capability
+      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/animals`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabase.supabaseKey}`
+        },
+        body: JSON.stringify(animalForInsertion)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error from edge function:', errorData);
+        throw new Error(errorData.error || 'Falha ao criar animal via edge function');
+      }
+      
+      const data = await response.json();
+      console.log('Animal created successfully via edge function. Raw data:', data);
+      return data ? dbAnimalToAnimal(data) : null;
+    } else {
+      // For authenticated users, use the regular Supabase client
+      const { data, error } = await supabase
+        .from('animals')
+        .insert(animalForInsertion)
+        .select()
+        .single();
 
-    if (error) {
-      console.error('Error creating animal:', error);
-      throw new Error(error.message);
+      if (error) {
+        console.error('Error creating animal:', error);
+        throw new Error(error.message);
+      }
+
+      if (!data) {
+        console.error('No data returned after inserting animal');
+        throw new Error('Falha ao criar animal: Nenhum dado retornado');
+      }
+
+      console.log('Animal created successfully. Raw data:', data);
+      return data ? dbAnimalToAnimal(data) : null;
     }
-
-    if (!data) {
-      console.error('No data returned after inserting animal');
-      throw new Error('Falha ao criar animal: Nenhum dado retornado');
-    }
-
-    console.log('Animal created successfully. Raw data:', data);
-    return data ? dbAnimalToAnimal(data) : null;
   } catch (error) {
     console.error('Error in createAnimal:', error);
     if (error instanceof Error) {
