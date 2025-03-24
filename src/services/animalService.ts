@@ -61,10 +61,12 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
     
     // Validar dados críticos antes de prosseguir
     if (!animalData.nome) {
+      toast.error('O nome do animal é obrigatório');
       throw new Error('O nome do animal é obrigatório');
     }
     
     if (animalData.idade === undefined || animalData.idade < 0) {
+      toast.error('A idade do animal deve ser um número positivo');
       throw new Error('A idade do animal deve ser um número positivo');
     }
     
@@ -85,6 +87,7 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
         console.log(`Definindo responsável para modo admin: ${animalData.responsavel_id}`);
       } else {
         console.error('Nenhum ID de usuário disponível para cadastro');
+        toast.error('Você precisa estar autenticado para cadastrar um animal');
         throw new Error('Você precisa estar autenticado para cadastrar um animal');
       }
     }
@@ -109,59 +112,49 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
     // Check if we're using admin demo mode and need to use edge function
     if (localStorage.getItem("isAdmin") === "true" && !session?.user) {
       try {
-        // Get the API URL and key from environment variable
         const apiUrl = import.meta.env.VITE_SUPABASE_URL;
         const apiKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
         
         if (!apiUrl) {
           console.error('URL da API não encontrada nas variáveis de ambiente');
+          toast.error('Falha na configuração: URL da Supabase não encontrada. Verifique as variáveis de ambiente.');
           throw new Error('Configuração incompleta: URL da Supabase não encontrada. Verifique seu arquivo .env');
         }
         
         if (!apiKey) {
           console.error('Chave da API não encontrada nas variáveis de ambiente');
+          toast.error('Falha na configuração: Chave da Supabase não encontrada. Verifique as variáveis de ambiente.');
           throw new Error('Configuração incompleta: Chave da Supabase não encontrada. Verifique seu arquivo .env');
         }
         
         console.log(`Chamando Edge Function em ${apiUrl}/functions/v1/animals`);
         
-        // For demo admin, use the edge function that has bypass_rls capability
-        const response = await fetch(`${apiUrl}/functions/v1/animals`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify(animalForInsertion)
+        // Use a edge function directly via Supabase client instead of fetch
+        const { data, error } = await supabase.functions.invoke('animals', {
+          body: animalForInsertion
         });
         
-        // Log the full response for debugging
-        console.log('Resposta da Edge Function - status:', response.status);
-        console.log('Resposta da Edge Function - statusText:', response.statusText);
-        
-        if (!response.ok) {
-          let errorMessage = 'Falha ao criar animal via Edge Function';
-          try {
-            const errorData = await response.json();
-            console.error('Erro detalhado da Edge Function:', errorData);
-            errorMessage = errorData.error || errorMessage;
-          } catch (e) {
-            console.error('Não foi possível analisar resposta de erro:', e);
-          }
-          throw new Error(errorMessage);
+        if (error) {
+          console.error('Erro na Edge Function:', error);
+          toast.error(`Erro ao cadastrar animal: ${error.message || 'Falha no processamento'}`);
+          throw new Error(`Erro na Edge Function: ${error.message}`);
         }
         
-        const data = await response.json();
         console.log('Animal cadastrado com sucesso via Edge Function! Dados:', data);
         toast.success('Animal cadastrado com sucesso!');
         return data ? dbAnimalToAnimal(data) : null;
       } catch (error) {
         console.error('Erro na chamada à Edge Function:', error);
-        if (error instanceof Error && error.message.includes('Failed to fetch')) {
-          toast.error('Não foi possível conectar à Edge Function. Verifique sua conexão com a internet e as configurações do Supabase.');
+        if (error instanceof Error) {
+          if (error.message.includes('Failed to fetch')) {
+            toast.error('Não foi possível conectar à Edge Function. Verifique sua conexão com a internet e as configurações do Supabase.');
+          } else {
+            toast.error(`Erro: ${error.message}`);
+          }
         } else {
-          throw error;
+          toast.error('Erro desconhecido ao cadastrar animal via Edge Function');
         }
+        throw error;
       }
     } else {
       // For authenticated users, use the regular Supabase client
@@ -174,16 +167,20 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
       if (error) {
         console.error('Erro ao cadastrar animal:', error);
         if (error.code === '42501') {
+          toast.error('Permissão negada. Verifique se você tem acesso para cadastrar animais.');
           throw new Error('Permissão negada. Verifique se você tem acesso para cadastrar animais.');
         } else if (error.code === '23505') {
+          toast.error('Este animal já existe no sistema.');
           throw new Error('Este animal já existe no sistema.');
         } else {
+          toast.error(`Erro ao cadastrar animal: ${error.message}`);
           throw new Error(`Erro ao cadastrar animal: ${error.message}`);
         }
       }
 
       if (!data) {
         console.error('Nenhum dado retornado após inserção');
+        toast.error('Falha ao criar animal: Nenhum dado retornado do servidor');
         throw new Error('Falha ao criar animal: Nenhum dado retornado do servidor');
       }
 
