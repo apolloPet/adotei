@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { Json } from '@/lib/database.types';
@@ -35,7 +34,7 @@ export interface AnimalCreateData {
 
 // Helper function to convert database type to interface type
 const dbAnimalToAnimal = (dbAnimal: any): Animal => {
-  console.log('Converting DB animal to interface:', dbAnimal);
+  console.log('Convertendo animal do banco para interface:', dbAnimal);
   return {
     id: dbAnimal.id,
     nome: dbAnimal.nome,
@@ -58,7 +57,16 @@ const dbAnimalToAnimal = (dbAnimal: any): Animal => {
 // Create a new animal
 export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal | null> => {
   try {
-    console.log('Creating animal with data:', animalData);
+    console.log('Iniciando cadastro de animal com dados:', animalData);
+    
+    // Validar dados críticos antes de prosseguir
+    if (!animalData.nome) {
+      throw new Error('O nome do animal é obrigatório');
+    }
+    
+    if (animalData.idade === undefined || animalData.idade < 0) {
+      throw new Error('A idade do animal deve ser um número positivo');
+    }
     
     // Get the current session to check if the user is authenticated
     const { data: { session } } = await supabase.auth.getSession();
@@ -70,13 +78,13 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
       
       if (userId) {
         animalData.responsavel_id = userId;
-        console.log(`Setting responsavel_id to current authenticated user: ${userId}`);
+        console.log(`Definindo responsável para usuário autenticado: ${userId}`);
       } else if (localStorage.getItem("isAdmin") === "true") {
         // For demo admin mode, use a hardcoded ID or null (depending on your RLS policy)
         animalData.responsavel_id = "00000000-0000-0000-0000-000000000000";
-        console.log(`Setting responsavel_id to demo admin: ${animalData.responsavel_id}`);
+        console.log(`Definindo responsável para modo admin: ${animalData.responsavel_id}`);
       } else {
-        console.error('No user ID available for animal creation');
+        console.error('Nenhum ID de usuário disponível para cadastro');
         throw new Error('Você precisa estar autenticado para cadastrar um animal');
       }
     }
@@ -96,22 +104,26 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
       fotos: animalData.fotos || []
     };
     
-    console.log('Preparing to insert animal with data:', animalForInsertion);
+    console.log('Dados preparados para inserção:', animalForInsertion);
 
     // Check if we're using admin demo mode and need to use edge function
     if (localStorage.getItem("isAdmin") === "true" && !session?.user) {
       try {
-        // Get the API URL and key from environment variable or hardcode for safety
-        const apiUrl = import.meta.env.VITE_SUPABASE_URL || 'https://jwbcrddblmiurmeziszp.supabase.co';
+        // Get the API URL and key from environment variable
+        const apiUrl = import.meta.env.VITE_SUPABASE_URL;
         const apiKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
         
-        if (!apiKey) {
-          console.error('Missing API key for edge function call');
-          throw new Error('Configuração incompleta para cadastro de animal - API key não encontrada. Verifique suas variáveis de ambiente.');
+        if (!apiUrl) {
+          console.error('URL da API não encontrada nas variáveis de ambiente');
+          throw new Error('Configuração incompleta: URL da Supabase não encontrada. Verifique seu arquivo .env');
         }
         
-        console.log(`Calling edge function at ${apiUrl}/functions/v1/animals`);
-        console.log('API Key available:', !!apiKey);
+        if (!apiKey) {
+          console.error('Chave da API não encontrada nas variáveis de ambiente');
+          throw new Error('Configuração incompleta: Chave da Supabase não encontrada. Verifique seu arquivo .env');
+        }
+        
+        console.log(`Chamando Edge Function em ${apiUrl}/functions/v1/animals`);
         
         // For demo admin, use the edge function that has bypass_rls capability
         const response = await fetch(`${apiUrl}/functions/v1/animals`, {
@@ -124,27 +136,32 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
         });
         
         // Log the full response for debugging
-        console.log('Edge function response status:', response.status);
-        console.log('Edge function response status text:', response.statusText);
+        console.log('Resposta da Edge Function - status:', response.status);
+        console.log('Resposta da Edge Function - statusText:', response.statusText);
         
         if (!response.ok) {
-          let errorMessage = 'Falha ao criar animal via edge function';
+          let errorMessage = 'Falha ao criar animal via Edge Function';
           try {
             const errorData = await response.json();
-            console.error('Error from edge function:', errorData);
+            console.error('Erro detalhado da Edge Function:', errorData);
             errorMessage = errorData.error || errorMessage;
           } catch (e) {
-            console.error('Could not parse error response:', e);
+            console.error('Não foi possível analisar resposta de erro:', e);
           }
           throw new Error(errorMessage);
         }
         
         const data = await response.json();
-        console.log('Animal created successfully via edge function. Raw data:', data);
+        console.log('Animal cadastrado com sucesso via Edge Function! Dados:', data);
+        toast.success('Animal cadastrado com sucesso!');
         return data ? dbAnimalToAnimal(data) : null;
       } catch (error) {
-        console.error('Error with edge function call:', error);
-        throw error;
+        console.error('Erro na chamada à Edge Function:', error);
+        if (error instanceof Error && error.message.includes('Failed to fetch')) {
+          toast.error('Não foi possível conectar à Edge Function. Verifique sua conexão com a internet e as configurações do Supabase.');
+        } else {
+          throw error;
+        }
       }
     } else {
       // For authenticated users, use the regular Supabase client
@@ -155,24 +172,31 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
         .single();
 
       if (error) {
-        console.error('Error creating animal:', error);
-        throw new Error(error.message);
+        console.error('Erro ao cadastrar animal:', error);
+        if (error.code === '42501') {
+          throw new Error('Permissão negada. Verifique se você tem acesso para cadastrar animais.');
+        } else if (error.code === '23505') {
+          throw new Error('Este animal já existe no sistema.');
+        } else {
+          throw new Error(`Erro ao cadastrar animal: ${error.message}`);
+        }
       }
 
       if (!data) {
-        console.error('No data returned after inserting animal');
-        throw new Error('Falha ao criar animal: Nenhum dado retornado');
+        console.error('Nenhum dado retornado após inserção');
+        throw new Error('Falha ao criar animal: Nenhum dado retornado do servidor');
       }
 
-      console.log('Animal created successfully. Raw data:', data);
+      console.log('Animal cadastrado com sucesso! Dados:', data);
+      toast.success('Animal cadastrado com sucesso!');
       return data ? dbAnimalToAnimal(data) : null;
     }
   } catch (error) {
-    console.error('Error in createAnimal:', error);
+    console.error('Erro em createAnimal:', error);
     if (error instanceof Error) {
       toast.error(error.message);
     } else {
-      toast.error('Erro ao criar animal');
+      toast.error('Erro desconhecido ao cadastrar animal');
     }
     throw error;
   }
