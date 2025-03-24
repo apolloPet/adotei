@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-sonner";
+import { Loader2 } from "lucide-react";
 import AnimalBasicInfo from './AnimalBasicInfo';
 import AnimalCharacteristics from './AnimalCharacteristics';
 import AnimalHealthInfo from './AnimalHealthInfo';
@@ -13,6 +14,7 @@ import AnimalRequirements from './AnimalRequirements';
 import { AnimalFormData } from './types';
 import AnimalList from './AnimalList';
 import { createAnimal } from '@/services/animalService';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const AnimalRegistrationForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -51,12 +53,19 @@ const AnimalRegistrationForm = () => {
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [stepErrors, setStepErrors] = useState<{[key: number]: string}>({});
   
   const totalSteps = 6;
   
   const handleNextStep = () => {
+    if (!validateCurrentStep()) return;
+    
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
+      // Clear any previous errors for this step
+      const updatedErrors = {...stepErrors};
+      delete updatedErrors[currentStep];
+      setStepErrors(updatedErrors);
     }
   };
   
@@ -80,30 +89,93 @@ const AnimalRegistrationForm = () => {
     }));
   };
   
+  const validateCurrentStep = (): boolean => {
+    switch (currentStep) {
+      case 1: // Basic Info
+        if (!formData.name.trim()) {
+          setStepErrors({...stepErrors, 1: "Nome do animal é obrigatório"});
+          toast.error("Nome do animal é obrigatório");
+          return false;
+        }
+        
+        if (!formData.breed.trim()) {
+          setStepErrors({...stepErrors, 1: "Raça do animal é obrigatória"});
+          toast.error("Raça do animal é obrigatória");
+          return false;
+        }
+        
+        if (!formData.age.trim()) {
+          setStepErrors({...stepErrors, 1: "Idade do animal é obrigatória"});
+          toast.error("Idade do animal é obrigatória");
+          return false;
+        }
+        
+        if (!formData.description.trim()) {
+          setStepErrors({...stepErrors, 1: "Descrição do animal é obrigatória"});
+          toast.error("Descrição do animal é obrigatória");
+          return false;
+        }
+        
+        if (formData.description.trim().length < 20) {
+          setStepErrors({...stepErrors, 1: "A descrição deve ter pelo menos 20 caracteres"});
+          toast.error("A descrição deve ter pelo menos 20 caracteres");
+          return false;
+        }
+        break;
+        
+      case 4: // Images
+        if (formData.previewImages.length === 0) {
+          setStepErrors({...stepErrors, 4: "É necessário adicionar pelo menos uma foto do animal"});
+          toast.error("É necessário adicionar pelo menos uma foto do animal");
+          return false;
+        }
+        break;
+    }
+    
+    return true;
+  };
+  
   const validateForm = () => {
     // Required fields validation
     if (!formData.name.trim()) {
       toast.error("Nome do animal é obrigatório");
+      setCurrentStep(1);
       return false;
     }
     
     if (!formData.type) {
       toast.error("Tipo de animal é obrigatório");
+      setCurrentStep(1);
       return false;
     }
     
     if (!formData.age.trim()) {
       toast.error("Idade do animal é obrigatória");
+      setCurrentStep(1);
       return false;
     }
     
     if (!formData.gender) {
       toast.error("Sexo do animal é obrigatório");
+      setCurrentStep(1);
       return false;
     }
     
     if (!formData.size) {
       toast.error("Porte do animal é obrigatório");
+      setCurrentStep(1);
+      return false;
+    }
+    
+    if (!formData.description.trim()) {
+      toast.error("Descrição do animal é obrigatória");
+      setCurrentStep(1);
+      return false;
+    }
+    
+    if (formData.previewImages.length === 0) {
+      toast.error("É necessário adicionar pelo menos uma foto do animal");
+      setCurrentStep(4);
       return false;
     }
     
@@ -121,14 +193,14 @@ const AnimalRegistrationForm = () => {
     
     // Create an actual animal object from form data
     return {
-      nome: formData.name,
+      nome: formData.name.trim(),
       idade: parseInt(formData.age) || 0,
       tipo: formData.type as "cachorro" | "gato" | "outro",
       porte: formData.size as "pequeno" | "medio" | "grande",
       sexo: formData.gender as "macho" | "femea",
       castrado: formData.sterilized,
       vacinas: formData.vaccinationStatus ? [formData.vaccinationStatus] : [],
-      descricao: formData.description,
+      descricao: formData.description.trim(),
       fotoPrincipal: formData.previewImages[0] || undefined,
       fotos: formData.previewImages
     };
@@ -153,8 +225,6 @@ const AnimalRegistrationForm = () => {
       }
       
       console.log("Animal created successfully:", createdAnimal);
-      
-      toast.success("Animal cadastrado com sucesso!");
       
       // Reset form after successful submission
       setFormData({
@@ -192,6 +262,7 @@ const AnimalRegistrationForm = () => {
       
       // Reset to first step
       setCurrentStep(1);
+      setStepErrors({});
       
       // Switch to the list tab
       setActiveTab('list');
@@ -200,10 +271,8 @@ const AnimalRegistrationForm = () => {
       
       let errorMessage = "Erro ao cadastrar animal";
       if (error instanceof Error) {
-        errorMessage = `Error submitting animal: ${error.message}`;
+        errorMessage = `Erro ao cadastrar animal: ${error.message}`;
       }
-      
-      toast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -224,6 +293,30 @@ const AnimalRegistrationForm = () => {
     fotos?: string[];
   }
 
+  // Render helper for step indicators
+  const renderStepIndicator = () => {
+    return (
+      <div className="flex justify-between mb-6">
+        {Array.from({length: totalSteps}).map((_, idx) => (
+          <div key={idx} className="flex flex-col items-center">
+            <div 
+              className={`w-8 h-8 rounded-full flex items-center justify-center 
+                ${currentStep > idx + 1 ? 'bg-green-500 text-white' : 
+                  currentStep === idx + 1 ? 'bg-primary text-primary-foreground' : 
+                  'bg-muted text-muted-foreground'}`}
+            >
+              {currentStep > idx + 1 ? '✓' : idx + 1}
+            </div>
+            {idx < totalSteps - 1 && (
+              <div className={`h-px w-16 -mx-3 mt-4 
+                ${currentStep > idx + 1 ? 'bg-green-500' : 'bg-muted'}`} />
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -242,6 +335,15 @@ const AnimalRegistrationForm = () => {
           <TabsContent value="register">
             <Card>
               <CardContent className="pt-6">
+                {renderStepIndicator()}
+                
+                {stepErrors[currentStep] && (
+                  <Alert variant="destructive" className="mb-4">
+                    <AlertTitle>Erro de validação</AlertTitle>
+                    <AlertDescription>{stepErrors[currentStep]}</AlertDescription>
+                  </Alert>
+                )}
+                
                 <div className="space-y-4">
                   {currentStep === 1 && (
                     <AnimalBasicInfo 
@@ -306,7 +408,12 @@ const AnimalRegistrationForm = () => {
                       </Button>
                     ) : (
                       <Button onClick={handleSubmit} disabled={isSubmitting}>
-                        {isSubmitting ? "Cadastrando..." : "Cadastrar Animal"}
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Cadastrando...
+                          </>
+                        ) : "Cadastrar Animal"}
                       </Button>
                     )}
                   </div>

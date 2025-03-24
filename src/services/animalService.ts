@@ -60,14 +60,46 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
     console.log('Iniciando cadastro de animal com dados:', animalData);
     
     // Validar dados críticos antes de prosseguir
-    if (!animalData.nome) {
-      toast.error('O nome do animal é obrigatório');
+    if (!animalData.nome || animalData.nome.trim() === '') {
+      toast.error('O nome do animal é obrigatório', {
+        description: 'Por favor, informe um nome válido para o animal.'
+      });
       throw new Error('O nome do animal é obrigatório');
     }
     
-    if (animalData.idade === undefined || animalData.idade < 0) {
-      toast.error('A idade do animal deve ser um número positivo');
+    if (animalData.idade === undefined || isNaN(animalData.idade) || animalData.idade < 0) {
+      toast.error('Idade inválida', {
+        description: 'A idade do animal deve ser um número positivo.'
+      });
       throw new Error('A idade do animal deve ser um número positivo');
+    }
+    
+    if (!animalData.tipo) {
+      toast.error('Tipo de animal não especificado', {
+        description: 'Por favor, selecione se é um cachorro, gato ou outro animal.'
+      });
+      throw new Error('Tipo de animal não especificado');
+    }
+    
+    if (!animalData.porte) {
+      toast.error('Porte do animal não especificado', {
+        description: 'Por favor, selecione o porte do animal (pequeno, médio ou grande).'
+      });
+      throw new Error('Porte do animal não especificado');
+    }
+    
+    if (!animalData.sexo) {
+      toast.error('Sexo do animal não especificado', {
+        description: 'Por favor, selecione o sexo do animal (macho ou fêmea).'
+      });
+      throw new Error('Sexo do animal não especificado');
+    }
+    
+    if (!animalData.descricao || animalData.descricao.trim() === '') {
+      toast.error('Descrição do animal é obrigatória', {
+        description: 'Por favor, forneça uma breve descrição sobre o animal.'
+      });
+      throw new Error('Descrição do animal é obrigatória');
     }
     
     // Get the current session to check if the user is authenticated
@@ -87,14 +119,16 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
         console.log(`Definindo responsável para modo admin: ${animalData.responsavel_id}`);
       } else {
         console.error('Nenhum ID de usuário disponível para cadastro');
-        toast.error('Você precisa estar autenticado para cadastrar um animal');
+        toast.error('Autenticação necessária', {
+          description: 'Você precisa estar autenticado para cadastrar um animal.'
+        });
         throw new Error('Você precisa estar autenticado para cadastrar um animal');
       }
     }
     
     // Prepare animal data for insertion, ensuring arrays are properly handled
     const animalForInsertion = {
-      nome: animalData.nome,
+      nome: animalData.nome.trim(),
       idade: animalData.idade,
       tipo: animalData.tipo,
       porte: animalData.porte,
@@ -102,7 +136,7 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
       castrado: animalData.castrado,
       vacinas: animalData.vacinas || [],
       responsavel_id: animalData.responsavel_id,
-      descricao: animalData.descricao,
+      descricao: animalData.descricao.trim(),
       fotoprincipal: animalData.fotoPrincipal,
       fotos: animalData.fotos || []
     };
@@ -117,17 +151,23 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
         
         if (!apiUrl) {
           console.error('URL da API não encontrada nas variáveis de ambiente');
-          toast.error('Falha na configuração: URL da Supabase não encontrada. Verifique as variáveis de ambiente.');
+          toast.error('Falha na configuração', {
+            description: 'URL da Supabase não encontrada. Verifique as variáveis de ambiente.'
+          });
           throw new Error('Configuração incompleta: URL da Supabase não encontrada. Verifique seu arquivo .env');
         }
         
         if (!apiKey) {
           console.error('Chave da API não encontrada nas variáveis de ambiente');
-          toast.error('Falha na configuração: Chave da Supabase não encontrada. Verifique as variáveis de ambiente.');
+          toast.error('Falha na configuração', {
+            description: 'Chave da Supabase não encontrada. Verifique as variáveis de ambiente.'
+          });
           throw new Error('Configuração incompleta: Chave da Supabase não encontrada. Verifique seu arquivo .env');
         }
         
         console.log(`Chamando Edge Function em ${apiUrl}/functions/v1/animals`);
+        
+        toast.loading('Cadastrando animal...', {id: 'animal-creation'});
         
         // Use a edge function directly via Supabase client instead of fetch
         const { data, error } = await supabase.functions.invoke('animals', {
@@ -136,28 +176,45 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
         
         if (error) {
           console.error('Erro na Edge Function:', error);
-          toast.error(`Erro ao cadastrar animal: ${error.message || 'Falha no processamento'}`);
+          toast.error('Erro ao cadastrar animal', {
+            id: 'animal-creation',
+            description: error.message || 'Falha no processamento'
+          });
           throw new Error(`Erro na Edge Function: ${error.message}`);
         }
         
         console.log('Animal cadastrado com sucesso via Edge Function! Dados:', data);
-        toast.success('Animal cadastrado com sucesso!');
+        toast.success('Animal cadastrado com sucesso!', {
+          id: 'animal-creation',
+          description: `${animalForInsertion.nome} foi adicionado ao sistema.`
+        });
         return data ? dbAnimalToAnimal(data) : null;
       } catch (error) {
         console.error('Erro na chamada à Edge Function:', error);
         if (error instanceof Error) {
           if (error.message.includes('Failed to fetch')) {
-            toast.error('Não foi possível conectar à Edge Function. Verifique sua conexão com a internet e as configurações do Supabase.');
+            toast.error('Erro de conexão', {
+              id: 'animal-creation',
+              description: 'Não foi possível conectar à Edge Function. Verifique sua conexão com a internet e as configurações do Supabase.'
+            });
           } else {
-            toast.error(`Erro: ${error.message}`);
+            toast.error('Erro ao cadastrar animal', {
+              id: 'animal-creation',
+              description: error.message
+            });
           }
         } else {
-          toast.error('Erro desconhecido ao cadastrar animal via Edge Function');
+          toast.error('Erro ao cadastrar animal', {
+            id: 'animal-creation',
+            description: 'Erro desconhecido ao cadastrar animal via Edge Function'
+          });
         }
         throw error;
       }
     } else {
       // For authenticated users, use the regular Supabase client
+      toast.loading('Cadastrando animal...', {id: 'animal-creation'});
+      
       const { data, error } = await supabase
         .from('animals')
         .insert(animalForInsertion)
@@ -167,33 +224,54 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
       if (error) {
         console.error('Erro ao cadastrar animal:', error);
         if (error.code === '42501') {
-          toast.error('Permissão negada. Verifique se você tem acesso para cadastrar animais.');
+          toast.error('Permissão negada', {
+            id: 'animal-creation',
+            description: 'Verifique se você tem acesso para cadastrar animais.'
+          });
           throw new Error('Permissão negada. Verifique se você tem acesso para cadastrar animais.');
         } else if (error.code === '23505') {
-          toast.error('Este animal já existe no sistema.');
+          toast.error('Animal já cadastrado', {
+            id: 'animal-creation',
+            description: 'Este animal já existe no sistema.'
+          });
           throw new Error('Este animal já existe no sistema.');
         } else {
-          toast.error(`Erro ao cadastrar animal: ${error.message}`);
+          toast.error('Erro ao cadastrar animal', {
+            id: 'animal-creation',
+            description: error.message
+          });
           throw new Error(`Erro ao cadastrar animal: ${error.message}`);
         }
       }
 
       if (!data) {
         console.error('Nenhum dado retornado após inserção');
-        toast.error('Falha ao criar animal: Nenhum dado retornado do servidor');
+        toast.error('Falha ao criar animal', {
+          id: 'animal-creation',
+          description: 'Nenhum dado retornado do servidor'
+        });
         throw new Error('Falha ao criar animal: Nenhum dado retornado do servidor');
       }
 
       console.log('Animal cadastrado com sucesso! Dados:', data);
-      toast.success('Animal cadastrado com sucesso!');
+      toast.success('Animal cadastrado com sucesso!', {
+        id: 'animal-creation',
+        description: `${animalForInsertion.nome} foi adicionado ao sistema.`
+      });
       return data ? dbAnimalToAnimal(data) : null;
     }
   } catch (error) {
     console.error('Erro em createAnimal:', error);
     if (error instanceof Error) {
-      toast.error(error.message);
+      toast.error('Erro ao cadastrar animal', {
+        id: 'animal-creation',
+        description: error.message
+      });
     } else {
-      toast.error('Erro desconhecido ao cadastrar animal');
+      toast.error('Erro ao cadastrar animal', {
+        id: 'animal-creation',
+        description: 'Erro desconhecido ao cadastrar animal'
+      });
     }
     throw error;
   }
@@ -380,3 +458,5 @@ export const saveCostSimulation = async (animalId: string, simulationData: any):
     throw error;
   }
 };
+
+

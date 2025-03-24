@@ -27,8 +27,9 @@ serve(async (req) => {
       console.error("Variáveis de ambiente não configuradas: SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY");
       return new Response(
         JSON.stringify({
-          error: "Configuração do servidor incompleta. Contate o administrador do sistema.",
-          details: "Variáveis de ambiente necessárias não foram configuradas."
+          error: "Configuração do servidor incompleta.",
+          details: "As variáveis de ambiente necessárias não foram configuradas. Entre em contato com o administrador do sistema.",
+          code: "ENV_VARS_MISSING"
         }),
         {
           status: 500,
@@ -58,8 +59,9 @@ serve(async (req) => {
       console.error("Erro ao processar JSON do request:", error);
       return new Response(
         JSON.stringify({ 
-          error: "Erro ao processar dados do animal", 
-          details: "Os dados enviados não estão em formato JSON válido." 
+          error: "Formato de dados inválido", 
+          details: "Os dados enviados não estão em formato JSON válido. Verifique o formato e tente novamente.",
+          code: "INVALID_JSON" 
         }),
         {
           status: 400,
@@ -72,8 +74,9 @@ serve(async (req) => {
     if (!animalData) {
       return new Response(
         JSON.stringify({ 
-          error: "Dados do animal não fornecidos", 
-          details: "O corpo da requisição está vazio ou inválido."
+          error: "Dados ausentes", 
+          details: "Nenhum dado foi enviado no corpo da requisição. Por favor, forneça os dados do animal.",
+          code: "MISSING_DATA"
         }),
         {
           status: 400,
@@ -84,19 +87,86 @@ serve(async (req) => {
 
     // Verificar campos obrigatórios
     const requiredFields = ["nome", "idade", "tipo", "porte", "sexo"];
+    const missingFields = [];
+    
     for (const field of requiredFields) {
-      if (animalData[field] === undefined || animalData[field] === null) {
-        return new Response(
-          JSON.stringify({ 
-            error: `Campo obrigatório não fornecido: ${field}`, 
-            details: `O campo '${field}' é obrigatório para o cadastro de um animal.`
-          }),
-          {
-            status: 400,
-            headers: corsHeaders,
-          }
-        );
+      if (animalData[field] === undefined || animalData[field] === null || 
+         (typeof animalData[field] === 'string' && animalData[field].trim() === '')) {
+        missingFields.push(field);
       }
+    }
+    
+    if (missingFields.length > 0) {
+      const fieldsStr = missingFields.join(", ");
+      return new Response(
+        JSON.stringify({ 
+          error: "Campos obrigatórios ausentes", 
+          details: `Os seguintes campos são obrigatórios para o cadastro: ${fieldsStr}`,
+          missingFields: missingFields,
+          code: "MISSING_FIELDS"
+        }),
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
+      );
+    }
+    
+    // Validações adicionais específicas
+    if (typeof animalData.idade !== 'number' || animalData.idade < 0) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Idade inválida", 
+          details: "A idade deve ser um número positivo.",
+          code: "INVALID_AGE"
+        }),
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
+      );
+    }
+    
+    if (!['cachorro', 'gato', 'outro'].includes(animalData.tipo)) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Tipo inválido", 
+          details: "O tipo do animal deve ser 'cachorro', 'gato' ou 'outro'.",
+          code: "INVALID_TYPE"
+        }),
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
+      );
+    }
+    
+    if (!['pequeno', 'medio', 'grande'].includes(animalData.porte)) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Porte inválido", 
+          details: "O porte do animal deve ser 'pequeno', 'medio' ou 'grande'.",
+          code: "INVALID_SIZE"
+        }),
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
+      );
+    }
+    
+    if (!['macho', 'femea'].includes(animalData.sexo)) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Sexo inválido", 
+          details: "O sexo do animal deve ser 'macho' ou 'femea'.",
+          code: "INVALID_GENDER"
+        }),
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
+      );
     }
 
     // Log dos dados recebidos
@@ -129,24 +199,30 @@ serve(async (req) => {
       
       // Mapear códigos de erro para mensagens amigáveis
       let statusCode = 500;
-      let errorMessage = "Erro interno ao cadastrar animal";
+      let errorMessage = "Erro ao cadastrar animal";
       let details = error.message;
+      let errorCode = error.code || "UNKNOWN_ERROR";
       
       switch (error.code) {
         case "23505":
           statusCode = 409;
-          errorMessage = "Este animal já existe no sistema";
-          details = "Violação de restrição única no banco de dados";
+          errorMessage = "Animal já cadastrado";
+          details = "Já existe um animal com essas informações no sistema. Verifique os dados e tente novamente.";
           break;
         case "42501":
           statusCode = 403;
-          errorMessage = "Sem permissão para cadastrar animal";
-          details = "Operação negada devido a políticas de segurança";
+          errorMessage = "Permissão negada";
+          details = "Você não tem permissão para cadastrar um animal. Entre em contato com um administrador.";
           break;
         case "23502":
           statusCode = 400;
-          errorMessage = "Dados incompletos para cadastro";
-          details = "Um campo obrigatório não foi fornecido";
+          errorMessage = "Dados incompletos";
+          details = "Campos obrigatórios não foram fornecidos. Verifique os dados e tente novamente.";
+          break;
+        case "22P02":
+          statusCode = 400;
+          errorMessage = "Formato de dados inválido";
+          details = "Um ou mais campos contêm dados em formato inválido. Verifique os tipos de dados e tente novamente.";
           break;
       }
       
@@ -154,7 +230,7 @@ serve(async (req) => {
         JSON.stringify({ 
           error: errorMessage, 
           details: details,
-          code: error.code 
+          code: errorCode
         }),
         {
           status: statusCode,
@@ -167,8 +243,9 @@ serve(async (req) => {
       console.error("Nenhum dado retornado após inserção bem-sucedida");
       return new Response(
         JSON.stringify({ 
-          error: "Erro ao recuperar dados do animal cadastrado", 
-          details: "A inserção foi bem-sucedida, mas não foi possível recuperar os dados inseridos."
+          error: "Erro de processamento", 
+          details: "O cadastro foi realizado, mas não foi possível recuperar os dados. Verifique na lista de animais.",
+          code: "DATA_RETRIEVAL_ERROR"
         }),
         {
           status: 500,
@@ -181,7 +258,10 @@ serve(async (req) => {
 
     // Retornar dados do animal cadastrado
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify({
+        ...data,
+        message: "Animal cadastrado com sucesso!"
+      }),
       {
         status: 201,
         headers: corsHeaders,
@@ -189,10 +269,18 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Erro não tratado:", error);
+    
+    // Extrair informações detalhadas do erro
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    const errorName = error instanceof Error ? error.name : "UnknownError";
+    const errorStack = error instanceof Error ? error.stack : null;
+    
     return new Response(
       JSON.stringify({ 
-        error: "Erro inesperado ao processar solicitação", 
-        details: error instanceof Error ? error.message : "Erro desconhecido"
+        error: "Erro no servidor", 
+        details: `Ocorreu um erro inesperado ao processar sua solicitação: ${errorMessage}`,
+        errorType: errorName,
+        code: "SERVER_ERROR"
       }),
       {
         status: 500,

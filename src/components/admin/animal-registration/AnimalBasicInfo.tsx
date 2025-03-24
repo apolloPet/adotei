@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AnimalFormData } from "./types";
+import { AlertCircle } from "lucide-react";
 
 export interface AnimalBasicInfoProps {
   formData: AnimalFormData;
@@ -37,11 +38,21 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
     onFormChange({ [name]: value });
   };
 
+  // Helper to check if a field is empty
+  const isFieldEmpty = (value: string): boolean => {
+    return value.trim() === '';
+  };
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="name">Nome do Animal*</Label>
+          <Label htmlFor="name" className="flex items-center">
+            Nome do Animal*
+            {isFieldEmpty(formData.name) && (
+              <AlertCircle className="h-4 w-4 ml-2 text-destructive" />
+            )}
+          </Label>
           <Input 
             id="name" 
             name="name" 
@@ -49,33 +60,48 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
             onChange={handleInputChange} 
             placeholder="Ex: Rex" 
             required 
+            className={isFieldEmpty(formData.name) ? "border-destructive" : ""}
+            aria-invalid={isFieldEmpty(formData.name)}
           />
+          {isFieldEmpty(formData.name) && (
+            <p className="text-sm text-destructive">Nome é obrigatório</p>
+          )}
         </div>
         
         <div className="space-y-2">
-          <Label>Tipo de Animal*</Label>
+          <Label className="flex items-center">
+            Tipo de Animal*
+            {!formData.type && (
+              <AlertCircle className="h-4 w-4 ml-2 text-destructive" />
+            )}
+          </Label>
           <RadioGroup 
             value={formData.type} 
             onValueChange={(value) => handleRadioChange('type', value)}
             className="flex space-x-4"
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="dog" id="dog" />
+              <RadioGroupItem value="cachorro" id="dog" />
               <Label htmlFor="dog">Cachorro</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="cat" id="cat" />
+              <RadioGroupItem value="gato" id="cat" />
               <Label htmlFor="cat">Gato</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="other" id="other_animal" />
+              <RadioGroupItem value="outro" id="other_animal" />
               <Label htmlFor="other_animal">Outro</Label>
             </div>
           </RadioGroup>
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="breed">Raça*</Label>
+          <Label htmlFor="breed" className="flex items-center">
+            Raça*
+            {isFieldEmpty(formData.breed) && (
+              <AlertCircle className="h-4 w-4 ml-2 text-destructive" />
+            )}
+          </Label>
           <Input 
             id="breed" 
             name="breed" 
@@ -83,11 +109,21 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
             onChange={handleInputChange} 
             placeholder="Ex: Labrador" 
             required 
+            className={isFieldEmpty(formData.breed) ? "border-destructive" : ""}
+            aria-invalid={isFieldEmpty(formData.breed)}
           />
+          {isFieldEmpty(formData.breed) && (
+            <p className="text-sm text-destructive">Raça é obrigatória</p>
+          )}
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="age">Idade* (apenas números)</Label>
+          <Label htmlFor="age" className="flex items-center">
+            Idade* (apenas números)
+            {isFieldEmpty(formData.age) && (
+              <AlertCircle className="h-4 w-4 ml-2 text-destructive" />
+            )}
+          </Label>
           <Input 
             id="age" 
             name="age" 
@@ -96,7 +132,12 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
             placeholder="Ex: 2" 
             required 
             inputMode="numeric"
+            className={isFieldEmpty(formData.age) ? "border-destructive" : ""}
+            aria-invalid={isFieldEmpty(formData.age)}
           />
+          {isFieldEmpty(formData.age) && (
+            <p className="text-sm text-destructive">Idade é obrigatória</p>
+          )}
         </div>
         
         <div className="space-y-2">
@@ -107,11 +148,11 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
             className="flex space-x-4"
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="male" id="male" />
+              <RadioGroupItem value="macho" id="male" />
               <Label htmlFor="male">Macho</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="female" id="female" />
+              <RadioGroupItem value="femea" id="female" />
               <Label htmlFor="female">Fêmea</Label>
             </div>
           </RadioGroup>
@@ -125,11 +166,11 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
             className="flex space-x-4"
           >
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="small" id="small" />
+              <RadioGroupItem value="pequeno" id="small" />
               <Label htmlFor="small">Pequeno</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="medium" id="medium" />
+              <RadioGroupItem value="medio" id="medium" />
               <Label htmlFor="medium">Médio</Label>
             </div>
             <div className="flex items-center space-x-2">
@@ -141,7 +182,12 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
       </div>
       
       <div className="space-y-2">
-        <Label htmlFor="description">Descrição* (máximo 200 caracteres)</Label>
+        <Label htmlFor="description" className="flex items-center">
+          Descrição* (máximo 200 caracteres)
+          {isFieldEmpty(formData.description) && (
+            <AlertCircle className="h-4 w-4 ml-2 text-destructive" />
+          )}
+        </Label>
         <Textarea 
           id="description" 
           name="description" 
@@ -151,9 +197,23 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
           required 
           rows={4}
           maxLength={200}
+          className={isFieldEmpty(formData.description) ? "border-destructive" : ""}
+          aria-invalid={isFieldEmpty(formData.description)}
         />
-        <div className="text-xs text-gray-500 text-right">
-          {formData.description.length}/200 caracteres
+        <div className="flex justify-between">
+          <div>
+            {isFieldEmpty(formData.description) && (
+              <p className="text-sm text-destructive">Descrição é obrigatória</p>
+            )}
+            {!isFieldEmpty(formData.description) && formData.description.length < 20 && (
+              <p className="text-sm text-amber-500">A descrição deve ter pelo menos 20 caracteres</p>
+            )}
+          </div>
+          <div className={`text-xs ${
+            formData.description.length > 180 ? "text-amber-500" : "text-gray-500"
+          }`}>
+            {formData.description.length}/200 caracteres
+          </div>
         </div>
       </div>
     </div>
