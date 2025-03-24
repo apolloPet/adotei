@@ -3,3 +3,25 @@ project_id = "jwbcrddblmiurmeziszp"
 
 [functions.cost-simulator]
 verify_jwt = true
+
+[functions.animals]
+verify_jwt = true
+
+[functions.pet-management]
+verify_jwt = true
+
+[functions.adoptions]
+verify_jwt = true
+
+[functions.user-profile]
+verify_jwt = true
+
+[functions.partnerships]
+verify_jwt = true
+
+[functions.shelter-management]
+verify_jwt = true
+
+[functions.admin]
+verify_jwt = true
+

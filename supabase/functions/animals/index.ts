@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -86,7 +85,7 @@ serve(async (req) => {
     }
 
     // Verificar campos obrigatórios
-    const requiredFields = ["nome", "idade", "tipo", "porte", "sexo"];
+    const requiredFields = ["nome", "idade", "tipo", "porte", "sexo", "breed"];
     const missingFields = [];
     
     for (const field of requiredFields) {
@@ -169,6 +168,36 @@ serve(async (req) => {
       );
     }
 
+    // Verifica a descrição para garantir uma descrição mínima adequada
+    if (!animalData.descricao || animalData.descricao.trim().length < 20) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Descrição inválida", 
+          details: "A descrição deve ter pelo menos 20 caracteres para fornecer informações suficientes sobre o animal.",
+          code: "INVALID_DESCRIPTION"
+        }),
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    // Verifica se tem pelo menos uma foto
+    if (!animalData.fotos || !Array.isArray(animalData.fotos) || animalData.fotos.length === 0) {
+      return new Response(
+        JSON.stringify({ 
+          error: "Fotos ausentes", 
+          details: "É necessário fornecer pelo menos uma foto do animal.",
+          code: "MISSING_PHOTOS"
+        }),
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
+      );
+    }
+
     // Log dos dados recebidos
     console.log("Dados do animal recebidos:", animalData);
 
@@ -185,6 +214,9 @@ serve(async (req) => {
     if (animalData.fotoPrincipal !== undefined) {
       animalData.fotoprincipal = animalData.fotoPrincipal;
       delete animalData.fotoPrincipal;
+    } else if (animalData.fotos && animalData.fotos.length > 0) {
+      // Se não tiver foto principal definida mas tiver fotos, usa a primeira como principal
+      animalData.fotoprincipal = animalData.fotos[0];
     }
 
     // Inserir animal no banco de dados usando o cliente com bypass_rls

@@ -1,18 +1,22 @@
 
 import { Label } from "@/components/ui/label";
-import { Upload, X, AlertCircle } from "lucide-react";
+import { Upload, X, AlertCircle, Image as ImageIcon } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export interface AnimalImagesProps {
   images: File[];
   previewImages: string[]; 
   onChange: (images: File[], previews: string[]) => void;
+  error?: string;
+  isUploading?: boolean;
 }
 
 const AnimalImages = ({ 
   images, 
   previewImages, 
-  onChange 
+  onChange,
+  error,
+  isUploading = false
 }: AnimalImagesProps) => {
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -84,15 +88,15 @@ const AnimalImages = ({
     <div className="space-y-4">
       <Label className="flex items-center">
         Fotos do Animal*
-        {previewImages.length === 0 && (
+        {(previewImages.length === 0 || error) && (
           <AlertCircle className="h-4 w-4 ml-2 text-destructive" />
         )}
       </Label>
       
-      {previewImages.length === 0 && (
+      {(previewImages.length === 0 || error) && (
         <Alert variant="destructive" className="mb-2">
           <AlertDescription>
-            É necessário adicionar pelo menos uma foto do animal
+            {error || "É necessário adicionar pelo menos uma foto do animal"}
           </AlertDescription>
         </Alert>
       )}
@@ -116,6 +120,7 @@ const AnimalImages = ({
                 onClick={() => removeImage(index)}
                 className="bg-black/50 text-white rounded-full p-1 hover:bg-black/70"
                 aria-label="Remover imagem"
+                disabled={isUploading}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -126,6 +131,7 @@ const AnimalImages = ({
                   type="button"
                   onClick={() => setAsPrimary(index)}
                   className="bg-primary text-white rounded-md px-3 py-1 text-sm"
+                  disabled={isUploading}
                 >
                   Definir como principal
                 </button>
@@ -135,19 +141,39 @@ const AnimalImages = ({
         ))}
         
         {previewImages.length < 5 && (
-          <label className="aspect-square border-2 border-dashed rounded-md border-input flex flex-col items-center justify-center cursor-pointer hover:bg-muted/50">
-            <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Upload</span>
-            <input
-              type="file"
-              className="hidden"
-              accept="image/*"
-              multiple
-              onChange={handleImageUpload}
-            />
+          <label className={`aspect-square border-2 border-dashed rounded-md border-input flex flex-col items-center justify-center ${isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-muted/50'}`}>
+            {isUploading ? (
+              <div className="flex flex-col items-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mb-2"></div>
+                <span className="text-sm text-muted-foreground">Enviando...</span>
+              </div>
+            ) : (
+              <>
+                <Upload className="h-8 w-8 mb-2 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Upload</span>
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  disabled={isUploading}
+                />
+              </>
+            )}
           </label>
         )}
       </div>
+      
+      {previewImages.length === 0 && !isUploading && (
+        <div className="mt-2 p-4 border border-dashed border-muted-foreground rounded-md flex flex-col items-center justify-center">
+          <ImageIcon className="h-12 w-12 text-muted-foreground mb-2" />
+          <p className="text-sm text-center text-muted-foreground">
+            Nenhuma imagem selecionada. Adicione pelo menos uma foto do animal.
+          </p>
+        </div>
+      )}
+      
       <div className="space-y-1">
         <p className="text-sm text-muted-foreground">
           Adicione até 5 fotos. A primeira será a foto principal.
