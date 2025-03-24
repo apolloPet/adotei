@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -16,20 +17,15 @@ serve(async (req) => {
   try {
     console.log('Edge function invoked with method:', req.method);
     console.log('Request URL:', req.url);
-    console.log('Auth header present:', !!req.headers.get('Authorization'));
     
-    // Get Supabase URL and service role key from environment variables
+    // Obter variáveis de ambiente e garantir que existam
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     
-    // Log environment variable status (without exposing actual values)
-    console.log('SUPABASE_URL available:', !!supabaseUrl);
-    console.log('SUPABASE_SERVICE_ROLE_KEY available:', !!supabaseServiceRoleKey);
-    console.log('SUPABASE_ANON_KEY available:', !!supabaseAnonKey);
-    
+    // Verificar se as variáveis de ambiente estão definidas
     if (!supabaseUrl) {
-      console.error('Missing SUPABASE_URL environment variable');
+      console.error('Erro: SUPABASE_URL não definida');
       return new Response(
         JSON.stringify({ error: 'Configuração incompleta para cadastro de animal - URL não configurada' }),
         { 
@@ -40,7 +36,7 @@ serve(async (req) => {
     }
     
     if (!supabaseServiceRoleKey) {
-      console.error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable');
+      console.error('Erro: SUPABASE_SERVICE_ROLE_KEY não definida');
       return new Response(
         JSON.stringify({ error: 'Configuração incompleta para cadastro de animal - Service role key não configurada' }),
         { 
@@ -51,7 +47,7 @@ serve(async (req) => {
     }
     
     if (!supabaseAnonKey) {
-      console.error('Missing SUPABASE_ANON_KEY environment variable');
+      console.error('Erro: SUPABASE_ANON_KEY não definida');
       return new Response(
         JSON.stringify({ error: 'Configuração incompleta para cadastro de animal - Anon key não configurada' }),
         { 
@@ -61,14 +57,22 @@ serve(async (req) => {
       );
     }
 
-    // Create a Supabase client with the Admin role to bypass RLS
-    // When called from demo mode
+    console.log('Variáveis de ambiente disponíveis:');
+    console.log('- SUPABASE_URL:', !!supabaseUrl);
+    console.log('- SUPABASE_SERVICE_ROLE_KEY:', !!supabaseServiceRoleKey);
+    console.log('- SUPABASE_ANON_KEY:', !!supabaseAnonKey);
+
+    // Verificar cabeçalho de autorização
+    const authHeader = req.headers.get('Authorization') || '';
+    console.log('Authorization header presente:', !!authHeader);
+
+    // Criar cliente Supabase com role de administrador para bypass de RLS
     const supabaseAdmin = createClient(
       supabaseUrl,
       supabaseServiceRoleKey,
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization') ?? '' },
+          headers: { Authorization: authHeader },
         },
         auth: {
           autoRefreshToken: false,
@@ -77,42 +81,123 @@ serve(async (req) => {
       }
     );
 
-    // Create a regular client with user auth context
+    // Criar cliente regular com contexto de autenticação do usuário
     const supabaseClient = createClient(
       supabaseUrl,
       supabaseAnonKey,
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization') ?? '' },
+          headers: { Authorization: authHeader },
         },
       }
     );
 
-    // Get auth user if present
+    // Obter usuário autenticado, se presente
     const {
       data: { user },
     } = await supabaseClient.auth.getUser();
 
-    console.log('User authenticated:', !!user);
+    console.log('Usuário autenticado:', !!user);
     
-    // Determine if we're in admin mode without user session
-    const authHeader = req.headers.get('Authorization') || '';
+    // Determinar se estamos no modo admin sem sessão de usuário
     const isAdminMode = !user && authHeader.includes(supabaseAnonKey);
+    console.log('Modo admin:', isAdminMode);
     
-    console.log('Is admin mode:', isAdminMode);
-    
-    // Choose the appropriate client based on context
+    // Escolher o cliente apropriado com base no contexto
     const clientToUse = isAdminMode ? supabaseAdmin : supabaseClient;
 
     const url = new URL(req.url);
     const path = url.pathname.split('/').filter(Boolean);
     const animalId = path.length > 1 ? path[1] : null;
 
-    console.log('Request path:', path);
-    console.log('Animal ID from path:', animalId);
+    console.log('Caminho da requisição:', path);
+    console.log('ID do animal do caminho:', animalId);
 
-    // Handle different endpoints based on HTTP method and path
-    // GET /animals - List all animals (with optional filters)
+    // POST /animals - Criar um novo animal
+    if (req.method === 'POST' && !animalId) {
+      console.log('Criando novo animal...');
+      
+      // Analisar corpo da requisição
+      const requestData = await req.json();
+      console.log('Dados da requisição:', JSON.stringify(requestData));
+
+      // Validar campos obrigatórios
+      const requiredFields = ['nome', 'idade', 'tipo', 'porte', 'sexo'];
+      for (const field of requiredFields) {
+        if (!requestData[field]) {
+          console.error(`Campo obrigatório ausente: ${field}`);
+          return new Response(JSON.stringify({ error: `Campo obrigatório: ${field}` }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 400,
+          });
+        }
+      }
+
+      // Validação adicional
+      if (typeof requestData.idade !== 'number' || isNaN(requestData.idade) || requestData.idade < 0) {
+        console.error('Valor de idade inválido:', requestData.idade);
+        return new Response(JSON.stringify({ error: 'Idade deve ser um número positivo' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        });
+      }
+      
+      // Definir responsavel_id para o usuário atual se não fornecido e temos um usuário
+      if (!requestData.responsavel_id && user) {
+        requestData.responsavel_id = user.id;
+        console.log(`Definindo responsavel_id para o usuário atual: ${user.id}`);
+      } else if (!requestData.responsavel_id) {
+        // Para modo admin demo, usar um ID de espaço reservado
+        requestData.responsavel_id = "00000000-0000-0000-0000-000000000000";
+        console.log(`Definindo responsavel_id para espaço reservado para modo admin`);
+      }
+
+      // Remover campo castrado se ele não existir
+      if (requestData.hasOwnProperty('castrado') && requestData.castrado === undefined) {
+        delete requestData.castrado;
+      }
+
+      console.log('Inserindo animal no banco de dados...');
+      console.log('Usando cliente:', isAdminMode ? 'Cliente admin (bypass de RLS)' : 'Cliente regular');
+      
+      try {
+        // Inserir o novo animal usando o cliente apropriado
+        const { data, error } = await clientToUse
+          .from('animals')
+          .insert(requestData)
+          .select();
+
+        if (error) {
+          console.error('Erro ao criar animal:', error);
+          return new Response(JSON.stringify({ error: error.message }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          });
+        }
+
+        if (!data || data.length === 0) {
+          console.error('Nenhum dado retornado após inserção');
+          return new Response(JSON.stringify({ error: 'Nenhum dado retornado após inserção' }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          });
+        }
+
+        console.log('Animal criado com sucesso:', data);
+        return new Response(JSON.stringify(data[0]), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 201,
+        });
+      } catch (dbError) {
+        console.error('Erro inesperado no banco de dados:', dbError);
+        return new Response(JSON.stringify({ error: 'Erro ao salvar o animal no banco de dados' }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 500,
+        });
+      }
+    }
+
+    // GET /animals - Listar todos os animais (com filtros opcionais)
     if (req.method === 'GET' && !animalId) {
       // Parse query parameters for filtering
       const params = url.searchParams;
@@ -121,7 +206,7 @@ serve(async (req) => {
       const porte = params.get('porte');
       const responsavel_id = params.get('responsavel_id');
 
-      console.log('Filtering parameters:', { nome, tipo, porte, responsavel_id });
+      console.log('Parâmetros de filtragem:', { nome, tipo, porte, responsavel_id });
 
       let query = clientToUse.from('animals').select('*');
 
@@ -136,18 +221,18 @@ serve(async (req) => {
         query = query.eq('responsavel_id', user.id);
       }
 
-      console.log('Executing GET animals query...');
+      console.log('Executando consulta GET animals...');
       const { data, error } = await query.order('data_cadastro', { ascending: false });
 
       if (error) {
-        console.error('Error fetching animals:', error);
+        console.error('Erro ao buscar animais:', error);
         return new Response(JSON.stringify({ error: error.message }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,
         });
       }
 
-      console.log(`GET animals successful: ${data?.length} animals found`);
+      console.log(`GET animals bem-sucedido: ${data?.length} animais encontrados`);
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -163,121 +248,29 @@ serve(async (req) => {
         query = query.eq('responsavel_id', user.id);
       }
 
-      console.log('Executing GET single animal query...');
+      console.log('Executando consulta GET single animal...');
       const { data, error } = await query.single();
 
       if (error) {
         if (error.code === 'PGRST116') {
-          console.log('Animal not found:', animalId);
+          console.log('Animal não encontrado:', animalId);
           return new Response(JSON.stringify({ error: 'Animal não encontrado' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 404,
           });
         }
-        console.error('Error fetching animal:', error);
+        console.error('Erro ao buscar animal:', error);
         return new Response(JSON.stringify({ error: error.message }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,
         });
       }
 
-      console.log('GET animal successful:', animalId);
+      console.log('GET animal bem-sucedido:', animalId);
       return new Response(JSON.stringify(data), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       });
-    }
-
-    // POST /animals - Create a new animal
-    if (req.method === 'POST' && !animalId) {
-      console.log('Creating new animal...');
-      
-      // Parse request body
-      const requestData = await req.json();
-      console.log('Request data:', JSON.stringify(requestData));
-
-      // Validate required fields
-      const requiredFields = ['nome', 'idade', 'tipo', 'porte', 'sexo'];
-      for (const field of requiredFields) {
-        if (!requestData[field]) {
-          console.error(`Missing required field: ${field}`);
-          return new Response(JSON.stringify({ error: `Campo obrigatório: ${field}` }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 400,
-          });
-        }
-      }
-
-      // Additional validation
-      if (typeof requestData.idade !== 'number' || isNaN(requestData.idade) || requestData.idade < 0) {
-        console.error('Invalid age value:', requestData.idade);
-        return new Response(JSON.stringify({ error: 'Idade deve ser um número positivo' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        });
-      }
-      
-      if (requestData.descricao && requestData.descricao.length > 200) {
-        console.error('Description too long:', requestData.descricao.length);
-        return new Response(JSON.stringify({ error: 'Descrição deve ter no máximo 200 caracteres' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        });
-      }
-
-      // Set responsible_id to current user if not provided and we have a user
-      if (!requestData.responsavel_id && user) {
-        requestData.responsavel_id = user.id;
-        console.log(`Setting responsavel_id to current user: ${user.id}`);
-      } else if (!requestData.responsavel_id) {
-        // For admin demo mode, use a placeholder ID
-        requestData.responsavel_id = "00000000-0000-0000-0000-000000000000";
-        console.log(`Setting responsavel_id to placeholder for admin mode`);
-      }
-
-      // Remove castrado field if it doesn't exist
-      if (requestData.hasOwnProperty('castrado') && requestData.castrado === undefined) {
-        delete requestData.castrado;
-      }
-
-      console.log('Inserting animal into database...');
-      console.log('Using client:', isAdminMode ? 'Admin client (bypassing RLS)' : 'Regular client');
-      
-      try {
-        // Insert the new animal using the appropriate client
-        const { data, error } = await clientToUse
-          .from('animals')
-          .insert(requestData)
-          .select();
-
-        if (error) {
-          console.error('Error creating animal:', error);
-          return new Response(JSON.stringify({ error: error.message }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          });
-        }
-
-        if (!data || data.length === 0) {
-          console.error('No data returned after insertion');
-          return new Response(JSON.stringify({ error: 'Nenhum dado retornado após inserção' }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 500,
-          });
-        }
-
-        console.log('Animal created successfully:', data);
-        return new Response(JSON.stringify(data[0]), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 201,
-        });
-      } catch (dbError) {
-        console.error('Unexpected database error:', dbError);
-        return new Response(JSON.stringify({ error: 'Erro ao salvar o animal no banco de dados' }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 500,
-        });
-      }
     }
 
     // PUT /animals/:id - Update an animal
@@ -290,18 +283,18 @@ serve(async (req) => {
         query = query.eq('responsavel_id', user.id);
       }
 
-      console.log('Checking if animal exists before update...');
+      console.log('Verificando se o animal existe antes da atualização...');
       const { data: existingAnimal, error: fetchError } = await query.single();
 
       if (fetchError) {
         if (fetchError.code === 'PGRST116') {
-          console.log('Animal not found or permission denied:', animalId);
+          console.log('Animal não encontrado ou permissão negada:', animalId);
           return new Response(JSON.stringify({ error: 'Animal não encontrado ou sem permissão' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 404,
           });
         }
-        console.error('Error fetching animal for update:', fetchError);
+        console.error('Erro ao buscar animal para atualização:', fetchError);
         return new Response(JSON.stringify({ error: fetchError.message }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,
@@ -310,7 +303,7 @@ serve(async (req) => {
 
       // Parse request body
       const requestData = await req.json();
-      console.log('Update data:', JSON.stringify(requestData));
+      console.log('Dados de atualização:', JSON.stringify(requestData));
 
       // Don't allow changing the responsavel_id if user is not admin
       if (!isAdminMode && user && requestData.responsavel_id && requestData.responsavel_id !== user.id) {
@@ -318,7 +311,7 @@ serve(async (req) => {
       }
 
       // Update animal
-      console.log('Updating animal:', animalId);
+      console.log('Atualizando animal:', animalId);
       const { data, error } = await clientToUse
         .from('animals')
         .update(requestData)
@@ -326,14 +319,14 @@ serve(async (req) => {
         .select();
 
       if (error) {
-        console.error('Error updating animal:', error);
+        console.error('Erro ao atualizar animal:', error);
         return new Response(JSON.stringify({ error: error.message }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,
         });
       }
 
-      console.log('Animal updated successfully');
+      console.log('Animal atualizado com sucesso');
       return new Response(JSON.stringify(data[0]), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -350,18 +343,18 @@ serve(async (req) => {
         query = query.eq('responsavel_id', user.id);
       }
 
-      console.log('Checking if animal exists before deletion...');
+      console.log('Verificando se o animal existe antes da exclusão...');
       const { data: existingAnimal, error: fetchError } = await query.single();
 
       if (fetchError) {
         if (fetchError.code === 'PGRST116') {
-          console.log('Animal not found or permission denied:', animalId);
+          console.log('Animal não encontrado ou permissão negada:', animalId);
           return new Response(JSON.stringify({ error: 'Animal não encontrado ou sem permissão' }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 404,
           });
         }
-        console.error('Error fetching animal for deletion:', fetchError);
+        console.error('Erro ao buscar animal para exclusão:', fetchError);
         return new Response(JSON.stringify({ error: fetchError.message }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,
@@ -369,21 +362,21 @@ serve(async (req) => {
       }
 
       // Delete animal
-      console.log('Deleting animal:', animalId);
+      console.log('Excluindo animal:', animalId);
       const { error } = await clientToUse
         .from('animals')
         .delete()
         .eq('id', animalId);
 
       if (error) {
-        console.error('Error deleting animal:', error);
+        console.error('Erro ao excluir animal:', error);
         return new Response(JSON.stringify({ error: error.message }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 500,
         });
       }
 
-      console.log('Animal deleted successfully');
+      console.log('Animal excluído com sucesso');
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -391,13 +384,13 @@ serve(async (req) => {
     }
 
     // Endpoint not found
-    console.log('Endpoint not found');
+    console.log('Endpoint não encontrado');
     return new Response(JSON.stringify({ error: 'Endpoint não encontrado' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 404,
     });
   } catch (err) {
-    console.error('Unexpected error:', err);
+    console.error('Erro inesperado:', err);
     return new Response(JSON.stringify({ error: 'Erro interno no servidor', details: err.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
