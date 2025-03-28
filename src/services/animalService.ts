@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-sonner';
 import { Json } from '@/lib/database.types';
 
@@ -146,30 +146,11 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
     // Check if we're using admin demo mode and need to use edge function
     if (localStorage.getItem("isAdmin") === "true" && !session?.user) {
       try {
-        const apiUrl = import.meta.env.VITE_SUPABASE_URL;
-        const apiKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-        
-        if (!apiUrl) {
-          console.error('URL da API não encontrada nas variáveis de ambiente');
-          toast.error('Falha na configuração', {
-            description: 'URL da Supabase não encontrada. Verifique as variáveis de ambiente.'
-          });
-          throw new Error('Configuração incompleta: URL da Supabase não encontrada. Verifique seu arquivo .env');
-        }
-        
-        if (!apiKey) {
-          console.error('Chave da API não encontrada nas variáveis de ambiente');
-          toast.error('Falha na configuração', {
-            description: 'Chave da Supabase não encontrada. Verifique as variáveis de ambiente.'
-          });
-          throw new Error('Configuração incompleta: Chave da Supabase não encontrada. Verifique seu arquivo .env');
-        }
-        
-        console.log(`Chamando Edge Function em ${apiUrl}/functions/v1/animals`);
+        console.log('Chamando Edge Function usando Supabase client.');
         
         toast.loading('Cadastrando animal...', {id: 'animal-creation'});
         
-        // Use a edge function directly via Supabase client instead of fetch
+        // Use the edge function directly via Supabase client
         const { data, error } = await supabase.functions.invoke('animals', {
           body: animalForInsertion
         });
@@ -458,5 +439,3 @@ export const saveCostSimulation = async (animalId: string, simulationData: any):
     throw error;
   }
 };
-
-
