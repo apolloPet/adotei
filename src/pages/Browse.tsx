@@ -53,11 +53,15 @@ const Browse = () => {
   }, [filters, setIsLoading, setPets]);
 
   const handlePetSwipe = async (direction: string, id: string) => {
+    if (!userId) {
+      toast.error('Você precisa estar logado para mostrar interesse em um animal');
+      return;
+    }
+
     if (direction === 'right') {
       try {
-        console.log('Sending pet match with ID:', id, 'User ID:', userId || '');
-        // Passar o userId atual ou null para o serviço lidar internamente
-        await recordPetMatch(id, userId || '', 'liked');
+        console.log('Sending pet match with ID:', id, 'User ID:', userId);
+        await recordPetMatch(id, userId, 'liked');
         toast.success('Match registrado com sucesso!');
       } catch (error) {
         console.error('Error recording match:', error);
@@ -65,7 +69,7 @@ const Browse = () => {
       }
     } else if (direction === 'left') {
       try {
-        await recordPetMatch(id, userId || '', 'disliked');
+        await recordPetMatch(id, userId, 'disliked');
       } catch (error) {
         console.error('Error recording dislike:', error);
         toast.error('Erro ao registrar que não houve interesse');
