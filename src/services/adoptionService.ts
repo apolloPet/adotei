@@ -195,18 +195,28 @@ export const recordPetMatch = async (
       userIdToUse = user.id;
     }
     
-    const { error } = await supabase
+    console.log('Recording pet match with:', { petId, userId: userIdToUse, matchType });
+    
+    const { data, error } = await supabase
       .from('pet_matches')
       .insert({
         pet_id: petId,
         user_id: userIdToUse,
         match_type: matchType
-      });
+      })
+      .select();
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error inserting into pet_matches:', error);
+      throw error;
+    }
+    
+    console.log('Pet match recorded successfully:', data);
     
     if (matchType === 'liked') {
-      await createAdoption(petId, userIdToUse);
+      console.log('Creating adoption record for pet match');
+      const adoption = await createAdoption(petId, userIdToUse);
+      console.log('Adoption created:', adoption);
     }
     
     return true;

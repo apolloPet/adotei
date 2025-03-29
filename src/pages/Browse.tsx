@@ -28,6 +28,7 @@ const Browse = () => {
     const getCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUserId(user?.id || null);
+      console.log('Current user ID:', user?.id || 'não autenticado');
     };
     
     getCurrentUser();
@@ -54,6 +55,7 @@ const Browse = () => {
   const handlePetSwipe = async (direction: string, id: string) => {
     if (direction === 'right') {
       try {
+        console.log('Sending pet match with ID:', id, 'User ID:', userId || '');
         // Passar o userId atual ou null para o serviço lidar internamente
         await recordPetMatch(id, userId || '', 'liked');
         toast.success('Match registrado com sucesso!');
