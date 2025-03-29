@@ -2,10 +2,11 @@
 import FilterPanel from "@/components/browse/FilterPanel";
 import PetBrowser from "@/components/browse/PetBrowser";
 import { usePetBrowse } from "@/hooks/use-pet-browse";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { fetchAnimalsForBrowse } from "@/services/animalBrowseService";
 import { recordPetMatch } from "@/services/adoptionService";
 import { toast } from "@/hooks/use-sonner";
+import { supabase } from '@/integrations/supabase/client';
 
 const Browse = () => {
   const {
@@ -19,6 +20,18 @@ const Browse = () => {
     setPets,
     setIsLoading
   } = usePetBrowse();
+  
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Obter o usuário atual
+    const getCurrentUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUserId(user?.id || null);
+    };
+    
+    getCurrentUser();
+  }, []);
 
   useEffect(() => {
     const loadPets = async () => {
@@ -39,12 +52,10 @@ const Browse = () => {
   }, [filters, setIsLoading, setPets]);
 
   const handlePetSwipe = async (direction: string, id: string) => {
-    // Mock user ID for now - in a real app, this would come from auth
-    const userId = "mock-user-id";
-    
     if (direction === 'right') {
       try {
-        await recordPetMatch(id, userId, 'liked');
+        // Passar o userId atual ou null para o serviço lidar internamente
+        await recordPetMatch(id, userId || '', 'liked');
         toast.success('Match registrado com sucesso!');
       } catch (error) {
         console.error('Error recording match:', error);
@@ -52,7 +63,7 @@ const Browse = () => {
       }
     } else if (direction === 'left') {
       try {
-        await recordPetMatch(id, userId, 'disliked');
+        await recordPetMatch(id, userId || '', 'disliked');
       } catch (error) {
         console.error('Error recording dislike:', error);
         toast.error('Erro ao registrar que não houve interesse');

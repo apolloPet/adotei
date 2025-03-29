@@ -183,18 +183,30 @@ export const recordPetMatch = async (
   matchType: 'liked' | 'disliked'
 ): Promise<boolean> => {
   try {
+    // Verificar se o userId é válido, caso contrário, obter o userId atual
+    let userIdToUse = userId;
+    
+    if (!userId || userId === 'mock-user-id') {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Você precisa estar logado para realizar esta ação');
+        return false;
+      }
+      userIdToUse = user.id;
+    }
+    
     const { error } = await supabase
       .from('pet_matches')
       .insert({
         pet_id: petId,
-        user_id: userId,
+        user_id: userIdToUse,
         match_type: matchType
       });
     
     if (error) throw error;
     
     if (matchType === 'liked') {
-      await createAdoption(petId, userId);
+      await createAdoption(petId, userIdToUse);
     }
     
     return true;
