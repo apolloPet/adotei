@@ -196,7 +196,7 @@ export const recordPetMatch = async (
     
     console.log('Recording pet match with:', { petId, userId: userIdToUse, matchType });
     
-    // Primeiro, verificar se o ID existe na tabela animals (e não na pets)
+    // Verificar se o ID existe na tabela animals (e não na pets)
     const { data: animalExists, error: animalError } = await supabase
       .from('animals')
       .select('id')
@@ -212,114 +212,52 @@ export const recordPetMatch = async (
     if (animalExists) {
       console.log('Animal exists in animals table. Using direct animal ID for matching.');
       
-      // Verificar se já existe um match para este pet e usuário
-      const { data: existingMatch, error: matchCheckError } = await supabase
-        .from('pet_matches')
-        .select('*')
-        .eq('pet_id', petId)
-        .eq('user_id', userIdToUse)
-        .maybeSingle();
-      
-      if (matchCheckError) {
-        console.error('Error checking existing match:', matchCheckError);
-        throw matchCheckError;
-      }
-      
-      // Se já existe um match, atualizar em vez de inserir
-      if (existingMatch) {
-        console.log('Match already exists, updating instead of inserting');
-        const { data: updatedMatch, error: updateError } = await supabase
-          .from('pet_matches')
-          .update({ match_type: matchType })
-          .eq('id', existingMatch.id)
-          .select();
+      // Usar a função de edge para registrar o match e criar adoção se necessário
+      try {
+        // Construir a URL completa para a função Edge
+        const edgeFunctionUrl = `https://jwbcrddblmiurmeziszp.supabase.co/functions/v1/record-adoption`;
         
-        if (updateError) {
-          console.error('Error updating pet_match:', updateError);
-          throw updateError;
+        const { data: sessionData } = await supabase.auth.getSession();
+        const accessToken = sessionData.session?.access_token;
+        
+        if (!accessToken) {
+          throw new Error('No access token available');
         }
         
-        console.log('Pet match updated successfully:', updatedMatch);
-      } else {
-        // Tentativa de inserção direta, ignorando a restrição de chave estrangeira
-        try {
-          // Criar um registro de adoção diretamente para o animal
-          if (matchType === 'liked') {
-            console.log('Creating adoption record for animal');
-            
-            // Vamos verificar se já existe uma adoção para este animal e usuário
-            const { data: existingAdoption, error: adoptionCheckError } = await supabase
-              .from('adoptions')
-              .select('*')
-              .eq('pet_id', petId)
-              .eq('user_id', userIdToUse)
-              .maybeSingle();
-            
-            if (adoptionCheckError) {
-              console.error('Error checking existing adoption:', adoptionCheckError);
-            } else if (!existingAdoption) {
-              // Usar a função de edge para criar a adoção com privilégios de admin
-              try {
-                // Construir a URL completa para a função Edge
-                const edgeFunctionUrl = `https://jwbcrddblmiurmeziszp.supabase.co/functions/v1/record-adoption`;
-                
-                const { data: sessionData } = await supabase.auth.getSession();
-                const accessToken = sessionData.session?.access_token;
-                
-                if (!accessToken) {
-                  throw new Error('No access token available');
-                }
-                
-                console.log('Calling edge function at:', edgeFunctionUrl);
-                
-                const response = await fetch(edgeFunctionUrl, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${accessToken}`
-                  },
-                  body: JSON.stringify({
-                    petId: petId,
-                    userId: userIdToUse,
-                    matchType: matchType
-                  })
-                });
-                
-                if (!response.ok) {
-                  const errorText = await response.text();
-                  console.error('Error response from edge function:', response.status, errorText);
-                  try {
-                    const errorData = JSON.parse(errorText);
-                    console.error('Parsed error from edge function:', errorData);
-                    throw new Error(`Edge function error: ${errorData.error || 'Unknown error'}`);
-                  } catch (jsonError) {
-                    throw new Error(`Edge function error: ${response.status} - ${errorText || 'No error details'}`);
-                  }
-                }
-                
-                const result = await response.json();
-                console.log('Edge function result:', result);
-                toast.success('Match registrado e adoção iniciada com sucesso!');
-                return true;
-              } catch (edgeFunctionError) {
-                console.error('Error calling edge function:', edgeFunctionError);
-                throw edgeFunctionError;
-              }
-            } else {
-              console.log('Adoption already exists:', existingAdoption);
-              toast.success('Você já mostrou interesse neste animal!');
-              return true;
-            }
-          } else {
-            console.log('Dislike registrado com sucesso!');
-            return true;
+        console.log('Calling edge function at:', edgeFunctionUrl);
+        
+        const response = await fetch(edgeFunctionUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({
+            petId: petId,
+            userId: userIdToUse,
+            matchType: matchType
+          })
+        });
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Error response from edge function:', response.status, errorText);
+          try {
+            const errorData = JSON.parse(errorText);
+            console.error('Parsed error from edge function:', errorData);
+            throw new Error(`Edge function error: ${errorData.error || 'Unknown error'}: ${errorData.details || ''}`);
+          } catch (jsonError) {
+            throw new Error(`Edge function error: ${response.status} - ${errorText || 'No error details'}`);
           }
-        } catch (insertError) {
-          console.error('Error during direct adoption creation:', insertError);
         }
+        
+        const result = await response.json();
+        console.log('Edge function result:', result);
+        return true;
+      } catch (edgeFunctionError) {
+        console.error('Error calling edge function:', edgeFunctionError);
+        throw edgeFunctionError;
       }
-      
-      return true;
     }
     
     // Processo original para pets da tabela pets
@@ -349,7 +287,7 @@ export const recordPetMatch = async (
   } catch (error) {
     console.error('Error recording pet match:', error);
     toast.error('Erro ao registrar match com o pet');
-    return false;
+    throw error;
   }
 };
 

@@ -61,7 +61,20 @@ const Browse = () => {
     try {
       if (direction === 'right') {
         console.log('Sending pet match with ID:', id, 'User ID:', userId);
-        await recordPetMatch(id, userId, 'liked');
+        
+        // Mostrar toast de carregamento enquanto processa o match
+        toast.loading('Processando seu interesse...', { id: 'match-processing' });
+        
+        const result = await recordPetMatch(id, userId, 'liked');
+        
+        // Remover toast de carregamento
+        toast.dismiss('match-processing');
+        
+        if (result) {
+          toast.success(`Você demonstrou interesse em adotar! 💖`, {
+            description: "A ONG será notificada do seu interesse."
+          });
+        }
       } else if (direction === 'left') {
         await recordPetMatch(id, userId, 'disliked');
       }

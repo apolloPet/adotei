@@ -90,27 +90,78 @@ serve(async (req) => {
       );
     }
 
-    // Record the match for audit purposes (this bypasses RLS with service role key)
-    const { error: matchError } = await supabase
-      .from('pet_matches')
-      .insert({
-        pet_id: petId,
-        user_id: userId,
-        match_type: matchType || 'liked'
-      });
+    // First, check which table the pet/animal is in
+    const { data: petExists, error: petCheckError } = await supabase
+      .from('pets')
+      .select('id')
+      .eq('id', petId)
+      .maybeSingle();
     
-    if (matchError) {
-      console.error("Error recording pet match:", matchError);
-      // Continue anyway - the match recording is secondary to the adoption
+    // If there was an error checking pets table other than "not found"
+    if (petCheckError && petCheckError.code !== 'PGRST116') {
+      console.error("Error checking if pet exists:", petCheckError);
+      return new Response(
+        JSON.stringify({ error: "Database error", details: petCheckError.message }),
+        {
+          status: 500,
+          headers: corsHeaders,
+        }
+      );
     }
-
-    // Create adoption record if it's a like (this bypasses RLS with service role key)
+    
+    // Check if the ID exists in animals table
+    const { data: animalExists, error: animalCheckError } = await supabase
+      .from('animals')
+      .select('id, nome, tipo, porte, sexo, descricao, fotoprincipal')
+      .eq('id', petId)
+      .maybeSingle();
+    
+    if (animalCheckError && animalCheckError.code !== 'PGRST116') {
+      console.error("Error checking if animal exists:", animalCheckError);
+      return new Response(
+        JSON.stringify({ error: "Database error", details: animalCheckError.message }),
+        {
+          status: 500,
+          headers: corsHeaders,
+        }
+      );
+    }
+    
+    // If it's neither in pets nor animals, return error
+    if (!petExists && !animalExists) {
+      return new Response(
+        JSON.stringify({ error: "Pet not found", details: "The specified pet/animal ID does not exist" }),
+        {
+          status: 404,
+          headers: corsHeaders,
+        }
+      );
+    }
+    
+    // Record the match in pet_matches table
+    if (petExists) {
+      // For pets, we can record directly
+      const { error: matchError } = await supabase
+        .from('pet_matches')
+        .insert({
+          pet_id: petId,
+          user_id: userId,
+          match_type: matchType || 'liked'
+        });
+      
+      if (matchError) {
+        console.error("Error recording pet match:", matchError);
+        // We'll continue anyway, the match is secondary to the adoption
+      }
+    }
+    
+    // Create adoption record if it's a like
     if (matchType === 'liked') {
       // Check if adoption already exists
       const { data: existingAdoption, error: checkError } = await supabase
         .from('adoptions')
         .select('id')
-        .eq('pet_id', petId)
+        .or(`pet_id.eq.${petId},animal_id.eq.${petId}`)
         .eq('user_id', userId)
         .maybeSingle();
       
@@ -139,27 +190,110 @@ serve(async (req) => {
         );
       }
       
-      // Create new adoption
-      const { data: adoption, error: adoptionError } = await supabase
-        .from('adoptions')
-        .insert({
-          pet_id: petId,
-          user_id: userId,
-          current_stage: 'interested',
-          notes: 'Match automático via navegação de animais'
-        })
-        .select()
-        .single();
+      // Create new adoption based on what type of entry we're working with
+      let adoption;
       
-      if (adoptionError) {
-        console.error("Error creating adoption:", adoptionError);
-        return new Response(
-          JSON.stringify({ error: "Failed to create adoption", details: adoptionError.message }),
-          {
-            status: 500,
-            headers: corsHeaders,
+      if (petExists) {
+        // Create adoption for an entry from the 'pets' table
+        const { data, error: adoptionError } = await supabase
+          .from('adoptions')
+          .insert({
+            pet_id: petId,
+            user_id: userId,
+            current_stage: 'interested',
+            notes: 'Match automático via navegação de animais'
+          })
+          .select()
+          .single();
+        
+        if (adoptionError) {
+          console.error("Error creating adoption for pet:", adoptionError);
+          return new Response(
+            JSON.stringify({ error: "Failed to create adoption", details: adoptionError.message }),
+            {
+              status: 500,
+              headers: corsHeaders,
+            }
+          );
+        }
+        
+        adoption = data;
+      } 
+      else if (animalExists) {
+        // Create adoption for an entry from the 'animals' table
+        // Store the animal_id in a new column instead of pet_id
+        const { data, error: adoptionError } = await supabase
+          .from('adoptions')
+          .insert({
+            animal_id: petId, // Use animal_id column
+            user_id: userId,
+            current_stage: 'interested',
+            notes: `Match automático via navegação de animais. Referência ao animal: ${animalExists.nome}`
+          })
+          .select()
+          .single();
+        
+        if (adoptionError) {
+          console.error("Error creating adoption for animal:", adoptionError);
+          
+          // If the column doesn't exist yet, we need to create it
+          if (adoptionError.message && adoptionError.message.includes('animal_id')) {
+            console.log("Trying to add animal_id column to adoptions table");
+            
+            // Add animal_id column to adoptions table
+            const { error: alterTableError } = await supabase.rpc('add_animal_id_to_adoptions');
+            
+            if (alterTableError) {
+              console.error("Error adding animal_id column:", alterTableError);
+              return new Response(
+                JSON.stringify({ 
+                  error: "Database schema update required", 
+                  details: "The animal_id column needs to be added to the adoptions table",
+                  schema_error: alterTableError.message
+                }),
+                {
+                  status: 500,
+                  headers: corsHeaders,
+                }
+              );
+            }
+            
+            // Try again after adding the column
+            const { data: retryData, error: retryError } = await supabase
+              .from('adoptions')
+              .insert({
+                animal_id: petId,
+                user_id: userId,
+                current_stage: 'interested',
+                notes: `Match automático via navegação de animais. Referência ao animal: ${animalExists.nome}`
+              })
+              .select()
+              .single();
+            
+            if (retryError) {
+              console.error("Error creating adoption after schema update:", retryError);
+              return new Response(
+                JSON.stringify({ error: "Failed to create adoption", details: retryError.message }),
+                {
+                  status: 500,
+                  headers: corsHeaders,
+                }
+              );
+            }
+            
+            adoption = retryData;
+          } else {
+            return new Response(
+              JSON.stringify({ error: "Failed to create adoption", details: adoptionError.message }),
+              {
+                status: 500,
+                headers: corsHeaders,
+              }
+            );
           }
-        );
+        } else {
+          adoption = data;
+        }
       }
 
       console.log("Successfully created adoption:", adoption);
