@@ -260,11 +260,23 @@ export const recordPetMatch = async (
             } else if (!existingAdoption) {
               // Usar a função de edge para criar a adoção com privilégios de admin
               try {
-                const response = await fetch(`${window.location.origin}/api/adoptions/record-match`, {
+                // Construir a URL completa para a função Edge
+                const edgeFunctionUrl = `https://jwbcrddblmiurmeziszp.supabase.co/functions/v1/record-adoption`;
+                
+                const { data: sessionData } = await supabase.auth.getSession();
+                const accessToken = sessionData.session?.access_token;
+                
+                if (!accessToken) {
+                  throw new Error('No access token available');
+                }
+                
+                console.log('Calling edge function at:', edgeFunctionUrl);
+                
+                const response = await fetch(edgeFunctionUrl, {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+                    'Authorization': `Bearer ${accessToken}`
                   },
                   body: JSON.stringify({
                     petId: petId,
@@ -274,9 +286,15 @@ export const recordPetMatch = async (
                 });
                 
                 if (!response.ok) {
-                  const errorData = await response.json();
-                  console.error('Error from edge function:', errorData);
-                  throw new Error(`Edge function error: ${errorData.error}`);
+                  const errorText = await response.text();
+                  console.error('Error response from edge function:', response.status, errorText);
+                  try {
+                    const errorData = JSON.parse(errorText);
+                    console.error('Parsed error from edge function:', errorData);
+                    throw new Error(`Edge function error: ${errorData.error || 'Unknown error'}`);
+                  } catch (jsonError) {
+                    throw new Error(`Edge function error: ${response.status} - ${errorText || 'No error details'}`);
+                  }
                 }
                 
                 const result = await response.json();

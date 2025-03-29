@@ -1,3 +1,4 @@
+
 import FilterPanel from "@/components/browse/FilterPanel";
 import PetBrowser from "@/components/browse/PetBrowser";
 import { usePetBrowse } from "@/hooks/use-pet-browse";
@@ -57,25 +58,19 @@ const Browse = () => {
       return;
     }
 
-    if (direction === 'right') {
-      try {
+    try {
+      if (direction === 'right') {
         console.log('Sending pet match with ID:', id, 'User ID:', userId);
         await recordPetMatch(id, userId, 'liked');
-        toast.success('Match registrado com sucesso!');
-      } catch (error) {
-        console.error('Error recording match:', error);
-        toast.error('Erro ao registrar match');
-      }
-    } else if (direction === 'left') {
-      try {
+      } else if (direction === 'left') {
         await recordPetMatch(id, userId, 'disliked');
-      } catch (error) {
-        console.error('Error recording dislike:', error);
-        toast.error('Erro ao registrar que não houve interesse');
       }
+      
+      handleSwipe(direction, id);
+    } catch (error) {
+      console.error('Error handling pet swipe:', error);
+      toast.error('Erro ao processar a interação com o animal');
     }
-    
-    handleSwipe(direction, id);
   };
 
   return (
