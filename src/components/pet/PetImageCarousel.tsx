@@ -9,6 +9,7 @@ interface PetImageCarouselProps {
 
 const PetImageCarousel = ({ images, petName, onShowDetails }: PetImageCarouselProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageError, setImageError] = useState<Record<number, boolean>>({});
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
@@ -18,12 +19,22 @@ const PetImageCarousel = ({ images, petName, onShowDetails }: PetImageCarouselPr
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
+  const handleImageError = (index: number) => {
+    setImageError(prev => ({...prev, [index]: true}));
+  };
+
+  // Get current image with fallback
+  const currentImage = imageError[currentImageIndex] 
+    ? '/placeholder.svg'
+    : images[currentImageIndex] || '/placeholder.svg';
+
   return (
     <div className="relative w-full h-full">
       <img 
-        src={images[currentImageIndex]} 
+        src={currentImage} 
         alt={petName}
         className="w-full h-full object-cover"
+        onError={() => handleImageError(currentImageIndex)}
       />
       
       {/* Image navigation dots */}

@@ -37,8 +37,16 @@ export const fetchAnimalsForBrowse = async (filters?: PetFilters): Promise<Pet[]
     // Buscar os animais usando o serviço existente
     const animals = await getAnimals(animalFilters);
     
+    // Log para debug
+    console.log('Animals fetched for browse:', animals);
+    
     // Converter animais para o formato usado pela interface
-    return animals.map(animalToPet);
+    const pets = animals.map(animalToPet);
+    
+    // Log para debug
+    console.log('Converted pets for browse:', pets);
+    
+    return pets;
   } catch (error) {
     console.error('Error fetching animals for browse:', error);
     toast.error('Erro ao buscar animais para exploração');

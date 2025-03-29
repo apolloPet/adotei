@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 
 interface PetImageGalleryProps {
   images: string[];
@@ -8,6 +9,7 @@ interface PetImageGalleryProps {
 
 const PetImageGallery = ({ images, petName }: PetImageGalleryProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageError, setImageError] = useState<Record<number, boolean>>({});
   
   const nextImage = () => {
     setCurrentImageIndex(prevIndex => 
@@ -20,13 +22,23 @@ const PetImageGallery = ({ images, petName }: PetImageGalleryProps) => {
       prevIndex === 0 ? images.length - 1 : prevIndex - 1
     );
   };
+
+  const handleImageError = (index: number) => {
+    setImageError(prev => ({...prev, [index]: true}));
+  };
+
+  // Get current image with fallback
+  const currentImage = imageError[currentImageIndex] 
+    ? '/placeholder.svg'
+    : images[currentImageIndex] || '/placeholder.svg';
   
   return (
     <div className="relative rounded-lg overflow-hidden aspect-square bg-muted">
       <img
-        src={images[currentImageIndex]}
+        src={currentImage}
         alt={`Foto de ${petName}`}
         className="w-full h-full object-cover"
+        onError={() => handleImageError(currentImageIndex)}
       />
       
       {images.length > 1 && (
@@ -49,13 +61,13 @@ const PetImageGallery = ({ images, petName }: PetImageGalleryProps) => {
             onClick={prevImage}
             className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 flex items-center justify-center text-white hover:bg-black/50"
           >
-            &lt;
+            <ArrowLeft className="h-4 w-4" />
           </button>
           <button
             onClick={nextImage}
             className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 flex items-center justify-center text-white hover:bg-black/50"
           >
-            &gt;
+            <ArrowRight className="h-4 w-4" />
           </button>
         </>
       )}
