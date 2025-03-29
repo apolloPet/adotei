@@ -90,7 +90,82 @@ serve(async (req) => {
       );
     }
 
-    // First, check which table the pet/animal is in
+    // Verificar se o usuário existe na tabela users
+    const { data: userExists, error: userCheckError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('auth_id', userId)
+      .maybeSingle();
+    
+    // Se o usuário não existe na tabela users, precisamos criá-lo
+    let userIdToUse = userId;
+    
+    if (!userExists && !userCheckError) {
+      console.log("User does not exist in users table. Creating profile record...");
+      
+      // Obter detalhes do usuário do auth
+      const { data: { user: authUser }, error: getUserError } = await supabase.auth.admin.getUserById(userId);
+      
+      if (getUserError || !authUser) {
+        console.error("Error getting auth user details:", getUserError);
+        return new Response(
+          JSON.stringify({ error: "User validation failed", details: "Could not verify user identity" }),
+          {
+            status: 500,
+            headers: corsHeaders,
+          }
+        );
+      }
+      
+      // Criar um registro de usuário básico
+      const { data: newUser, error: createUserError } = await supabase
+        .from('users')
+        .insert({
+          auth_id: userId,
+          name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || "User",
+          email: authUser.email || "",
+          phone: authUser.phone || "",
+          address: "",
+          city: "",
+          state: "",
+          zip: "",
+          housing_type: "apartment",
+          has_children: false,
+          had_pets_before: false,
+          has_allergies: false,
+          work_schedule: "regular"
+        })
+        .select()
+        .single();
+      
+      if (createUserError) {
+        console.error("Error creating user profile:", createUserError);
+        return new Response(
+          JSON.stringify({ error: "Failed to create user profile", details: createUserError.message }),
+          {
+            status: 500,
+            headers: corsHeaders,
+          }
+        );
+      }
+      
+      console.log("Created new user profile:", newUser.id);
+      userIdToUse = newUser.id;
+    } else if (userExists) {
+      userIdToUse = userExists.id;
+      console.log("Using existing user profile:", userIdToUse);
+    } else if (userCheckError) {
+      console.error("Error checking if user exists:", userCheckError);
+      return new Response(
+        JSON.stringify({ error: "Database error", details: userCheckError.message }),
+        {
+          status: 500,
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    // Check which table the pet/animal is in
     const { data: petExists, error: petCheckError } = await supabase
       .from('pets')
       .select('id')
@@ -141,17 +216,22 @@ serve(async (req) => {
     // Record the match in pet_matches table
     if (petExists) {
       // For pets, we can record directly
-      const { error: matchError } = await supabase
-        .from('pet_matches')
-        .insert({
-          pet_id: petId,
-          user_id: userId,
-          match_type: matchType || 'liked'
-        });
-      
-      if (matchError) {
-        console.error("Error recording pet match:", matchError);
-        // We'll continue anyway, the match is secondary to the adoption
+      try {
+        const { error: matchError } = await supabase
+          .from('pet_matches')
+          .insert({
+            pet_id: petId,
+            user_id: userIdToUse,
+            match_type: matchType || 'liked'
+          });
+        
+        if (matchError) {
+          console.error("Error recording pet match:", matchError);
+          // We'll continue anyway, the match is secondary to the adoption
+        }
+      } catch (matchInsertError) {
+        console.error("Exception recording pet match:", matchInsertError);
+        // Continue with adoption despite match error
       }
     }
     
@@ -235,7 +315,7 @@ serve(async (req) => {
         .from('adoptions')
         .select('id')
         .eq('pet_id', validPetId)
-        .eq('user_id', userId)
+        .eq('user_id', userIdToUse)
         .maybeSingle();
       
       if (checkError) {
@@ -266,7 +346,7 @@ serve(async (req) => {
       // Create new adoption with the valid pet_id
       const adoptionData = {
         pet_id: validPetId,
-        user_id: userId,
+        user_id: userIdToUse,
         current_stage: 'interested',
         notes: 'Match automático via navegação de animais',
         animal_id: animalExists ? petId : null

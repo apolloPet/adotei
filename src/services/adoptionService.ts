@@ -196,94 +196,52 @@ export const recordPetMatch = async (
     
     console.log('Recording pet match with:', { petId, userId: userIdToUse, matchType });
     
-    // Verificar se o ID existe na tabela animals (e não na pets)
-    const { data: animalExists, error: animalError } = await supabase
-      .from('animals')
-      .select('id')
-      .eq('id', petId)
-      .single();
-    
-    if (animalError && animalError.code !== 'PGRST116') {
-      console.error('Error checking if animal exists:', animalError);
-      throw animalError;
-    }
-    
-    // Se o animal existe, precisamos adaptar o processo
-    if (animalExists) {
-      console.log('Animal exists in animals table. Using direct animal ID for matching.');
-      
+    try {
       // Usar a função de edge para registrar o match e criar adoção se necessário
-      try {
-        // Construir a URL completa para a função Edge
-        const edgeFunctionUrl = `https://jwbcrddblmiurmeziszp.supabase.co/functions/v1/record-adoption`;
-        
-        const { data: sessionData } = await supabase.auth.getSession();
-        const accessToken = sessionData.session?.access_token;
-        
-        if (!accessToken) {
-          throw new Error('No access token available');
-        }
-        
-        console.log('Calling edge function at:', edgeFunctionUrl);
-        
-        const response = await fetch(edgeFunctionUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`
-          },
-          body: JSON.stringify({
-            petId: petId,
-            userId: userIdToUse,
-            matchType: matchType
-          })
-        });
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('Error response from edge function:', response.status, errorText);
-          try {
-            const errorData = JSON.parse(errorText);
-            console.error('Parsed error from edge function:', errorData);
-            throw new Error(`Edge function error: ${errorData.error || 'Unknown error'}: ${errorData.details || ''}`);
-          } catch (jsonError) {
-            throw new Error(`Edge function error: ${response.status} - ${errorText || 'No error details'}`);
-          }
-        }
-        
-        const result = await response.json();
-        console.log('Edge function result:', result);
-        return true;
-      } catch (edgeFunctionError) {
-        console.error('Error calling edge function:', edgeFunctionError);
-        throw edgeFunctionError;
+      // Construir a URL completa para a função Edge
+      const edgeFunctionUrl = `https://jwbcrddblmiurmeziszp.supabase.co/functions/v1/record-adoption`;
+      
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+      
+      if (!accessToken) {
+        throw new Error('No access token available');
       }
+      
+      console.log('Calling edge function at:', edgeFunctionUrl);
+      
+      const response = await fetch(edgeFunctionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({
+          petId: petId,
+          userId: userIdToUse,
+          matchType: matchType
+        })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response from edge function:', response.status, errorText);
+        try {
+          const errorData = JSON.parse(errorText);
+          console.error('Parsed error from edge function:', errorData);
+          throw new Error(`Edge function error: ${errorData.error || 'Unknown error'}: ${errorData.details || ''}`);
+        } catch (jsonError) {
+          throw new Error(`Edge function error: ${response.status} - ${errorText || 'No error details'}`);
+        }
+      }
+      
+      const result = await response.json();
+      console.log('Edge function result:', result);
+      return true;
+    } catch (edgeFunctionError) {
+      console.error('Error calling edge function:', edgeFunctionError);
+      throw edgeFunctionError;
     }
-    
-    // Processo original para pets da tabela pets
-    const { data, error } = await supabase
-      .from('pet_matches')
-      .insert({
-        pet_id: petId,
-        user_id: userIdToUse,
-        match_type: matchType
-      })
-      .select();
-    
-    if (error) {
-      console.error('Error inserting into pet_matches:', error);
-      throw error;
-    }
-    
-    console.log('Pet match recorded successfully:', data);
-    
-    if (matchType === 'liked') {
-      console.log('Creating adoption record for pet match');
-      const adoption = await createAdoption(petId, userIdToUse);
-      console.log('Adoption created:', adoption);
-    }
-    
-    return true;
   } catch (error) {
     console.error('Error recording pet match:', error);
     toast.error('Erro ao registrar match com o pet');
