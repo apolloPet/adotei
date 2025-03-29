@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -84,8 +85,11 @@ serve(async (req) => {
       );
     }
 
-    // Verificar campos obrigatórios
-    const requiredFields = ["nome", "idade", "tipo", "porte", "sexo", "breed"];
+    // Log dos dados recebidos para depuração
+    console.log("Dados do animal recebidos:", JSON.stringify(animalData, null, 2));
+
+    // Verificar campos obrigatórios - removendo "breed" dos campos obrigatórios
+    const requiredFields = ["nome", "idade", "tipo", "porte", "sexo"];
     const missingFields = [];
     
     for (const field of requiredFields) {
@@ -199,7 +203,7 @@ serve(async (req) => {
     }
 
     // Log dos dados recebidos
-    console.log("Dados do animal recebidos:", animalData);
+    console.log("Dados do animal validados e prontos para inserção:", animalData);
 
     // Adicionar data de cadastro atual se não fornecida
     if (!animalData.data_cadastro) {
