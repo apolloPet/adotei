@@ -258,23 +258,34 @@ export const recordPetMatch = async (
             if (adoptionCheckError) {
               console.error('Error checking existing adoption:', adoptionCheckError);
             } else if (!existingAdoption) {
-              // Inserir diretamente na tabela de adoções
-              const { data, error } = await supabase
-                .from('adoptions')
-                .insert({
-                  pet_id: petId,
-                  user_id: userIdToUse,
-                  current_stage: 'interested',
-                  notes: 'Match automático via navegação de animais'
-                })
-                .select();
-              
-              if (error) {
-                console.error('Error creating adoption record:', error);
-              } else {
-                console.log('Adoption created successfully:', data);
+              // Usar a função de edge para criar a adoção com privilégios de admin
+              try {
+                const response = await fetch(`${window.location.origin}/api/adoptions/record-match`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+                  },
+                  body: JSON.stringify({
+                    petId: petId,
+                    userId: userIdToUse,
+                    matchType: matchType
+                  })
+                });
+                
+                if (!response.ok) {
+                  const errorData = await response.json();
+                  console.error('Error from edge function:', errorData);
+                  throw new Error(`Edge function error: ${errorData.error}`);
+                }
+                
+                const result = await response.json();
+                console.log('Edge function result:', result);
                 toast.success('Match registrado e adoção iniciada com sucesso!');
                 return true;
+              } catch (edgeFunctionError) {
+                console.error('Error calling edge function:', edgeFunctionError);
+                throw edgeFunctionError;
               }
             } else {
               console.log('Adoption already exists:', existingAdoption);

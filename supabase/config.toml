@@ -24,3 +24,6 @@ verify_jwt = true
 
 [functions.admin]
 verify_jwt = true
+
+[functions.record-adoption]
+verify_jwt = true
