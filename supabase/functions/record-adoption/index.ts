@@ -158,12 +158,11 @@ serve(async (req) => {
     // Create adoption record if it's a like
     if (matchType === 'liked') {
       // Check if adoption already exists
-      const { data: existingAdoption, error: checkError } = await supabase
-        .from('adoptions')
-        .select('id')
-        .or(`pet_id.eq.${petId},animal_id.eq.${petId}`)
-        .eq('user_id', userId)
-        .maybeSingle();
+      const checkQuery = petExists 
+        ? supabase.from('adoptions').select('id').eq('pet_id', petId).eq('user_id', userId)
+        : supabase.from('adoptions').select('id').eq('animal_id', petId).eq('user_id', userId);
+      
+      const { data: existingAdoption, error: checkError } = await checkQuery.maybeSingle();
       
       if (checkError) {
         console.error("Error checking existing adoption:", checkError);
@@ -220,12 +219,13 @@ serve(async (req) => {
         adoption = data;
       } 
       else if (animalExists) {
-        // Create adoption for an entry from the 'animals' table
-        // Store the animal_id in a new column instead of pet_id
+        // For animals, use a placeholder value for pet_id since it's non-nullable
+        // but set the actual animal ID in the animal_id column
         const { data, error: adoptionError } = await supabase
           .from('adoptions')
           .insert({
-            animal_id: petId, // Use animal_id column
+            pet_id: '00000000-0000-0000-0000-000000000000', // Use a placeholder UUID
+            animal_id: petId, // Store the real animal ID here
             user_id: userId,
             current_stage: 'interested',
             notes: `Match automático via navegação de animais. Referência ao animal: ${animalExists.nome}`
@@ -235,65 +235,16 @@ serve(async (req) => {
         
         if (adoptionError) {
           console.error("Error creating adoption for animal:", adoptionError);
-          
-          // If the column doesn't exist yet, we need to create it
-          if (adoptionError.message && adoptionError.message.includes('animal_id')) {
-            console.log("Trying to add animal_id column to adoptions table");
-            
-            // Add animal_id column to adoptions table
-            const { error: alterTableError } = await supabase.rpc('add_animal_id_to_adoptions');
-            
-            if (alterTableError) {
-              console.error("Error adding animal_id column:", alterTableError);
-              return new Response(
-                JSON.stringify({ 
-                  error: "Database schema update required", 
-                  details: "The animal_id column needs to be added to the adoptions table",
-                  schema_error: alterTableError.message
-                }),
-                {
-                  status: 500,
-                  headers: corsHeaders,
-                }
-              );
+          return new Response(
+            JSON.stringify({ error: "Failed to create adoption", details: adoptionError.message }),
+            {
+              status: 500,
+              headers: corsHeaders,
             }
-            
-            // Try again after adding the column
-            const { data: retryData, error: retryError } = await supabase
-              .from('adoptions')
-              .insert({
-                animal_id: petId,
-                user_id: userId,
-                current_stage: 'interested',
-                notes: `Match automático via navegação de animais. Referência ao animal: ${animalExists.nome}`
-              })
-              .select()
-              .single();
-            
-            if (retryError) {
-              console.error("Error creating adoption after schema update:", retryError);
-              return new Response(
-                JSON.stringify({ error: "Failed to create adoption", details: retryError.message }),
-                {
-                  status: 500,
-                  headers: corsHeaders,
-                }
-              );
-            }
-            
-            adoption = retryData;
-          } else {
-            return new Response(
-              JSON.stringify({ error: "Failed to create adoption", details: adoptionError.message }),
-              {
-                status: 500,
-                headers: corsHeaders,
-              }
-            );
-          }
-        } else {
-          adoption = data;
+          );
         }
+        
+        adoption = data;
       }
 
       console.log("Successfully created adoption:", adoption);

@@ -89,6 +89,7 @@ export type Database = {
       adoptions: {
         Row: {
           adoption_fee_paid: boolean | null
+          animal_id: string | null
           approved_by: string | null
           contract_signed: boolean | null
           created_at: string
@@ -108,6 +109,7 @@ export type Database = {
         }
         Insert: {
           adoption_fee_paid?: boolean | null
+          animal_id?: string | null
           approved_by?: string | null
           contract_signed?: boolean | null
           created_at?: string
@@ -127,6 +129,7 @@ export type Database = {
         }
         Update: {
           adoption_fee_paid?: boolean | null
+          animal_id?: string | null
           approved_by?: string | null
           contract_signed?: boolean | null
           created_at?: string
@@ -1027,6 +1030,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_animal_id_to_adoptions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       calculate_daily_user_metrics: {
         Args: Record<PropertyKey, never>
         Returns: undefined
