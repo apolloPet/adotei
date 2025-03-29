@@ -157,12 +157,86 @@ serve(async (req) => {
     
     // Create adoption record if it's a like
     if (matchType === 'liked') {
-      // Check if adoption already exists
-      const checkQuery = petExists 
-        ? supabase.from('adoptions').select('id').eq('pet_id', petId).eq('user_id', userId)
-        : supabase.from('adoptions').select('id').eq('animal_id', petId).eq('user_id', userId);
+      // First, we need to ensure we have a valid pet_id that exists in the pets table
+      let validPetId = null;
       
-      const { data: existingAdoption, error: checkError } = await checkQuery.maybeSingle();
+      // Check if we need to create a dummy pet for the animal
+      if (!petExists && animalExists) {
+        // Check if we already have a mapping pet for this animal
+        const { data: existingMappingPet, error: mappingError } = await supabase
+          .from('pets')
+          .select('id')
+          .eq('name', `Animal_${petId}`)
+          .maybeSingle();
+          
+        if (mappingError && mappingError.code !== 'PGRST116') {
+          console.error("Error checking mapping pet:", mappingError);
+          return new Response(
+            JSON.stringify({ error: "Database error", details: mappingError.message }),
+            {
+              status: 500,
+              headers: corsHeaders,
+            }
+          );
+        }
+        
+        if (existingMappingPet) {
+          // Use the existing mapping pet
+          validPetId = existingMappingPet.id;
+          console.log("Using existing mapping pet:", validPetId);
+        } else {
+          // Create a new mapping pet entry in the pets table
+          const animalName = animalExists.nome || 'Unknown';
+          const animalSpecies = animalExists.tipo === 'cachorro' ? 'dog' : 
+                             animalExists.tipo === 'gato' ? 'cat' : 'other';
+          const animalGender = animalExists.sexo === 'macho' ? 'male' : 'female';
+          const animalSize = animalExists.porte === 'pequeno' ? 'small' : 
+                           animalExists.porte === 'medio' ? 'medium' : 'large';
+                           
+          const { data: newPet, error: petCreateError } = await supabase
+            .from('pets')
+            .insert({
+              name: `Animal_${petId}`,
+              species: animalSpecies,
+              breed: "Mixed",
+              age: 1,
+              age_unit: "years",
+              gender: animalGender,
+              size: animalSize,
+              weight: 0,
+              description: animalExists.descricao || 'Animal imported from animals table',
+              location: "Unknown",
+              shelter_id: "00000000-0000-0000-0000-000000000000" // Using a placeholder
+            })
+            .select()
+            .single();
+            
+          if (petCreateError) {
+            console.error("Error creating mapping pet:", petCreateError);
+            return new Response(
+              JSON.stringify({ error: "Failed to create mapping pet", details: petCreateError.message }),
+              {
+                status: 500,
+                headers: corsHeaders,
+              }
+            );
+          }
+          
+          validPetId = newPet.id;
+          console.log("Created new mapping pet:", validPetId);
+        }
+      } else if (petExists) {
+        // This is a regular pet, use its ID directly
+        validPetId = petId;
+      }
+      
+      // Now check if adoption already exists
+      const { data: existingAdoption, error: checkError } = await supabase
+        .from('adoptions')
+        .select('id')
+        .eq('pet_id', validPetId)
+        .eq('user_id', userId)
+        .maybeSingle();
       
       if (checkError) {
         console.error("Error checking existing adoption:", checkError);
@@ -189,64 +263,34 @@ serve(async (req) => {
         );
       }
       
-      // Create new adoption based on what type of entry we're working with
-      let adoption;
+      // Create new adoption with the valid pet_id
+      const adoptionData = {
+        pet_id: validPetId,
+        user_id: userId,
+        current_stage: 'interested',
+        notes: 'Match automático via navegação de animais',
+        animal_id: animalExists ? petId : null
+      };
       
-      if (petExists) {
-        // Create adoption for an entry from the 'pets' table
-        const { data, error: adoptionError } = await supabase
-          .from('adoptions')
-          .insert({
-            pet_id: petId,
-            user_id: userId,
-            current_stage: 'interested',
-            notes: 'Match automático via navegação de animais'
-          })
-          .select()
-          .single();
-        
-        if (adoptionError) {
-          console.error("Error creating adoption for pet:", adoptionError);
-          return new Response(
-            JSON.stringify({ error: "Failed to create adoption", details: adoptionError.message }),
-            {
-              status: 500,
-              headers: corsHeaders,
-            }
-          );
-        }
-        
-        adoption = data;
-      } 
-      else if (animalExists) {
-        // For animals, use a placeholder value for pet_id since it's non-nullable
-        // but set the actual animal ID in the animal_id column
-        const { data, error: adoptionError } = await supabase
-          .from('adoptions')
-          .insert({
-            pet_id: '00000000-0000-0000-0000-000000000000', // Use a placeholder UUID
-            animal_id: petId, // Store the real animal ID here
-            user_id: userId,
-            current_stage: 'interested',
-            notes: `Match automático via navegação de animais. Referência ao animal: ${animalExists.nome}`
-          })
-          .select()
-          .single();
-        
-        if (adoptionError) {
-          console.error("Error creating adoption for animal:", adoptionError);
-          return new Response(
-            JSON.stringify({ error: "Failed to create adoption", details: adoptionError.message }),
-            {
-              status: 500,
-              headers: corsHeaders,
-            }
-          );
-        }
-        
-        adoption = data;
+      console.log("Creating adoption with data:", adoptionData);
+      
+      const { data: adoption, error: adoptionError } = await supabase
+        .from('adoptions')
+        .insert(adoptionData)
+        .select()
+        .single();
+      
+      if (adoptionError) {
+        console.error("Error creating adoption:", adoptionError);
+        return new Response(
+          JSON.stringify({ error: "Failed to create adoption", details: adoptionError.message }),
+          {
+            status: 500,
+            headers: corsHeaders,
+          }
+        );
       }
-
+      
       console.log("Successfully created adoption:", adoption);
       return new Response(
         JSON.stringify({
