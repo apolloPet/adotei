@@ -223,10 +223,45 @@ serve(async (req) => {
       animalData.fotoprincipal = animalData.fotos[0];
     }
 
+    // Remover o responsavel_id se for o placeholder 00000000-0000-0000-0000-000000000000
+    if (animalData.responsavel_id === "00000000-0000-0000-0000-000000000000") {
+      delete animalData.responsavel_id;
+      console.log("Removendo responsavel_id placeholder para evitar erros de FK");
+    }
+
+    let animalForInsert = {...animalData};
+
+    // Verifica se precisamos criar um usuário de sistema para ser o responsável
+    if (!animalForInsert.responsavel_id) {
+      try {
+        // Verificar se já existe o usuário de sistema
+        const { data: systemUser, error: findError } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("first_name", "Sistema")
+          .single();
+        
+        if (findError && findError.code !== "PGRST116") {
+          console.error("Erro ao buscar usuário de sistema:", findError);
+        }
+        
+        if (systemUser) {
+          animalForInsert.responsavel_id = systemUser.id;
+          console.log(`Usando usuário de sistema existente como responsável: ${systemUser.id}`);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar usuário de sistema:", error);
+      }
+    }
+
+    // Se depois de tudo isso ainda não temos um responsável, 
+    // não incluiremos o campo, assumindo que a coluna tem default ou é nullable
+    console.log("Animal preparado para inserção:", animalForInsert);
+
     // Inserir animal no banco de dados usando o cliente com bypass_rls
     const { data, error } = await supabase
       .from("animals")
-      .insert(animalData)
+      .insert(animalForInsert)
       .select()
       .single();
 
@@ -259,6 +294,11 @@ serve(async (req) => {
           statusCode = 400;
           errorMessage = "Formato de dados inválido";
           details = "Um ou mais campos contêm dados em formato inválido. Verifique os tipos de dados e tente novamente.";
+          break;
+        case "23503":
+          statusCode = 400;
+          errorMessage = "Referência inválida";
+          details = "Uma referência a outro registro (como responsável) é inválida. Verifique os IDs fornecidos.";
           break;
       }
       

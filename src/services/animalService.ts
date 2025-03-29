@@ -151,7 +151,7 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
         toast.loading('Cadastrando animal...', {id: 'animal-creation'});
         
         // Use the edge function directly via Supabase client
-        const { data, error } = await supabase.functions.invoke('animals', {
+        const { data, error, status } = await supabase.functions.invoke('animals', {
           body: animalForInsertion
         });
         
@@ -162,6 +162,16 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
             description: error.message || 'Falha no processamento'
           });
           throw new Error(`Erro na Edge Function: ${error.message}`);
+        }
+        
+        // Check for application-level errors in the response
+        if (data && data.error) {
+          console.error('Erro retornado pela Edge Function:', data);
+          toast.error('Erro ao cadastrar animal', {
+            id: 'animal-creation',
+            description: data.details || data.error
+          });
+          throw new Error(`Erro na Edge Function: ${data.details || data.error}`);
         }
         
         console.log('Animal cadastrado com sucesso via Edge Function! Dados:', data);
