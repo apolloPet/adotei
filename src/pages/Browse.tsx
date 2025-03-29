@@ -3,7 +3,7 @@ import FilterPanel from "@/components/browse/FilterPanel";
 import PetBrowser from "@/components/browse/PetBrowser";
 import { usePetBrowse } from "@/hooks/use-pet-browse";
 import { useEffect } from "react";
-import { fetchPets } from "@/services/petService";
+import { fetchAnimalsForBrowse } from "@/services/animalBrowseService";
 import { recordPetMatch } from "@/services/adoptionService";
 import { toast } from "@/hooks/use-sonner";
 
@@ -24,7 +24,8 @@ const Browse = () => {
     const loadPets = async () => {
       setIsLoading(true);
       try {
-        const petsData = await fetchPets(filters);
+        // Usar o novo serviço para buscar animais 
+        const petsData = await fetchAnimalsForBrowse(filters);
         setPets(petsData);
       } catch (error) {
         console.error('Error fetching pets:', error);
