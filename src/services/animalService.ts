@@ -151,7 +151,7 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
         toast.loading('Cadastrando animal...', {id: 'animal-creation'});
         
         // Use the edge function directly via Supabase client
-        const { data, error, status } = await supabase.functions.invoke('animals', {
+        const { data, error } = await supabase.functions.invoke('animals', {
           body: animalForInsertion
         });
         
