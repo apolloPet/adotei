@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-sonner";
 import AdoptionTermsPDF from "@/components/adoption/AdoptionTermsPDF";
 import { useState } from "react";
+import { useAuth } from "@/hooks/auth";
+import { recordPetMatch } from "@/services/adoptionService";
 
 interface PetAdoptionProcessProps {
   id: string;
@@ -13,14 +15,50 @@ interface PetAdoptionProcessProps {
 
 const PetAdoptionProcess = ({ id, adoptionProcess }: PetAdoptionProcessProps) => {
   const [showPDF, setShowPDF] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { user, isAdmin, isAuthenticated } = useAuth();
   
-  const handleLikeClick = () => {
-    toast.success("Você demonstrou interesse neste pet!", {
-      description: "A ONG será notificada e entrará em contato."
-    });
-    
-    console.log(`Liked pet with ID: ${id}`);
-    setShowPDF(true);
+  const handleLikeClick = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      // Se não estiver autenticado, mostrar aviso
+      if (!isAuthenticated) {
+        toast.error("Você precisa estar logado para demonstrar interesse", {
+          description: "Faça login para continuar com o processo de adoção."
+        });
+        return;
+      }
+      
+      // Registrar interesse mesmo para usuários admin
+      const userId = user?.id || localStorage.getItem("userEmail") || "admin@petmatch.com";
+      console.log("Tentando registrar interesse na adoção:", { petId: id, userId });
+      
+      // Mostrar toast durante processamento
+      toast.loading("Processando seu interesse...", { id: "adoption-interest" });
+      
+      const success = await recordPetMatch(id, userId, 'liked');
+      
+      // Remover toast de carregamento
+      toast.dismiss("adoption-interest");
+      
+      if (success) {
+        toast.success("Você demonstrou interesse neste pet!", {
+          description: "A ONG será notificada e entrará em contato.",
+          duration: 5000
+        });
+        
+        console.log(`Liked pet with ID: ${id}`);
+        setShowPDF(true);
+      }
+    } catch (error) {
+      console.error("Erro ao demonstrar interesse:", error);
+      toast.error("Ocorreu um erro ao registrar seu interesse", {
+        description: "Por favor, tente novamente mais tarde."
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   
   return (
@@ -50,9 +88,13 @@ const PetAdoptionProcess = ({ id, adoptionProcess }: PetAdoptionProcessProps) =>
         )}
       </CardContent>
       <CardFooter>
-        <Button onClick={handleLikeClick} className="w-full">
+        <Button 
+          onClick={handleLikeClick} 
+          className="w-full"
+          disabled={isSubmitting}
+        >
           <Heart className="h-5 w-5 mr-2" />
-          Quero Adotar
+          {isSubmitting ? "Processando..." : "Quero Adotar"}
         </Button>
       </CardFooter>
     </Card>

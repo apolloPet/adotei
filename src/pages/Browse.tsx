@@ -7,6 +7,7 @@ import { fetchAnimalsForBrowse } from "@/services/animalBrowseService";
 import { recordPetMatch } from "@/services/adoptionService";
 import { toast } from "@/hooks/use-sonner";
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from "@/hooks/auth";
 
 const Browse = () => {
   const {
@@ -22,17 +23,35 @@ const Browse = () => {
   } = usePetBrowse();
   
   const [userId, setUserId] = useState<string | null>(null);
+  const { user, isAdmin, isAuthenticated } = useAuth();
 
   useEffect(() => {
     // Obter o usuário atual
     const getCurrentUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUserId(user?.id || null);
-      console.log('Current user ID:', user?.id || 'não autenticado');
+      // Tente obter o ID do usuário do contexto de autenticação
+      if (user?.id) {
+        setUserId(user.id);
+        console.log('ID do usuário atual (contexto):', user.id);
+        return;
+      }
+      
+      // Fallback para Supabase API
+      const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+      setUserId(supabaseUser?.id || null);
+      console.log('ID do usuário atual (supabase):', supabaseUser?.id || 'não autenticado');
+      
+      // Segundo fallback para localStorage (para usuários de demo)
+      if (!supabaseUser?.id) {
+        const localEmail = localStorage.getItem("userEmail");
+        if (localEmail) {
+          setUserId(localEmail);
+          console.log('Usando email do localStorage como ID:', localEmail);
+        }
+      }
     };
     
     getCurrentUser();
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const loadPets = async () => {
@@ -53,19 +72,22 @@ const Browse = () => {
   }, [filters, setIsLoading, setPets]);
 
   const handlePetSwipe = async (direction: string, id: string) => {
-    if (!userId) {
+    // Verificar se temos um ID de usuário válido
+    const effectiveUserId = userId || (isAdmin ? "admin@petmatch.com" : null);
+    
+    if (!effectiveUserId) {
       toast.error('Você precisa estar logado para mostrar interesse em um animal');
       return;
     }
 
     try {
       if (direction === 'right') {
-        console.log('Sending pet match with ID:', id, 'User ID:', userId);
+        console.log('Enviando match de pet com ID:', id, 'ID do usuário:', effectiveUserId);
         
         // Mostrar toast de carregamento enquanto processa o match
         toast.loading('Processando seu interesse...', { id: 'match-processing' });
         
-        const result = await recordPetMatch(id, userId, 'liked');
+        const result = await recordPetMatch(id, effectiveUserId, 'liked');
         
         // Remover toast de carregamento
         toast.dismiss('match-processing');
@@ -76,7 +98,7 @@ const Browse = () => {
           });
         }
       } else if (direction === 'left') {
-        await recordPetMatch(id, userId, 'disliked');
+        await recordPetMatch(id, effectiveUserId, 'disliked');
       }
       
       handleSwipe(direction, id);
