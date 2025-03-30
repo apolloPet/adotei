@@ -1,3 +1,4 @@
+
 import { AdoptionStage } from "@/components/adoption/AdoptionStages";
 
 export interface AdoptionMatch {
@@ -34,8 +35,8 @@ export interface MatchPoint {
 export interface MatchCardProps {
   match: AdoptionMatch;
   onStageChange: (id: string, stage: AdoptionStage, notes?: string, rejectionReason?: string) => void;
-  onScheduleVisit: (id: string, date: string, notes?: string) => void;
-  onScheduleHomeInspection: (id: string, date: string, notes?: string) => void;
+  onScheduleVisit: (match: AdoptionMatch, date: Date, time: string, notes: string) => void;
+  onScheduleHomeInspection: (match: AdoptionMatch, date: Date, time: string, notes: string) => void;
   onCompleteAdoption: (id: string) => void;
   getStageLabel: (stage: AdoptionStage) => string;
   getStageColor: (stage: AdoptionStage) => string;
@@ -99,7 +100,8 @@ export const mockAdoptionMatches: AdoptionMatch[] = [
     updatedAt: "2023-11-13T16:30:00Z",
     notes: "Família grande com crianças. Perfil aprovado.",
     responsibleId: "admin-2",
-    responsibleName: "Lucas Pereira"
+    responsibleName: "Lucas Pereira",
+    matchPoints: []
   },
   {
     id: "match-4",
@@ -115,7 +117,8 @@ export const mockAdoptionMatches: AdoptionMatch[] = [
     updatedAt: "2023-11-14T10:00:00Z",
     notes: "Visita agendada para 18/11 às 14h.",
     responsibleId: "admin-1",
-    responsibleName: "Mariana Silva"
+    responsibleName: "Mariana Silva",
+    matchPoints: []
   },
   {
     id: "match-5",
@@ -131,7 +134,8 @@ export const mockAdoptionMatches: AdoptionMatch[] = [
     updatedAt: "2023-11-15T11:45:00Z",
     notes: "Inspeção domiciliar marcada para 20/11 às 10h.",
     responsibleId: "admin-2",
-    responsibleName: "Lucas Pereira"
+    responsibleName: "Lucas Pereira",
+    matchPoints: []
   },
   {
     id: "match-6",
@@ -147,7 +151,8 @@ export const mockAdoptionMatches: AdoptionMatch[] = [
     updatedAt: "2023-11-10T14:30:00Z",
     notes: "Adoção concluída com sucesso. Acompanhamento pós-adoção em 30 dias.",
     responsibleId: "admin-1",
-    responsibleName: "Mariana Silva"
+    responsibleName: "Mariana Silva",
+    matchPoints: []
   }
 ];
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -82,7 +81,6 @@ const AdoptionManagement = () => {
   const applyFilters = () => {
     let filtered = [...matches];
     
-    // Apply search term filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(match => 
@@ -93,7 +91,6 @@ const AdoptionManagement = () => {
       );
     }
     
-    // Apply status filter
     if (statusFilter !== "all") {
       filtered = filtered.filter(match => match.currentStage === statusFilter);
     }
@@ -101,7 +98,7 @@ const AdoptionManagement = () => {
     setFilteredMatches(filtered);
   };
 
-  const handleStageChange = async (matchId: string, newStage: AdoptionStage) => {
+  const handleStageChange = async (matchId: string, newStage: AdoptionStage, notes?: string, rejectionReason?: string) => {
     const match = matches.find(m => m.id === matchId);
     
     if (match) {
@@ -111,7 +108,7 @@ const AdoptionManagement = () => {
         return;
       }
       
-      const success = await updateAdoptionStage(matchId, newStage);
+      const success = await updateAdoptionStage(matchId, newStage, notes, rejectionReason);
       
       if (success) {
         setMatches(prevMatches => 
@@ -315,7 +312,6 @@ const AdoptionManagement = () => {
     if (followUp) {
       const formattedDate = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(date);
       
-      // Update local state
       setMatches(prevMatches => 
         prevMatches.map(m => 
           m.id === match.id 
@@ -372,7 +368,6 @@ const AdoptionManagement = () => {
     const match = matches.find(m => m.id === matchId);
     
     if (match) {
-      // Show adoption contract dialog
       setSelectedMatch(match);
       setShowAdoptionContract(true);
       
@@ -383,9 +378,8 @@ const AdoptionManagement = () => {
       
       setShowNotifyDialog(true);
       
-      // Schedule the first follow-up
       const followUpDate = new Date();
-      followUpDate.setDate(followUpDate.getDate() + 14); // First follow-up after 14 days
+      followUpDate.setDate(followUpDate.getDate() + 14);
       
       handleScheduleFollowUp(match, followUpDate, "Primeiro acompanhamento pós-adoção");
     }
@@ -550,8 +544,6 @@ const AdoptionManagement = () => {
                         onScheduleVisit={handleScheduleVisit}
                         onScheduleHomeInspection={handleScheduleHomeInspection}
                         onCompleteAdoption={handleCompleteAdoption}
-                        onRejectAdoption={handleRejectAdoption}
-                        onScheduleFollowUp={handleScheduleFollowUp}
                         getStageLabel={getStageLabel}
                         getStageColor={getStageColor}
                         formatDate={formatDate}
@@ -584,8 +576,6 @@ const AdoptionManagement = () => {
                           onScheduleVisit={handleScheduleVisit}
                           onScheduleHomeInspection={handleScheduleHomeInspection}
                           onCompleteAdoption={handleCompleteAdoption}
-                          onRejectAdoption={handleRejectAdoption}
-                          onScheduleFollowUp={handleScheduleFollowUp}
                           getStageLabel={getStageLabel}
                           getStageColor={getStageColor}
                           formatDate={formatDate}
@@ -603,7 +593,6 @@ const AdoptionManagement = () => {
           </CardContent>
         </Card>
         
-        {/* Dialogs */}
         <NotificationDialog 
           open={showNotifyDialog}
           onOpenChange={setShowNotifyDialog}
