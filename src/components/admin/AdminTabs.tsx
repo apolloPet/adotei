@@ -14,21 +14,6 @@ interface AdminTabsProps {
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
   formatDate: (date: string) => string;
-  settings: {
-    fees: {
-      adoptionFee: number;
-      enableAdoptionFee: boolean;
-    };
-    bankDetails: {
-      pixKey: string;
-      companyBankInfo: string;
-    };
-    contractDetails: {
-      contractText: string;
-      followUpPeriod: number;
-    };
-  };
-  onSaveSettings: (settings: any) => void;
   activeTab?: string;
 }
 
@@ -43,8 +28,6 @@ export interface PaymentSettingsType {
 }
 
 const AdminTabs = ({ 
-  settings,
-  onSaveSettings,
   activeTab = "adoption"
 }: AdminTabsProps) => {
   return (
@@ -90,10 +73,7 @@ const AdminTabs = ({
             </TabsContent>
             
             <TabsContent value="payment-settings">
-              <PaymentSettings 
-                settings={settings}
-                onSaveSettings={onSaveSettings} 
-              />
+              <PaymentSettings />
             </TabsContent>
           </Tabs>
         </TabsContent>

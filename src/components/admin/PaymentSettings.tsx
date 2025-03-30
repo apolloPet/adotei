@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { DollarSign, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-sonner";
 import { FeesSection, BankDetailsSection, ContractSection } from "./payment-settings";
-import type { PaymentSettingsProps } from "./payment-settings";
 import { getSystemParameters, updateSystemParameter, createSystemParameter } from '@/services/adminService';
 
 export const PaymentSettings = () => {

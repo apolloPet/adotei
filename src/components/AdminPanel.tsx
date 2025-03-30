@@ -20,29 +20,7 @@ import PaymentSettings from './admin/PaymentSettings';
 import AnimalRegistrationForm from './admin/animal-registration';
 
 const AdminPanel = () => {
-  const [settings, setSettings] = useState({
-    fees: {
-      adoptionFee: 120,
-      enableAdoptionFee: true
-    },
-    bankDetails: {
-      pixKey: 'ong@example.com',
-      companyBankInfo: 'Banco do Brasil, Ag: 1234, CC: 12345-6'
-    },
-    contractDetails: {
-      contractText: 'Eu, adotante, me comprometo a cuidar do animal adotado, fornecendo abrigo, alimentação adequada, cuidados veterinários e carinho. Concordo em permitir visitas de acompanhamento pelo período estabelecido e em não abandonar ou maltratar o animal sob quaisquer circunstâncias. Entendo que o animal é um ser senciente e merece respeito e amor.',
-      followUpPeriod: 90
-    }
-  });
-  
   const navigate = useNavigate();
-
-  const handleSaveSettings = (newSettings: any) => {
-    setSettings(newSettings);
-    toast.success("Configurações salvas com sucesso!", {
-      description: "As novas configurações foram aplicadas."
-    });
-  };
 
   const handleLogout = () => {
     localStorage.removeItem("isAdmin");
@@ -116,10 +94,7 @@ const AdminPanel = () => {
                 </TabsContent>
                 
                 <TabsContent value="payment-settings">
-                  <PaymentSettings 
-                    settings={settings}
-                    onSaveSettings={handleSaveSettings}
-                  />
+                  <PaymentSettings />
                 </TabsContent>
               </Tabs>
             </TabsContent>
