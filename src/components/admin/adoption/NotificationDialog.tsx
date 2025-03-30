@@ -16,7 +16,7 @@ import { MessageSquare } from 'lucide-react';
 interface NotificationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultMessage: string;
+  message: string;
   onSend: () => void;
   onMessageChange: (message: string) => void;
   recipient?: string;
@@ -26,7 +26,7 @@ interface NotificationDialogProps {
 const NotificationDialog = ({ 
   open, 
   onOpenChange, 
-  defaultMessage, 
+  message, 
   onSend, 
   onMessageChange, 
   recipient, 
@@ -58,7 +58,7 @@ const NotificationDialog = ({
             <Textarea
               id="notification-message"
               placeholder="Digite a mensagem para o adotante..."
-              value={defaultMessage}
+              value={message}
               onChange={(e) => onMessageChange(e.target.value)}
               rows={5}
             />

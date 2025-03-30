@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -308,14 +309,11 @@ const AdoptionManagement = () => {
     const match = matches.find(m => m.id === matchId);
     
     if (match) {
+      // Updated to match expected arguments
       const success = await updateAdoptionStage(
         matchId, 
         "completed", 
-        `${match.notes}\n\nAdoção concluída. Contrato ${contractSigned ? 'assinado' : 'não assinado'}. Pagamento ${paymentComplete ? 'completo' : 'pendente'}.`,
-        undefined,
-        undefined,
-        contractSigned,
-        paymentComplete
+        `${match.notes}\n\nAdoção concluída. Contrato ${contractSigned ? 'assinado' : 'não assinado'}. Pagamento ${paymentComplete ? 'completo' : 'pendente'}.`
       );
       
       if (success) {
@@ -575,39 +573,41 @@ const AdoptionManagement = () => {
         </div>
       </CardContent>
       
-      <NotificationDialog 
-        open={showNotifyDialog}
-        onOpenChange={setShowNotifyDialog}
-        defaultMessage={notificationMessage}
-        onSend={handleSendNotification}
-        onMessageChange={setNotificationMessage}
-        recipient={selectedMatch?.userName || ""}
-        phone={selectedMatch?.userPhone || ""}
-      />
-      
       {selectedMatch && (
-        <AdoptionContractDialog 
-          open={showAdoptionContract}
-          onOpenChange={setShowAdoptionContract}
-          match={selectedMatch}
-          onComplete={handleAdoptionContractSigned}
-        />
+        <>
+          <NotificationDialog 
+            open={showNotifyDialog}
+            onOpenChange={setShowNotifyDialog}
+            message={notificationMessage}
+            onSend={handleSendNotification}
+            onMessageChange={setNotificationMessage}
+            recipient={selectedMatch?.userName || ""}
+            phone={selectedMatch?.userPhone || ""}
+          />
+          
+          <AdoptionContractDialog 
+            open={showAdoptionContract}
+            onOpenChange={setShowAdoptionContract}
+            match={selectedMatch}
+            onComplete={handleAdoptionContractSigned}
+          />
+          
+          <FollowUpDialog 
+            open={showFollowUpDialog}
+            onOpenChange={setShowFollowUpDialog}
+            match={selectedMatch}
+            onSubmit={handleRecordFollowUp}
+          />
+          
+          <RejectionDialog 
+            open={showRejectionDialog}
+            onOpenChange={setShowRejectionDialog}
+            matchId={selectedMatch?.id || ""}
+            petName={selectedMatch?.petName || ""}
+            onReject={handleRejectAdoption}
+          />
+        </>
       )}
-      
-      <FollowUpDialog 
-        open={showFollowUpDialog}
-        onOpenChange={setShowFollowUpDialog}
-        match={selectedMatch}
-        onSubmit={handleRecordFollowUp}
-      />
-      
-      <RejectionDialog 
-        open={showRejectionDialog}
-        onOpenChange={setShowRejectionDialog}
-        matchId={selectedMatch?.id || ""}
-        petName={selectedMatch?.petName || ""}
-        onReject={handleRejectAdoption}
-      />
     </Card>
   );
 };
