@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-sonner";
-import { PlusCircle, Trash2, Shield, Check, X, AlertTriangle } from "lucide-react";
+import { PlusCircle, Trash2, Shield, Check, X, AlertTriangle, Calendar } from "lucide-react";
 import { 
   createAdminUser, 
   getAdminUsers, 
@@ -16,6 +16,8 @@ import {
   removeAdminRole,
   AdminUser 
 } from '@/services/adminService';
+import { format } from 'date-fns';
+import { Badge } from "@/components/ui/badge";
 
 const AdminRoleManagement = () => {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
@@ -50,6 +52,7 @@ const AdminRoleManagement = () => {
     try {
       setIsLoading(true);
       const adminUsers = await getAdminUsers();
+      console.log('Fetched admin users:', adminUsers);
       setAdmins(adminUsers);
     } catch (error) {
       console.error('Error fetching admin users:', error);
@@ -134,6 +137,13 @@ const AdminRoleManagement = () => {
     setIsProcessing(true);
     
     try {
+      // Log the data being sent to the backend
+      console.log('Creating admin with data:', {
+        email: newAdmin.email,
+        name: newAdmin.name,
+        permissions: newAdmin.permissions
+      });
+      
       await createAdminUser(
         newAdmin.email,
         newAdmin.password,
@@ -223,6 +233,17 @@ const AdminRoleManagement = () => {
         console.error('Error removing admin:', error);
         toast.error('Erro ao remover administrador');
       }
+    }
+  };
+
+  // Format date to DD/MM/YYYY
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return 'N/A';
+    try {
+      return format(new Date(dateString), 'dd/MM/yyyy');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Data inválida';
     }
   };
 
@@ -373,10 +394,9 @@ const AdminRoleManagement = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Email</TableHead>
-                  <TableHead>Gerenciar Animais</TableHead>
-                  <TableHead>Aprovar Adoções</TableHead>
-                  <TableHead>Configurar Parâmetros</TableHead>
-                  <TableHead>Gerenciar Administradores</TableHead>
+                  <TableHead>Data de Cadastro</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Permissões</TableHead>
                   <TableHead className="w-[100px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -387,41 +407,41 @@ const AdminRoleManagement = () => {
                       <Shield className="h-4 w-4 text-primary" />
                       {admin.email}
                     </TableCell>
-                    <TableCell>
-                      <Switch 
-                        checked={admin.permissions.manageAnimals}
-                        onCheckedChange={(checked) => 
-                          handlePermissionUpdate(admin.id, 'manageAnimals', checked)
-                        }
-                        disabled={admin.email === 'admin@petmatch.com'}
-                      />
+                    <TableCell className="flex items-center gap-1">
+                      <Calendar className="h-4 w-4 text-gray-500" />
+                      {formatDate(admin.created_at)}
                     </TableCell>
                     <TableCell>
-                      <Switch 
-                        checked={admin.permissions.approveAdoptions}
-                        onCheckedChange={(checked) => 
-                          handlePermissionUpdate(admin.id, 'approveAdoptions', checked)
-                        }
-                        disabled={admin.email === 'admin@petmatch.com'}
-                      />
+                      <Badge 
+                        variant={admin.role === 'admin' ? "success" : "secondary"}
+                        className="px-2 py-1"
+                      >
+                        {admin.role === 'admin' ? 'Ativo' : 'Inativo'}
+                      </Badge>
                     </TableCell>
                     <TableCell>
-                      <Switch 
-                        checked={admin.permissions.manageSettings}
-                        onCheckedChange={(checked) => 
-                          handlePermissionUpdate(admin.id, 'manageSettings', checked)
-                        }
-                        disabled={admin.email === 'admin@petmatch.com'}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Switch 
-                        checked={admin.permissions.manageAdmins}
-                        onCheckedChange={(checked) => 
-                          handlePermissionUpdate(admin.id, 'manageAdmins', checked)
-                        }
-                        disabled={admin.email === 'admin@petmatch.com'}
-                      />
+                      <div className="flex flex-wrap gap-1">
+                        {admin.permissions.manageAnimals && (
+                          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+                            Animais
+                          </Badge>
+                        )}
+                        {admin.permissions.approveAdoptions && (
+                          <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+                            Adoções
+                          </Badge>
+                        )}
+                        {admin.permissions.manageSettings && (
+                          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">
+                            Parâmetros
+                          </Badge>
+                        )}
+                        {admin.permissions.manageAdmins && (
+                          <Badge className="bg-red-100 text-red-800 hover:bg-red-200">
+                            Administradores
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Button 

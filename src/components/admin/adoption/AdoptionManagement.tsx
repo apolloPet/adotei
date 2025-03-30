@@ -45,6 +45,7 @@ const AdoptionManagement = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [pendingFollowUps, setPendingFollowUps] = useState<AdoptionMatch[]>([]);
   const [activeTab, setActiveTab] = useState("all");
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     loadAdoptions();
@@ -135,6 +136,38 @@ const AdoptionManagement = () => {
         
         toast.success(`Estágio atualizado para ${adoptionStages.find(stage => stage.id === newStage)?.label}`);
       }
+    }
+  };
+
+  const handleApprove = async (id: string) => {
+    setIsProcessing(true);
+    try {
+      await updateAdoptionStage(id, 'approved');
+      
+      setMatches(prevMatches => 
+        prevMatches.map(m => 
+          m.id === id 
+            ? { 
+                ...m, 
+                currentStage: 'approved', 
+                updatedAt: new Date().toISOString() 
+              } 
+            : m
+        )
+      );
+      
+      const autoMessage = `Parabéns ${selectedMatch?.userName}! A adoção do ${selectedMatch?.petName} foi aprovada com sucesso. Desejamos muita alegria a vocês nessa nova jornada. Nossa equipe entrará em contato para acompanhamento nos próximos 30 dias.`;
+      setNotificationMessage(autoMessage);
+      
+      setSelectedMatch(selectedMatch);
+      setShowNotifyDialog(true);
+      
+      toast.success(`Adoção aprovada com sucesso!`);
+    } catch (error) {
+      console.error("Error approving adoption:", error);
+      toast.error("Erro ao aprovar adoção");
+    } finally {
+      setIsProcessing(false);
     }
   };
 

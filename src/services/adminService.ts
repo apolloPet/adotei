@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 
@@ -5,6 +6,7 @@ export interface AdminUser {
   id: string;
   email: string;
   role: string;
+  created_at?: string;
   permissions: {
     manageAnimals: boolean;
     approveAdoptions: boolean;
@@ -25,6 +27,8 @@ export const createAdminUser = async (
   }
 ): Promise<boolean> => {
   try {
+    console.log('Creating admin user with data:', { email, name, permissions });
+    
     // Create the user in Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
@@ -47,6 +51,8 @@ export const createAdminUser = async (
         permissions
       };
 
+      console.log('Assigning admin role with data:', roleData);
+
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert(roleData);
@@ -68,6 +74,8 @@ export const createAdminUser = async (
 
 export const getAdminUsers = async (): Promise<AdminUser[]> => {
   try {
+    console.log('Fetching admin users');
+    
     // Get users with admin role
     const { data: roleData, error: roleError } = await supabase
       .from('user_roles')
@@ -78,6 +86,8 @@ export const getAdminUsers = async (): Promise<AdminUser[]> => {
       console.error('Error fetching admin roles:', roleError);
       throw new Error(roleError.message);
     }
+
+    console.log('Found role data:', roleData);
 
     // If we have admin roles, get user details
     if (roleData && roleData.length > 0) {
@@ -93,11 +103,14 @@ export const getAdminUsers = async (): Promise<AdminUser[]> => {
         }
 
         if (userData.user) {
+          console.log('User data for admin:', userData.user);
+          
           // Ensure permissions is a valid object using type assertion
           const typedRole = role as unknown as { 
             permissions?: AdminUser['permissions'], 
             user_id: string, 
-            role: string 
+            role: string,
+            created_at?: string 
           };
           
           const permissions = typedRole.permissions || {
@@ -111,6 +124,7 @@ export const getAdminUsers = async (): Promise<AdminUser[]> => {
             id: userData.user.id,
             email: userData.user.email || '',
             role: role.role,
+            created_at: userData.user.created_at || typedRole.created_at,
             permissions
           });
         }
