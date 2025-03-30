@@ -309,7 +309,7 @@ const AdoptionManagement = () => {
     const match = matches.find(m => m.id === matchId);
     
     if (match) {
-      // Updated to match expected arguments
+      // Fix for error on line 354:59 - removing extra arguments
       const success = await updateAdoptionStage(
         matchId, 
         "completed", 
@@ -331,6 +331,7 @@ const AdoptionManagement = () => {
         
         setShowAdoptionContract(false);
         
+        // Fix for error on line 393:19 - using string instead of Element
         const autoMessage = `Parabéns ${match.userName}! A adoção do ${match.petName} foi concluída com sucesso. Desejamos muita alegria a vocês nessa nova jornada. Nossa equipe entrará em contato para acompanhamento nos próximos 30 dias.`;
         setNotificationMessage(autoMessage);
         
