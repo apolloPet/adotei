@@ -228,7 +228,7 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
 
   const getStageColor = (stage: AdoptionStage): string => {
     switch (stage) {
-      case 'pending':
+      case 'pending_approval':
         return 'secondary';
       case 'approved':
         return 'default';
@@ -236,6 +236,12 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
         return 'destructive';
       case 'completed':
         return 'outline';
+      case 'interested':
+        return 'secondary';
+      case 'visit_scheduled':
+        return 'secondary';
+      case 'home_inspection':
+        return 'secondary';
       default:
         return 'secondary';
     }
@@ -243,14 +249,20 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
 
   const getStageLabel = (stage: AdoptionStage): string => {
     switch (stage) {
-      case 'pending':
-        return 'Pendente';
+      case 'interested':
+        return 'Interesse Demonstrado';
+      case 'pending_approval':
+        return 'Em Análise';
       case 'approved':
         return 'Aprovado';
-      case 'rejected':
-        return 'Rejeitado';
+      case 'visit_scheduled':
+        return 'Visita Agendada';
+      case 'home_inspection':
+        return 'Inspeção Domiciliar';
       case 'completed':
         return 'Concluído';
+      case 'rejected':
+        return 'Rejeitado';
       default:
         return 'Desconhecido';
     }
@@ -443,7 +455,7 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
                     <TableCell>{match.petName}</TableCell>
                     <TableCell>{formatDate(match.createdAt)}</TableCell>
                     <TableCell>
-                      <Badge variant={getStageColor(match.currentStage)}>
+                      <Badge variant={getStageColor(match.currentStage) as "default" | "secondary" | "destructive" | "outline"}>
                         {getStageLabel(match.currentStage)}
                       </Badge>
                     </TableCell>
