@@ -103,7 +103,7 @@ const AdoptionManagement = () => {
     setFilteredMatches(filtered);
   };
 
-  const handleStageChange = async (matchId: string, newStage: AdoptionStage, notes?: string, rejectionReason?: string) => {
+  const handleStageChange = async (matchId: string, newStage: AdoptionStage, notes?: string) => {
     const match = matches.find(m => m.id === matchId);
     
     if (match) {
@@ -452,7 +452,7 @@ const AdoptionManagement = () => {
                   }}
                 >
                   <Bell className="h-4 w-4" />
-                  {pendingFollowUps.length} acompanhamentos pendentes
+                  {pendingFollowUps.length.toString()} acompanhamentos pendentes
                 </Button>
               )}
             </div>

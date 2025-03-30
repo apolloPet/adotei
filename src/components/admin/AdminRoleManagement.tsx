@@ -413,7 +413,7 @@ const AdminRoleManagement = () => {
                     </TableCell>
                     <TableCell>
                       <Badge 
-                        variant={admin.role === 'admin' ? "success" : "secondary"}
+                        variant={admin.role === 'admin' ? "default" : "secondary"}
                         className="px-2 py-1"
                       >
                         {admin.role === 'admin' ? 'Ativo' : 'Inativo'}
