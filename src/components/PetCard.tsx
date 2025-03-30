@@ -24,20 +24,14 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
     if (swipeDirection) {
       onSwipe(swipeDirection, pet.id);
       
-      if (swipeDirection === 'right') {
-        toast(`Você deu match com ${pet.name}! 💖`, {
-          description: "A ONG será notificada do seu interesse.",
-        });
-      }
+      // Remover o toast daqui pois será tratado pelo serviço de adoção
     }
   };
 
   // Handle manual like/dislike
   const handleLike = () => {
     onSwipe('right', pet.id);
-    toast(`Você deu match com ${pet.name}! 💖`, {
-      description: "A ONG será notificada do seu interesse.",
-    });
+    // Remover o toast daqui pois será tratado pelo serviço de adoção
   };
 
   const handleDislike = () => {

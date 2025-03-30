@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Card, 
@@ -14,7 +13,8 @@ import {
   HeartHandshake, 
   MapPin, 
   MessageCircle, 
-  UserCheck 
+  UserCheck,
+  Heart 
 } from 'lucide-react';
 import { AdoptionMatch, MatchCardProps } from './types';
 import MatchCompatibilityDialog from './MatchCompatibilityDialog';
@@ -139,6 +139,8 @@ const MatchCard = ({
         return null;
     }
   };
+
+  const showInterestIcon = match.currentStage === 'interested' && match.matchDate;
   
   return (
     <>
@@ -153,7 +155,14 @@ const MatchCard = ({
                 className="w-16 h-16 rounded-full object-cover"
               />
               <div>
-                <h3 className="font-medium">{match.petName}</h3>
+                <h3 className="font-medium flex items-center gap-2">
+                  {match.petName}
+                  {showInterestIcon && (
+                    <span className="text-sm text-rose-500 flex items-center" title="Demonstrou interesse">
+                      <Heart className="h-4 w-4 fill-rose-500" /> 
+                    </span>
+                  )}
+                </h3>
                 <p className="text-sm text-muted-foreground">Adotante: {match.userName}</p>
                 <div className="flex items-center gap-2 mt-1">
                   <Badge variant="outline" className={getStageColor(match.currentStage)}>
@@ -198,9 +207,20 @@ const MatchCard = ({
                 <div>
                   <h4 className="text-sm font-medium mb-2">Informações da Adoção</h4>
                   <ul className="text-sm space-y-1">
-                    <li><span className="text-muted-foreground">Interesse inicial:</span> {formatDate(match.createdAt)}</li>
+                    <li>
+                      <span className="text-muted-foreground">Interesse inicial:</span> {formatDate(match.matchDate || match.createdAt)}
+                      {match.matchDate && match.matchDate !== match.createdAt && (
+                        <span className="text-rose-500 ml-1">
+                          <Heart className="h-3 w-3 inline fill-rose-500" /> via Match
+                        </span>
+                      )}
+                    </li>
                     <li><span className="text-muted-foreground">Última atualização:</span> {formatDate(match.updatedAt)}</li>
                     <li><span className="text-muted-foreground">Responsável:</span> {match.responsibleName || "Não atribuído"}</li>
+                    
+                    {match.animal_id && (
+                      <li><span className="text-muted-foreground">ID Animal Importado:</span> {match.animal_id}</li>
+                    )}
                   </ul>
                 </div>
               </div>

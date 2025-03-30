@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/lib/database.types';
 import { AdoptionMatch } from '@/components/admin/adoption/types';
@@ -24,6 +25,15 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
         
         if (!pet || !user) return null;
         
+        // Buscar informações de matches para este pet e usuário
+        const { data: matchData } = await supabase
+          .from('pet_matches')
+          .select('*')
+          .eq('pet_id', adoption.pet_id)
+          .eq('user_id', adoption.user_id)
+          .eq('match_type', 'liked')
+          .single();
+        
         return {
           id: adoption.id,
           petId: pet.id,
@@ -44,7 +54,9 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
           lastFollowUpDate: adoption.last_follow_up_date || null,
           nextFollowUpDate: adoption.next_follow_up_date || null,
           approvedBy: adoption.approved_by || null,
-          rejectionReason: adoption.rejection_reason || ''
+          rejectionReason: adoption.rejection_reason || '',
+          matchDate: matchData?.created_at || adoption.created_at,
+          animal_id: adoption.animal_id || null
         };
       })
     );
@@ -237,6 +249,15 @@ export const recordPetMatch = async (
       
       const result = await response.json();
       console.log('Edge function result:', result);
+      
+      // Mostrar mensagem de sucesso se for um match positivo
+      if (matchType === 'liked') {
+        toast.success('Você demonstrou interesse neste pet!', {
+          description: 'A ONG será notificada do seu interesse.',
+          duration: 5000
+        });
+      }
+      
       return true;
     } catch (edgeFunctionError) {
       console.error('Error calling edge function:', edgeFunctionError);

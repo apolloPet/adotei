@@ -1,11 +1,4 @@
-
-import { AdoptionStage } from '../../adoption/AdoptionStages';
-
-export interface MatchPoint {
-  icon: string;
-  description: string;
-  strength: 'high' | 'medium' | 'low';
-}
+import { AdoptionStage } from "@/components/adoption/AdoptionStages";
 
 export interface AdoptionMatch {
   id: string;
@@ -19,28 +12,34 @@ export interface AdoptionMatch {
   currentStage: AdoptionStage;
   createdAt: string;
   updatedAt: string;
-  notes: string;
+  notes?: string;
   responsibleId?: string;
   responsibleName?: string;
-  matchPoints?: MatchPoint[];
+  matchPoints: any[];
   followUpStatus?: string;
   lastFollowUpDate?: string | null;
   nextFollowUpDate?: string | null;
   approvedBy?: string | null;
   rejectionReason?: string;
+  matchDate?: string | null;
+  animal_id?: string | null;
+}
+
+export interface MatchPoint {
+  icon: string;
+  description: string;
+  strength: 'high' | 'medium' | 'low';
 }
 
 export interface MatchCardProps {
   match: AdoptionMatch;
-  onStageChange: (matchId: string, stage: AdoptionStage) => void;
-  onScheduleVisit: (match: AdoptionMatch, date: Date, time: string, notes: string) => void;
-  onScheduleHomeInspection: (match: AdoptionMatch, date: Date, time: string, notes: string) => void;
-  onCompleteAdoption: (matchId: string) => void;
-  onRejectAdoption?: (matchId: string, reason: string) => void;
-  onScheduleFollowUp?: (match: AdoptionMatch, date: Date, notes: string) => void;
+  onStageChange: (id: string, stage: AdoptionStage, notes?: string, rejectionReason?: string) => void;
+  onScheduleVisit: (id: string, date: string, notes?: string) => void;
+  onScheduleHomeInspection: (id: string, date: string, notes?: string) => void;
+  onCompleteAdoption: (id: string) => void;
   getStageLabel: (stage: AdoptionStage) => string;
   getStageColor: (stage: AdoptionStage) => string;
-  formatDate: (dateString: string) => string;
+  formatDate: (date: string) => string;
 }
 
 export const mockAdoptionMatches: AdoptionMatch[] = [
