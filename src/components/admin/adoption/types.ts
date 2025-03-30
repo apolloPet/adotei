@@ -16,7 +16,7 @@ export interface AdoptionMatch {
   notes?: string;
   responsibleId?: string;
   responsibleName?: string;
-  matchPoints: any[];
+  matchPoints: MatchPoint[];
   followUpStatus?: string;
   lastFollowUpDate?: string | null;
   nextFollowUpDate?: string | null;

@@ -313,7 +313,7 @@ serve(async (req) => {
       // Now check if adoption already exists
       const { data: existingAdoption, error: checkError } = await supabase
         .from('adoptions')
-        .select('id')
+        .select('id, current_stage')
         .eq('pet_id', validPetId)
         .eq('user_id', userIdToUse)
         .maybeSingle();
@@ -334,7 +334,8 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             message: "Adoção já existe", 
-            adoption: existingAdoption 
+            adoption: existingAdoption,
+            stage: existingAdoption.current_stage
           }),
           {
             status: 200,

@@ -142,6 +142,7 @@ const MatchCard = ({
   };
 
   const showInterestIcon = match.currentStage === 'interested' && match.matchDate;
+  const isMatchInterest = match.matchDate && match.matchDate !== match.createdAt;
   
   return (
     <>
@@ -210,7 +211,7 @@ const MatchCard = ({
                   <ul className="text-sm space-y-1">
                     <li>
                       <span className="text-muted-foreground">Interesse inicial:</span> {formatDate(match.matchDate || match.createdAt)}
-                      {match.matchDate && match.matchDate !== match.createdAt && (
+                      {isMatchInterest && (
                         <span className="text-rose-500 ml-1">
                           <Heart className="h-3 w-3 inline fill-rose-500" /> via Match
                         </span>

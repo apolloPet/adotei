@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -53,7 +54,7 @@ const AdoptionManagement = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [matches, searchTerm, statusFilter]);
+  }, [matches, searchTerm, statusFilter, activeTab]);
 
   const loadAdoptions = async () => {
     setIsLoading(true);
@@ -81,6 +82,12 @@ const AdoptionManagement = () => {
   const applyFilters = () => {
     let filtered = [...matches];
     
+    // Filtrar por estágio se não for "all"
+    if (activeTab !== "all") {
+      filtered = filtered.filter(match => match.currentStage === activeTab);
+    }
+    
+    // Aplicar filtro de pesquisa
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(match => 
@@ -91,6 +98,7 @@ const AdoptionManagement = () => {
       );
     }
     
+    // Aplicar filtro de status adicional (se usado junto com as abas)
     if (statusFilter !== "all") {
       filtered = filtered.filter(match => match.currentStage === statusFilter);
     }
@@ -265,8 +273,8 @@ const AdoptionManagement = () => {
     const success = await updateAdoptionStage(
       match.id, 
       "home_inspection", 
-      updatedNotes, 
-      undefined, 
+      updatedNotes,
+      undefined,
       `${dateString} ${time}`
     );
     
@@ -284,7 +292,7 @@ const AdoptionManagement = () => {
         )
       );
       
-      const autoMessage = `Olá ${match.userName}! Gostaríamos de agendar uma visita à sua residência para verificar as condições para ${match.petName}. A data sugerida é ${formattedDate} às ${time}. Por favor, confirme se esta data é conveniente para você. Obrigado!`;
+      const autoMessage = `Olá ${match.userName}! Gostaríamos de agendar uma visita de inspeção domiciliar para o processo de adoção do ${match.petName}. A data sugerida é ${formattedDate} às ${time}. Por favor, confirme se esta data é conveniente para você. Obrigado!`;
       setNotificationMessage(autoMessage);
       
       setSelectedMatch(match);
@@ -294,252 +302,215 @@ const AdoptionManagement = () => {
     }
   };
 
-  const handleScheduleFollowUp = async (match: AdoptionMatch, date: Date, notes: string) => {
-    if (!date) {
-      toast.error("Por favor, selecione uma data para o acompanhamento");
-      return;
-    }
-
-    const dateString = date.toISOString().split('T')[0];
-    
-    const followUp = await createFollowUpRecord({
-      adoption_id: match.id,
-      follow_up_date: dateString,
-      notes: notes,
-      status: 'pending'
-    });
-    
-    if (followUp) {
-      const formattedDate = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' }).format(date);
-      
-      setMatches(prevMatches => 
-        prevMatches.map(m => 
-          m.id === match.id 
-            ? { 
-                ...m, 
-                notes: `${m.notes}\n\nAcompanhamento agendado para ${formattedDate}. ${notes}`,
-                nextFollowUpDate: dateString,
-                followUpStatus: 'pending'
-              } 
-            : m
-        )
-      );
-      
-      const autoMessage = `Olá ${match.userName}! Gostaríamos de fazer um acompanhamento da adoção de ${match.petName}. Entraremos em contato no dia ${formattedDate}. Obrigado!`;
-      setNotificationMessage(autoMessage);
-      
-      setSelectedMatch(match);
-      setShowNotifyDialog(true);
-      
-      toast.success("Acompanhamento agendado com sucesso!");
-    }
-  };
-
-  const completeAdoption = async (matchId: string) => {
-    const success = await updateAdoptionStage(
-      matchId, 
-      "completed", 
-      undefined, 
-      undefined, 
-      undefined, 
-      true, 
-      true
-    );
-    
-    if (success) {
-      setMatches(prevMatches => 
-        prevMatches.map(match => 
-          match.id === matchId 
-            ? { 
-                ...match, 
-                currentStage: "completed",
-                updatedAt: new Date().toISOString(),
-                notes: match.notes + "\n\nAdoção concluída em " + new Date().toLocaleDateString('pt-BR')
-              } 
-            : match
-        )
-      );
-      
-      toast.success("Adoção concluída com sucesso!");
-    }
-  };
-
-  const handleCompleteAdoption = (matchId: string) => {
+  const handleCompleteAdoption = async (matchId: string) => {
     const match = matches.find(m => m.id === matchId);
     
     if (match) {
       setSelectedMatch(match);
       setShowAdoptionContract(true);
-      
-      completeAdoption(matchId);
-      
-      const autoMessage = generateAdoptionStageMessage(match.petName, "completed");
-      setNotificationMessage(autoMessage);
-      
-      setShowNotifyDialog(true);
-      
-      const followUpDate = new Date();
-      followUpDate.setDate(followUpDate.getDate() + 14);
-      
-      handleScheduleFollowUp(match, followUpDate, "Primeiro acompanhamento pós-adoção");
     }
   };
 
-  const matchesByStage = adoptionStages.reduce((acc, stage) => {
-    acc[stage.id] = filteredMatches.filter(match => match.currentStage === stage.id);
-    return acc;
-  }, {} as Record<AdoptionStage, AdoptionMatch[]>);
+  const handleAdoptionContractSigned = async (matchId: string, contractSigned: boolean, paymentComplete: boolean) => {
+    const match = matches.find(m => m.id === matchId);
+    
+    if (match) {
+      const success = await updateAdoptionStage(
+        matchId, 
+        "completed", 
+        `${match.notes}\n\nAdoção concluída. Contrato ${contractSigned ? 'assinado' : 'não assinado'}. Pagamento ${paymentComplete ? 'completo' : 'pendente'}.`,
+        undefined,
+        undefined,
+        contractSigned,
+        paymentComplete
+      );
+      
+      if (success) {
+        setMatches(prevMatches => 
+          prevMatches.map(m => 
+            m.id === matchId 
+              ? { 
+                  ...m, 
+                  currentStage: "completed", 
+                  updatedAt: new Date().toISOString() 
+                } 
+              : m
+          )
+        );
+        
+        // Fechar o diálogo de contrato
+        setShowAdoptionContract(false);
+        
+        // Mensagem para o dono do pet
+        const autoMessage = `Parabéns ${match.userName}! A adoção do ${match.petName} foi concluída com sucesso. Desejamos muita alegria a vocês nessa nova jornada. Nossa equipe entrará em contato para acompanhamento nos próximos 30 dias.`;
+        setNotificationMessage(autoMessage);
+        
+        setSelectedMatch(match);
+        setShowNotifyDialog(true);
+        
+        toast.success(`Adoção concluída com sucesso!`);
+      }
+    }
+  };
+
+  const handleRecordFollowUp = async (matchId: string, status: string, notes: string, nextDate: Date | null) => {
+    const match = matches.find(m => m.id === matchId);
+    
+    if (!match) {
+      toast.error("Adoção não encontrada");
+      return;
+    }
+    
+    try {
+      const success = await createFollowUpRecord(matchId, status, notes);
+      
+      if (success) {
+        // Atualizar a lista de acompanhamentos pendentes
+        setPendingFollowUps(prevFollowUps => 
+          prevFollowUps.filter(f => f.id !== matchId)
+        );
+        
+        setShowFollowUpDialog(false);
+        toast.success("Acompanhamento registrado com sucesso!");
+      }
+    } catch (error) {
+      console.error("Erro ao registrar acompanhamento:", error);
+      toast.error("Erro ao registrar acompanhamento");
+    }
+  };
 
   return (
-    <Tabs defaultValue="management" className="w-full space-y-6">
-      <TabsList className="w-full mb-4">
-        <TabsTrigger value="management">Gerenciamento de Adoções</TabsTrigger>
-        <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-        <TabsTrigger value="followups" className="flex items-center">
-          Acompanhamentos
-          {pendingFollowUps.length > 0 && (
-            <Badge variant="destructive" className="ml-2">{pendingFollowUps.length}</Badge>
-          )}
-        </TabsTrigger>
-      </TabsList>
-      
-      <TabsContent value="dashboard">
-        <UserMetricsDashboard />
-      </TabsContent>
-      
-      <TabsContent value="followups">
-        <Card>
-          <CardHeader>
-            <CardTitle>Acompanhamentos Pendentes</CardTitle>
-            <CardDescription>
-              Acompanhamentos agendados que precisam ser realizados
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {pendingFollowUps.length > 0 ? (
-              <div className="space-y-4">
-                {pendingFollowUps.map(match => (
-                  <div key={match.id} className="flex items-center justify-between p-4 border rounded-lg bg-amber-50">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-amber-100 p-2 rounded-full">
-                        <Bell className="h-5 w-5 text-amber-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">{match.petName} ({match.userName})</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Acompanhamento agendado: {formatDate(match.nextFollowUpDate || '')}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => {
-                          setSelectedMatch(match);
-                          setShowFollowUpDialog(true);
-                        }}
-                      >
-                        <Calendar className="mr-1 h-4 w-4" />
-                        Reagendar
-                      </Button>
-                      <Button 
-                        variant="default" 
-                        size="sm"
-                        onClick={() => {
-                          setSelectedMatch(match);
-                          setNotificationMessage(
-                            `Olá ${match.userName}! Estamos realizando o acompanhamento da adoção de ${match.petName}. Como está tudo? Por favor nos atualize sobre a adaptação.`
-                          );
-                          setShowNotifyDialog(true);
-                        }}
-                      >
-                        Notificar
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-10 text-muted-foreground">
-                Nenhum acompanhamento pendente.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </TabsContent>
-      
-      <TabsContent value="management">
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <CardTitle>Gerenciamento de Adoções</CardTitle>
-                <CardDescription>
-                  Acompanhe e gerencie o processo de adoção dos animais
-                </CardDescription>
-              </div>
-              
-              <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nome, email, telefone..."
-                    className="pl-8 w-full md:w-[240px]"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                </div>
-                
-                <div className="flex items-center">
-                  <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Filtrar por status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todos os status</SelectItem>
-                      {adoptionStages.map(stage => (
-                        <SelectItem key={stage.id} value={stage.id}>
-                          {stage.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+    <Card className="border-none shadow-none">
+      <CardHeader>
+        <CardTitle className="text-2xl">Gerenciamento de Adoções</CardTitle>
+        <CardDescription>
+          Acompanhe e gerencie os processos de adoção em diferentes estágios.
+        </CardDescription>
+      </CardHeader>
+
+      <CardContent>
+        <div className="space-y-6">
+          {/* Dashboard e Filtros */}
+          <div className="flex flex-col md:flex-row gap-4 items-start">
+            <div className="w-full md:w-2/3">
+              <UserMetricsDashboard />
             </div>
-          </CardHeader>
-          
-          <CardContent className="pt-6">
-            <Tabs 
-              defaultValue="all" 
-              className="w-full"
-              value={activeTab}
-              onValueChange={setActiveTab}
-            >
-              <TabsList className="mb-4">
-                <TabsTrigger value="all">
-                  Todos ({filteredMatches.length})
-                </TabsTrigger>
-                {adoptionStages.map(stage => (
-                  <TabsTrigger key={stage.id} value={stage.id}>
-                    {stage.label} ({matchesByStage[stage.id]?.length || 0})
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+            
+            <div className="w-full md:w-1/3 space-y-2">
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="Buscar adoções..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1"
+                  prefix={<Search className="h-4 w-4 text-muted-foreground" />}
+                />
+                <Select 
+                  value={statusFilter} 
+                  onValueChange={setStatusFilter}
+                >
+                  <SelectTrigger className="w-[160px]">
+                    <Filter className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Filtrar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os estágios</SelectItem>
+                    {adoptionStages.map(stage => (
+                      <SelectItem key={stage.id} value={stage.id}>
+                        {stage.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               
-              <TabsContent value="all">
-                <div className="space-y-4">
-                  {isLoading ? (
-                    <div className="flex justify-center py-10">
-                      <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-                    </div>
-                  ) : filteredMatches.length > 0 ? (
-                    filteredMatches.map(match => (
+              {pendingFollowUps.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  className="w-full flex gap-2 bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100"
+                  onClick={() => {
+                    setSelectedMatch(pendingFollowUps[0]);
+                    setShowFollowUpDialog(true);
+                  }}
+                >
+                  <Bell className="h-4 w-4" />
+                  {pendingFollowUps.length} acompanhamentos pendentes
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {/* Abas de Estágios de Adoção */}
+          <Tabs 
+            defaultValue="all" 
+            className="w-full"
+            value={activeTab}
+            onValueChange={setActiveTab}
+          >
+            <TabsList className="grid grid-cols-4 mb-6">
+              <TabsTrigger value="all">
+                Todos 
+                <Badge variant="outline" className="ml-2 bg-gray-100">
+                  {matches.length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="interested">
+                Interessados
+                <Badge variant="outline" className="ml-2 bg-blue-100">
+                  {matches.filter(m => m.currentStage === "interested").length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="approved">
+                Aprovados
+                <Badge variant="outline" className="ml-2 bg-green-100">
+                  {matches.filter(m => ["approved", "visit_scheduled", "home_inspection"].includes(m.currentStage)).length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="completed">
+                Concluídos
+                <Badge variant="outline" className="ml-2 bg-purple-100">
+                  {matches.filter(m => m.currentStage === "completed").length}
+                </Badge>
+              </TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="all" className="space-y-4">
+              {isLoading ? (
+                <div className="text-center p-8">Carregando...</div>
+              ) : filteredMatches.length > 0 ? (
+                <div className="grid gap-4">
+                  {filteredMatches.map(match => (
+                    <MatchCard 
+                      key={match.id}
+                      match={match}
+                      onStageChange={handleStageChange}
+                      onScheduleVisit={handleScheduleVisit}
+                      onScheduleHomeInspection={handleScheduleHomeInspection}
+                      onCompleteAdoption={handleCompleteAdoption}
+                      getStageLabel={getStageLabel}
+                      getStageColor={getStageColor}
+                      formatDate={formatDate}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center p-8 text-muted-foreground">
+                  Nenhuma adoção encontrada com os filtros aplicados.
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="interested" className="space-y-4">
+              {isLoading ? (
+                <div className="text-center p-8">Carregando...</div>
+              ) : filteredMatches.filter(m => m.currentStage === "interested").length > 0 ? (
+                <div className="grid gap-4">
+                  {filteredMatches
+                    .filter(m => m.currentStage === "interested")
+                    .map(match => (
                       <MatchCard 
-                        key={match.id} 
-                        match={match} 
+                        key={match.id}
+                        match={match}
                         onStageChange={handleStageChange}
                         onScheduleVisit={handleScheduleVisit}
                         onScheduleHomeInspection={handleScheduleHomeInspection}
@@ -548,85 +519,109 @@ const AdoptionManagement = () => {
                         getStageColor={getStageColor}
                         formatDate={formatDate}
                       />
-                    ))
-                  ) : (
-                    <div className="text-center py-10 text-muted-foreground">
-                      {searchTerm || statusFilter !== "all" ? 
-                        "Nenhuma solicitação de adoção encontrada com os filtros atuais." :
-                        "Nenhuma solicitação de adoção encontrada."
-                      }
-                    </div>
-                  )}
+                    ))}
                 </div>
-              </TabsContent>
-              
-              {adoptionStages.map(stage => (
-                <TabsContent key={stage.id} value={stage.id}>
-                  <div className="space-y-4">
-                    {isLoading ? (
-                      <div className="flex justify-center py-10">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-                      </div>
-                    ) : matchesByStage[stage.id]?.length > 0 ? (
-                      matchesByStage[stage.id].map(match => (
-                        <MatchCard 
-                          key={match.id} 
-                          match={match} 
-                          onStageChange={handleStageChange}
-                          onScheduleVisit={handleScheduleVisit}
-                          onScheduleHomeInspection={handleScheduleHomeInspection}
-                          onCompleteAdoption={handleCompleteAdoption}
-                          getStageLabel={getStageLabel}
-                          getStageColor={getStageColor}
-                          formatDate={formatDate}
-                        />
-                      ))
-                    ) : (
-                      <div className="text-center py-10 text-muted-foreground">
-                        Nenhuma solicitação no estágio "{stage.label}".
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-              ))}
-            </Tabs>
-          </CardContent>
-        </Card>
-        
-        <NotificationDialog 
-          open={showNotifyDialog}
-          onOpenChange={setShowNotifyDialog}
-          match={selectedMatch}
-          message={notificationMessage}
-          onMessageChange={setNotificationMessage}
-          onSend={handleSendNotification}
-        />
-        
-        <AdoptionContractDialog 
-          open={showAdoptionContract}
-          onOpenChange={setShowAdoptionContract}
-          match={selectedMatch}
-        />
-        
-        <FollowUpDialog
-          open={showFollowUpDialog}
-          onOpenChange={setShowFollowUpDialog}
-          match={selectedMatch}
-          onSubmit={handleScheduleFollowUp}
-        />
-        
-        <RejectionDialog
-          open={showRejectionDialog}
-          onOpenChange={setShowRejectionDialog}
-          onConfirm={(reason) => {
-            if (selectedMatch) {
-              handleRejectAdoption(selectedMatch.id, reason);
-            }
-          }}
-          petName={selectedMatch?.petName || ''}
-        />
-      </TabsContent>
-    </Tabs>
+              ) : (
+                <div className="text-center p-8 text-muted-foreground">
+                  Nenhuma adoção no estágio "Interessados" encontrada.
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="approved" className="space-y-4">
+              {isLoading ? (
+                <div className="text-center p-8">Carregando...</div>
+              ) : filteredMatches.filter(m => ["approved", "visit_scheduled", "home_inspection"].includes(m.currentStage)).length > 0 ? (
+                <div className="grid gap-4">
+                  {filteredMatches
+                    .filter(m => ["approved", "visit_scheduled", "home_inspection"].includes(m.currentStage))
+                    .map(match => (
+                      <MatchCard 
+                        key={match.id}
+                        match={match}
+                        onStageChange={handleStageChange}
+                        onScheduleVisit={handleScheduleVisit}
+                        onScheduleHomeInspection={handleScheduleHomeInspection}
+                        onCompleteAdoption={handleCompleteAdoption}
+                        getStageLabel={getStageLabel}
+                        getStageColor={getStageColor}
+                        formatDate={formatDate}
+                      />
+                    ))}
+                </div>
+              ) : (
+                <div className="text-center p-8 text-muted-foreground">
+                  Nenhuma adoção nos estágios "Aprovados/Agendados" encontrada.
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="completed" className="space-y-4">
+              {isLoading ? (
+                <div className="text-center p-8">Carregando...</div>
+              ) : filteredMatches.filter(m => m.currentStage === "completed").length > 0 ? (
+                <div className="grid gap-4">
+                  {filteredMatches
+                    .filter(m => m.currentStage === "completed")
+                    .map(match => (
+                      <MatchCard 
+                        key={match.id}
+                        match={match}
+                        onStageChange={handleStageChange}
+                        onScheduleVisit={handleScheduleVisit}
+                        onScheduleHomeInspection={handleScheduleHomeInspection}
+                        onCompleteAdoption={handleCompleteAdoption}
+                        getStageLabel={getStageLabel}
+                        getStageColor={getStageColor}
+                        formatDate={formatDate}
+                      />
+                    ))}
+                </div>
+              ) : (
+                <div className="text-center p-8 text-muted-foreground">
+                  Nenhuma adoção no estágio "Concluídos" encontrada.
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </div>
+      </CardContent>
+      
+      {/* Diálogos */}
+      <NotificationDialog 
+        open={showNotifyDialog}
+        onOpenChange={setShowNotifyDialog}
+        defaultMessage={notificationMessage}
+        onSend={handleSendNotification}
+        onMessageChange={setNotificationMessage}
+        recipient={selectedMatch?.userName}
+        phone={selectedMatch?.userPhone}
+      />
+      
+      <AdoptionContractDialog 
+        open={showAdoptionContract}
+        onOpenChange={setShowAdoptionContract}
+        matchId={selectedMatch?.id || ""}
+        petName={selectedMatch?.petName || ""}
+        userName={selectedMatch?.userName || ""}
+        onComplete={handleAdoptionContractSigned}
+      />
+      
+      <FollowUpDialog 
+        open={showFollowUpDialog}
+        onOpenChange={setShowFollowUpDialog}
+        match={selectedMatch}
+        onSubmit={handleRecordFollowUp}
+      />
+      
+      <RejectionDialog 
+        open={showRejectionDialog}
+        onOpenChange={setShowRejectionDialog}
+        matchId={selectedMatch?.id || ""}
+        petName={selectedMatch?.petName || ""}
+        onReject={handleRejectAdoption}
+      />
+    </Card>
   );
 };
 

@@ -252,10 +252,17 @@ export const recordPetMatch = async (
       
       // Mostrar mensagem de sucesso se for um match positivo
       if (matchType === 'liked') {
-        toast.success('Você demonstrou interesse neste pet!', {
-          description: 'A ONG será notificada do seu interesse.',
-          duration: 5000
-        });
+        if (result.message === "Adoção já existe") {
+          toast.info('Você já demonstrou interesse neste pet!', {
+            description: 'Acompanhe o processo na área de adoções.',
+            duration: 5000
+          });
+        } else {
+          toast.success('Você demonstrou interesse neste pet!', {
+            description: 'A ONG será notificada do seu interesse.',
+            duration: 5000
+          });
+        }
       }
       
       return true;
