@@ -12,27 +12,26 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MessageSquare } from 'lucide-react';
-import { AdoptionMatch } from './types';
 
 interface NotificationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  match: AdoptionMatch | null;
-  message: string;
-  onMessageChange: (message: string) => void;
+  defaultMessage: string;
   onSend: () => void;
+  onMessageChange: (message: string) => void;
+  recipient?: string;
+  phone?: string;
 }
 
 const NotificationDialog = ({ 
   open, 
   onOpenChange, 
-  match, 
-  message, 
+  defaultMessage, 
+  onSend, 
   onMessageChange, 
-  onSend 
+  recipient, 
+  phone 
 }: NotificationDialogProps) => {
-  if (!match) return null;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -45,15 +44,10 @@ const NotificationDialog = ({
         
         <div className="py-4 space-y-4">
           <div className="flex items-center gap-3">
-            <img 
-              src={match.petImage} 
-              alt={match.petName}
-              className="w-12 h-12 rounded-full object-cover"
-            />
             <div>
-              <p className="font-medium">{match.petName}</p>
-              <p className="text-sm text-muted-foreground">Para: {match.userName}</p>
-              <p className="text-xs text-muted-foreground">{match.userPhone}</p>
+              <p className="font-medium">Destinatário:</p>
+              <p className="text-sm text-muted-foreground">{recipient || 'Não especificado'}</p>
+              <p className="text-xs text-muted-foreground">{phone || 'Telefone não disponível'}</p>
             </div>
           </div>
           
@@ -64,7 +58,7 @@ const NotificationDialog = ({
             <Textarea
               id="notification-message"
               placeholder="Digite a mensagem para o adotante..."
-              value={message}
+              value={defaultMessage}
               onChange={(e) => onMessageChange(e.target.value)}
               rows={5}
             />

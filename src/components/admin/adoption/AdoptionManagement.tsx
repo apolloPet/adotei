@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -82,12 +81,10 @@ const AdoptionManagement = () => {
   const applyFilters = () => {
     let filtered = [...matches];
     
-    // Filtrar por estágio se não for "all"
     if (activeTab !== "all") {
       filtered = filtered.filter(match => match.currentStage === activeTab);
     }
     
-    // Aplicar filtro de pesquisa
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(match => 
@@ -98,7 +95,6 @@ const AdoptionManagement = () => {
       );
     }
     
-    // Aplicar filtro de status adicional (se usado junto com as abas)
     if (statusFilter !== "all") {
       filtered = filtered.filter(match => match.currentStage === statusFilter);
     }
@@ -116,7 +112,7 @@ const AdoptionManagement = () => {
         return;
       }
       
-      const success = await updateAdoptionStage(matchId, newStage, notes, rejectionReason);
+      const success = await updateAdoptionStage(matchId, newStage, notes);
       
       if (success) {
         setMatches(prevMatches => 
@@ -146,7 +142,7 @@ const AdoptionManagement = () => {
     const match = matches.find(m => m.id === matchId);
     
     if (match) {
-      const success = await updateAdoptionStage(matchId, 'rejected', undefined, undefined, undefined, undefined, undefined, reason);
+      const success = await updateAdoptionStage(matchId, 'rejected', undefined, reason);
       
       if (success) {
         setMatches(prevMatches => 
@@ -226,8 +222,7 @@ const AdoptionManagement = () => {
     const success = await updateAdoptionStage(
       match.id, 
       "visit_scheduled", 
-      updatedNotes, 
-      `${dateString} ${time}`
+      updatedNotes
     );
     
     if (success) {
@@ -273,9 +268,7 @@ const AdoptionManagement = () => {
     const success = await updateAdoptionStage(
       match.id, 
       "home_inspection", 
-      updatedNotes,
-      undefined,
-      `${dateString} ${time}`
+      updatedNotes
     );
     
     if (success) {
@@ -338,10 +331,8 @@ const AdoptionManagement = () => {
           )
         );
         
-        // Fechar o diálogo de contrato
         setShowAdoptionContract(false);
         
-        // Mensagem para o dono do pet
         const autoMessage = `Parabéns ${match.userName}! A adoção do ${match.petName} foi concluída com sucesso. Desejamos muita alegria a vocês nessa nova jornada. Nossa equipe entrará em contato para acompanhamento nos próximos 30 dias.`;
         setNotificationMessage(autoMessage);
         
@@ -365,7 +356,6 @@ const AdoptionManagement = () => {
       const success = await createFollowUpRecord(matchId, status, notes);
       
       if (success) {
-        // Atualizar a lista de acompanhamentos pendentes
         setPendingFollowUps(prevFollowUps => 
           prevFollowUps.filter(f => f.id !== matchId)
         );
@@ -390,7 +380,6 @@ const AdoptionManagement = () => {
 
       <CardContent>
         <div className="space-y-6">
-          {/* Dashboard e Filtros */}
           <div className="flex flex-col md:flex-row gap-4 items-start">
             <div className="w-full md:w-2/3">
               <UserMetricsDashboard />
@@ -440,7 +429,6 @@ const AdoptionManagement = () => {
             </div>
           </div>
           
-          {/* Abas de Estágios de Adoção */}
           <Tabs 
             defaultValue="all" 
             className="w-full"
@@ -587,25 +575,24 @@ const AdoptionManagement = () => {
         </div>
       </CardContent>
       
-      {/* Diálogos */}
       <NotificationDialog 
         open={showNotifyDialog}
         onOpenChange={setShowNotifyDialog}
         defaultMessage={notificationMessage}
         onSend={handleSendNotification}
         onMessageChange={setNotificationMessage}
-        recipient={selectedMatch?.userName}
-        phone={selectedMatch?.userPhone}
+        recipient={selectedMatch?.userName || ""}
+        phone={selectedMatch?.userPhone || ""}
       />
       
-      <AdoptionContractDialog 
-        open={showAdoptionContract}
-        onOpenChange={setShowAdoptionContract}
-        matchId={selectedMatch?.id || ""}
-        petName={selectedMatch?.petName || ""}
-        userName={selectedMatch?.userName || ""}
-        onComplete={handleAdoptionContractSigned}
-      />
+      {selectedMatch && (
+        <AdoptionContractDialog 
+          open={showAdoptionContract}
+          onOpenChange={setShowAdoptionContract}
+          match={selectedMatch}
+          onComplete={handleAdoptionContractSigned}
+        />
+      )}
       
       <FollowUpDialog 
         open={showFollowUpDialog}

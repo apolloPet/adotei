@@ -15,7 +15,7 @@ interface FollowUpDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   match: AdoptionMatch | null;
-  onSubmit: (match: AdoptionMatch, date: Date, notes: string) => void;
+  onSubmit: (matchId: string, status: string, notes: string, nextDate: Date | null) => void;
 }
 
 const FollowUpDialog = ({
@@ -26,10 +26,11 @@ const FollowUpDialog = ({
 }: FollowUpDialogProps) => {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [notes, setNotes] = useState("");
+  const [status, setStatus] = useState("completed");
 
   const handleSubmit = () => {
-    if (!match || !date) return;
-    onSubmit(match, date, notes);
+    if (!match) return;
+    onSubmit(match.id, status, notes, date || null);
     onOpenChange(false);
   };
 

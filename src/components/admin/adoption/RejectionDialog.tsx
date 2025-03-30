@@ -8,15 +8,17 @@ import { toast } from "@/hooks/use-sonner";
 interface RejectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (reason: string) => void;
+  matchId: string;
   petName: string;
+  onReject: (matchId: string, reason: string) => void;
 }
 
 const RejectionDialog = ({
   open,
   onOpenChange,
-  onConfirm,
-  petName
+  matchId,
+  petName,
+  onReject
 }: RejectionDialogProps) => {
   const [reason, setReason] = useState("");
 
@@ -26,7 +28,7 @@ const RejectionDialog = ({
       return;
     }
 
-    onConfirm(reason);
+    onReject(matchId, reason);
     setReason("");
     onOpenChange(false);
   };

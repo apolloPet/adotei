@@ -248,7 +248,7 @@ const MatchCard = ({
         onOpenChange={setShowVisitDialog}
         match={match}
         type="visit"
-        onSubmit={onScheduleVisit}
+        onSubmit={(m, date, time, notes) => onScheduleVisit(m, date, time, notes)}
       />
       
       <SchedulingDialog 
@@ -256,7 +256,7 @@ const MatchCard = ({
         onOpenChange={setShowInspectionDialog}
         match={match}
         type="inspection"
-        onSubmit={onScheduleHomeInspection}
+        onSubmit={(m, date, time, notes) => onScheduleHomeInspection(m, date, time, notes)}
       />
     </>
   );
