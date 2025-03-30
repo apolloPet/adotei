@@ -1,9 +1,19 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "@/hooks/use-sonner";
-import { Search } from "lucide-react";
+import { Search, Filter, X, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuCheckboxItem, 
+  DropdownMenuSeparator,
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -11,17 +21,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockUsers } from './mockData';
+import { format } from 'date-fns';
 import { FilterType, User } from './types';
 import UserFilterDropdown from './UserFilterDropdown';
 import UserFilterBadges from './UserFilterBadges';
 import UserSimpleView from './UserSimpleView';
 import UserDetailedView from './UserDetailedView';
+import { fetchUsers } from '@/services/userService';
 
 const UsersList = () => {
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterType>({
     housingType: [],
     hadPetsBefore: null,
@@ -32,22 +44,32 @@ const UsersList = () => {
   });
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   const [viewMode, setViewMode] = useState<'simple' | 'detailed'>('simple');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  // Unique values for select filters
-  const cityOptions = Array.from(new Set(users.map(user => user.address.city)));
-  const neighborhoodOptions = Array.from(new Set(users.map(user => user.address.neighborhood)));
-
+  // Fetch users from the API
   useEffect(() => {
-    // Simulate API call
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    const loadUsers = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await fetchUsers();
+        console.log('Fetched users:', data);
+        setUsers(data);
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        setError('Erro ao carregar usuários. Por favor, tente novamente mais tarde.');
+        toast.error('Erro ao carregar usuários');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    loadUsers();
   }, []);
 
+  // Count active filters
   useEffect(() => {
-    // Count active filters
     let count = 0;
     if (filters.housingType.length > 0) count++;
     if (filters.hadPetsBefore !== null) count++;
@@ -59,14 +81,24 @@ const UsersList = () => {
     setActiveFiltersCount(count);
   }, [filters]);
 
+  // Get unique options for filters
+  const cityOptions = Array.from(new Set(users.map(user => 
+    user.address?.city || ''
+  ))).filter(Boolean);
+  
+  const neighborhoodOptions = Array.from(new Set(users.map(user => 
+    user.address?.neighborhood || ''
+  ))).filter(Boolean);
+
+  // Filter users based on search term and filters
   const filteredUsers = users.filter(user => {
     // Search term filter
     const matchesSearch = 
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phone.includes(searchTerm) ||
-      user.address.neighborhood.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.address.city.toLowerCase().includes(searchTerm.toLowerCase());
+      (user.phone && user.phone.includes(searchTerm)) ||
+      (user.address?.neighborhood && user.address.neighborhood.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user.address?.city && user.address.city.toLowerCase().includes(searchTerm.toLowerCase()));
     
     if (!matchesSearch) return false;
     
@@ -91,21 +123,30 @@ const UsersList = () => {
     }
     
     // City filter
-    if (filters.city.length > 0 && !filters.city.includes(user.address.city)) {
+    if (filters.city.length > 0 && (!user.address?.city || !filters.city.includes(user.address.city))) {
       return false;
     }
     
     // Neighborhood filter
-    if (filters.neighborhood.length > 0 && !filters.neighborhood.includes(user.address.neighborhood)) {
+    if (filters.neighborhood.length > 0 && (!user.address?.neighborhood || !filters.neighborhood.includes(user.address.neighborhood))) {
       return false;
     }
     
     return true;
   });
 
+  // Get paginated users
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
+
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('pt-BR').format(date);
+    try {
+      return format(new Date(dateString), 'dd/MM/yyyy');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Data inválida';
+    }
   };
 
   const updateFilter = (
@@ -116,6 +157,7 @@ const UsersList = () => {
       ...prev,
       [key]: value
     }));
+    setCurrentPage(1); // Reset to first page when filter changes
   };
 
   const toggleArrayFilter = (key: keyof FilterType, value: string) => {
@@ -133,7 +175,15 @@ const UsersList = () => {
         };
       }
     });
+    setCurrentPage(1); // Reset to first page when filter changes
   };
+
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1); // Reset to first page when search changes
+  };
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
 
   return (
     <Card>
@@ -141,6 +191,7 @@ const UsersList = () => {
         <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:space-y-0">
           <div>
             <CardTitle className="text-xl">Lista de Usuários Cadastrados</CardTitle>
+            <CardDescription>Gerencie e visualize os usuários cadastrados no sistema</CardDescription>
           </div>
           
           <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
@@ -163,7 +214,7 @@ const UsersList = () => {
                 placeholder="Buscar por nome, email, telefone..."
                 className="pl-8"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearch(e.target.value)}
               />
             </div>
             
@@ -186,16 +237,56 @@ const UsersList = () => {
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
           </div>
+        ) : error ? (
+          <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
+            <AlertTriangle className="h-8 w-8 mb-2 text-red-500" />
+            <p>{error}</p>
+            <Button 
+              variant="outline" 
+              className="mt-4"
+              onClick={() => window.location.reload()}
+            >
+              Tentar novamente
+            </Button>
+          </div>
         ) : (
           <>
             {viewMode === 'simple' ? (
-              <UserSimpleView users={filteredUsers} formatDate={formatDate} />
+              <UserSimpleView users={paginatedUsers} formatDate={formatDate} />
             ) : (
-              <UserDetailedView users={filteredUsers} formatDate={formatDate} />
+              <UserDetailedView users={paginatedUsers} formatDate={formatDate} />
+            )}
+            
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center space-x-2 mt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Anterior
+                </Button>
+                <div className="flex items-center">
+                  <span className="text-sm text-muted-foreground">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Próxima
+                </Button>
+              </div>
             )}
             
             <p className="text-xs text-muted-foreground mt-4">
-              Exibindo {filteredUsers.length} de {users.length} usuários cadastrados.
+              Exibindo {paginatedUsers.length} de {filteredUsers.length} usuários cadastrados 
+              {users.length > filteredUsers.length ? ` (total: ${users.length})` : ''}.
             </p>
           </>
         )}
