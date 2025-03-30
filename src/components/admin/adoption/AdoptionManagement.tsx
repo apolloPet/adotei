@@ -435,25 +435,25 @@ const AdoptionManagement = () => {
               <TabsTrigger value="all">
                 Todos 
                 <Badge variant="outline" className="ml-2 bg-gray-100">
-                  {matches.length}
+                  {matches.length.toString()}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="interested">
                 Interessados
                 <Badge variant="outline" className="ml-2 bg-blue-100">
-                  {matches.filter(m => m.currentStage === "interested").length}
+                  {matches.filter(m => m.currentStage === "interested").length.toString()}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="approved">
                 Aprovados
                 <Badge variant="outline" className="ml-2 bg-green-100">
-                  {matches.filter(m => ["approved", "visit_scheduled", "home_inspection"].includes(m.currentStage)).length}
+                  {matches.filter(m => ["approved", "visit_scheduled", "home_inspection"].includes(m.currentStage)).length.toString()}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="completed">
                 Concluídos
                 <Badge variant="outline" className="ml-2 bg-purple-100">
-                  {matches.filter(m => m.currentStage === "completed").length}
+                  {matches.filter(m => m.currentStage === "completed").length.toString()}
                 </Badge>
               </TabsTrigger>
             </TabsList>

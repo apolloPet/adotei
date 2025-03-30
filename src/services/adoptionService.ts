@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/lib/database.types';
 import { AdoptionMatch } from '@/components/admin/adoption/types';
@@ -128,10 +127,6 @@ export const updateAdoptionStage = async (
   id: string, 
   stage: AdoptionStage,
   notes?: string,
-  visitDate?: string,
-  inspectionDate?: string,
-  contractSigned?: boolean,
-  paymentComplete?: boolean,
   rejectionReason?: string
 ): Promise<boolean> => {
   try {
@@ -141,18 +136,6 @@ export const updateAdoptionStage = async (
     };
     
     if (notes) updates.notes = notes;
-    if (visitDate) updates.scheduled_visit_date = visitDate;
-    if (inspectionDate) updates.home_inspection_date = inspectionDate;
-    if (contractSigned !== undefined) updates.contract_signed = contractSigned;
-    if (paymentComplete !== undefined) updates.adoption_fee_paid = paymentComplete;
-    
-    // Handle approval
-    if (stage === 'approved') {
-      const currentUser = (await supabase.auth.getUser()).data.user;
-      if (currentUser) {
-        updates.approved_by = currentUser.id;
-      }
-    }
     
     // Handle rejection
     if (stage === 'rejected' && rejectionReason) {
