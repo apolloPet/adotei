@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import AdoptionStages, { adoptionStages } from '../../adoption/AdoptionStages';
+import AdoptionTimeline, { AdoptionStage } from '../../adoption/AdoptionStages';
 import { 
   Calendar, 
   Clock, 

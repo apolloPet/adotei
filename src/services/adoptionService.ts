@@ -35,11 +35,16 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
           .eq('match_type', 'liked')
           .single();
         
+        // Access images array to get main image
+        const petImage = pet.images && pet.images.length > 0 
+          ? pet.images[0].url 
+          : '';
+        
         return {
           id: adoption.id,
           petId: pet.id,
           petName: pet.name,
-          petImage: pet.mainImage || '',
+          petImage: petImage,
           userId: user.id,
           userName: user.name,
           userPhone: user.phone,
@@ -97,11 +102,16 @@ export const createAdoption = async (
     
     if (!pet || !user) throw new Error('Failed to fetch pet or user');
     
+    // Access images array to get main image
+    const petImage = pet.images && pet.images.length > 0 
+      ? pet.images[0].url 
+      : '';
+    
     return {
       id: adoption.id,
       petId: pet.id,
       petName: pet.name,
-      petImage: pet.mainImage || '',
+      petImage: petImage,
       userId: user.id,
       userName: user.name,
       userPhone: user.phone,
@@ -287,11 +297,16 @@ export const getAdoptionsByStage = async (stage: AdoptionStage): Promise<Adoptio
         
         if (!pet || !user) return null;
         
+        // Access images array to get main image
+        const petImage = pet.images && pet.images.length > 0 
+          ? pet.images[0].url 
+          : '';
+        
         return {
           id: adoption.id,
           petId: pet.id,
           petName: pet.name,
-          petImage: pet.mainImage || '',
+          petImage: petImage,
           userId: user.id,
           userName: user.name,
           userPhone: user.phone,
@@ -342,11 +357,16 @@ export const getPendingFollowUps = async (): Promise<AdoptionMatch[]> => {
         
         if (!pet || !user) return null;
         
+        // Access images array to get main image
+        const petImage = pet.images && pet.images.length > 0 
+          ? pet.images[0].url 
+          : '';
+        
         return {
           id: adoption.id,
           petId: pet.id,
           petName: pet.name,
-          petImage: pet.mainImage || '',
+          petImage: petImage,
           userId: user.id,
           userName: user.name,
           userPhone: user.phone,

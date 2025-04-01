@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,7 +34,6 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
   const [activeTab, setActiveTab] = useState<AdoptionStage | 'all'>('all');
   const [rejectionReason, setRejectionReason] = useState('');
   
-  // Fetch adoption matches on component mount
   useEffect(() => {
     fetchMatchData();
     fetchPendingFollowUps();
@@ -52,7 +50,6 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
         setMatches(adoptionMatches);
       } else {
         console.warn('No adoption matches found, using mock data');
-        // Only use mock data in development for demo purposes
         if (process.env.NODE_ENV === 'development') {
           const { mockAdoptionMatches } = await import('./types');
           setMatches(mockAdoptionMatches);
@@ -65,7 +62,6 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
       setError('Erro ao carregar solicitações de adoção.');
       toast.error('Erro ao carregar solicitações de adoção');
       
-      // Use mock data as fallback only in development
       if (process.env.NODE_ENV === 'development') {
         const { mockAdoptionMatches } = await import('./types');
         setMatches(mockAdoptionMatches);
@@ -131,24 +127,24 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
     }
   };
 
-  const getStageColor = (stage: AdoptionStage): string => {
+  const getStageColor = (stage: AdoptionStage): "default" | "secondary" | "destructive" | "outline" => {
     switch (stage) {
       case 'pending_approval':
-        return 'secondary';
+        return "secondary";
       case 'approved':
-        return 'default';
+        return "default";
       case 'rejected':
-        return 'destructive';
+        return "destructive";
       case 'completed':
-        return 'outline';
+        return "outline";
       case 'interested':
-        return 'secondary';
+        return "secondary";
       case 'visit_scheduled':
-        return 'secondary';
+        return "secondary";
       case 'home_inspection':
-        return 'secondary';
+        return "secondary";
       default:
-        return 'secondary';
+        return "secondary";
     }
   };
 
@@ -190,10 +186,8 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
       case 'home_inspection':
         return ['completed', 'rejected'];
       case 'completed':
-        // Once completed, it can't be changed
         return [];
       case 'rejected':
-        // Once rejected, we could allow reactivation to interested
         return ['interested'];
       default:
         return [];
@@ -310,7 +304,6 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
         )}
       </CardContent>
       
-      {/* Follow-ups Dialog */}
       <Dialog open={showPendingFollowUps} onOpenChange={setShowPendingFollowUps}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -350,7 +343,6 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Stage Update Dialog */}
       <Dialog open={showStageDialog} onOpenChange={setShowStageDialog}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
