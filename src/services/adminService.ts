@@ -53,8 +53,7 @@ export const createAdminUser = async (
       headers: {
         Authorization: `Bearer ${sessionData.session.access_token}`,
         'Content-Type': 'application/json'
-      },
-      responseType: 'json'
+      }
     });
     
     if (error) {
@@ -106,8 +105,7 @@ export const getAdminUsers = async (): Promise<AdminUser[]> => {
       headers: {
         Authorization: `Bearer ${sessionData.session.access_token}`,
         'Content-Type': 'application/json'
-      },
-      responseType: 'json'
+      }
     });
     
     if (error) {
@@ -160,8 +158,7 @@ export const updateAdminPermissions = async (
       headers: {
         Authorization: `Bearer ${sessionData.session.access_token}`,
         'Content-Type': 'application/json'
-      },
-      responseType: 'json'
+      }
     });
     
     if (error) {
@@ -201,8 +198,7 @@ export const removeAdminRole = async (userId: string): Promise<boolean> => {
       headers: {
         Authorization: `Bearer ${sessionData.session.access_token}`,
         'Content-Type': 'application/json'
-      },
-      responseType: 'json'
+      }
     });
     
     if (error) {
