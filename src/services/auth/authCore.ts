@@ -295,8 +295,7 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
               headers: {
                 Authorization: `Bearer ${session.session.access_token}`,
                 'Content-Type': 'application/json',
-              },
-              path: '/create-profile'
+              }
             });
             
             if (edgeFunctionError) {
