@@ -11,6 +11,7 @@ export interface User {
     number: string;
     neighborhood: string;
     city: string;
+    state: string; // Added state field
   };
   housingType: 'apartment' | 'house' | 'other';
   hasChildren: boolean;
