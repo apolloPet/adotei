@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/lib/database.types';
 import { AdoptionMatch } from '@/components/admin/adoption/types';
@@ -34,10 +35,16 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
           .eq('match_type', 'liked')
           .single();
         
-        // Access images array to get main image
-        const petImage = pet.images && pet.images.length > 0 
-          ? pet.images[0].url  // Accessing the url from the first image object
-          : '';
+        // Get the pet image from the pet object
+        let petImage = '';
+        if (pet.images && pet.images.length > 0) {
+          // Check if images is an array of objects or an array of strings
+          if (typeof pet.images[0] === 'string') {
+            petImage = pet.images[0];
+          } else if (typeof pet.images[0] === 'object' && pet.images[0] !== null) {
+            petImage = pet.images[0].url || '';
+          }
+        }
         
         return {
           id: adoption.id,
@@ -101,10 +108,16 @@ export const createAdoption = async (
     
     if (!pet || !user) throw new Error('Failed to fetch pet or user');
     
-    // Access images array to get main image
-    const petImage = pet.images && pet.images.length > 0 
-      ? pet.images[0].url  // Accessing the url from the first image object
-      : '';
+    // Get the pet image from the pet object
+    let petImage = '';
+    if (pet.images && pet.images.length > 0) {
+      // Check if images is an array of objects or an array of strings
+      if (typeof pet.images[0] === 'string') {
+        petImage = pet.images[0];
+      } else if (typeof pet.images[0] === 'object' && pet.images[0] !== null) {
+        petImage = pet.images[0].url || '';
+      }
+    }
     
     return {
       id: adoption.id,
@@ -296,10 +309,16 @@ export const getAdoptionsByStage = async (stage: AdoptionStage): Promise<Adoptio
         
         if (!pet || !user) return null;
         
-        // Access images array to get main image
-        const petImage = pet.images && pet.images.length > 0 
-          ? pet.images[0].url  // Accessing the url from the first image object
-          : '';
+        // Get the pet image from the pet object
+        let petImage = '';
+        if (pet.images && pet.images.length > 0) {
+          // Check if images is an array of objects or an array of strings
+          if (typeof pet.images[0] === 'string') {
+            petImage = pet.images[0];
+          } else if (typeof pet.images[0] === 'object' && pet.images[0] !== null) {
+            petImage = pet.images[0].url || '';
+          }
+        }
         
         return {
           id: adoption.id,
@@ -356,10 +375,16 @@ export const getPendingFollowUps = async (): Promise<AdoptionMatch[]> => {
         
         if (!pet || !user) return null;
         
-        // Access images array to get main image
-        const petImage = pet.images && pet.images.length > 0 
-          ? pet.images[0].url  // Accessing the url from the first image object
-          : '';
+        // Get the pet image from the pet object
+        let petImage = '';
+        if (pet.images && pet.images.length > 0) {
+          // Check if images is an array of objects or an array of strings
+          if (typeof pet.images[0] === 'string') {
+            petImage = pet.images[0];
+          } else if (typeof pet.images[0] === 'object' && pet.images[0] !== null) {
+            petImage = pet.images[0].url || '';
+          }
+        }
         
         return {
           id: adoption.id,
