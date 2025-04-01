@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 
@@ -25,7 +24,7 @@ export const createAdminUser = async (
     manageSettings: boolean;
     manageAdmins: boolean;
   }
-): Promise<boolean> => {
+): Promise<{success: boolean; message: string; data?: AdminUser}> => {
   try {
     console.log('Creating admin user with data:', { email, name, permissions });
     
@@ -39,7 +38,10 @@ export const createAdminUser = async (
 
     if (authError) {
       console.error('Error creating admin user:', authError);
-      throw new Error(authError.message);
+      return {
+        success: false,
+        message: authError.message
+      };
     }
 
     // If user created successfully, assign admin role
@@ -59,16 +61,37 @@ export const createAdminUser = async (
 
       if (roleError) {
         console.error('Error assigning admin role:', roleError);
-        throw new Error(roleError.message);
+        return {
+          success: false,
+          message: roleError.message
+        };
       }
 
-      return true;
+      // Return success with admin user data
+      return {
+        success: true,
+        message: "Administrador criado com sucesso",
+        data: {
+          id: authData.user.id,
+          email: authData.user.email || '',
+          role: 'admin',
+          created_at: authData.user.created_at,
+          permissions
+        }
+      };
     }
 
-    return false;
+    return {
+      success: false,
+      message: "Erro inesperado ao criar administrador"
+    };
   } catch (error) {
     console.error('Error in createAdminUser:', error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+    return {
+      success: false,
+      message: errorMessage
+    };
   }
 };
 

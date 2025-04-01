@@ -35,6 +35,54 @@ export const fetchUsers = async (): Promise<User[]> => {
   }
 };
 
+export const fetchUserWithRoleInfo = async (userId: string): Promise<{user: User | null, isAdmin: boolean}> => {
+  try {
+    if (!isSupabaseConfigured()) {
+      toast.error('Erro: Configuração do Supabase incompleta');
+      return { user: null, isAdmin: false };
+    }
+
+    // Get user info
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+    
+    if (userError) {
+      console.error('Erro ao buscar usuário:', userError);
+      handleSupabaseError(userError, 'Erro ao buscar usuário');
+      return { user: null, isAdmin: false };
+    }
+
+    if (!userData) {
+      return { user: null, isAdmin: false };
+    }
+
+    // Check if user has admin role
+    const { data: roleData, error: roleError } = await supabase
+      .from('user_roles')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('role', 'admin')
+      .maybeSingle();
+    
+    if (roleError) {
+      console.error('Erro ao verificar papel de administrador:', roleError);
+      handleSupabaseError(roleError, 'Erro ao verificar papel de administrador');
+    }
+
+    return { 
+      user: dbUserToUser(userData as DbUser), 
+      isAdmin: !!roleData 
+    };
+  } catch (error) {
+    console.error('Erro ao buscar usuário com informações de papel:', error);
+    toast.error('Erro ao buscar informações do usuário');
+    return { user: null, isAdmin: false };
+  }
+};
+
 export const fetchUserById = async (id: string): Promise<User | null> => {
   try {
     if (!isSupabaseConfigured()) {

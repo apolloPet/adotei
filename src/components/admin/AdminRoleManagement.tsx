@@ -144,12 +144,16 @@ const AdminRoleManagement = () => {
         permissions: newAdmin.permissions
       });
       
-      await createAdminUser(
+      const result = await createAdminUser(
         newAdmin.email,
         newAdmin.password,
         newAdmin.name,
         newAdmin.permissions
       );
+      
+      if (!result.success) {
+        throw new Error(result.message);
+      }
       
       // Close dialog and refresh the list
       setIsDialogOpen(false);
@@ -253,6 +257,9 @@ const AdminRoleManagement = () => {
         <div>
           <CardTitle className="text-xl">Gerenciamento de Administradores</CardTitle>
           <CardDescription>Adicione e gerencie usuários com acesso administrativo</CardDescription>
+          <CardDescription className="mt-2 text-sm text-muted-foreground">
+            <strong>Tabela no banco de dados:</strong> user_roles
+          </CardDescription>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
