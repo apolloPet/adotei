@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/lib/database.types';
 import { AdoptionMatch } from '@/components/admin/adoption/types';
@@ -8,6 +7,23 @@ import { fetchUserById } from './userService';
 import { toast } from '@/hooks/use-sonner';
 
 type DbAdoption = Database['public']['Tables']['adoptions']['Row'];
+
+// Helper function to extract pet image safely
+const extractPetImage = (petImages: any): string => {
+  if (!petImages || !petImages.length) return '';
+  
+  const firstImage = petImages[0];
+  
+  if (typeof firstImage === 'string') {
+    return firstImage;
+  } 
+  
+  if (firstImage && typeof firstImage === 'object' && 'url' in firstImage) {
+    return firstImage.url || '';
+  }
+  
+  return '';
+};
 
 // Fetch all adoptions
 export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
@@ -35,22 +51,14 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
           .eq('match_type', 'liked')
           .single();
         
-        // Get the pet image from the pet object
-        let petImage = '';
-        if (pet.images && pet.images.length > 0) {
-          // Check if images is an array of objects or an array of strings
-          if (typeof pet.images[0] === 'string') {
-            petImage = pet.images[0];
-          } else if (typeof pet.images[0] === 'object' && pet.images[0] !== null) {
-            petImage = pet.images[0].url || '';
-          }
-        }
+        // Get the pet image safely using our helper function
+        const petImage = extractPetImage(pet.images);
         
         return {
           id: adoption.id,
           petId: pet.id,
           petName: pet.name,
-          petImage: petImage,
+          petImage,
           userId: user.id,
           userName: user.name,
           userPhone: user.phone,
@@ -108,22 +116,14 @@ export const createAdoption = async (
     
     if (!pet || !user) throw new Error('Failed to fetch pet or user');
     
-    // Get the pet image from the pet object
-    let petImage = '';
-    if (pet.images && pet.images.length > 0) {
-      // Check if images is an array of objects or an array of strings
-      if (typeof pet.images[0] === 'string') {
-        petImage = pet.images[0];
-      } else if (typeof pet.images[0] === 'object' && pet.images[0] !== null) {
-        petImage = pet.images[0].url || '';
-      }
-    }
+    // Get the pet image safely using our helper function
+    const petImage = extractPetImage(pet.images);
     
     return {
       id: adoption.id,
       petId: pet.id,
       petName: pet.name,
-      petImage: petImage,
+      petImage,
       userId: user.id,
       userName: user.name,
       userPhone: user.phone,
@@ -309,22 +309,14 @@ export const getAdoptionsByStage = async (stage: AdoptionStage): Promise<Adoptio
         
         if (!pet || !user) return null;
         
-        // Get the pet image from the pet object
-        let petImage = '';
-        if (pet.images && pet.images.length > 0) {
-          // Check if images is an array of objects or an array of strings
-          if (typeof pet.images[0] === 'string') {
-            petImage = pet.images[0];
-          } else if (typeof pet.images[0] === 'object' && pet.images[0] !== null) {
-            petImage = pet.images[0].url || '';
-          }
-        }
+        // Get the pet image safely using our helper function
+        const petImage = extractPetImage(pet.images);
         
         return {
           id: adoption.id,
           petId: pet.id,
           petName: pet.name,
-          petImage: petImage,
+          petImage,
           userId: user.id,
           userName: user.name,
           userPhone: user.phone,
@@ -375,22 +367,14 @@ export const getPendingFollowUps = async (): Promise<AdoptionMatch[]> => {
         
         if (!pet || !user) return null;
         
-        // Get the pet image from the pet object
-        let petImage = '';
-        if (pet.images && pet.images.length > 0) {
-          // Check if images is an array of objects or an array of strings
-          if (typeof pet.images[0] === 'string') {
-            petImage = pet.images[0];
-          } else if (typeof pet.images[0] === 'object' && pet.images[0] !== null) {
-            petImage = pet.images[0].url || '';
-          }
-        }
+        // Get the pet image safely using our helper function
+        const petImage = extractPetImage(pet.images);
         
         return {
           id: adoption.id,
           petId: pet.id,
           petName: pet.name,
-          petImage: petImage,
+          petImage,
           userId: user.id,
           userName: user.name,
           userPhone: user.phone,
