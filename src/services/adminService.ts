@@ -28,62 +28,56 @@ export const createAdminUser = async (
   try {
     console.log('Creating admin user with data:', { email, name, permissions });
     
-    // Create the user in Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: { name, isAdmin: true }
-    });
-
-    if (authError) {
-      console.error('Error creating admin user:', authError);
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !sessionData.session) {
+      console.error('Erro ao obter sessão:', sessionError);
       return {
         success: false,
-        message: authError.message
+        message: 'Você precisa estar autenticado para criar um administrador'
       };
     }
-
-    // If user created successfully, assign admin role
-    if (authData.user) {
-      // Use a type assertion to ensure TypeScript recognizes the permissions object
-      const roleData = {
-        user_id: authData.user.id,
-        role: 'admin',
-        permissions
-      };
-
-      console.log('Assigning admin role with data:', roleData);
-
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert(roleData);
-
-      if (roleError) {
-        console.error('Error assigning admin role:', roleError);
-        return {
-          success: false,
-          message: roleError.message
-        };
-      }
-
-      // Return success with admin user data
+    
+    const adminData = {
+      email,
+      password,
+      name,
+      permissions
+    };
+    
+    console.log('Enviando solicitação para edge function de criação de administrador');
+    
+    const { data, error } = await supabase.functions.invoke('admin-management', {
+      method: 'POST',
+      body: JSON.stringify(adminData),
+      headers: {
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      responseType: 'json'
+    });
+    
+    if (error) {
+      console.error('Erro na edge function de criação de administrador:', error);
       return {
-        success: true,
-        message: "Administrador criado com sucesso",
-        data: {
-          id: authData.user.id,
-          email: authData.user.email || '',
-          role: 'admin',
-          created_at: authData.user.created_at,
-          permissions
-        }
+        success: false,
+        message: error.message || 'Erro ao criar administrador'
       };
     }
-
+    
+    console.log('Resposta da edge function:', data);
+    
+    if (!data.success) {
+      return {
+        success: false,
+        message: data.message || 'Erro ao criar administrador'
+      };
+    }
+    
     return {
-      success: false,
-      message: "Erro inesperado ao criar administrador"
+      success: true,
+      message: data.message || 'Administrador criado com sucesso',
+      data: data.data
     };
   } catch (error) {
     console.error('Error in createAdminUser:', error);
@@ -99,66 +93,40 @@ export const getAdminUsers = async (): Promise<AdminUser[]> => {
   try {
     console.log('Fetching admin users');
     
-    // Get users with admin role
-    const { data: roleData, error: roleError } = await supabase
-      .from('user_roles')
-      .select('*')
-      .eq('role', 'admin');
-
-    if (roleError) {
-      console.error('Error fetching admin roles:', roleError);
-      throw new Error(roleError.message);
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !sessionData.session) {
+      console.error('Erro ao obter sessão:', sessionError);
+      toast.error('Você precisa estar autenticado para listar administradores');
+      return [];
     }
-
-    console.log('Found role data:', roleData);
-
-    // If we have admin roles, get user details
-    if (roleData && roleData.length > 0) {
-      const adminUsers: AdminUser[] = [];
-      
-      for (const role of roleData) {
-        // Get user details
-        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(role.user_id);
-        
-        if (userError) {
-          console.error('Error fetching user details:', userError);
-          continue;
-        }
-
-        if (userData.user) {
-          console.log('User data for admin:', userData.user);
-          
-          // Ensure permissions is a valid object using type assertion
-          const typedRole = role as unknown as { 
-            permissions?: AdminUser['permissions'], 
-            user_id: string, 
-            role: string,
-            created_at?: string 
-          };
-          
-          const permissions = typedRole.permissions || {
-            manageAnimals: true,
-            approveAdoptions: true,
-            manageSettings: false,
-            manageAdmins: false
-          };
-
-          adminUsers.push({
-            id: userData.user.id,
-            email: userData.user.email || '',
-            role: role.role,
-            created_at: userData.user.created_at || typedRole.created_at,
-            permissions
-          });
-        }
-      }
-
-      return adminUsers;
+    
+    const { data, error } = await supabase.functions.invoke('admin-management', {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      responseType: 'json'
+    });
+    
+    if (error) {
+      console.error('Erro na edge function de listagem de administradores:', error);
+      toast.error(`Erro ao listar administradores: ${error.message}`);
+      return [];
     }
-
-    return [];
+    
+    if (!data.success || !data.data) {
+      console.error('Resposta de erro da edge function:', data);
+      toast.error(data.message || 'Erro ao listar administradores');
+      return [];
+    }
+    
+    console.log('Administradores obtidos:', data.data);
+    return data.data;
   } catch (error) {
     console.error('Error in getAdminUsers:', error);
+    toast.error('Erro ao buscar administradores');
     throw error;
   }
 };
@@ -173,45 +141,88 @@ export const updateAdminPermissions = async (
   }
 ): Promise<boolean> => {
   try {
-    // We need to use a more general type assertion here to avoid TypeScript errors
-    // Since we're updating a JSONB column that TypeScript doesn't know about in the type definition
-    const updateObj: Record<string, any> = { permissions };
-
-    const { error } = await supabase
-      .from('user_roles')
-      .update(updateObj)
-      .eq('user_id', userId)
-      .eq('role', 'admin');
-
-    if (error) {
-      console.error('Error updating admin permissions:', error);
-      throw new Error(error.message);
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !sessionData.session) {
+      console.error('Erro ao obter sessão:', sessionError);
+      toast.error('Você precisa estar autenticado para atualizar permissões');
+      return false;
     }
-
+    
+    const requestData = {
+      userId,
+      permissions
+    };
+    
+    const { data, error } = await supabase.functions.invoke('admin-management', {
+      method: 'PUT',
+      body: JSON.stringify(requestData),
+      headers: {
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      responseType: 'json'
+    });
+    
+    if (error) {
+      console.error('Erro na edge function de atualização de permissões:', error);
+      toast.error(`Erro ao atualizar permissões: ${error.message}`);
+      return false;
+    }
+    
+    if (!data.success) {
+      console.error('Resposta de erro da edge function:', data);
+      toast.error(data.message || 'Erro ao atualizar permissões');
+      return false;
+    }
+    
+    toast.success('Permissões atualizadas com sucesso');
     return true;
   } catch (error) {
     console.error('Error in updateAdminPermissions:', error);
-    throw error;
+    toast.error('Erro ao atualizar permissões');
+    return false;
   }
 };
 
 export const removeAdminRole = async (userId: string): Promise<boolean> => {
   try {
-    const { error } = await supabase
-      .from('user_roles')
-      .delete()
-      .eq('user_id', userId)
-      .eq('role', 'admin');
-
-    if (error) {
-      console.error('Error removing admin role:', error);
-      throw new Error(error.message);
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError || !sessionData.session) {
+      console.error('Erro ao obter sessão:', sessionError);
+      toast.error('Você precisa estar autenticado para remover administrador');
+      return false;
     }
-
+    
+    const { data, error } = await supabase.functions.invoke(`admin-management`, {
+      method: 'DELETE',
+      body: JSON.stringify({ userId }),
+      headers: {
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+        'Content-Type': 'application/json'
+      },
+      responseType: 'json'
+    });
+    
+    if (error) {
+      console.error('Erro na edge function de remoção de administrador:', error);
+      toast.error(`Erro ao remover administrador: ${error.message}`);
+      return false;
+    }
+    
+    if (!data.success) {
+      console.error('Resposta de erro da edge function:', data);
+      toast.error(data.message || 'Erro ao remover administrador');
+      return false;
+    }
+    
+    toast.success('Administrador removido com sucesso');
     return true;
   } catch (error) {
     console.error('Error in removeAdminRole:', error);
-    throw error;
+    toast.error('Erro ao remover administrador');
+    return false;
   }
 };
 
