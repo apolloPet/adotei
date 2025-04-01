@@ -14,7 +14,8 @@ export const mockUsers: User[] = [
       street: "Rua das Flores",
       number: "123",
       neighborhood: "Jardim Primavera",
-      city: "São Paulo"
+      city: "São Paulo",
+      state: "SP"
     },
     housingType: "apartment",
     hasChildren: true,
@@ -34,7 +35,8 @@ export const mockUsers: User[] = [
       street: "Avenida Central",
       number: "456",
       neighborhood: "Centro",
-      city: "São Paulo"
+      city: "São Paulo",
+      state: "SP"
     },
     housingType: "house",
     hasChildren: false,
@@ -54,7 +56,8 @@ export const mockUsers: User[] = [
       street: "Rua dos Pinheiros",
       number: "789",
       neighborhood: "Pinheiros",
-      city: "Rio de Janeiro"
+      city: "Rio de Janeiro",
+      state: "RJ"
     },
     housingType: "house",
     hasChildren: true,
@@ -74,7 +77,8 @@ export const mockUsers: User[] = [
       street: "Alameda Santos",
       number: "101",
       neighborhood: "Jardim América",
-      city: "Belo Horizonte"
+      city: "Belo Horizonte",
+      state: "MG"
     },
     housingType: "apartment",
     hasChildren: false,
@@ -94,7 +98,8 @@ export const mockUsers: User[] = [
       street: "Rua Ipiranga",
       number: "202",
       neighborhood: "Ipiranga",
-      city: "Curitiba"
+      city: "Curitiba",
+      state: "PR"
     },
     housingType: "other",
     hasChildren: true,
