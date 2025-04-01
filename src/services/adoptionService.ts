@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/lib/database.types';
 import { AdoptionMatch } from '@/components/admin/adoption/types';
@@ -8,6 +9,7 @@ import { toast } from '@/hooks/use-sonner';
 
 type DbAdoption = Database['public']['Tables']['adoptions']['Row'];
 
+// Fetch all adoptions
 export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
   try {
     const { data: adoptions, error } = await supabase
@@ -24,7 +26,7 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
         
         if (!pet || !user) return null;
         
-        // Buscar informações de matches para este pet e usuário
+        // Get match data if available
         const { data: matchData } = await supabase
           .from('pet_matches')
           .select('*')
@@ -37,7 +39,7 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
           id: adoption.id,
           petId: pet.id,
           petName: pet.name,
-          petImage: pet.images[0] || '',
+          petImage: pet.mainImage || '',
           userId: user.id,
           userName: user.name,
           userPhone: user.phone,
@@ -68,6 +70,7 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
   }
 };
 
+// Create a new adoption
 export const createAdoption = async (
   petId: string, 
   userId: string, 
@@ -98,7 +101,7 @@ export const createAdoption = async (
       id: adoption.id,
       petId: pet.id,
       petName: pet.name,
-      petImage: pet.images[0] || '',
+      petImage: pet.mainImage || '',
       userId: user.id,
       userName: user.name,
       userPhone: user.phone,
@@ -123,6 +126,7 @@ export const createAdoption = async (
   }
 };
 
+// Update the stage of an adoption
 export const updateAdoptionStage = async (
   id: string, 
   stage: AdoptionStage,
@@ -142,26 +146,33 @@ export const updateAdoptionStage = async (
       updates.rejection_reason = rejectionReason;
     }
     
+    // Handle scheduling visit
+    if (stage === 'visit_scheduled') {
+      // In a real app, we would set the actual date here
+      updates.scheduled_visit_date = new Date().toISOString().split('T')[0];
+    }
+    
+    // Handle home inspection
+    if (stage === 'home_inspection') {
+      updates.home_inspection_date = new Date().toISOString().split('T')[0];
+    }
+    
+    // Handle completion - set up follow-up dates
+    if (stage === 'completed') {
+      const nextFollowUpDate = new Date();
+      nextFollowUpDate.setDate(nextFollowUpDate.getDate() + 14); // First follow-up after 14 days
+      
+      updates.next_follow_up_date = nextFollowUpDate.toISOString().split('T')[0];
+      updates.follow_up_status = 'pending';
+    }
+    
+    // Update the adoption record
     const { error } = await supabase
       .from('adoptions')
       .update(updates)
       .eq('id', id);
     
     if (error) throw error;
-    
-    // Set up follow-up dates for completed adoptions
-    if (stage === 'completed') {
-      const nextFollowUpDate = new Date();
-      nextFollowUpDate.setDate(nextFollowUpDate.getDate() + 14); // First follow-up after 14 days
-      
-      await supabase
-        .from('adoptions')
-        .update({
-          next_follow_up_date: nextFollowUpDate.toISOString().split('T')[0],
-          follow_up_status: 'pending'
-        })
-        .eq('id', id);
-    }
     
     return true;
   } catch (error) {
@@ -171,13 +182,14 @@ export const updateAdoptionStage = async (
   }
 };
 
+// Record a match between a pet and a user
 export const recordPetMatch = async (
   petId: string, 
   userId: string, 
   matchType: 'liked' | 'disliked'
 ): Promise<boolean> => {
   try {
-    // Verificar se o userId é válido, caso contrário, obter o userId atual
+    // Verify userID is valid
     let userIdToUse = userId;
     
     if (!userId || userId === 'mock-user-id') {
@@ -192,8 +204,7 @@ export const recordPetMatch = async (
     console.log('Recording pet match with:', { petId, userId: userIdToUse, matchType });
     
     try {
-      // Usar a função de edge para registrar o match e criar adoção se necessário
-      // Construir a URL completa para a função Edge
+      // Call the edge function to record the match
       const edgeFunctionUrl = `https://jwbcrddblmiurmeziszp.supabase.co/functions/v1/record-adoption`;
       
       const { data: sessionData } = await supabase.auth.getSession();
@@ -202,8 +213,6 @@ export const recordPetMatch = async (
       if (!accessToken) {
         throw new Error('No access token available');
       }
-      
-      console.log('Calling edge function at:', edgeFunctionUrl);
       
       const response = await fetch(edgeFunctionUrl, {
         method: 'POST',
@@ -233,7 +242,7 @@ export const recordPetMatch = async (
       const result = await response.json();
       console.log('Edge function result:', result);
       
-      // Mostrar mensagem de sucesso se for um match positivo
+      // Show success message if it's a positive match
       if (matchType === 'liked') {
         if (result.message === "Adoção já existe") {
           toast.info('Você já demonstrou interesse neste pet!', {
@@ -260,6 +269,7 @@ export const recordPetMatch = async (
   }
 };
 
+// Get adoptions by stage
 export const getAdoptionsByStage = async (stage: AdoptionStage): Promise<AdoptionMatch[]> => {
   try {
     const { data: adoptions, error } = await supabase
@@ -281,7 +291,7 @@ export const getAdoptionsByStage = async (stage: AdoptionStage): Promise<Adoptio
           id: adoption.id,
           petId: pet.id,
           petName: pet.name,
-          petImage: pet.images[0] || '',
+          petImage: pet.mainImage || '',
           userId: user.id,
           userName: user.name,
           userPhone: user.phone,
@@ -310,6 +320,7 @@ export const getAdoptionsByStage = async (stage: AdoptionStage): Promise<Adoptio
   }
 };
 
+// Get pending follow-ups
 export const getPendingFollowUps = async (): Promise<AdoptionMatch[]> => {
   try {
     const today = new Date().toISOString().split('T')[0];
@@ -335,7 +346,7 @@ export const getPendingFollowUps = async (): Promise<AdoptionMatch[]> => {
           id: adoption.id,
           petId: pet.id,
           petName: pet.name,
-          petImage: pet.images[0] || '',
+          petImage: pet.mainImage || '',
           userId: user.id,
           userName: user.name,
           userPhone: user.phone,
@@ -364,6 +375,7 @@ export const getPendingFollowUps = async (): Promise<AdoptionMatch[]> => {
   }
 };
 
+// Assign a responsible for an adoption
 export const assignResponsible = async (
   adoptionId: string,
   responsibleId: string
@@ -381,6 +393,61 @@ export const assignResponsible = async (
   } catch (error) {
     console.error('Error assigning responsible:', error);
     toast.error('Erro ao atribuir responsável');
+    return false;
+  }
+};
+
+// Record a follow-up for an adoption
+export const recordFollowUp = async (
+  adoptionId: string,
+  notes: string,
+  status: 'successful' | 'needs_attention' | 'failed'
+): Promise<boolean> => {
+  try {
+    // Record the follow-up
+    const { error: followUpError } = await supabase
+      .from('adoption_follow_ups')
+      .insert({
+        adoption_id: adoptionId,
+        notes: notes,
+        status: status,
+        follow_up_date: new Date().toISOString().split('T')[0]
+      });
+    
+    if (followUpError) throw followUpError;
+    
+    // Update the adoption record
+    const { error: adoptionError } = await supabase
+      .from('adoptions')
+      .update({
+        last_follow_up_date: new Date().toISOString().split('T')[0],
+        follow_up_status: status === 'successful' ? 'completed' : 'needs_attention'
+      })
+      .eq('id', adoptionId);
+    
+    if (adoptionError) throw adoptionError;
+    
+    // If successful, schedule next follow-up in 30 days
+    if (status === 'successful') {
+      const nextFollowUpDate = new Date();
+      nextFollowUpDate.setDate(nextFollowUpDate.getDate() + 30);
+      
+      const { error: nextFollowUpError } = await supabase
+        .from('adoptions')
+        .update({
+          next_follow_up_date: nextFollowUpDate.toISOString().split('T')[0],
+          follow_up_status: 'pending'
+        })
+        .eq('id', adoptionId);
+      
+      if (nextFollowUpError) throw nextFollowUpError;
+    }
+    
+    toast.success('Acompanhamento registrado com sucesso');
+    return true;
+  } catch (error) {
+    console.error('Error recording follow-up:', error);
+    toast.error('Erro ao registrar acompanhamento');
     return false;
   }
 };

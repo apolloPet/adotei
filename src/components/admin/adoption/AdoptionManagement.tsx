@@ -1,14 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-sonner";
-import { PlusCircle, Trash2, Shield, Check, X, AlertTriangle, Calendar, Bell } from "lucide-react";
+import { AlertTriangle, Bell, Check, X, Calendar, Phone, Mail } from "lucide-react";
 import { 
   fetchAdoptions, 
   updateAdoptionStage,
@@ -18,8 +15,9 @@ import { format } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { AdoptionStage } from "@/components/adoption/AdoptionStages";
-import { mockAdoptionMatches } from './types';
-import type { AdoptionMatch } from './types';
+import { AdoptionMatch } from './types';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface AdoptionManagementProps {
   // Define any props here
@@ -29,29 +27,14 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
   const [matches, setMatches] = useState<AdoptionMatch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [newAdmin, setNewAdmin] = useState({
-    name: '',
-    email: '',
-    password: '',
-    passwordConfirm: '',
-    permissions: {
-      manageAnimals: true,
-      approveAdoptions: true,
-      manageSettings: false,
-      manageAdmins: false
-    }
-  });
-  const [formErrors, setFormErrors] = useState({
-    name: '',
-    email: '',
-    password: '',
-    passwordConfirm: ''
-  });
   const [pendingFollowUps, setPendingFollowUps] = useState<AdoptionMatch[]>([]);
   const [showPendingFollowUps, setShowPendingFollowUps] = useState(false);
-
+  const [selectedAdoption, setSelectedAdoption] = useState<AdoptionMatch | null>(null);
+  const [showStageDialog, setShowStageDialog] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [activeTab, setActiveTab] = useState<AdoptionStage | 'all'>('all');
+  const [rejectionReason, setRejectionReason] = useState('');
+  
   // Fetch adoption matches on component mount
   useEffect(() => {
     fetchMatchData();
@@ -64,13 +47,29 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
       setError(null);
       const adoptionMatches = await fetchAdoptions();
       console.log('Fetched adoption matches:', adoptionMatches);
-      setMatches(adoptionMatches.length > 0 ? adoptionMatches : mockAdoptionMatches);
+      
+      if (adoptionMatches && adoptionMatches.length > 0) {
+        setMatches(adoptionMatches);
+      } else {
+        console.warn('No adoption matches found, using mock data');
+        // Only use mock data in development for demo purposes
+        if (process.env.NODE_ENV === 'development') {
+          const { mockAdoptionMatches } = await import('./types');
+          setMatches(mockAdoptionMatches);
+        } else {
+          setMatches([]);
+        }
+      }
     } catch (error) {
       console.error('Error fetching adoption matches:', error);
       setError('Erro ao carregar solicitações de adoção.');
       toast.error('Erro ao carregar solicitações de adoção');
-      // Use mock data as fallback
-      setMatches(mockAdoptionMatches);
+      
+      // Use mock data as fallback only in development
+      if (process.env.NODE_ENV === 'development') {
+        const { mockAdoptionMatches } = await import('./types');
+        setMatches(mockAdoptionMatches);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -86,134 +85,40 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setNewAdmin(prev => ({
-      ...prev,
-      [name]: value
-    }));
+  const handleStageChange = async (newStage: AdoptionStage) => {
+    if (!selectedAdoption) return;
     
-    // Clear error when user types
-    if (formErrors[name as keyof typeof formErrors]) {
-      setFormErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
-  };
-
-  const handlePermissionChange = (permission: keyof typeof newAdmin.permissions) => {
-    setNewAdmin(prev => ({
-      ...prev,
-      permissions: {
-        ...prev.permissions,
-        [permission]: !prev.permissions[permission]
+    try {
+      let additionalData = {};
+      
+      if (newStage === 'rejected' && rejectionReason) {
+        additionalData = { rejectionReason };
+      } else if (notes) {
+        additionalData = { notes };
       }
-    }));
-  };
-
-  const validateForm = () => {
-    let isValid = true;
-    const errors = {
-      name: '',
-      email: '',
-      password: '',
-      passwordConfirm: ''
-    };
-
-    if (!newAdmin.name.trim()) {
-      errors.name = 'Nome é obrigatório';
-      isValid = false;
-    }
-
-    if (!newAdmin.email.trim()) {
-      errors.email = 'Email é obrigatório';
-      isValid = false;
-    } else if (!/\S+@\S+\.\S+/.test(newAdmin.email)) {
-      errors.email = 'Email inválido';
-      isValid = false;
-    }
-
-    if (!newAdmin.password) {
-      errors.password = 'Senha é obrigatória';
-      isValid = false;
-    } else if (newAdmin.password.length < 6) {
-      errors.password = 'Senha deve ter pelo menos 6 caracteres';
-      isValid = false;
-    }
-
-    if (newAdmin.password !== newAdmin.passwordConfirm) {
-      errors.passwordConfirm = 'As senhas não coincidem';
-      isValid = false;
-    }
-
-    setFormErrors(errors);
-    return isValid;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsProcessing(true);
-    
-    try {
-      // Log the data being sent to the backend
-      console.log('Creating admin with data:', {
-        email: newAdmin.email,
-        name: newAdmin.name,
-        permissions: newAdmin.permissions
-      });
       
-      // await createAdminUser(
-      //   newAdmin.email,
-      //   newAdmin.password,
-      //   newAdmin.name,
-      //   newAdmin.permissions
-      // );
+      await updateAdoptionStage(
+        selectedAdoption.id, 
+        newStage,
+        notes,
+        newStage === 'rejected' ? rejectionReason : undefined
+      );
       
-      // Close dialog and refresh the list
-      setIsDialogOpen(false);
-      fetchMatchData();
-      
-      // Reset form
-      setNewAdmin({
-        name: '',
-        email: '',
-        password: '',
-        passwordConfirm: '',
-        permissions: {
-          manageAnimals: true,
-          approveAdoptions: true,
-          manageSettings: false,
-          manageAdmins: false
-        }
-      });
-
-      toast.success("Administrador adicionado com sucesso!", {
-        description: `${newAdmin.name} agora tem acesso ao painel.`
-      });
-    } catch (error) {
-      console.error('Error creating admin user:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao adicionar administrador');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleStageChange = async (matchId: string) => {
-    try {
-      // Calling updateAdoptionStage with the corrected arguments
-      await updateAdoptionStage(matchId, 'approved');
       await fetchMatchData();
-      toast.success("Status da adoção atualizado com sucesso");
+      setShowStageDialog(false);
+      setNotes('');
+      setRejectionReason('');
+      toast.success(`Status da adoção atualizado para: ${getStageLabel(newStage)}`);
     } catch (error) {
       console.error('Error updating adoption stage:', error);
       toast.error('Erro ao atualizar estágio da adoção');
     }
+  };
+
+  const handleOpenStageDialog = (adoption: AdoptionMatch) => {
+    setSelectedAdoption(adoption);
+    setNotes(adoption.notes || '');
+    setShowStageDialog(true);
   };
 
   const formatDate = (dateString?: string): string => {
@@ -268,6 +173,33 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
     }
   };
 
+  const filteredMatches = activeTab === 'all' 
+    ? matches 
+    : matches.filter(match => match.currentStage === activeTab);
+
+  const nextAvailableStages = (currentStage: AdoptionStage): AdoptionStage[] => {
+    switch(currentStage) {
+      case 'interested':
+        return ['pending_approval', 'rejected'];
+      case 'pending_approval':
+        return ['approved', 'rejected'];
+      case 'approved':
+        return ['visit_scheduled', 'rejected'];
+      case 'visit_scheduled':
+        return ['home_inspection', 'rejected'];
+      case 'home_inspection':
+        return ['completed', 'rejected'];
+      case 'completed':
+        // Once completed, it can't be changed
+        return [];
+      case 'rejected':
+        // Once rejected, we could allow reactivation to interested
+        return ['interested'];
+      default:
+        return [];
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -287,137 +219,23 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
             <Bell className="h-4 w-4" />
             {pendingFollowUps.length > 0 ? pendingFollowUps.length.toString() : "0"} acompanhamentos pendentes
           </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <PlusCircle className="h-4 w-4" />
-                Novo Administrador
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Adicionar Novo Administrador</DialogTitle>
-                <DialogDescription>
-                  Preencha os dados para criar uma conta com privilégios administrativos.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <form onSubmit={handleSubmit} className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Nome Completo</Label>
-                  <Input 
-                    id="name"
-                    name="name"
-                    value={newAdmin.name}
-                    onChange={handleInputChange}
-                    placeholder="Nome do administrador"
-                  />
-                  {formErrors.name && (
-                    <p className="text-sm text-red-500">{formErrors.name}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={newAdmin.email}
-                    onChange={handleInputChange}
-                    placeholder="email@exemplo.com"
-                  />
-                  {formErrors.email && (
-                    <p className="text-sm text-red-500">{formErrors.email}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="password">Senha</Label>
-                  <Input 
-                    id="password"
-                    name="password"
-                    type="password"
-                    value={newAdmin.password}
-                    onChange={handleInputChange}
-                    placeholder="••••••••"
-                  />
-                  {formErrors.password && (
-                    <p className="text-sm text-red-500">{formErrors.password}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="passwordConfirm">Confirmar Senha</Label>
-                  <Input 
-                    id="passwordConfirm"
-                    name="passwordConfirm"
-                    type="password"
-                    value={newAdmin.passwordConfirm}
-                    onChange={handleInputChange}
-                    placeholder="••••••••"
-                  />
-                  {formErrors.passwordConfirm && (
-                    <p className="text-sm text-red-500">{formErrors.passwordConfirm}</p>
-                  )}
-                </div>
-                
-                <div className="space-y-3 pt-2">
-                  <Label>Permissões</Label>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="manage-animals" className="cursor-pointer">Gerenciar Animais</Label>
-                    <Switch 
-                      id="manage-animals"
-                      checked={newAdmin.permissions.manageAnimals}
-                      onCheckedChange={() => handlePermissionChange('manageAnimals')}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="approve-adoptions" className="cursor-pointer">Aprovar Adoções</Label>
-                    <Switch 
-                      id="approve-adoptions"
-                      checked={newAdmin.permissions.approveAdoptions}
-                      onCheckedChange={() => handlePermissionChange('approveAdoptions')}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="manage-settings" className="cursor-pointer">Configurar Parâmetros</Label>
-                    <Switch 
-                      id="manage-settings"
-                      checked={newAdmin.permissions.manageSettings}
-                      onCheckedChange={() => handlePermissionChange('manageSettings')}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="manage-admins" className="cursor-pointer">Gerenciar Administradores</Label>
-                    <Switch 
-                      id="manage-admins"
-                      checked={newAdmin.permissions.manageAdmins}
-                      onCheckedChange={() => handlePermissionChange('manageAdmins')}
-                    />
-                  </div>
-                </div>
-                
-                <DialogFooter className="pt-4">
-                  <Button 
-                    type="submit" 
-                    className="w-full md:w-auto"
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? 'Criando...' : 'Criar Administrador'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
         </div>
       </CardHeader>
       
       <CardContent>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as AdoptionStage | 'all')} className="mb-6">
+          <TabsList className="w-full mb-4 overflow-x-auto flex flex-nowrap whitespace-nowrap">
+            <TabsTrigger value="all">Todos</TabsTrigger>
+            <TabsTrigger value="interested">Interesse</TabsTrigger>
+            <TabsTrigger value="pending_approval">Em Análise</TabsTrigger>
+            <TabsTrigger value="approved">Aprovados</TabsTrigger>
+            <TabsTrigger value="visit_scheduled">Visita Agendada</TabsTrigger>
+            <TabsTrigger value="home_inspection">Inspeção</TabsTrigger>
+            <TabsTrigger value="completed">Concluídos</TabsTrigger>
+            <TabsTrigger value="rejected">Rejeitados</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        
         {isLoading ? (
           <div className="flex justify-center items-center h-40">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -434,39 +252,49 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
               Tentar novamente
             </Button>
           </div>
-        ) : matches.length > 0 ? (
+        ) : filteredMatches.length > 0 ? (
           <div className="border rounded-md">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
                   <TableHead>Usuário</TableHead>
                   <TableHead>Animal</TableHead>
+                  <TableHead>Contato</TableHead>
                   <TableHead>Data da Solicitação</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="w-[100px]">Ações</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {matches.map((match) => (
+                {filteredMatches.map((match) => (
                   <TableRow key={match.id}>
-                    <TableCell className="font-medium">{match.id}</TableCell>
-                    <TableCell>{match.userId}</TableCell>
+                    <TableCell className="font-medium">{match.userName}</TableCell>
                     <TableCell>{match.petName}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="flex items-center text-sm">
+                          <Phone className="w-3 h-3 mr-1" /> {match.userPhone}
+                        </span>
+                        <span className="flex items-center text-sm">
+                          <Mail className="w-3 h-3 mr-1" /> {match.userEmail}
+                        </span>
+                      </div>
+                    </TableCell>
                     <TableCell>{formatDate(match.createdAt)}</TableCell>
                     <TableCell>
                       <Badge variant={getStageColor(match.currentStage) as "default" | "secondary" | "destructive" | "outline"}>
                         {getStageLabel(match.currentStage)}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-right">
                       <Button 
                         variant="ghost" 
-                        size="icon"
-                        onClick={() => handleStageChange(match.id)}
+                        size="sm"
+                        onClick={() => handleOpenStageDialog(match)}
                         className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                        disabled={match.currentStage === 'completed'}
                       >
-                        <Check className="h-4 w-4" />
+                        Atualizar
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -477,10 +305,12 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
         ) : (
           <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
             <AlertTriangle className="h-8 w-8 mb-2 text-amber-500" />
-            <p>Nenhuma solicitação de adoção encontrada.</p>
+            <p>Nenhuma solicitação de adoção encontrada neste estágio.</p>
           </div>
         )}
       </CardContent>
+      
+      {/* Follow-ups Dialog */}
       <Dialog open={showPendingFollowUps} onOpenChange={setShowPendingFollowUps}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -515,6 +345,128 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
           <DialogFooter className="sm:justify-start">
             <Button type="button" onClick={() => setShowPendingFollowUps(false)}>
               Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Stage Update Dialog */}
+      <Dialog open={showStageDialog} onOpenChange={setShowStageDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Atualizar Estágio de Adoção</DialogTitle>
+            <DialogDescription>
+              {selectedAdoption && (
+                <>Adoção: {selectedAdoption.petName} por {selectedAdoption.userName}</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <h4 className="font-medium">Estágio Atual</h4>
+              <Badge variant={selectedAdoption ? getStageColor(selectedAdoption.currentStage) : "secondary"}>
+                {selectedAdoption ? getStageLabel(selectedAdoption.currentStage) : ''}
+              </Badge>
+            </div>
+            
+            <div className="space-y-2">
+              <h4 className="font-medium">Notas</h4>
+              <Textarea
+                placeholder="Adicione observações sobre este processo de adoção..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+              />
+            </div>
+            
+            {selectedAdoption && (
+              <div className="space-y-2">
+                <h4 className="font-medium">Próximo Estágio</h4>
+                <div className="flex flex-wrap gap-2">
+                  {nextAvailableStages(selectedAdoption.currentStage).map((stage) => (
+                    <React.Fragment key={stage}>
+                      {stage === 'rejected' ? (
+                        <div className="w-full">
+                          <Button 
+                            variant="destructive"
+                            size="sm"
+                            className="mb-2"
+                            onClick={() => {
+                              if (confirm("Tem certeza que deseja rejeitar esta adoção?")) {
+                                setRejectionReason('');
+                                const dialogElem = document.getElementById('rejection-reason');
+                                if (dialogElem) {
+                                  (dialogElem as HTMLDialogElement).showModal();
+                                }
+                              }
+                            }}
+                          >
+                            Rejeitar Adoção
+                          </Button>
+                          
+                          <dialog id="rejection-reason" className="p-6 rounded-lg shadow-lg border border-gray-200">
+                            <h3 className="text-lg font-medium mb-4">Motivo da Rejeição</h3>
+                            <Textarea
+                              placeholder="Informe o motivo da rejeição..."
+                              value={rejectionReason}
+                              onChange={(e) => setRejectionReason(e.target.value)}
+                              rows={3}
+                              className="mb-4"
+                            />
+                            <div className="flex justify-end gap-2">
+                              <Button 
+                                variant="outline" 
+                                onClick={() => {
+                                  const dialogElem = document.getElementById('rejection-reason');
+                                  if (dialogElem) {
+                                    (dialogElem as HTMLDialogElement).close();
+                                  }
+                                }}
+                              >
+                                Cancelar
+                              </Button>
+                              <Button 
+                                variant="destructive"
+                                onClick={() => {
+                                  if (rejectionReason.trim() === '') {
+                                    toast.error('Por favor, informe o motivo da rejeição');
+                                    return;
+                                  }
+                                  
+                                  const dialogElem = document.getElementById('rejection-reason');
+                                  if (dialogElem) {
+                                    (dialogElem as HTMLDialogElement).close();
+                                  }
+                                  
+                                  handleStageChange('rejected');
+                                }}
+                              >
+                                Confirmar Rejeição
+                              </Button>
+                            </div>
+                          </dialog>
+                        </div>
+                      ) : (
+                        <Button 
+                          key={stage}
+                          variant={stage === 'completed' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => handleStageChange(stage)}
+                        >
+                          {getStageLabel(stage)}
+                        </Button>
+                      )}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter className="sm:justify-end">
+            <Button variant="outline" onClick={() => setShowStageDialog(false)}>
+              Cancelar
             </Button>
           </DialogFooter>
         </DialogContent>
