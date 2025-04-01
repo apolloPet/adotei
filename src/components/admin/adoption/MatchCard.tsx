@@ -193,7 +193,7 @@ const MatchCard = ({
             <div className="mt-4 pt-4 border-t">
               <div className="mb-4">
                 <h4 className="text-sm font-medium mb-2">Estágios da Adoção</h4>
-                <AdoptionStages currentStage={match.currentStage} />
+                <AdoptionTimeline currentStage={match.currentStage} />
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">

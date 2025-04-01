@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/lib/database.types';
 import { AdoptionMatch } from '@/components/admin/adoption/types';
@@ -37,7 +36,7 @@ export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
         
         // Access images array to get main image
         const petImage = pet.images && pet.images.length > 0 
-          ? pet.images[0].url 
+          ? pet.images[0].url  // Accessing the url from the first image object
           : '';
         
         return {
@@ -104,7 +103,7 @@ export const createAdoption = async (
     
     // Access images array to get main image
     const petImage = pet.images && pet.images.length > 0 
-      ? pet.images[0].url 
+      ? pet.images[0].url  // Accessing the url from the first image object
       : '';
     
     return {
@@ -299,7 +298,7 @@ export const getAdoptionsByStage = async (stage: AdoptionStage): Promise<Adoptio
         
         // Access images array to get main image
         const petImage = pet.images && pet.images.length > 0 
-          ? pet.images[0].url 
+          ? pet.images[0].url  // Accessing the url from the first image object
           : '';
         
         return {
@@ -359,7 +358,7 @@ export const getPendingFollowUps = async (): Promise<AdoptionMatch[]> => {
         
         // Access images array to get main image
         const petImage = pet.images && pet.images.length > 0 
-          ? pet.images[0].url 
+          ? pet.images[0].url  // Accessing the url from the first image object
           : '';
         
         return {
