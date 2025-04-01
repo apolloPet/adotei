@@ -1,4 +1,3 @@
-
 import { supabase, isSupabaseConfigured, handleSupabaseError } from '@/lib/supabase';
 import type { User } from '@/components/admin/users/types';
 import { toast } from '@/hooks/use-sonner';
@@ -11,43 +10,26 @@ export const fetchUsers = async (): Promise<User[]> => {
       return [];
     }
 
+    console.log('Buscando usuários da tabela users...');
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .order('created_at', { ascending: false });
     
     if (error) {
+      console.error('Erro ao buscar usuários:', error);
       handleSupabaseError(error, 'Erro ao buscar usuários');
       return [];
     }
+
+    console.log(`Encontrados ${data?.length || 0} usuários na tabela users`);
     
     return (data || []).map((dbUser) => {
-      // Convert database user to frontend user format
-      const user: User = {
-        id: dbUser.id,
-        name: dbUser.name,
-        email: dbUser.email,
-        phone: dbUser.phone || '',
-        registrationDate: dbUser.created_at,
-        address: {
-          cep: dbUser.zip || '',
-          street: dbUser.address || '',
-          number: '', // Not stored in the database
-          neighborhood: '', // Not stored in the database
-          city: dbUser.city || ''
-        },
-        housingType: dbUser.housing_type as any || 'other',
-        hasChildren: dbUser.has_children || false,
-        childrenAges: dbUser.children_ages || '',
-        hadPetsBefore: dbUser.had_pets_before || false,
-        hasAllergies: dbUser.has_allergies || false,
-        allergiesDescription: dbUser.allergies_description || '',
-        workSchedule: dbUser.work_schedule || ''
-      };
-      return user;
+      // Converter usuário do banco para o formato de frontend
+      return dbUserToUser(dbUser as DbUser);
     });
   } catch (error) {
-    console.error('Error fetching users:', error);
+    console.error('Erro ao buscar usuários:', error);
     toast.error('Erro ao buscar usuários');
     return [];
   }

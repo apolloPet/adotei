@@ -1,16 +1,18 @@
 
+import { User } from '@supabase/supabase-js';
+
 export interface SignupData {
   email: string;
   password: string;
   name: string;
-  phone: string;
+  phone?: string;
   address?: {
-    street: string;
-    number: string;
-    neighborhood: string;
-    city: string;
-    cep: string;
-    state?: string; // Add state as an optional property
+    street?: string;
+    number?: string;
+    neighborhood?: string;
+    city?: string;
+    state?: string;
+    cep?: string;
   };
   housingType?: 'house' | 'apartment' | 'other';
   hasChildren?: boolean;
@@ -24,12 +26,10 @@ export interface SignupData {
 export interface UserRoleData {
   userId: string;
   role: string;
-}
-
-export interface AuthServiceReexports {
-  // Reexport name resolver for ambiguous exports
-  resetPassword: typeof import('./passwordService').resetPassword;
-  updatePassword: typeof import('./passwordService').updatePassword;
-  getProfile: typeof import('./profileService').getProfile;
-  updateProfile: typeof import('./profileService').updateProfile;
+  permissions?: {
+    manageAnimals?: boolean;
+    approveAdoptions?: boolean;
+    manageSettings?: boolean;
+    manageAdmins?: boolean;
+  };
 }

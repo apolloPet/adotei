@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,6 +28,7 @@ const RegisterForm = () => {
   const [neighborhood, setNeighborhood] = useState('');
   const [city, setCity] = useState('');
   const [cep, setCep] = useState('');
+  const [state, setState] = useState('');
   
   const [housingType, setHousingType] = useState<'house' | 'apartment' | 'other'>('house');
   const [hasChildren, setHasChildren] = useState(false);
@@ -138,34 +138,39 @@ const RegisterForm = () => {
       setIsLoading(true);
       setErrors({});
       
+      const fullAddress = `${street}, ${number}, ${neighborhood}`;
+      
       const userData: SignupData = {
         email,
         password,
         name,
         phone,
         address: {
-          street,
+          street: fullAddress,
           number,
           neighborhood,
           city,
+          state,
           cep
         },
         housingType,
         hasChildren,
-        childrenAges: hasChildren ? childrenAges : undefined,
+        childrenAges: hasChildren ? childrenAges : '',
         hadPetsBefore,
         hasAllergies,
-        allergiesDescription: hasAllergies ? allergiesDescription : undefined,
+        allergiesDescription: hasAllergies ? allergiesDescription : '',
         workSchedule
       };
       
-      console.log('Registering user with data:', userData);
+      console.log('Registering user with data:', JSON.stringify(userData));
       
       const success = await signUp(userData);
       
       if (success) {
-        toast.success("Conta criada com sucesso! Por favor, verifique seu email para confirmar o cadastro.");
-        setStep(3); // Move to success screen
+        toast.success("Conta criada com sucesso! Por favor, verifique seu email para confirmar o cadastro.", {
+          duration: 5000
+        });
+        setStep(3);
       }
     } catch (error) {
       console.error("Registration error:", error);
@@ -175,7 +180,7 @@ const RegisterForm = () => {
           setErrors({
             email: 'Este email já está cadastrado. Por favor, tente outro email ou faça login.'
           });
-          setStep(1); // Go back to email step
+          setStep(1);
         } else {
           toast.error(`Erro ao criar conta: ${error.message}`);
         }
@@ -340,17 +345,30 @@ const RegisterForm = () => {
                     </div>
                     
                     <div className="space-y-2">
-                      <Label htmlFor="cep">CEP</Label>
+                      <Label htmlFor="state">Estado</Label>
                       <Input 
-                        id="cep" 
+                        id="state" 
                         type="text" 
-                        placeholder="00000-000" 
-                        value={cep}
-                        onChange={(e) => setCep(e.target.value)}
+                        placeholder="UF" 
+                        value={state}
+                        onChange={(e) => setState(e.target.value)}
                         required
                       />
-                      {errors.cep && <p className="text-destructive text-sm">{errors.cep}</p>}
+                      {errors.state && <p className="text-destructive text-sm">{errors.state}</p>}
                     </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="cep">CEP</Label>
+                    <Input 
+                      id="cep" 
+                      type="text" 
+                      placeholder="00000-000" 
+                      value={cep}
+                      onChange={(e) => setCep(e.target.value)}
+                      required
+                    />
+                    {errors.cep && <p className="text-destructive text-sm">{errors.cep}</p>}
                   </div>
                 </div>
               </div>
