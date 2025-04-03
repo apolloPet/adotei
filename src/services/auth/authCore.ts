@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
@@ -265,7 +266,7 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
             work_schedule: userData.workSchedule || ''
           };
           
-          // Tentar criar o perfil usando a edge function (que usa o service role)
+          // Corrigindo aqui: removendo a propriedade 'path' e usando a propriedade correta
           const { error: edgeFunctionError } = await supabase.functions.invoke('user-profile', {
             method: 'POST',
             body: JSON.stringify(profileData),
@@ -273,7 +274,8 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
               Authorization: `Bearer ${sessionData.session.access_token}`,
               'Content-Type': 'application/json',
             },
-            path: 'create-profile'
+            // A opção correta é adicionar o path como parte da URL, não como uma propriedade separada
+            url: 'create-profile'
           });
           
           if (edgeFunctionError) {

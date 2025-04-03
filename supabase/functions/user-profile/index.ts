@@ -52,8 +52,25 @@ serve(async (req) => {
     });
 
     const { url, method } = req;
-    const urlParts = url.split('/');
-    const operation = urlParts[urlParts.length - 1];
+    
+    // Ajuste para detectar a operação corretamente da URL
+    // Suporta tanto o formato path/create-profile quanto ?url=create-profile
+    let operation = '';
+    
+    // Verificar primeiro se há um parâmetro de URL
+    const urlObj = new URL(url);
+    const urlParam = urlObj.searchParams.get('url');
+    
+    if (urlParam) {
+      // Se há um parâmetro url na query string, usá-lo como operação
+      operation = urlParam;
+    } else {
+      // Caso contrário, extrair da última parte do caminho
+      const urlParts = url.split('/');
+      operation = urlParts[urlParts.length - 1];
+    }
+    
+    console.log(`Processando requisição: ${method} ${url} (operação: ${operation})`);
 
     // Get JWT token from request
     const authHeader = req.headers.get('Authorization');
