@@ -243,34 +243,12 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
     // Criar perfil do usuário
     if (data.user) {
       try {
-        // Tentativa de criar o perfil via API do Supabase
-        const { error: userProfileError } = await supabase
-          .from('users')
-          .insert({
-            auth_id: data.user.id,
-            name: userData.name,
-            email: userData.email,
-            phone: userData.phone || '',
-            address: userData.address?.street || '',
-            city: userData.address?.city || '',
-            state: userData.address?.state || '', 
-            zip: userData.address?.cep || '',
-            housing_type: userData.housingType || 'house',
-            has_children: userData.hasChildren || false,
-            children_ages: userData.childrenAges || '',
-            had_pets_before: userData.hadPetsBefore || false,
-            has_allergies: userData.hasAllergies || false,
-            allergies_description: userData.allergiesDescription || '',
-            work_schedule: userData.workSchedule || ''
-          });
+        // Obter a sessão atual para utilizar com a Edge Function
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData.session) {
+          console.log('Criando perfil de usuário via Edge Function...');
           
-        if (userProfileError) {
-          console.error('Erro ao criar perfil do usuário diretamente:', userProfileError);
-          
-          // Se falhar via API direta, tenta via Edge Function
-          console.log('Tentando criar perfil via Edge Function...');
-          
-          // Preparar os dados do perfil com a mesma estrutura usada na edge function
+          // Preparar os dados do perfil
           const profileData = {
             name: userData.name,
             phone: userData.phone || '',
@@ -287,25 +265,22 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
             work_schedule: userData.workSchedule || ''
           };
           
-          const { data: session } = await supabase.auth.getSession();
-          if (session.session) {
-            const { error: edgeFunctionError } = await supabase.functions.invoke('user-profile', {
-              method: 'POST',
-              body: JSON.stringify(profileData),
-              headers: {
-                Authorization: `Bearer ${session.session.access_token}`,
-                'Content-Type': 'application/json',
-              }
-            });
-            
-            if (edgeFunctionError) {
-              console.error('Erro ao criar perfil via Edge Function:', edgeFunctionError);
-            } else {
-              console.log('Perfil criado com sucesso via Edge Function');
+          const { error: edgeFunctionError } = await supabase.functions.invoke('user-profile', {
+            method: 'POST',
+            body: JSON.stringify(profileData),
+            headers: {
+              Authorization: `Bearer ${sessionData.session.access_token}`,
+              'Content-Type': 'application/json',
             }
+          });
+          
+          if (edgeFunctionError) {
+            console.error('Erro ao criar perfil via Edge Function:', edgeFunctionError);
+          } else {
+            console.log('Perfil criado com sucesso via Edge Function');
           }
         } else {
-          console.log('Perfil do usuário criado com sucesso via API direta');
+          console.error('Não foi possível obter a sessão para criar o perfil');
         }
       } catch (profileError) {
         console.error('Erro inesperado ao criar perfil:', profileError);

@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -241,31 +240,32 @@ serve(async (req) => {
           );
         }
         
-        // Insert user profile
+        // Insert user profile using service role to bypass RLS
         const { data: newProfile, error: profileError } = await supabase
           .from('users')
           .insert({
             auth_id: user.id,
             name: profileData.name,
             email: user.email,
-            phone: profileData.phone,
-            address: profileData.address,
-            city: profileData.city,
-            state: profileData.state,
-            zip: profileData.zip,
-            housing_type: profileData.housing_type,
+            phone: profileData.phone || '',
+            address: profileData.address || '',
+            city: profileData.city || '',
+            state: profileData.state || '',
+            zip: profileData.zip || '',
+            housing_type: profileData.housing_type || 'house',
             has_children: profileData.has_children || false,
             children_ages: profileData.children_ages || '',
             had_pets_before: profileData.had_pets_before || false,
             has_allergies: profileData.has_allergies || false,
             allergies_description: profileData.allergies_description || '',
-            work_schedule: profileData.work_schedule,
+            work_schedule: profileData.work_schedule || '',
             avatar_url: profileData.avatar_url || ''
           })
           .select()
           .single();
         
         if (profileError) {
+          console.error('Error creating user profile:', profileError);
           return new Response(
             JSON.stringify({ 
               error: "Erro ao criar perfil", 
