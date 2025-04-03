@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -241,6 +242,7 @@ serve(async (req) => {
         }
         
         // Insert user profile using service role to bypass RLS
+        console.log('Criando perfil de usuário com auth_id:', user.id, 'email:', user.email);
         const { data: newProfile, error: profileError } = await supabase
           .from('users')
           .insert({
