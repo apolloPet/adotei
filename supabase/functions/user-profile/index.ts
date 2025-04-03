@@ -38,7 +38,7 @@ serve(async (req) => {
       );
     }
 
-    // Inicializar cliente Supabase
+    // Inicializar cliente Supabase com SERVICE ROLE para bypass RLS
     const supabase = createClient(supabaseUrl, supabaseKey, {
       auth: {
         autoRefreshToken: false,
@@ -243,36 +243,63 @@ serve(async (req) => {
         
         // Insert user profile using service role to bypass RLS
         console.log('Criando perfil de usuário com auth_id:', user.id, 'email:', user.email);
-        const { data: newProfile, error: profileError } = await supabase
-          .from('users')
-          .insert({
-            auth_id: user.id,
-            name: profileData.name,
-            email: user.email,
-            phone: profileData.phone || '',
-            address: profileData.address || '',
-            city: profileData.city || '',
-            state: profileData.state || '',
-            zip: profileData.zip || '',
-            housing_type: profileData.housing_type || 'house',
-            has_children: profileData.has_children || false,
-            children_ages: profileData.children_ages || '',
-            had_pets_before: profileData.had_pets_before || false,
-            has_allergies: profileData.has_allergies || false,
-            allergies_description: profileData.allergies_description || '',
-            work_schedule: profileData.work_schedule || '',
-            avatar_url: profileData.avatar_url || ''
-          })
-          .select()
-          .single();
         
-        if (profileError) {
-          console.error('Error creating user profile:', profileError);
+        try {
+          const { data: newProfile, error: profileError } = await supabase
+            .from('users')
+            .insert({
+              auth_id: user.id,
+              name: profileData.name,
+              email: user.email,
+              phone: profileData.phone || '',
+              address: profileData.address || '',
+              city: profileData.city || '',
+              state: profileData.state || '',
+              zip: profileData.zip || '',
+              housing_type: profileData.housing_type || 'house',
+              has_children: profileData.has_children || false,
+              children_ages: profileData.children_ages || '',
+              had_pets_before: profileData.had_pets_before || false,
+              has_allergies: profileData.has_allergies || false,
+              allergies_description: profileData.allergies_description || '',
+              work_schedule: profileData.work_schedule || '',
+              avatar_url: profileData.avatar_url || ''
+            })
+            .select()
+            .single();
+          
+          if (profileError) {
+            console.error('Error creating user profile:', profileError);
+            return new Response(
+              JSON.stringify({ 
+                error: "Erro ao criar perfil", 
+                details: profileError.message,
+                code: profileError.code 
+              }),
+              {
+                status: 500,
+                headers: corsHeaders,
+              }
+            );
+          }
+          
+          return new Response(
+            JSON.stringify({
+              ...newProfile,
+              message: "Perfil criado com sucesso!"
+            }),
+            {
+              status: 201,
+              headers: corsHeaders,
+            }
+          );
+        } catch (insertError) {
+          console.error('Exception during profile creation:', insertError);
           return new Response(
             JSON.stringify({ 
-              error: "Erro ao criar perfil", 
-              details: profileError.message,
-              code: profileError.code 
+              error: "Exceção ao criar perfil", 
+              details: insertError.message || "Erro não especificado",
+              code: "UNKNOWN_ERROR" 
             }),
             {
               status: 500,
@@ -280,17 +307,6 @@ serve(async (req) => {
             }
           );
         }
-        
-        return new Response(
-          JSON.stringify({
-            ...newProfile,
-            message: "Perfil criado com sucesso!"
-          }),
-          {
-            status: 201,
-            headers: corsHeaders,
-          }
-        );
       }
     } else if (method === "PUT" || method === "PATCH") {
       // Handle PUT/PATCH operations

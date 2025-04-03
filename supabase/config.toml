@@ -12,4 +12,3 @@ verify_jwt = true
 
 [functions.user-profile]
 verify_jwt = true
-

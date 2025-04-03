@@ -265,17 +265,20 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
             work_schedule: userData.workSchedule || ''
           };
           
+          // Tentar criar o perfil usando a edge function (que usa o service role)
           const { error: edgeFunctionError } = await supabase.functions.invoke('user-profile', {
             method: 'POST',
             body: JSON.stringify(profileData),
             headers: {
               Authorization: `Bearer ${sessionData.session.access_token}`,
               'Content-Type': 'application/json',
-            }
+            },
+            path: 'create-profile'
           });
           
           if (edgeFunctionError) {
             console.error('Erro ao criar perfil via Edge Function:', edgeFunctionError);
+            // Não interromper o fluxo, apenas logar o erro
           } else {
             console.log('Perfil criado com sucesso via Edge Function');
           }
@@ -284,6 +287,7 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
         }
       } catch (profileError) {
         console.error('Erro inesperado ao criar perfil:', profileError);
+        // Não interromper o fluxo, apenas logar o erro
       }
     }
     
