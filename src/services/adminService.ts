@@ -192,7 +192,7 @@ export const removeAdminRole = async (userId: string): Promise<boolean> => {
       return false;
     }
     
-    const { data, error } = await supabase.functions.invoke(`admin-management`, {
+    const { data, error } = await supabase.functions.invoke('admin-management', {
       method: 'DELETE',
       body: JSON.stringify({ userId }),
       headers: {

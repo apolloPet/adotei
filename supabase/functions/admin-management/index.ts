@@ -119,12 +119,8 @@ serve(async (req) => {
       );
     }
 
-    // Get the request body if POST
-    const { pathname } = new URL(req.url);
-    const parts = pathname.split('/');
-    const operation = parts[parts.length - 1];
-
-    if (req.method === "POST" && operation === "create") {
+    // Determine the operation based on HTTP method
+    if (req.method === "POST") {
       const requestData = await req.json();
       
       // Validate required fields
@@ -258,7 +254,7 @@ serve(async (req) => {
           headers: corsHeaders,
         }
       );
-    } else if (req.method === "GET" && operation === "list") {
+    } else if (req.method === "GET") {
       // Get admin users
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
@@ -266,6 +262,7 @@ serve(async (req) => {
         .eq('role', 'admin');
       
       if (roleError) {
+        console.error('Erro ao buscar papéis de administrador:', roleError);
         return new Response(
           JSON.stringify({ 
             success: false,
@@ -306,6 +303,7 @@ serve(async (req) => {
       
       // Filter out any null values from admins who couldn't be found
       const validAdmins = adminUsers.filter(Boolean);
+      console.log('Administradores recuperados:', validAdmins);
       
       return new Response(
         JSON.stringify({
@@ -318,7 +316,7 @@ serve(async (req) => {
           headers: corsHeaders,
         }
       );
-    } else if (req.method === "PUT" && operation === "update-permissions") {
+    } else if (req.method === "PUT") {
       const requestData = await req.json();
       
       if (!requestData.userId || !requestData.permissions) {
@@ -380,10 +378,10 @@ serve(async (req) => {
           headers: corsHeaders,
         }
       );
-    } else if (req.method === "DELETE" && parts.length > 0) {
-      const userId = parts[parts.length - 2];
+    } else if (req.method === "DELETE") {
+      const requestData = await req.json();
       
-      if (!userId) {
+      if (!requestData.userId) {
         return new Response(
           JSON.stringify({ 
             success: false,
@@ -398,7 +396,7 @@ serve(async (req) => {
       }
       
       // Prevent self-deletion
-      if (userId === user.id) {
+      if (requestData.userId === user.id) {
         return new Response(
           JSON.stringify({ 
             success: false,
@@ -415,7 +413,7 @@ serve(async (req) => {
       const { error: deleteError } = await supabase
         .from('user_roles')
         .delete()
-        .eq('user_id', userId)
+        .eq('user_id', requestData.userId)
         .eq('role', 'admin');
       
       if (deleteError) {
@@ -446,8 +444,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: false,
-          message: "Operação não suportada ou rota inválida",
-          code: "INVALID_OPERATION" 
+          message: "Método não suportado",
+          code: "INVALID_METHOD" 
         }),
         {
           status: 400,
