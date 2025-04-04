@@ -280,6 +280,17 @@ serve(async (req) => {
         console.log('Criando perfil de usuário com auth_id:', user.id, 'email:', user.email);
         
         try {
+          // Print service role key validity to debug
+          console.log('Service role key está configurada:', !!supabaseKey);
+
+          // Log request to help debug
+          console.log('Inserindo perfil com dados:', {
+            auth_id: user.id,
+            email: user.email,
+            name: profileData.name,
+            // outras props
+          });
+
           const { data: newProfile, error: profileError } = await supabase
             .from('users')
             .insert({
@@ -305,6 +316,12 @@ serve(async (req) => {
           
           if (profileError) {
             console.error('Error creating user profile:', profileError);
+            
+            // Log detalhado para diagnóstico de erro RLS
+            if(profileError.code === '42501') {
+              console.error('Erro de segurança de nível de linha (RLS). A função está tentando inserir usando o token JWT do usuário, não o SERVICE_ROLE_KEY');
+            }
+            
             return new Response(
               JSON.stringify({ 
                 error: "Erro ao criar perfil", 
