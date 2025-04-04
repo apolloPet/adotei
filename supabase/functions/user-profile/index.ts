@@ -53,21 +53,39 @@ serve(async (req) => {
 
     const { url, method } = req;
     
-    // Ajuste para detectar a operação corretamente da URL ou query params
-    // Suporta tanto o formato path/create-profile quanto ?operation=create-profile
+    // Determinar a operação a partir do corpo da requisição ou da URL
     let operation = '';
+    let requestBody = {};
     
-    // Verificar primeiro se há um parâmetro de URL
-    const urlObj = new URL(url);
-    const operationParam = urlObj.searchParams.get('operation');
+    // Tentar obter a operação do body primeiro
+    try {
+      if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
+        requestBody = await req.json();
+        if (requestBody && requestBody.operation) {
+          operation = requestBody.operation;
+          // Remover operation do body para não causar problemas na inserção
+          delete requestBody.operation;
+        }
+      }
+    } catch (e) {
+      console.error("Erro ao parsear body:", e);
+      // Continua para tentar pegar da URL
+    }
     
-    if (operationParam) {
-      // Se há um parâmetro operation na query string, usá-lo como operação
-      operation = operationParam;
-    } else {
-      // Caso contrário, extrair da última parte do caminho
-      const urlParts = url.split('/');
-      operation = urlParts[urlParts.length - 1];
+    // Se não encontrou no body, tentar da URL
+    if (!operation) {
+      // Verificar primeiro se há um parâmetro de URL
+      const urlObj = new URL(url);
+      const operationParam = urlObj.searchParams.get('operation');
+      
+      if (operationParam) {
+        // Se há um parâmetro operation na query string, usá-lo como operação
+        operation = operationParam;
+      } else {
+        // Caso contrário, extrair da última parte do caminho
+        const urlParts = url.split('/');
+        operation = urlParts[urlParts.length - 1];
+      }
     }
     
     console.log(`Processando requisição: ${method} ${url} (operação: ${operation})`);
@@ -216,7 +234,7 @@ serve(async (req) => {
     } else if (method === "POST") {
       // Handle POST operations
       if (operation === "create-profile") {
-        const profileData = await req.json();
+        const profileData = requestBody;
         
         // Validate required fields
         const requiredFields = ['name', 'phone', 'address', 'city', 'state', 'zip', 'housing_type', 'work_schedule'];

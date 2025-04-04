@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
@@ -263,20 +262,18 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
             had_pets_before: userData.hadPetsBefore || false,
             has_allergies: userData.hasAllergies || false,
             allergies_description: userData.allergiesDescription || '',
-            work_schedule: userData.workSchedule || ''
+            work_schedule: userData.workSchedule || '',
+            operation: 'create-profile' // Adicionando a operação no body
           };
           
-          // Corrigindo o método de invocar a função - usando functionName com operação separada
+          // Usando a forma correta de invocar a edge function
           const { error: edgeFunctionError } = await supabase.functions.invoke('user-profile', {
             method: 'POST',
             body: JSON.stringify(profileData),
             headers: {
               Authorization: `Bearer ${sessionData.session.access_token}`,
               'Content-Type': 'application/json',
-            },
-            // A opção correta é enviar a operação no body ou nos parâmetros de consulta
-            // O nome da função deve ser enviado no campo functionName
-            query: { operation: 'create-profile' }
+            }
           });
           
           if (edgeFunctionError) {
