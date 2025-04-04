@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -280,47 +279,24 @@ serve(async (req) => {
         console.log('Criando perfil de usuário com auth_id:', user.id, 'email:', user.email);
         
         try {
-          // Print service role key validity to debug
-          console.log('Service role key está configurada:', !!supabaseKey);
-          console.log('Service role key length:', supabaseKey ? supabaseKey.length : 0);
+          // Verificar se a função is_service_role está disponível
+          const isServiceRole = await supabase.rpc('is_service_role');
+          console.log('Verificação de service role:', isServiceRole);
 
-          // Verificar se o cliente Supabase está corretamente configurado com a SERVICE_ROLE_KEY
-          const isAdmin = await supabase.rpc('is_service_role')
-            .then(resp => {
-              console.log('Verificação de service role:', resp);
-              return resp.data === true;
-            })
-            .catch(err => {
-              console.error('Erro ao verificar service role:', err);
-              return false;
-            });
+          // Garantir que estamos usando headers corretos para bypass de RLS
+          const adminHeaders = {
+            "Authorization": `Bearer ${supabaseKey}`,
+            "X-Client-Info": "service-role-bypass"
+          };
 
-          console.log('Cliente está usando service role?', isAdmin);
-
-          // Log request to help debug
-          console.log('Inserindo perfil com dados:', {
-            auth_id: user.id,
-            email: user.email,
-            name: profileData.name,
-            // outras props
+          // Usar cliente com service role explicitamente configurado
+          const serviceClient = createClient(supabaseUrl, supabaseKey, {
+            global: { headers: adminHeaders }
           });
-
-          // Criando um novo cliente específico para esta operação, garantindo headers corretos
-          const adminSupabase = createClient(supabaseUrl, supabaseKey, {
-            auth: {
-              autoRefreshToken: false,
-              persistSession: false,
-            },
-            global: {
-              headers: {
-                "X-Client-Info": "user-profile-edge-function-admin",
-                "Authorization": `Bearer ${supabaseKey}`
-              },
-            },
-          });
-
-          // Usar adminSupabase para operação que exige bypass de RLS
-          const { data: newProfile, error: profileError } = await adminSupabase
+          
+          console.log('Tentando inserir perfil com service role...');
+          
+          const { data: newProfile, error: profileError } = await serviceClient
             .from('users')
             .insert({
               auth_id: user.id,
@@ -344,72 +320,57 @@ serve(async (req) => {
             .single();
           
           if (profileError) {
-            console.error('Error creating user profile:', profileError);
+            console.error('Erro ao criar perfil de usuário:', profileError);
             
-            // Log detalhado para diagnóstico de erro RLS
-            if(profileError.code === '42501') {
-              console.error('Erro de segurança de nível de linha (RLS). A função está tentando inserir usando o token JWT do usuário, não o SERVICE_ROLE_KEY');
-              // Tentar novamente com headers explícitos para SERVICE_ROLE
+            if (profileError.code === '42501') {
+              console.error('Erro de RLS. Tentando método alternativo...');
+              
+              // Método alternativo: SQL direto via RPC
               try {
-                const { data: retryProfile, error: retryError } = await fetch(`${supabaseUrl}/rest/v1/users`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': supabaseKey,
-                    'Authorization': `Bearer ${supabaseKey}`
-                  },
-                  body: JSON.stringify({
-                    auth_id: user.id,
-                    name: profileData.name,
-                    email: user.email,
-                    phone: profileData.phone || '',
-                    address: profileData.address || '',
-                    city: profileData.city || '',
-                    state: profileData.state || '',
-                    zip: profileData.zip || '',
-                    housing_type: profileData.housing_type || 'house',
-                    has_children: profileData.has_children || false,
-                    children_ages: profileData.children_ages || '',
-                    had_pets_before: profileData.had_pets_before || false,
-                    has_allergies: profileData.has_allergies || false,
-                    allergies_description: profileData.allergies_description || '',
-                    work_schedule: profileData.work_schedule || '',
-                    avatar_url: profileData.avatar_url || ''
-                  })
-                }).then(res => res.json());
+                const { data: directInsertData, error: directInsertError } = await supabase.rpc(
+                  'insert_user_profile',
+                  {
+                    user_auth_id: user.id,
+                    user_name: profileData.name,
+                    user_email: user.email,
+                    user_phone: profileData.phone || '',
+                    user_address: profileData.address || '',
+                    user_city: profileData.city || '',
+                    user_state: profileData.state || '',
+                    user_zip: profileData.zip || '',
+                    user_housing_type: profileData.housing_type || 'house',
+                    user_has_children: profileData.has_children || false,
+                    user_children_ages: profileData.children_ages || '',
+                    user_had_pets_before: profileData.had_pets_before || false,
+                    user_has_allergies: profileData.has_allergies || false,
+                    user_allergies_description: profileData.allergies_description || '',
+                    user_work_schedule: profileData.work_schedule || '',
+                    user_avatar_url: profileData.avatar_url || ''
+                  }
+                );
                 
-                if (retryError) {
-                  console.error('Erro na segunda tentativa:', retryError);
-                  throw retryError;
+                if (directInsertError) {
+                  console.error('Erro no método alternativo:', directInsertError);
+                  throw directInsertError;
                 }
                 
                 return new Response(
                   JSON.stringify({
-                    ...retryProfile,
-                    message: "Perfil criado com sucesso após nova tentativa!"
+                    message: "Perfil criado com sucesso via método alternativo!",
+                    id: user.id
                   }),
                   {
                     status: 201,
                     headers: corsHeaders,
                   }
                 );
-              } catch (retryException) {
-                console.error('Exceção na segunda tentativa:', retryException);
-                throw retryException;
+              } catch (directError) {
+                console.error('Exceção no método alternativo:', directError);
+                throw directError;
               }
+            } else {
+              throw profileError;
             }
-            
-            return new Response(
-              JSON.stringify({ 
-                error: "Erro ao criar perfil", 
-                details: profileError.message,
-                code: profileError.code 
-              }),
-              {
-                status: 500,
-                headers: corsHeaders,
-              }
-            );
           }
           
           return new Response(
@@ -424,17 +385,72 @@ serve(async (req) => {
           );
         } catch (insertError) {
           console.error('Exception during profile creation:', insertError);
-          return new Response(
-            JSON.stringify({ 
-              error: "Exceção ao criar perfil", 
-              details: insertError.message || "Erro não especificado",
-              code: "UNKNOWN_ERROR" 
-            }),
-            {
-              status: 500,
-              headers: corsHeaders,
+          
+          // Último recurso: tentar com fetch direto
+          try {
+            console.log('Tentando método de emergência com fetch direto...');
+            
+            const response = await fetch(`${supabaseUrl}/rest/v1/users`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`
+              },
+              body: JSON.stringify({
+                auth_id: user.id,
+                name: profileData.name,
+                email: user.email,
+                phone: profileData.phone || '',
+                address: profileData.address || '',
+                city: profileData.city || '',
+                state: profileData.state || '',
+                zip: profileData.zip || '',
+                housing_type: profileData.housing_type || 'house',
+                has_children: profileData.has_children || false,
+                children_ages: profileData.children_ages || '',
+                had_pets_before: profileData.had_pets_before || false,
+                has_allergies: profileData.has_allergies || false,
+                allergies_description: profileData.allergies_description || '',
+                work_schedule: profileData.work_schedule || '',
+                avatar_url: profileData.avatar_url || ''
+              })
+            });
+            
+            if (!response.ok) {
+              const errorData = await response.json();
+              console.error('Erro na requisição de emergência:', errorData);
+              throw new Error(JSON.stringify(errorData));
             }
-          );
+            
+            const responseData = await response.json();
+            
+            return new Response(
+              JSON.stringify({
+                ...responseData,
+                message: "Perfil criado com sucesso via método de emergência!"
+              }),
+              {
+                status: 201,
+                headers: corsHeaders,
+              }
+            );
+          } catch (emergencyError) {
+            console.error('Falha no método de emergência:', emergencyError);
+            
+            return new Response(
+              JSON.stringify({ 
+                error: "Falha em todas as tentativas de criar perfil", 
+                details: "Ocorreu um erro em todas as tentativas de criar seu perfil. Entre em contato com o suporte.",
+                originalError: insertError.message || "Erro não especificado",
+                code: "ALL_METHODS_FAILED" 
+              }),
+              {
+                status: 500,
+                headers: corsHeaders,
+              }
+            );
+          }
         }
       }
     } else if (method === "PUT" || method === "PATCH") {

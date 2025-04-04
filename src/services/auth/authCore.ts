@@ -272,7 +272,7 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
             profileData
           });
           
-          // Usando a forma correta de invocar a edge function
+          // Usando a forma correta de invocar a edge function com headers explícitos de autorização
           const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('user-profile', {
             method: 'POST',
             body: JSON.stringify(profileData),
@@ -284,7 +284,38 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
           
           if (edgeFunctionError) {
             console.error('Erro ao criar perfil via Edge Function:', edgeFunctionError);
-            // Não interromper o fluxo, apenas logar o erro
+            // Tentar alternativa com endpoint padronizado para casos de erro
+            try {
+              const { data: fallbackData, error: fallbackError } = await supabase
+                .from('users')
+                .insert({
+                  auth_id: data.user.id,
+                  email: data.user.email,
+                  name: userData.name,
+                  phone: userData.phone || '',
+                  address: userData.address?.street || '',
+                  city: userData.address?.city || '',
+                  state: userData.address?.state || '',
+                  zip: userData.address?.cep || '',
+                  housing_type: userData.housingType || 'house',
+                  has_children: userData.hasChildren || false,
+                  children_ages: userData.childrenAges || '',
+                  had_pets_before: userData.hadPetsBefore || false,
+                  has_allergies: userData.hasAllergies || false,
+                  allergies_description: userData.allergiesDescription || '',
+                  work_schedule: userData.workSchedule || ''
+                })
+                .select()
+                .single();
+                
+              if (fallbackError) {
+                console.error('Fallback também falhou:', fallbackError);
+              } else {
+                console.log('Perfil criado com sucesso via fallback method');
+              }
+            } catch (fallbackException) {
+              console.error('Exceção no fallback:', fallbackException);
+            }
           } else {
             console.log('Perfil criado com sucesso via Edge Function:', edgeFunctionData);
           }
