@@ -53,17 +53,17 @@ serve(async (req) => {
 
     const { url, method } = req;
     
-    // Ajuste para detectar a operação corretamente da URL
-    // Suporta tanto o formato path/create-profile quanto ?url=create-profile
+    // Ajuste para detectar a operação corretamente da URL ou query params
+    // Suporta tanto o formato path/create-profile quanto ?operation=create-profile
     let operation = '';
     
     // Verificar primeiro se há um parâmetro de URL
     const urlObj = new URL(url);
-    const urlParam = urlObj.searchParams.get('url');
+    const operationParam = urlObj.searchParams.get('operation');
     
-    if (urlParam) {
-      // Se há um parâmetro url na query string, usá-lo como operação
-      operation = urlParam;
+    if (operationParam) {
+      // Se há um parâmetro operation na query string, usá-lo como operação
+      operation = operationParam;
     } else {
       // Caso contrário, extrair da última parte do caminho
       const urlParts = url.split('/');

@@ -266,7 +266,7 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
             work_schedule: userData.workSchedule || ''
           };
           
-          // Corrigindo aqui: removendo a propriedade 'path' e usando a propriedade correta
+          // Corrigindo o método de invocar a função - usando functionName com operação separada
           const { error: edgeFunctionError } = await supabase.functions.invoke('user-profile', {
             method: 'POST',
             body: JSON.stringify(profileData),
@@ -274,8 +274,9 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
               Authorization: `Bearer ${sessionData.session.access_token}`,
               'Content-Type': 'application/json',
             },
-            // A opção correta é adicionar o path como parte da URL, não como uma propriedade separada
-            url: 'create-profile'
+            // A opção correta é enviar a operação no body ou nos parâmetros de consulta
+            // O nome da função deve ser enviado no campo functionName
+            query: { operation: 'create-profile' }
           });
           
           if (edgeFunctionError) {
