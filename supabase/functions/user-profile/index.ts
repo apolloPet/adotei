@@ -19,16 +19,16 @@ serve(async (req) => {
   }
 
   try {
-    // Verificar variáveis de ambiente
+    // Check environment variables
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("Variáveis de ambiente não configuradas: SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY");
+      console.error("Environment variables not configured: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
       return new Response(
         JSON.stringify({
-          error: "Configuração do servidor incompleta.",
-          details: "As variáveis de ambiente necessárias não foram configuradas.",
+          error: "Server configuration incomplete.",
+          details: "Required environment variables are not configured.",
           code: "ENV_VARS_MISSING"
         }),
         {
@@ -38,7 +38,7 @@ serve(async (req) => {
       );
     }
 
-    // Inicializar cliente Supabase com SERVICE ROLE para bypass RLS
+    // Initialize Supabase client with SERVICE ROLE to bypass RLS
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
@@ -58,8 +58,8 @@ serve(async (req) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return new Response(
         JSON.stringify({ 
-          error: "Não autorizado", 
-          details: "Autenticação é necessária para acessar este recurso.",
+          error: "Unauthorized", 
+          details: "Authentication is required to access this resource.",
           code: "UNAUTHORIZED" 
         }),
         {
@@ -88,10 +88,11 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
+      console.error("Authentication error:", authError);
       return new Response(
         JSON.stringify({ 
-          error: "Token inválido", 
-          details: "Sua sessão é inválida ou expirou. Por favor, faça login novamente.",
+          error: "Invalid token", 
+          details: "Your session is invalid or expired. Please log in again.",
           code: "INVALID_TOKEN" 
         }),
         {
@@ -100,6 +101,8 @@ serve(async (req) => {
         }
       );
     }
+
+    console.log("Authenticated user:", user.id);
 
     // Parse the request body
     let requestBody = {};
@@ -111,8 +114,8 @@ serve(async (req) => {
       console.error("Error parsing request body:", e);
       return new Response(
         JSON.stringify({ 
-          error: "Formato de requisição inválido", 
-          details: "O corpo da requisição não está em um formato JSON válido.",
+          error: "Invalid request format", 
+          details: "The request body is not in a valid JSON format.",
           code: "INVALID_REQUEST_FORMAT" 
         }),
         {
@@ -173,7 +176,7 @@ serve(async (req) => {
           
           return new Response(
             JSON.stringify({ 
-              message: "Perfil atualizado com sucesso",
+              message: "Profile updated successfully",
               profile: updatedProfile,
               updated: true
             }),
@@ -214,7 +217,7 @@ serve(async (req) => {
         
         return new Response(
           JSON.stringify({ 
-            message: "Perfil criado com sucesso",
+            message: "Profile created successfully",
             profile: newProfile,
             created: true
           }),
@@ -227,8 +230,8 @@ serve(async (req) => {
         console.error("Error in create-profile operation:", error);
         return new Response(
           JSON.stringify({ 
-            error: "Erro ao criar perfil",
-            details: error.message || "Ocorreu um erro ao processar a requisição",
+            error: "Error creating profile",
+            details: error.message || "An error occurred while processing the request",
             code: error.code || "INTERNAL_SERVER_ERROR"
           }),
           {
@@ -240,6 +243,7 @@ serve(async (req) => {
     } else if (method === "GET") {
       // Fetch user profile
       try {
+        console.log("Fetching profile for user:", user.id);
         const { data: userProfile, error: profileError } = await supabaseAdmin
           .from('users')
           .select('*')
@@ -253,7 +257,7 @@ serve(async (req) => {
                 id: user.id,
                 email: user.email,
                 name: user.user_metadata?.name || '',
-                message: "Perfil completo ainda não criado"
+                message: "Complete profile not created yet"
               }),
               {
                 status: 200,
@@ -262,6 +266,7 @@ serve(async (req) => {
             );
           }
           
+          console.error("Error fetching user profile:", profileError);
           throw profileError;
         }
         
@@ -276,8 +281,8 @@ serve(async (req) => {
         console.error("Error fetching user profile:", error);
         return new Response(
           JSON.stringify({ 
-            error: "Erro ao buscar perfil",
-            details: error.message || "Ocorreu um erro ao processar a requisição",
+            error: "Error fetching profile",
+            details: error.message || "An error occurred while processing the request",
             code: error.code || "INTERNAL_SERVER_ERROR"
           }),
           {
@@ -290,8 +295,8 @@ serve(async (req) => {
     
     return new Response(
       JSON.stringify({ 
-        error: "Operação não suportada", 
-        details: "A operação requisitada não é suportada por esta função.",
+        error: "Unsupported operation", 
+        details: "The requested operation is not supported by this function.",
         code: "UNSUPPORTED_OPERATION" 
       }),
       {
@@ -303,8 +308,8 @@ serve(async (req) => {
     console.error("Unexpected error:", error);
     return new Response(
       JSON.stringify({ 
-        error: "Erro interno", 
-        details: "Ocorreu um erro inesperado ao processar a requisição.",
+        error: "Internal error", 
+        details: "An unexpected error occurred while processing the request.",
         code: "INTERNAL_SERVER_ERROR" 
       }),
       {

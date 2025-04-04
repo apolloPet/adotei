@@ -167,140 +167,78 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
 /**
  * Realiza o cadastro do usuário
  */
-export const signUp = async (userData: SignupData): Promise<boolean> => {
+export const signUp = async (data: SignupData): Promise<{ success: boolean; error?: string }> => {
   try {
-    console.log('Tentando registrar usuário:', { email: userData.email });
+    console.log("Attempting to sign up user:", data.email);
     
-    // Validação básica dos dados
-    if (!userData.email || !userData.password || !userData.name) {
-      toast.error('Dados incompletos para cadastro');
-      return false;
-    }
-    
-    const { data, error } = await supabase.auth.signUp({
-      email: userData.email,
-      password: userData.password,
+    // 1. Create auth user
+    const { data: authData, error: signupError } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/email-confirmation`,
+        emailRedirectTo: window.location.origin + '/email-confirmation',
         data: {
-          name: userData.name,
-          phone: userData.phone,
-          // Adicionar outros metadados necessários
+          name: `${data.firstName} ${data.lastName}`,
+          firstName: data.firstName,
+          lastName: data.lastName
         }
-      },
+      }
     });
 
-    // Log detalhado do resultado do cadastro
-    console.log('Resposta do Supabase para signUp:', { 
-      user: data.user ? 'Usuário criado' : 'Nenhum usuário criado',
-      session: data.session ? 'Sessão criada' : 'Nenhuma sessão',
-      error: error || 'Nenhum erro' 
-    });
+    if (signupError) {
+      console.error("Signup error:", signupError);
+      return { 
+        success: false, 
+        error: signupError.message 
+      };
+    }
 
-    if (error) {
-      console.error('Erro no cadastro:', error);
-      if (error instanceof AuthError) {
-        if (error.message.includes('User already registered')) {
-          toast.error('Este email já está registrado. Por favor, faça login ou redefina sua senha.');
-        } else {
-          toast.error(`Erro no cadastro: ${error.message}`);
+    if (!authData.user) {
+      console.error("No user returned from signup");
+      return { 
+        success: false, 
+        error: "Falha no registro. Tente novamente." 
+      };
+    }
+    
+    console.log("Auth user created successfully:", authData.user.id);
+    
+    // 2. Create user profile via edge function to bypass RLS
+    try {
+      const profileData = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        // Add any additional user data here
+      };
+      
+      // Wait for the profile to be created
+      const { data: profileResponse, error: profileError } = await supabase.functions.invoke('user-profile', {
+        method: 'POST',
+        body: { 
+          operation: 'create-profile',
+          name: `${data.firstName} ${data.lastName}`,
         }
+      });
+      
+      if (profileError) {
+        console.error("Error creating user profile:", profileError);
+        // Continue with signup even if profile creation fails - can be fixed later
       } else {
-        toast.error('Erro ao criar a conta. Tente novamente.');
+        console.log("Profile created successfully:", profileResponse);
       }
-      return false;
+    } catch (profileCreationError) {
+      console.error("Exception in profile creation:", profileCreationError);
+      // Continue with signup even if profile creation fails
     }
 
-    if (!data.user) {
-      console.error('Nenhum usuário retornado após o cadastro');
-      toast.error('Erro ao criar usuário. Tente novamente.');
-      return false;
-    }
-
-    console.log('Usuário cadastrado com sucesso:', { 
-      userId: data.user.id,
-      email: data.user.email,
-      hasSession: !!data.session
-    });
-    
-    // Verificar se o e-mail de confirmação está habilitado
-    if (data.session) {
-      // E-mail de confirmação desabilitado, o usuário está automaticamente logado
-      localStorage.setItem("isLoggedIn", "true");
-      localStorage.setItem("isAdmin", "false");
-      localStorage.setItem("userEmail", userData.email);
-      
-      // Dispare eventos para atualizar a UI
-      window.dispatchEvent(new Event('storage'));
-      window.dispatchEvent(new Event('authStateChanged'));
-      
-      toast.success('Conta criada com sucesso! Você está logado.');
-    } else {
-      // E-mail de confirmação habilitado
-      toast.success('Conta criada com sucesso! Verifique seu email para confirmar.');
-    }
-    
-    // Criar perfil do usuário
-    if (data.user) {
-      try {
-        // Obter a sessão atual para utilizar com a Edge Function
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData.session) {
-          console.log('Criando perfil de usuário via Edge Function...');
-          
-          // Preparar os dados do perfil
-          const profileData = {
-            operation: 'create-profile',
-            name: userData.name,
-            phone: userData.phone || '',
-            address: userData.address?.street || '',
-            city: userData.address?.city || '',
-            state: userData.address?.state || '',
-            zip: userData.address?.cep || '',
-            housing_type: userData.housingType || 'house',
-            has_children: userData.hasChildren || false,
-            children_ages: userData.childrenAges || '',
-            had_pets_before: userData.hadPetsBefore || false,
-            has_allergies: userData.hasAllergies || false,
-            allergies_description: userData.allergiesDescription || '',
-            work_schedule: userData.workSchedule || ''
-          };
-          
-          console.log('Enviando dados para edge function:', {
-            accessToken: `${sessionData.session.access_token.substring(0, 10)}...`,
-            profileData
-          });
-          
-          // Usando a forma correta de invocar a edge function com headers explícitos de autorização
-          const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('user-profile', {
-            method: 'POST',
-            body: JSON.stringify(profileData),
-            headers: {
-              Authorization: `Bearer ${sessionData.session.access_token}`,
-              'Content-Type': 'application/json',
-            }
-          });
-          
-          if (edgeFunctionError) {
-            console.error('Erro ao criar perfil via Edge Function:', edgeFunctionError);
-            // Não interromper o fluxo, apenas logar o erro
-          } else {
-            console.log('Perfil criado com sucesso via Edge Function:', edgeFunctionData);
-          }
-        } else {
-          console.error('Não foi possível obter a sessão para criar o perfil');
-        }
-      } catch (profileError) {
-        console.error('Erro inesperado ao criar perfil:', profileError);
-        // Não interromper o fluxo, apenas logar o erro
-      }
-    }
-    
-    return true;
+    console.log("User signup completed successfully");
+    return { success: true };
   } catch (error) {
-    console.error('Erro inesperado durante o cadastro:', error);
-    toast.error('Erro inesperado ao criar a conta. Tente novamente.');
-    return false;
+    console.error("Unexpected error during signup:", error);
+    return { 
+      success: false, 
+      error: "Ocorreu um erro inesperado durante o cadastro. Por favor, tente novamente." 
+    };
   }
 };
 

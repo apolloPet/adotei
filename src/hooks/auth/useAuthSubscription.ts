@@ -10,34 +10,34 @@ export function useAuthSubscription({
   setIsAdmin
 }) {
   useEffect(() => {
-    // Performance: configuração aprimorada para eventos de autenticação
-    console.log('Configurando assinatura para eventos de autenticação');
+    // Performance: improved setup for auth events
+    console.log('Setting up subscription for authentication events');
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log('Evento de autenticação detectado:', event);
+      console.log('Authentication event detected:', event);
       
-      // Performance: atualizar estado da sessão imediatamente
+      // Performance: update session state immediately
       setSession(newSession);
       
       if (newSession?.user) {
-        // Performance: definir o usuário imediatamente
+        // Performance: set user immediately
         setUser(newSession.user);
         
-        // Verificar status de admin
+        // Check admin status
         const userEmail = newSession.user.email;
         if (userEmail) {
           const isAdminUser = userEmail.includes('@ong') || 
                           userEmail.includes('@admin') || 
                           userEmail === 'admin@petmatch.com';
           
-          console.log('Atualização de estado - verificação de permissões:', { 
+          console.log('State update - permissions check:', { 
             email: userEmail, 
             isAdmin: isAdminUser 
           });
           
           setIsAdmin(isAdminUser);
           
-          // Atualizar localStorage
+          // Update localStorage
           localStorage.setItem("isLoggedIn", "true");
           localStorage.setItem("isAdmin", isAdminUser.toString());
           localStorage.setItem("userEmail", userEmail);
@@ -45,25 +45,28 @@ export function useAuthSubscription({
           setIsAdmin(false);
         }
         
-        // Performance: buscar perfil do usuário em segundo plano
+        // Performance: fetch user profile in background
         setTimeout(async () => {
           try {
             const userProfile = await getProfile();
             if (userProfile) {
+              console.log('Profile fetched in background:', userProfile);
               setProfile(userProfile);
+            } else {
+              console.log('No profile found in background fetch');
             }
           } catch (error) {
-            console.error('Erro ao buscar perfil em segundo plano:', error);
+            console.error('Error fetching profile in background:', error);
           }
         }, 100);
         
       } else {
-        // Sessão encerrada
+        // Session ended
         setUser(null);
         setProfile(null);
         setIsAdmin(false);
         
-        // Limpar localStorage ao fazer logout
+        // Clear localStorage on logout
         if (event === 'SIGNED_OUT') {
           localStorage.removeItem("isLoggedIn");
           localStorage.removeItem("isAdmin");
@@ -72,9 +75,9 @@ export function useAuthSubscription({
       }
     });
 
-    // Performance: limpeza apropriada na desmontagem do componente
+    // Performance: proper cleanup on component unmount
     return () => {
-      console.log('Cancelando assinatura de eventos de autenticação');
+      console.log('Cancelling authentication event subscription');
       subscription.unsubscribe();
     };
   }, [setUser, setSession, setProfile, setIsAdmin]);
