@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
@@ -251,6 +250,7 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
           
           // Preparar os dados do perfil
           const profileData = {
+            operation: 'create-profile',
             name: userData.name,
             phone: userData.phone || '',
             address: userData.address?.street || '',
@@ -263,8 +263,7 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
             had_pets_before: userData.hadPetsBefore || false,
             has_allergies: userData.hasAllergies || false,
             allergies_description: userData.allergiesDescription || '',
-            work_schedule: userData.workSchedule || '',
-            operation: 'create-profile' // Adicionando a operação no body
+            work_schedule: userData.workSchedule || ''
           };
           
           console.log('Enviando dados para edge function:', {
@@ -284,38 +283,7 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
           
           if (edgeFunctionError) {
             console.error('Erro ao criar perfil via Edge Function:', edgeFunctionError);
-            // Tentar alternativa com endpoint padronizado para casos de erro
-            try {
-              const { data: fallbackData, error: fallbackError } = await supabase
-                .from('users')
-                .insert({
-                  auth_id: data.user.id,
-                  email: data.user.email,
-                  name: userData.name,
-                  phone: userData.phone || '',
-                  address: userData.address?.street || '',
-                  city: userData.address?.city || '',
-                  state: userData.address?.state || '',
-                  zip: userData.address?.cep || '',
-                  housing_type: userData.housingType || 'house',
-                  has_children: userData.hasChildren || false,
-                  children_ages: userData.childrenAges || '',
-                  had_pets_before: userData.hadPetsBefore || false,
-                  has_allergies: userData.hasAllergies || false,
-                  allergies_description: userData.allergiesDescription || '',
-                  work_schedule: userData.workSchedule || ''
-                })
-                .select()
-                .single();
-                
-              if (fallbackError) {
-                console.error('Fallback também falhou:', fallbackError);
-              } else {
-                console.log('Perfil criado com sucesso via fallback method');
-              }
-            } catch (fallbackException) {
-              console.error('Exceção no fallback:', fallbackException);
-            }
+            // Não interromper o fluxo, apenas logar o erro
           } else {
             console.log('Perfil criado com sucesso via Edge Function:', edgeFunctionData);
           }

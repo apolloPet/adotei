@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -20,14 +21,14 @@ serve(async (req) => {
   try {
     // Verificar variáveis de ambiente
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!supabaseUrl || !supabaseKey) {
+    if (!supabaseUrl || !supabaseServiceKey) {
       console.error("Variáveis de ambiente não configuradas: SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY");
       return new Response(
         JSON.stringify({
           error: "Configuração do servidor incompleta.",
-          details: "As variáveis de ambiente necessárias não foram configuradas. Entre em contato com o administrador do sistema.",
+          details: "As variáveis de ambiente necessárias não foram configuradas.",
           code: "ENV_VARS_MISSING"
         }),
         {
@@ -38,7 +39,7 @@ serve(async (req) => {
     }
 
     // Inicializar cliente Supabase com SERVICE ROLE para bypass RLS
-    const supabase = createClient(supabaseUrl, supabaseKey, {
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,
@@ -50,47 +51,10 @@ serve(async (req) => {
       },
     });
 
-    const { url, method } = req;
+    const { method, headers } = req;
     
-    // Determinar a operação a partir do corpo da requisição ou da URL
-    let operation = '';
-    let requestBody = {};
-    
-    // Tentar obter a operação do body primeiro
-    try {
-      if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
-        requestBody = await req.json();
-        if (requestBody && requestBody.operation) {
-          operation = requestBody.operation;
-          // Remover operation do body para não causar problemas na inserção
-          delete requestBody.operation;
-        }
-      }
-    } catch (e) {
-      console.error("Erro ao parsear body:", e);
-      // Continua para tentar pegar da URL
-    }
-    
-    // Se não encontrou no body, tentar da URL
-    if (!operation) {
-      // Verificar primeiro se há um parâmetro de URL
-      const urlObj = new URL(url);
-      const operationParam = urlObj.searchParams.get('operation');
-      
-      if (operationParam) {
-        // Se há um parâmetro operation na query string, usá-lo como operação
-        operation = operationParam;
-      } else {
-        // Caso contrário, extrair da última parte do caminho
-        const urlParts = url.split('/');
-        operation = urlParts[urlParts.length - 1];
-      }
-    }
-    
-    console.log(`Processando requisição: ${method} ${url} (operação: ${operation})`);
-
     // Get JWT token from request
-    const authHeader = req.headers.get('Authorization');
+    const authHeader = headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return new Response(
         JSON.stringify({ 
@@ -108,8 +72,20 @@ serve(async (req) => {
     // Extract the JWT
     const jwt = authHeader.substring(7);
     
-    // Verify the JWT and get user information
-    const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
+    // Verify the JWT and get user information - using standard client
+    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") || "", {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+      global: {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      },
+    });
+    
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError || !user) {
       return new Response(
@@ -125,19 +101,152 @@ serve(async (req) => {
       );
     }
 
-    // Process based on operation and method
-    if (method === "GET") {
-      // Handle GET operations
-      if (operation === "profile") {
-        // Get user's extended profile from the users table
-        const { data: userProfile, error: profileError } = await supabase
+    // Parse the request body
+    let requestBody = {};
+    try {
+      if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
+        requestBody = await req.json();
+      }
+    } catch (e) {
+      console.error("Error parsing request body:", e);
+      return new Response(
+        JSON.stringify({ 
+          error: "Formato de requisição inválido", 
+          details: "O corpo da requisição não está em um formato JSON válido.",
+          code: "INVALID_REQUEST_FORMAT" 
+        }),
+        {
+          status: 400,
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    // Determine the operation based on the method and path
+    if (method === "POST" && requestBody.operation === "create-profile") {
+      // Creating a new user profile
+      console.log("Creating user profile for:", user.id);
+      
+      try {
+        // Check if profile already exists
+        const { data: existingProfile, error: profileCheckError } = await supabaseAdmin
+          .from('users')
+          .select('id')
+          .eq('auth_id', user.id)
+          .single();
+          
+        if (profileCheckError && profileCheckError.code !== 'PGRST116') {
+          console.error("Error checking for existing profile:", profileCheckError);
+          throw profileCheckError;
+        }
+        
+        if (existingProfile) {
+          console.log("Profile already exists for user:", user.id);
+          // Update existing profile instead
+          const { data: updatedProfile, error: updateError } = await supabaseAdmin
+            .from('users')
+            .update({
+              name: requestBody.name || user.user_metadata?.name || '',
+              email: user.email,
+              phone: requestBody.phone || '',
+              address: requestBody.address || '',
+              city: requestBody.city || '',
+              state: requestBody.state || '',
+              zip: requestBody.zip || '',
+              housing_type: requestBody.housing_type || 'house',
+              has_children: requestBody.has_children || false,
+              children_ages: requestBody.children_ages || '',
+              had_pets_before: requestBody.had_pets_before || false,
+              has_allergies: requestBody.has_allergies || false,
+              allergies_description: requestBody.allergies_description || '',
+              work_schedule: requestBody.work_schedule || '',
+              updated_at: new Date()
+            })
+            .eq('auth_id', user.id)
+            .select()
+            .single();
+            
+          if (updateError) {
+            console.error("Error updating user profile:", updateError);
+            throw updateError;
+          }
+          
+          return new Response(
+            JSON.stringify({ 
+              message: "Perfil atualizado com sucesso",
+              profile: updatedProfile,
+              updated: true
+            }),
+            {
+              status: 200,
+              headers: corsHeaders,
+            }
+          );
+        }
+        
+        // Create a new profile using the admin client that bypasses RLS
+        const { data: newProfile, error: insertError } = await supabaseAdmin
+          .from('users')
+          .insert({
+            auth_id: user.id,
+            email: user.email,
+            name: requestBody.name || user.user_metadata?.name || '',
+            phone: requestBody.phone || '',
+            address: requestBody.address || '',
+            city: requestBody.city || '',
+            state: requestBody.state || '',
+            zip: requestBody.zip || '',
+            housing_type: requestBody.housing_type || 'house',
+            has_children: requestBody.has_children || false,
+            children_ages: requestBody.children_ages || '',
+            had_pets_before: requestBody.had_pets_before || false,
+            has_allergies: requestBody.has_allergies || false,
+            allergies_description: requestBody.allergies_description || '',
+            work_schedule: requestBody.work_schedule || ''
+          })
+          .select()
+          .single();
+          
+        if (insertError) {
+          console.error("Error creating user profile:", insertError);
+          throw insertError;
+        }
+        
+        return new Response(
+          JSON.stringify({ 
+            message: "Perfil criado com sucesso",
+            profile: newProfile,
+            created: true
+          }),
+          {
+            status: 201,
+            headers: corsHeaders,
+          }
+        );
+      } catch (error) {
+        console.error("Error in create-profile operation:", error);
+        return new Response(
+          JSON.stringify({ 
+            error: "Erro ao criar perfil",
+            details: error.message || "Ocorreu um erro ao processar a requisição",
+            code: error.code || "INTERNAL_SERVER_ERROR"
+          }),
+          {
+            status: 500,
+            headers: corsHeaders,
+          }
+        );
+      }
+    } else if (method === "GET") {
+      // Fetch user profile
+      try {
+        const { data: userProfile, error: profileError } = await supabaseAdmin
           .from('users')
           .select('*')
           .eq('auth_id', user.id)
           .single();
-        
+          
         if (profileError) {
-          // If profile doesn't exist yet, return basic user info
           if (profileError.code === 'PGRST116') {
             return new Response(
               JSON.stringify({
@@ -153,17 +262,7 @@ serve(async (req) => {
             );
           }
           
-          return new Response(
-            JSON.stringify({ 
-              error: "Erro ao buscar perfil do usuário", 
-              details: profileError.message,
-              code: profileError.code 
-            }),
-            {
-              status: 500,
-              headers: corsHeaders,
-            }
-          );
+          throw profileError;
         }
         
         return new Response(
@@ -173,370 +272,26 @@ serve(async (req) => {
             headers: corsHeaders,
           }
         );
-      } else if (operation === "adoptions") {
-        // Get user's adoptions
-        const { data: adoptions, error: adoptionsError } = await supabase
-          .from('adoptions')
-          .select('*, pets!adoptions_pet_id_fkey(*, pet_images(*))')
-          .eq('user_id', user.id);
-        
-        if (adoptionsError) {
-          return new Response(
-            JSON.stringify({ 
-              error: "Erro ao buscar adoções do usuário", 
-              details: adoptionsError.message,
-              code: adoptionsError.code 
-            }),
-            {
-              status: 500,
-              headers: corsHeaders,
-            }
-          );
-        }
-        
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
         return new Response(
-          JSON.stringify(adoptions),
-          {
-            status: 200,
-            headers: corsHeaders,
-          }
-        );
-      } else if (operation === "matches") {
-        // Get user's pet matches
-        const { data: matches, error: matchesError } = await supabase
-          .from('pet_matches')
-          .select('*, pets!pet_matches_pet_id_fkey(*, pet_images(*))')
-          .eq('user_id', user.id);
-        
-        if (matchesError) {
-          return new Response(
-            JSON.stringify({ 
-              error: "Erro ao buscar matches do usuário", 
-              details: matchesError.message,
-              code: matchesError.code 
-            }),
-            {
-              status: 500,
-              headers: corsHeaders,
-            }
-          );
-        }
-        
-        return new Response(
-          JSON.stringify(matches),
-          {
-            status: 200,
-            headers: corsHeaders,
-          }
-        );
-      }
-    } else if (method === "POST") {
-      // Handle POST operations
-      if (operation === "create-profile") {
-        const profileData = requestBody;
-        
-        // Validate required fields
-        const requiredFields = ['name', 'phone', 'address', 'city', 'state', 'zip', 'housing_type', 'work_schedule'];
-        const missingFields = requiredFields.filter(field => !profileData[field]);
-        
-        if (missingFields.length > 0) {
-          return new Response(
-            JSON.stringify({ 
-              error: "Campos obrigatórios ausentes", 
-              details: `Os seguintes campos são obrigatórios: ${missingFields.join(', ')}`,
-              missingFields,
-              code: "MISSING_FIELDS" 
-            }),
-            {
-              status: 400,
-              headers: corsHeaders,
-            }
-          );
-        }
-        
-        // Check if profile already exists
-        const { data: existingProfile } = await supabase
-          .from('users')
-          .select('id')
-          .eq('auth_id', user.id)
-          .single();
-        
-        if (existingProfile) {
-          return new Response(
-            JSON.stringify({ 
-              error: "Perfil já existe", 
-              details: "Este usuário já possui um perfil. Use a operação de atualização para modificá-lo.",
-              code: "PROFILE_EXISTS" 
-            }),
-            {
-              status: 409,
-              headers: corsHeaders,
-            }
-          );
-        }
-        
-        // Insert user profile using service role to bypass RLS
-        console.log('Criando perfil de usuário com auth_id:', user.id, 'email:', user.email);
-        
-        try {
-          // Verificar se a função is_service_role está disponível
-          const isServiceRole = await supabase.rpc('is_service_role');
-          console.log('Verificação de service role:', isServiceRole);
-
-          // Garantir que estamos usando headers corretos para bypass de RLS
-          const adminHeaders = {
-            "Authorization": `Bearer ${supabaseKey}`,
-            "X-Client-Info": "service-role-bypass"
-          };
-
-          // Usar cliente com service role explicitamente configurado
-          const serviceClient = createClient(supabaseUrl, supabaseKey, {
-            global: { headers: adminHeaders }
-          });
-          
-          console.log('Tentando inserir perfil com service role...');
-          
-          const { data: newProfile, error: profileError } = await serviceClient
-            .from('users')
-            .insert({
-              auth_id: user.id,
-              name: profileData.name,
-              email: user.email,
-              phone: profileData.phone || '',
-              address: profileData.address || '',
-              city: profileData.city || '',
-              state: profileData.state || '',
-              zip: profileData.zip || '',
-              housing_type: profileData.housing_type || 'house',
-              has_children: profileData.has_children || false,
-              children_ages: profileData.children_ages || '',
-              had_pets_before: profileData.had_pets_before || false,
-              has_allergies: profileData.has_allergies || false,
-              allergies_description: profileData.allergies_description || '',
-              work_schedule: profileData.work_schedule || '',
-              avatar_url: profileData.avatar_url || ''
-            })
-            .select()
-            .single();
-          
-          if (profileError) {
-            console.error('Erro ao criar perfil de usuário:', profileError);
-            
-            if (profileError.code === '42501') {
-              console.error('Erro de RLS. Tentando método alternativo...');
-              
-              // Método alternativo: SQL direto via RPC
-              try {
-                const { data: directInsertData, error: directInsertError } = await supabase.rpc(
-                  'insert_user_profile',
-                  {
-                    user_auth_id: user.id,
-                    user_name: profileData.name,
-                    user_email: user.email,
-                    user_phone: profileData.phone || '',
-                    user_address: profileData.address || '',
-                    user_city: profileData.city || '',
-                    user_state: profileData.state || '',
-                    user_zip: profileData.zip || '',
-                    user_housing_type: profileData.housing_type || 'house',
-                    user_has_children: profileData.has_children || false,
-                    user_children_ages: profileData.children_ages || '',
-                    user_had_pets_before: profileData.had_pets_before || false,
-                    user_has_allergies: profileData.has_allergies || false,
-                    user_allergies_description: profileData.allergies_description || '',
-                    user_work_schedule: profileData.work_schedule || '',
-                    user_avatar_url: profileData.avatar_url || ''
-                  }
-                );
-                
-                if (directInsertError) {
-                  console.error('Erro no método alternativo:', directInsertError);
-                  throw directInsertError;
-                }
-                
-                return new Response(
-                  JSON.stringify({
-                    message: "Perfil criado com sucesso via método alternativo!",
-                    id: user.id
-                  }),
-                  {
-                    status: 201,
-                    headers: corsHeaders,
-                  }
-                );
-              } catch (directError) {
-                console.error('Exceção no método alternativo:', directError);
-                throw directError;
-              }
-            } else {
-              throw profileError;
-            }
-          }
-          
-          return new Response(
-            JSON.stringify({
-              ...newProfile,
-              message: "Perfil criado com sucesso!"
-            }),
-            {
-              status: 201,
-              headers: corsHeaders,
-            }
-          );
-        } catch (insertError) {
-          console.error('Exception during profile creation:', insertError);
-          
-          // Último recurso: tentar com fetch direto
-          try {
-            console.log('Tentando método de emergência com fetch direto...');
-            
-            const response = await fetch(`${supabaseUrl}/rest/v1/users`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'apikey': supabaseKey,
-                'Authorization': `Bearer ${supabaseKey}`
-              },
-              body: JSON.stringify({
-                auth_id: user.id,
-                name: profileData.name,
-                email: user.email,
-                phone: profileData.phone || '',
-                address: profileData.address || '',
-                city: profileData.city || '',
-                state: profileData.state || '',
-                zip: profileData.zip || '',
-                housing_type: profileData.housing_type || 'house',
-                has_children: profileData.has_children || false,
-                children_ages: profileData.children_ages || '',
-                had_pets_before: profileData.had_pets_before || false,
-                has_allergies: profileData.has_allergies || false,
-                allergies_description: profileData.allergies_description || '',
-                work_schedule: profileData.work_schedule || '',
-                avatar_url: profileData.avatar_url || ''
-              })
-            });
-            
-            if (!response.ok) {
-              const errorData = await response.json();
-              console.error('Erro na requisição de emergência:', errorData);
-              throw new Error(JSON.stringify(errorData));
-            }
-            
-            const responseData = await response.json();
-            
-            return new Response(
-              JSON.stringify({
-                ...responseData,
-                message: "Perfil criado com sucesso via método de emergência!"
-              }),
-              {
-                status: 201,
-                headers: corsHeaders,
-              }
-            );
-          } catch (emergencyError) {
-            console.error('Falha no método de emergência:', emergencyError);
-            
-            return new Response(
-              JSON.stringify({ 
-                error: "Falha em todas as tentativas de criar perfil", 
-                details: "Ocorreu um erro em todas as tentativas de criar seu perfil. Entre em contato com o suporte.",
-                originalError: insertError.message || "Erro não especificado",
-                code: "ALL_METHODS_FAILED" 
-              }),
-              {
-                status: 500,
-                headers: corsHeaders,
-              }
-            );
-          }
-        }
-      }
-    } else if (method === "PUT" || method === "PATCH") {
-      // Handle PUT/PATCH operations
-      if (operation === "update-profile") {
-        const profileData = await req.json();
-        
-        // Get existing profile
-        const { data: existingProfile, error: profileError } = await supabase
-          .from('users')
-          .select('id')
-          .eq('auth_id', user.id)
-          .single();
-        
-        if (profileError) {
-          return new Response(
-            JSON.stringify({ 
-              error: "Perfil não encontrado", 
-              details: "Não foi possível encontrar um perfil para este usuário. Crie um perfil primeiro.",
-              code: "PROFILE_NOT_FOUND" 
-            }),
-            {
-              status: 404,
-              headers: corsHeaders,
-            }
-          );
-        }
-        
-        // Build update object with only provided fields
-        const updates: any = {};
-        
-        if (profileData.name) updates.name = profileData.name;
-        if (profileData.phone) updates.phone = profileData.phone;
-        if (profileData.address) updates.address = profileData.address;
-        if (profileData.city) updates.city = profileData.city;
-        if (profileData.state) updates.state = profileData.state;
-        if (profileData.zip) updates.zip = profileData.zip;
-        if (profileData.housing_type) updates.housing_type = profileData.housing_type;
-        if (profileData.has_children !== undefined) updates.has_children = profileData.has_children;
-        if (profileData.children_ages !== undefined) updates.children_ages = profileData.children_ages;
-        if (profileData.had_pets_before !== undefined) updates.had_pets_before = profileData.had_pets_before;
-        if (profileData.has_allergies !== undefined) updates.has_allergies = profileData.has_allergies;
-        if (profileData.allergies_description !== undefined) updates.allergies_description = profileData.allergies_description;
-        if (profileData.work_schedule) updates.work_schedule = profileData.work_schedule;
-        if (profileData.avatar_url !== undefined) updates.avatar_url = profileData.avatar_url;
-        
-        // Update profile
-        const { data: updatedProfile, error: updateError } = await supabase
-          .from('users')
-          .update(updates)
-          .eq('id', existingProfile.id)
-          .select()
-          .single();
-        
-        if (updateError) {
-          return new Response(
-            JSON.stringify({ 
-              error: "Erro ao atualizar perfil", 
-              details: updateError.message,
-              code: updateError.code 
-            }),
-            {
-              status: 500,
-              headers: corsHeaders,
-            }
-          );
-        }
-        
-        return new Response(
-          JSON.stringify({
-            ...updatedProfile,
-            message: "Perfil atualizado com sucesso!"
+          JSON.stringify({ 
+            error: "Erro ao buscar perfil",
+            details: error.message || "Ocorreu um erro ao processar a requisição",
+            code: error.code || "INTERNAL_SERVER_ERROR"
           }),
           {
-            status: 200,
+            status: 500,
             headers: corsHeaders,
           }
         );
       }
     }
-
-    // If we get here, the operation was not recognized
+    
     return new Response(
       JSON.stringify({ 
         error: "Operação não suportada", 
-        details: "A operação solicitada não é suportada por esta API.",
+        details: "A operação requisitada não é suportada por esta função.",
         code: "UNSUPPORTED_OPERATION" 
       }),
       {
@@ -544,20 +299,13 @@ serve(async (req) => {
         headers: corsHeaders,
       }
     );
-
   } catch (error) {
-    console.error("Erro não tratado:", error);
-    
-    // Extract error information
-    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
-    const errorName = error instanceof Error ? error.name : "UnknownError";
-    
+    console.error("Unexpected error:", error);
     return new Response(
       JSON.stringify({ 
-        error: "Erro no servidor", 
-        details: `Ocorreu um erro inesperado ao processar sua solicitação: ${errorMessage}`,
-        errorType: errorName,
-        code: "SERVER_ERROR"
+        error: "Erro interno", 
+        details: "Ocorreu um erro inesperado ao processar a requisição.",
+        code: "INTERNAL_SERVER_ERROR" 
       }),
       {
         status: 500,

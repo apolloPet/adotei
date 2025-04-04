@@ -20,4 +20,4 @@ CREATE POLICY "Users can delete their own data" ON public.users
 
 -- Create a policy allowing service role (edge functions) to manage all user data
 CREATE POLICY "Service role can manage all user data" ON public.users
-  USING (current_setting('request.jwt.claims', true)::json->>'role' = 'service_role');
+  USING (public.is_service_role());
