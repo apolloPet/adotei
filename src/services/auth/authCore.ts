@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
@@ -266,8 +267,13 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
             operation: 'create-profile' // Adicionando a operação no body
           };
           
+          console.log('Enviando dados para edge function:', {
+            accessToken: `${sessionData.session.access_token.substring(0, 10)}...`,
+            profileData
+          });
+          
           // Usando a forma correta de invocar a edge function
-          const { error: edgeFunctionError } = await supabase.functions.invoke('user-profile', {
+          const { data: edgeFunctionData, error: edgeFunctionError } = await supabase.functions.invoke('user-profile', {
             method: 'POST',
             body: JSON.stringify(profileData),
             headers: {
@@ -280,7 +286,7 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
             console.error('Erro ao criar perfil via Edge Function:', edgeFunctionError);
             // Não interromper o fluxo, apenas logar o erro
           } else {
-            console.log('Perfil criado com sucesso via Edge Function');
+            console.log('Perfil criado com sucesso via Edge Function:', edgeFunctionData);
           }
         } else {
           console.error('Não foi possível obter a sessão para criar o perfil');

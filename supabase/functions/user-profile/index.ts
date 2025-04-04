@@ -282,6 +282,20 @@ serve(async (req) => {
         try {
           // Print service role key validity to debug
           console.log('Service role key está configurada:', !!supabaseKey);
+          console.log('Service role key length:', supabaseKey ? supabaseKey.length : 0);
+
+          // Verificar se o cliente Supabase está corretamente configurado com a SERVICE_ROLE_KEY
+          const isAdmin = await supabase.rpc('is_service_role')
+            .then(resp => {
+              console.log('Verificação de service role:', resp);
+              return resp.data === true;
+            })
+            .catch(err => {
+              console.error('Erro ao verificar service role:', err);
+              return false;
+            });
+
+          console.log('Cliente está usando service role?', isAdmin);
 
           // Log request to help debug
           console.log('Inserindo perfil com dados:', {
@@ -291,7 +305,22 @@ serve(async (req) => {
             // outras props
           });
 
-          const { data: newProfile, error: profileError } = await supabase
+          // Criando um novo cliente específico para esta operação, garantindo headers corretos
+          const adminSupabase = createClient(supabaseUrl, supabaseKey, {
+            auth: {
+              autoRefreshToken: false,
+              persistSession: false,
+            },
+            global: {
+              headers: {
+                "X-Client-Info": "user-profile-edge-function-admin",
+                "Authorization": `Bearer ${supabaseKey}`
+              },
+            },
+          });
+
+          // Usar adminSupabase para operação que exige bypass de RLS
+          const { data: newProfile, error: profileError } = await adminSupabase
             .from('users')
             .insert({
               auth_id: user.id,
@@ -320,6 +349,54 @@ serve(async (req) => {
             // Log detalhado para diagnóstico de erro RLS
             if(profileError.code === '42501') {
               console.error('Erro de segurança de nível de linha (RLS). A função está tentando inserir usando o token JWT do usuário, não o SERVICE_ROLE_KEY');
+              // Tentar novamente com headers explícitos para SERVICE_ROLE
+              try {
+                const { data: retryProfile, error: retryError } = await fetch(`${supabaseUrl}/rest/v1/users`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'apikey': supabaseKey,
+                    'Authorization': `Bearer ${supabaseKey}`
+                  },
+                  body: JSON.stringify({
+                    auth_id: user.id,
+                    name: profileData.name,
+                    email: user.email,
+                    phone: profileData.phone || '',
+                    address: profileData.address || '',
+                    city: profileData.city || '',
+                    state: profileData.state || '',
+                    zip: profileData.zip || '',
+                    housing_type: profileData.housing_type || 'house',
+                    has_children: profileData.has_children || false,
+                    children_ages: profileData.children_ages || '',
+                    had_pets_before: profileData.had_pets_before || false,
+                    has_allergies: profileData.has_allergies || false,
+                    allergies_description: profileData.allergies_description || '',
+                    work_schedule: profileData.work_schedule || '',
+                    avatar_url: profileData.avatar_url || ''
+                  })
+                }).then(res => res.json());
+                
+                if (retryError) {
+                  console.error('Erro na segunda tentativa:', retryError);
+                  throw retryError;
+                }
+                
+                return new Response(
+                  JSON.stringify({
+                    ...retryProfile,
+                    message: "Perfil criado com sucesso após nova tentativa!"
+                  }),
+                  {
+                    status: 201,
+                    headers: corsHeaders,
+                  }
+                );
+              } catch (retryException) {
+                console.error('Exceção na segunda tentativa:', retryException);
+                throw retryException;
+              }
             }
             
             return new Response(
