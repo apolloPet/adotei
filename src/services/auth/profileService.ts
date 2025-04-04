@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { UserProfile } from '@/types/user';
 import { toast } from '@/hooks/use-sonner';

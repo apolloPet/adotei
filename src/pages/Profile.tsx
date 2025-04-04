@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { toast } from '@/hooks/use-sonner';
 import { UserProfile } from '@/types/user';
@@ -72,7 +71,6 @@ export default function Profile() {
       
       if (success) {
         toast.success('Perfil atualizado com sucesso!');
-        // Refresh auth state to get updated user data
         fetchUserData();
       }
     } catch (error) {
@@ -141,8 +139,8 @@ export default function Profile() {
                 <Label htmlFor="firstName">Nome</Label>
                 <Input
                   id="firstName"
-                  value={profile.firstName || ''}
-                  onChange={(e) => setProfile({...profile, firstName: e.target.value})}
+                  value={profile?.firstName || ''}
+                  onChange={(e) => setProfile(profile ? {...profile, firstName: e.target.value} : null)}
                 />
               </div>
               
@@ -150,8 +148,8 @@ export default function Profile() {
                 <Label htmlFor="lastName">Sobrenome</Label>
                 <Input
                   id="lastName"
-                  value={profile.lastName || ''}
-                  onChange={(e) => setProfile({...profile, lastName: e.target.value})}
+                  value={profile?.lastName || ''}
+                  onChange={(e) => setProfile(profile ? {...profile, lastName: e.target.value} : null)}
                 />
               </div>
               
@@ -160,7 +158,7 @@ export default function Profile() {
                 <Input
                   id="email"
                   type="email"
-                  value={profile.email || ''}
+                  value={profile?.email || ''}
                   disabled
                 />
                 <p className="text-xs text-muted-foreground">
@@ -172,8 +170,8 @@ export default function Profile() {
                 <Label htmlFor="phone">Telefone</Label>
                 <Input
                   id="phone"
-                  value={profile.phone || ''}
-                  onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                  value={profile?.phone || ''}
+                  onChange={(e) => setProfile(profile ? {...profile, phone: e.target.value} : null)}
                   placeholder="(XX) XXXXX-XXXX"
                 />
               </div>
@@ -182,8 +180,8 @@ export default function Profile() {
                 <Label htmlFor="avatarUrl">URL da Foto de Perfil</Label>
                 <Input
                   id="avatarUrl"
-                  value={profile.avatarUrl || ''}
-                  onChange={(e) => setProfile({...profile, avatarUrl: e.target.value})}
+                  value={profile?.avatarUrl || ''}
+                  onChange={(e) => setProfile(profile ? {...profile, avatarUrl: e.target.value} : null)}
                   placeholder="https://..."
                 />
               </div>
@@ -198,8 +196,8 @@ export default function Profile() {
                 <Label htmlFor="address">Endereço</Label>
                 <Input
                   id="address"
-                  value={profile.address || ''}
-                  onChange={(e) => setProfile({...profile, address: e.target.value})}
+                  value={profile?.address || ''}
+                  onChange={(e) => setProfile(profile ? {...profile, address: e.target.value} : null)}
                 />
               </div>
               
@@ -207,8 +205,8 @@ export default function Profile() {
                 <Label htmlFor="city">Cidade</Label>
                 <Input
                   id="city"
-                  value={profile.city || ''}
-                  onChange={(e) => setProfile({...profile, city: e.target.value})}
+                  value={profile?.city || ''}
+                  onChange={(e) => setProfile(profile ? {...profile, city: e.target.value} : null)}
                 />
               </div>
               
@@ -216,8 +214,8 @@ export default function Profile() {
                 <Label htmlFor="state">Estado</Label>
                 <Input
                   id="state"
-                  value={profile.state || ''}
-                  onChange={(e) => setProfile({...profile, state: e.target.value})}
+                  value={profile?.state || ''}
+                  onChange={(e) => setProfile(profile ? {...profile, state: e.target.value} : null)}
                 />
               </div>
               
@@ -225,8 +223,8 @@ export default function Profile() {
                 <Label htmlFor="zip">CEP</Label>
                 <Input
                   id="zip"
-                  value={profile.zip || ''}
-                  onChange={(e) => setProfile({...profile, zip: e.target.value})}
+                  value={profile?.zip || ''}
+                  onChange={(e) => setProfile(profile ? {...profile, zip: e.target.value} : null)}
                   placeholder="00000-000"
                 />
               </div>
@@ -240,8 +238,8 @@ export default function Profile() {
               <div className="space-y-2">
                 <Label htmlFor="housingType">Tipo de Moradia</Label>
                 <Select
-                  value={profile.housingType || 'house'}
-                  onValueChange={(value) => setProfile({...profile, housingType: value})}
+                  value={profile?.housingType || 'house'}
+                  onValueChange={(value) => setProfile(profile ? {...profile, housingType: value} : null)}
                 >
                   <SelectTrigger id="housingType">
                     <SelectValue placeholder="Selecione o tipo de moradia" />
@@ -258,8 +256,8 @@ export default function Profile() {
                 <Label htmlFor="workSchedule">Horário de Trabalho</Label>
                 <Input
                   id="workSchedule"
-                  value={profile.workSchedule || ''}
-                  onChange={(e) => setProfile({...profile, workSchedule: e.target.value})}
+                  value={profile?.workSchedule || ''}
+                  onChange={(e) => setProfile(profile ? {...profile, workSchedule: e.target.value} : null)}
                   placeholder="Ex: Trabalho remoto, horário comercial, etc"
                 />
               </div>
@@ -269,17 +267,17 @@ export default function Profile() {
                   <Label htmlFor="hasChildren">Tem Crianças</Label>
                   <Switch
                     id="hasChildren"
-                    checked={profile.hasChildren || false}
+                    checked={profile?.hasChildren || false}
                     onCheckedChange={(checked) => {
-                      setProfile({...profile, hasChildren: checked})
+                      setProfile(profile ? {...profile, hasChildren: checked} : null)
                     }}
                   />
                 </div>
-                {profile.hasChildren && (
+                {profile?.hasChildren && (
                   <Input
                     placeholder="Idades das crianças"
-                    value={profile.childrenAges || ''}
-                    onChange={(e) => setProfile({...profile, childrenAges: e.target.value})}
+                    value={profile?.childrenAges || ''}
+                    onChange={(e) => setProfile(profile ? {...profile, childrenAges: e.target.value} : null)}
                     className="mt-2"
                   />
                 )}
@@ -290,8 +288,8 @@ export default function Profile() {
                   <Label htmlFor="hadPetsBefore">Já teve pets antes</Label>
                   <Switch
                     id="hadPetsBefore"
-                    checked={profile.hadPetsBefore || false}
-                    onCheckedChange={(checked) => setProfile({...profile, hadPetsBefore: checked})}
+                    checked={profile?.hadPetsBefore || false}
+                    onCheckedChange={(checked) => setProfile(profile ? {...profile, hadPetsBefore: checked} : null)}
                   />
                 </div>
               </div>
@@ -301,18 +299,18 @@ export default function Profile() {
                   <Label htmlFor="hasAllergies">Tem alergias relacionadas a animais</Label>
                   <Switch
                     id="hasAllergies"
-                    checked={profile.hasAllergies || false}
+                    checked={profile?.hasAllergies || false}
                     onCheckedChange={(checked) => {
-                      setProfile({...profile, hasAllergies: checked})
+                      setProfile(profile ? {...profile, hasAllergies: checked} : null)
                       if (!checked) setProfile({...profile, hasAllergies: false, allergiesDescription: ''})
                     }}
                   />
                 </div>
-                {profile.hasAllergies && (
+                {profile?.hasAllergies && (
                   <Textarea
                     placeholder="Descreva as alergias"
-                    value={profile.allergiesDescription || ''}
-                    onChange={(e) => setProfile({...profile, allergiesDescription: e.target.value})}
+                    value={profile?.allergiesDescription || ''}
+                    onChange={(e) => setProfile(profile ? {...profile, allergiesDescription: e.target.value} : null)}
                     className="mt-2"
                   />
                 )}

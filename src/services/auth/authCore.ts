@@ -178,9 +178,9 @@ export const signUp = async (data: SignupData): Promise<{ success: boolean; erro
       options: {
         emailRedirectTo: window.location.origin + '/email-confirmation',
         data: {
-          name: `${data.firstName} ${data.lastName}`,
-          firstName: data.firstName,
-          lastName: data.lastName
+          name: data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : data.name || '',
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
         }
       }
     });
@@ -206,8 +206,8 @@ export const signUp = async (data: SignupData): Promise<{ success: boolean; erro
     // 2. Create user profile via edge function to bypass RLS
     try {
       const profileData = {
-        firstName: data.firstName,
-        lastName: data.lastName,
+        firstName: data.firstName || '',
+        lastName: data.lastName || '',
         // Add any additional user data here
       };
       
@@ -216,7 +216,7 @@ export const signUp = async (data: SignupData): Promise<{ success: boolean; erro
         method: 'POST',
         body: { 
           operation: 'create-profile',
-          name: `${data.firstName} ${data.lastName}`,
+          name: data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : data.name || '',
         }
       });
       

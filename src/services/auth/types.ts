@@ -4,7 +4,9 @@ import { User } from '@supabase/supabase-js';
 export interface SignupData {
   email: string;
   password: string;
-  name: string;
+  name?: string;
+  firstName?: string; // Added firstName field
+  lastName?: string; // Added lastName field
   phone?: string;
   address?: {
     street?: string;
