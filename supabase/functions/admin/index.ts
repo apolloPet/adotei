@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -52,8 +51,41 @@ serve(async (req) => {
     });
 
     const { url, method } = req;
+    console.log(`Recebida requisição ${method} para ${url}`);
+    
+    // Parse request body for endpoint information if provided
+    let requestBody = {};
+    let endpoint = '';
+    
+    if (req.method !== 'GET') {
+      try {
+        requestBody = await req.json();
+        console.log("Request body:", requestBody);
+        if (requestBody && requestBody.endpoint) {
+          endpoint = requestBody.endpoint;
+          console.log(`Endpoint extraído do body: ${endpoint}`);
+        }
+      } catch (error) {
+        console.log("Nenhum body JSON válido na requisição ou requisição GET");
+      }
+    }
+
+    // Determine operation from URL or body
+    let operation = '';
+    
+    // Extract operation from URL path
     const urlParts = url.split('/');
-    const operation = urlParts[urlParts.length - 1];
+    if (urlParts.length > 0) {
+      operation = urlParts[urlParts.length - 1];
+    }
+    
+    // If endpoint is specified in body, override operation
+    if (endpoint === '/users') {
+      operation = 'users';
+      console.log("Operação definida para 'users' com base no endpoint do body");
+    }
+    
+    console.log(`Operação determinada: ${operation}`);
 
     // Get JWT token from request
     const authHeader = req.headers.get('Authorization');
@@ -114,66 +146,18 @@ serve(async (req) => {
     }
 
     // Process based on operation and method
-    if (method === "GET") {
+    if (method === "GET" || (method === "POST" && operation === "users")) {
       // Handle GET operations
-      if (operation === "admin-users") {
-        // Get all admin users
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('role', 'admin');
-        
-        if (error) {
-          return new Response(
-            JSON.stringify({ 
-              error: "Erro ao buscar administradores", 
-              details: error.message,
-              code: error.code 
-            }),
-            {
-              status: 500,
-              headers: corsHeaders,
-            }
-          );
-        }
-        
-        // Get user details for each admin
-        const adminUsers = await Promise.all(
-          data.map(async (role) => {
-            const { data: userData, error: userError } = await supabase.auth.admin.getUserById(role.user_id);
-            
-            if (userError || !userData.user) {
-              return null;
-            }
-            
-            return {
-              id: userData.user.id,
-              email: userData.user.email,
-              role: role.role,
-              permissions: role.permissions || {
-                manageAnimals: true,
-                approveAdoptions: true,
-                manageSettings: false,
-                manageAdmins: false
-              }
-            };
-          })
-        );
-        
-        return new Response(
-          JSON.stringify(adminUsers.filter(Boolean)),
-          {
-            status: 200,
-            headers: corsHeaders,
-          }
-        );
-      } else if (operation === "users") {
+      if (operation === "users") {
+        console.log("Processando solicitação para listar todos os usuários");
         // Get all users
         const { data, error } = await supabase
           .from('users')
-          .select('*');
+          .select('*')
+          .order('created_at', { ascending: false });
         
         if (error) {
+          console.error("Erro ao buscar usuários:", error);
           return new Response(
             JSON.stringify({ 
               error: "Erro ao buscar usuários", 
@@ -187,72 +171,9 @@ serve(async (req) => {
           );
         }
         
+        console.log(`Retornando ${data?.length || 0} usuários`);
         return new Response(
-          JSON.stringify(data),
-          {
-            status: 200,
-            headers: corsHeaders,
-          }
-        );
-      } else if (operation === "system-parameters") {
-        // Get query parameters for filtering
-        const url = new URL(req.url);
-        const category = url.searchParams.get('category');
-        
-        // Build query
-        let query = supabase.from('system_parameters').select('*');
-        
-        if (category) {
-          query = query.eq('category', category);
-        }
-        
-        const { data, error } = await query;
-        
-        if (error) {
-          return new Response(
-            JSON.stringify({ 
-              error: "Erro ao buscar parâmetros do sistema", 
-              details: error.message,
-              code: error.code 
-            }),
-            {
-              status: 500,
-              headers: corsHeaders,
-            }
-          );
-        }
-        
-        return new Response(
-          JSON.stringify(data),
-          {
-            status: 200,
-            headers: corsHeaders,
-          }
-        );
-      } else if (operation === "user-metrics") {
-        // Get user metrics for dashboard
-        const { data, error } = await supabase
-          .from('user_metrics')
-          .select('*')
-          .order('date', { ascending: false })
-          .limit(30);
-        
-        if (error) {
-          return new Response(
-            JSON.stringify({ 
-              error: "Erro ao buscar métricas de usuários", 
-              details: error.message,
-              code: error.code 
-            }),
-            {
-              status: 500,
-              headers: corsHeaders,
-            }
-          );
-        }
-        
-        return new Response(
-          JSON.stringify(data),
+          JSON.stringify(data || []),
           {
             status: 200,
             headers: corsHeaders,
@@ -663,7 +584,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: "Operação não suportada", 
-        details: "A operação solicitada não é suportada por esta API.",
+        details: `A operação solicitada "${operation}" não é suportada por esta API.`,
         code: "UNSUPPORTED_OPERATION" 
       }),
       {

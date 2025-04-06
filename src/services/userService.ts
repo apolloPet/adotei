@@ -28,18 +28,18 @@ export const fetchUsers = async (): Promise<User[]> => {
       .order('created_at', { ascending: false });
     
     if (error) {
-      console.error('Erro ao buscar usuários:', error);
+      console.error('Erro ao buscar usuários diretamente:', error);
       handleSupabaseError(error, 'Erro ao buscar usuários');
       
       // If we can't get users directly, try using edge function
       try {
         console.log('Tentando buscar usuários via edge function...');
         const { data: functionData, error: functionError } = await supabase.functions.invoke('admin', {
-          method: 'GET',
+          method: 'POST', // Usando POST para enviar dados no body
           headers: {
             Authorization: `Bearer ${sessionData.session.access_token}`,
           },
-          body: { endpoint: '/users' } // Pass the endpoint in the body instead of using path
+          body: { endpoint: '/users' } // Enviando o endpoint no body
         });
         
         if (functionError) {
