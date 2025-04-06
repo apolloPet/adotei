@@ -1,60 +1,10 @@
 
-import { User } from '@/components/admin/users/types';
+import { User } from "@/components/admin/users/types";
 
+// Interface para o usuário como armazenado no banco de dados
 export interface DbUser {
   id: string;
   auth_id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  address: string | null;
-  city: string | null;
-  state: string | null;
-  zip: string | null;
-  housing_type: string | null;
-  has_children: boolean | null;
-  children_ages: string | null;
-  had_pets_before: boolean | null;
-  has_allergies: boolean | null;
-  allergies_description: string | null;
-  work_schedule: string | null;
-  created_at: string;
-  updated_at: string;
-  avatar_url?: string | null;
-}
-
-export interface DbPet {
-  id: string;
-  name: string;
-  species: 'dog' | 'cat' | 'other';
-  breed: string;
-  age: number;
-  age_unit: 'days' | 'months' | 'years';
-  gender: 'male' | 'female';
-  size: 'small' | 'medium' | 'large';
-  weight: number;
-  description: string;
-  location: string;
-  shelter_id: string;
-  shelter_time: string | null;
-  created_at: string;
-  updated_at: string;
-  traits: string[] | null;
-  medical_info?: string | null;
-  special_needs: boolean;
-  health_issues: boolean;
-}
-
-export interface DbPetImage {
-  id: string;
-  pet_id: string;
-  url: string;
-  is_primary: boolean;
-  created_at: string;
-}
-
-export interface DbShelter {
-  id: string;
   name: string;
   email: string;
   phone: string;
@@ -62,61 +12,60 @@ export interface DbShelter {
   city: string;
   state: string;
   zip: string;
+  housing_type: string;
+  has_children: boolean;
+  children_ages?: string;
+  had_pets_before: boolean;
+  has_allergies: boolean;
+  allergies_description?: string;
+  work_schedule: string;
   created_at: string;
-  updated_at: string;
-  logo_url?: string | null;
-  description?: string | null;
+  updated_at?: string;
 }
 
+// Converter de formato DB para o formato da UI
 export const dbUserToUser = (dbUser: DbUser): User => {
   return {
     id: dbUser.id,
-    name: dbUser.name,
-    email: dbUser.email,
-    phone: dbUser.phone || '',
+    name: dbUser.name || "",
+    email: dbUser.email || "",
+    phone: dbUser.phone || "",
     registrationDate: dbUser.created_at,
     address: {
-      cep: dbUser.zip || '',
-      street: dbUser.address || '',
-      number: '', // Not stored separately in the database
-      neighborhood: '', // Not stored separately in the database
-      city: dbUser.city || '',
-      state: dbUser.state || ''
+      street: dbUser.address || "",
+      city: dbUser.city || "",
+      state: dbUser.state || "",
+      neighborhood: "", // Este campo não existe no banco
+      cep: dbUser.zip || "",
+      number: "", // Este campo não existe no banco
     },
-    housingType: dbUser.housing_type as any || 'other',
+    housingType: dbUser.housing_type as "apartment" | "house" | "other",
     hasChildren: dbUser.has_children || false,
-    childrenAges: dbUser.children_ages || '',
+    childrenAges: dbUser.children_ages,
     hadPetsBefore: dbUser.had_pets_before || false,
     hasAllergies: dbUser.has_allergies || false,
-    allergiesDescription: dbUser.allergies_description || '',
-    workSchedule: dbUser.work_schedule || ''
+    allergiesDescription: dbUser.allergies_description,
+    workSchedule: dbUser.work_schedule || "",
   };
 };
 
-export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []): any => {
+// Converter de formato UI para o formato DB
+export const userToDbUser = (user: Partial<User>, authId?: string): Partial<DbUser> => {
   return {
-    id: dbPet.id,
-    name: dbPet.name,
-    species: dbPet.species,
-    breed: dbPet.breed,
-    age: `${dbPet.age} ${dbPet.age_unit === 'years' ? 'anos' : 
-          dbPet.age_unit === 'months' ? 'meses' : 'dias'}`,
-    gender: dbPet.gender,
-    size: dbPet.size,
-    weight: dbPet.weight,
-    description: dbPet.description,
-    location: dbPet.location,
-    shelterTime: dbPet.shelter_time || '',
-    traits: dbPet.traits || [],
-    specialNeeds: dbPet.special_needs,
-    healthIssues: dbPet.health_issues,
-    medicalInfo: dbPet.medical_info || '',
-    images: images.map(img => ({ 
-      id: img.id, 
-      url: img.url, 
-      isPrimary: img.is_primary 
-    })),
-    mainImage: images.find(img => img.is_primary)?.url || 
-               (images.length > 0 ? images[0].url : '')
+    ...(authId && { auth_id: authId }),
+    ...(user.name && { name: user.name }),
+    ...(user.email && { email: user.email }),
+    ...(user.phone && { phone: user.phone }),
+    ...(user.address?.street && { address: user.address.street }),
+    ...(user.address?.city && { city: user.address.city }),
+    ...(user.address?.state && { state: user.address.state }),
+    ...(user.address?.cep && { zip: user.address.cep }),
+    ...(user.housingType && { housing_type: user.housingType }),
+    ...(user.hasChildren !== undefined && { has_children: user.hasChildren }),
+    ...(user.childrenAges && { children_ages: user.childrenAges }),
+    ...(user.hadPetsBefore !== undefined && { had_pets_before: user.hadPetsBefore }),
+    ...(user.hasAllergies !== undefined && { has_allergies: user.hasAllergies }),
+    ...(user.allergiesDescription && { allergies_description: user.allergiesDescription }),
+    ...(user.workSchedule && { work_schedule: user.workSchedule }),
   };
 };

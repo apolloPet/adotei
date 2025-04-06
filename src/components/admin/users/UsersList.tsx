@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -55,7 +56,12 @@ const UsersList = () => {
         console.log('Iniciando busca de usuários...');
         const data = await fetchUsers();
         console.log('Usuários retornados:', data);
-        setUsers(data);
+        if (data && data.length > 0) {
+          setUsers(data);
+          console.log('Detalhes do primeiro usuário:', data[0]);
+        } else {
+          console.warn('Nenhum usuário encontrado ou array vazio retornado');
+        }
       } catch (err) {
         console.error('Error fetching users:', err);
         setError('Erro ao carregar usuários. Por favor, tente novamente mais tarde.');
@@ -82,13 +88,16 @@ const UsersList = () => {
   }, [filters]);
 
   // Get unique options for filters
-  const cityOptions = Array.from(new Set(users.map(user => 
-    user.address?.city || ''
-  ))).filter(Boolean);
+  const cityOptions = Array.from(new Set(users
+    .map(user => user.address?.city || '')
+    .filter(Boolean)));
   
-  const neighborhoodOptions = Array.from(new Set(users.map(user => 
-    user.address?.neighborhood || ''
-  ))).filter(Boolean);
+  const neighborhoodOptions = Array.from(new Set(users
+    .map(user => user.address?.neighborhood || '')
+    .filter(Boolean)));
+
+  console.log('Opções de cidades disponíveis:', cityOptions);
+  console.log('Opções de bairros disponíveis:', neighborhoodOptions);
 
   // Filter users based on search term and filters
   const filteredUsers = users.filter(user => {

@@ -58,6 +58,7 @@ serve(async (req) => {
     try {
       if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
         requestBody = await req.json();
+        console.log("Request body:", requestBody);
       }
     } catch (e) {
       console.error("Error parsing request body:", e);
@@ -189,6 +190,25 @@ serve(async (req) => {
           );
         }
         
+        // Criando um log para ver os campos que estão sendo enviados
+        console.log("Campos para criação de perfil:", {
+          auth_id: userId,
+          email: requestBody.email || '',
+          name: requestBody.name || '',
+          phone: requestBody.phone || '',
+          address: requestBody.address || '',
+          city: requestBody.city || '',
+          state: requestBody.state || '',
+          zip: requestBody.zip || '',
+          housing_type: requestBody.housing_type || 'house',
+          has_children: requestBody.has_children || false,
+          children_ages: requestBody.children_ages || '',
+          had_pets_before: requestBody.had_pets_before || false,
+          has_allergies: requestBody.has_allergies || false,
+          allergies_description: requestBody.allergies_description || '',
+          work_schedule: requestBody.work_schedule || ''
+        });
+        
         // Create a new profile using the admin client that bypasses RLS
         const { data: newProfile, error: insertError } = await supabaseAdmin
           .from('users')
@@ -202,10 +222,10 @@ serve(async (req) => {
             state: requestBody.state || '',
             zip: requestBody.zip || '',
             housing_type: requestBody.housing_type || 'house',
-            has_children: requestBody.has_children || false,
+            has_children: requestBody.has_children !== undefined ? requestBody.has_children : false,
             children_ages: requestBody.children_ages || '',
-            had_pets_before: requestBody.had_pets_before || false,
-            has_allergies: requestBody.has_allergies || false,
+            had_pets_before: requestBody.had_pets_before !== undefined ? requestBody.had_pets_before : false,
+            has_allergies: requestBody.has_allergies !== undefined ? requestBody.has_allergies : false,
             allergies_description: requestBody.allergies_description || '',
             work_schedule: requestBody.work_schedule || ''
           })
@@ -216,6 +236,8 @@ serve(async (req) => {
           console.error("Error creating user profile:", insertError);
           throw insertError;
         }
+        
+        console.log("Perfil criado com sucesso:", newProfile);
         
         return new Response(
           JSON.stringify({ 

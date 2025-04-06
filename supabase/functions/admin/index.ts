@@ -57,17 +57,17 @@ serve(async (req) => {
     let requestBody = {};
     let endpoint = '';
     
-    if (req.method !== 'GET') {
-      try {
+    try {
+      if (req.method !== 'GET') {
         requestBody = await req.json();
         console.log("Request body:", requestBody);
         if (requestBody && requestBody.endpoint) {
           endpoint = requestBody.endpoint;
           console.log(`Endpoint extraído do body: ${endpoint}`);
         }
-      } catch (error) {
-        console.log("Nenhum body JSON válido na requisição ou requisição GET");
       }
+    } catch (error) {
+      console.log("Nenhum body JSON válido na requisição ou requisição GET");
     }
 
     // Determine operation from URL or body
@@ -77,15 +77,26 @@ serve(async (req) => {
     const urlParts = url.split('/');
     if (urlParts.length > 0) {
       operation = urlParts[urlParts.length - 1];
+      console.log(`Operação extraída da URL: ${operation}`);
     }
     
     // If endpoint is specified in body, override operation
     if (endpoint === '/users') {
       operation = 'users';
       console.log("Operação definida para 'users' com base no endpoint do body");
+    } else if (endpoint) {
+      // Tentar extrair operação do endpoint
+      const endpointParts = endpoint.split('/');
+      if (endpointParts.length > 0) {
+        const lastPart = endpointParts[endpointParts.length - 1];
+        if (lastPart) {
+          operation = lastPart;
+          console.log(`Operação extraída do endpoint: ${operation}`);
+        }
+      }
     }
     
-    console.log(`Operação determinada: ${operation}`);
+    console.log(`Operação determinada final: ${operation}`);
 
     // Get JWT token from request
     const authHeader = req.headers.get('Authorization');
@@ -140,6 +151,40 @@ serve(async (req) => {
         }),
         {
           status: 403,
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    // Verificar se a operação é 'users' (caso especial)
+    if (operation === "users" || endpoint === '/users') {
+      console.log("Processando solicitação para listar todos os usuários");
+      // Get all users
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error("Erro ao buscar usuários:", error);
+        return new Response(
+          JSON.stringify({ 
+            error: "Erro ao buscar usuários", 
+            details: error.message,
+            code: error.code 
+          }),
+          {
+            status: 500,
+            headers: corsHeaders,
+          }
+        );
+      }
+      
+      console.log(`Retornando ${data?.length || 0} usuários`);
+      return new Response(
+        JSON.stringify(data || []),
+        {
+          status: 200,
           headers: corsHeaders,
         }
       );
