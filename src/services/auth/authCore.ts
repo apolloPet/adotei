@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
@@ -211,12 +212,15 @@ export const signUp = async (data: SignupData): Promise<{ success: boolean; erro
         // Add any additional user data here
       };
       
-      // Wait for the profile to be created
+      // Create profile using service role via edge function
+      // Note: We don't wait for a session since we're using the service role
       const { data: profileResponse, error: profileError } = await supabase.functions.invoke('user-profile', {
         method: 'POST',
         body: { 
           operation: 'create-profile',
+          user_id: authData.user.id, // Pass the user ID explicitly
           name: data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : data.name || '',
+          email: data.email // Pass email explicitly
         }
       });
       

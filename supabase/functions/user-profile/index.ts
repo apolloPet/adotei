@@ -53,57 +53,6 @@ serve(async (req) => {
 
     const { method, headers } = req;
     
-    // Get JWT token from request
-    const authHeader = headers.get('Authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return new Response(
-        JSON.stringify({ 
-          error: "Unauthorized", 
-          details: "Authentication is required to access this resource.",
-          code: "UNAUTHORIZED" 
-        }),
-        {
-          status: 401,
-          headers: corsHeaders,
-        }
-      );
-    }
-
-    // Extract the JWT
-    const jwt = authHeader.substring(7);
-    
-    // Verify the JWT and get user information - using standard client
-    const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") || "", {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false,
-      },
-      global: {
-        headers: {
-          Authorization: `Bearer ${jwt}`,
-        },
-      },
-    });
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      console.error("Authentication error:", authError);
-      return new Response(
-        JSON.stringify({ 
-          error: "Invalid token", 
-          details: "Your session is invalid or expired. Please log in again.",
-          code: "INVALID_TOKEN" 
-        }),
-        {
-          status: 401,
-          headers: corsHeaders,
-        }
-      );
-    }
-
-    console.log("Authenticated user:", user.id);
-
     // Parse the request body
     let requestBody = {};
     try {
@@ -125,17 +74,70 @@ serve(async (req) => {
       );
     }
 
+    // Check authentication - either from request or from request body for signup flow
+    let userId: string | null = null;
+    
+    // Try to get userId from the auth header
+    const authHeader = headers.get('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      // Extract the JWT
+      const jwt = authHeader.substring(7);
+      
+      // Verify the JWT and get user information - using standard client
+      const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") || "", {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+        global: {
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+          },
+        },
+      });
+      
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error("Authentication error:", authError);
+      } else if (user) {
+        userId = user.id;
+        console.log("Authenticated user from token:", userId);
+      }
+    }
+    
+    // For profile creation during signup, get user ID from request body
+    if (!userId && requestBody.operation === 'create-profile' && requestBody.user_id) {
+      userId = requestBody.user_id;
+      console.log("Using user ID from request body:", userId);
+    }
+
     // Determine the operation based on the method and path
     if (method === "POST" && requestBody.operation === "create-profile") {
       // Creating a new user profile
-      console.log("Creating user profile for:", user.id);
+      if (!userId) {
+        console.error("No user ID available for profile creation");
+        return new Response(
+          JSON.stringify({ 
+            error: "Authentication required", 
+            details: "No user ID available for profile creation",
+            code: "NO_USER_ID" 
+          }),
+          {
+            status: 401,
+            headers: corsHeaders,
+          }
+        );
+      }
+      
+      console.log("Creating user profile for:", userId);
       
       try {
         // Check if profile already exists
         const { data: existingProfile, error: profileCheckError } = await supabaseAdmin
           .from('users')
           .select('id')
-          .eq('auth_id', user.id)
+          .eq('auth_id', userId)
           .single();
           
         if (profileCheckError && profileCheckError.code !== 'PGRST116') {
@@ -144,13 +146,13 @@ serve(async (req) => {
         }
         
         if (existingProfile) {
-          console.log("Profile already exists for user:", user.id);
+          console.log("Profile already exists for user:", userId);
           // Update existing profile instead
           const { data: updatedProfile, error: updateError } = await supabaseAdmin
             .from('users')
             .update({
-              name: requestBody.name || user.user_metadata?.name || '',
-              email: user.email,
+              name: requestBody.name || '',
+              email: requestBody.email || '',
               phone: requestBody.phone || '',
               address: requestBody.address || '',
               city: requestBody.city || '',
@@ -165,7 +167,7 @@ serve(async (req) => {
               work_schedule: requestBody.work_schedule || '',
               updated_at: new Date()
             })
-            .eq('auth_id', user.id)
+            .eq('auth_id', userId)
             .select()
             .single();
             
@@ -191,9 +193,9 @@ serve(async (req) => {
         const { data: newProfile, error: insertError } = await supabaseAdmin
           .from('users')
           .insert({
-            auth_id: user.id,
-            email: user.email,
-            name: requestBody.name || user.user_metadata?.name || '',
+            auth_id: userId,
+            email: requestBody.email || '',
+            name: requestBody.name || '',
             phone: requestBody.phone || '',
             address: requestBody.address || '',
             city: requestBody.city || '',
@@ -242,21 +244,35 @@ serve(async (req) => {
       }
     } else if (method === "GET") {
       // Fetch user profile
+      if (!userId) {
+        return new Response(
+          JSON.stringify({ 
+            error: "Unauthorized", 
+            details: "Authentication is required to access this resource.",
+            code: "UNAUTHORIZED" 
+          }),
+          {
+            status: 401,
+            headers: corsHeaders,
+          }
+        );
+      }
+      
       try {
-        console.log("Fetching profile for user:", user.id);
+        console.log("Fetching profile for user:", userId);
         const { data: userProfile, error: profileError } = await supabaseAdmin
           .from('users')
           .select('*')
-          .eq('auth_id', user.id)
+          .eq('auth_id', userId)
           .single();
           
         if (profileError) {
           if (profileError.code === 'PGRST116') {
             return new Response(
               JSON.stringify({
-                id: user.id,
-                email: user.email,
-                name: user.user_metadata?.name || '',
+                id: userId,
+                email: requestBody.email || '',
+                name: requestBody.name || '',
                 message: "Complete profile not created yet"
               }),
               {
