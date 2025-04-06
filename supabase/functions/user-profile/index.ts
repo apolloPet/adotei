@@ -166,6 +166,7 @@ serve(async (req) => {
               has_allergies: requestBody.has_allergies !== undefined ? requestBody.has_allergies : false,
               allergies_description: requestBody.allergies_description || '',
               work_schedule: requestBody.work_schedule || '',
+              avatar_url: requestBody.avatar_url || '',
               updated_at: new Date()
             })
             .eq('auth_id', userId)

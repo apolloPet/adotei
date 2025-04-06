@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { UserProfile } from '@/types/user';
 import { toast } from '@/hooks/use-sonner';
@@ -55,6 +56,7 @@ export const getProfile = async (): Promise<UserProfile | null> => {
         workSchedule: data.work_schedule || ''
       };
       
+      console.log('Profile fetched successfully:', profile);
       return profile;
     } catch (error) {
       console.error('Error in edge function call:', error);
@@ -72,7 +74,7 @@ export const getProfile = async (): Promise<UserProfile | null> => {
  */
 export const updateProfile = async (profileData: Partial<UserProfile>): Promise<boolean> => {
   try {
-    console.log('Updating profile...');
+    console.log('Updating profile with data:', profileData);
     
     // Get current user to verify authentication
     const { data: userData } = await supabase.auth.getUser();
@@ -90,11 +92,13 @@ export const updateProfile = async (profileData: Partial<UserProfile>): Promise<
     const payload = {
       operation: 'create-profile',
       name,
+      email: profileData.email,
       phone: profileData.phone,
       address: profileData.address,
       city: profileData.city,
       state: profileData.state,
       zip: profileData.zip,
+      avatar_url: profileData.avatarUrl,
       housing_type: profileData.housingType,
       has_children: profileData.hasChildren,
       children_ages: profileData.childrenAges,
@@ -103,6 +107,8 @@ export const updateProfile = async (profileData: Partial<UserProfile>): Promise<
       allergies_description: profileData.allergiesDescription,
       work_schedule: profileData.workSchedule
     };
+    
+    console.log('Sending payload to edge function:', payload);
     
     // Call the user-profile edge function
     const { data, error } = await supabase.functions.invoke('user-profile', {
@@ -146,11 +152,13 @@ export const createProfile = async (profileData: Partial<UserProfile>): Promise<
     const payload = {
       operation: 'create-profile',
       name,
+      email: profileData.email || '',
       phone: profileData.phone || '',
       address: profileData.address || '',
       city: profileData.city || '',
       state: profileData.state || '',
       zip: profileData.zip || '',
+      avatar_url: profileData.avatarUrl || '',
       housing_type: profileData.housingType || 'house',
       has_children: profileData.hasChildren || false,
       children_ages: profileData.childrenAges || '',
