@@ -44,6 +44,9 @@ const PetDetails = () => {
     return <PetNotFound />;
   }
   
+  // Convert PetImage[] to string[] for the gallery component
+  const imageUrls = pet.images.map(img => img.url);
+  
   return (
     <div className="container mx-auto p-4 pb-16">
       <div className="mb-4">
@@ -56,7 +59,7 @@ const PetDetails = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Image gallery */}
         <PetImageGallery 
-          images={pet.images} 
+          images={imageUrls} 
           petName={pet.name} 
         />
         

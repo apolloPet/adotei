@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PetCard from "@/components/PetCard";
 import NoResults from "@/components/browse/NoResults";
-import { Pet, PetInfo } from "@/components/pet/types";
+import { Pet, PetInfo, PetImage } from "@/components/pet/types";
 
 interface PetBrowserProps {
   pets: Pet[];
@@ -20,7 +20,8 @@ const PetBrowser = ({ pets, onSwipe, onReset }: PetBrowserProps) => {
     return {
       id: pet.id,
       name: pet.name,
-      images: pet.images,
+      // Convert PetImage[] to string[] by extracting URLs
+      images: pet.images.map(img => img.url),
       age: parseInt(pet.age) || 0,
       gender: pet.gender,
       size: pet.size,

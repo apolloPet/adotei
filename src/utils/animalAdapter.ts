@@ -1,30 +1,37 @@
 
 import { Animal } from "@/services/animalService";
-import { Pet } from "@/components/pet/types";
+import { Pet, PetImage } from "@/components/pet/types";
 
 /**
  * Converte um animal do modelo de banco de dados para o modelo de interface Pet
  */
 export const animalToPet = (animal: Animal): Pet => {
   // Process images, filtering out blob URLs and providing fallbacks
-  const processedImages = (animal.fotos || []).filter(url => 
+  const processedImageUrls = (animal.fotos || []).filter(url => 
     url && !url.startsWith('blob:')
   );
   
   // Add fotoPrincipal if it's valid and not already in the list
   if (animal.fotoPrincipal && !animal.fotoPrincipal.startsWith('blob:') && 
-      !processedImages.includes(animal.fotoPrincipal)) {
-    processedImages.unshift(animal.fotoPrincipal);
+      !processedImageUrls.includes(animal.fotoPrincipal)) {
+    processedImageUrls.unshift(animal.fotoPrincipal);
   }
   
   // If no valid images, use fallback image
-  const fallbackImage = '/placeholder.svg';
-  const images = processedImages.length > 0 ? processedImages : [fallbackImage];
+  const fallbackImageUrl = '/placeholder.svg';
+  const imageUrls = processedImageUrls.length > 0 ? processedImageUrls : [fallbackImageUrl];
+  
+  // Convert string URLs to PetImage objects
+  const petImages: PetImage[] = imageUrls.map((url, index) => ({
+    id: `${animal.id}-image-${index}`,
+    url: url,
+    isPrimary: index === 0
+  }));
 
   return {
     id: animal.id,
     name: animal.nome,
-    images: images,
+    images: petImages,
     age: animal.idade.toString(),
     gender: animal.sexo === 'macho' ? 'male' : 'female',
     size: animal.porte === 'pequeno' ? 'small' : 
@@ -40,6 +47,7 @@ export const animalToPet = (animal: Animal): Pet => {
     specialNeeds: false,
     healthIssues: false,
     shelter: "PetMatch",
-    traits: animal.castrado ? ["castrado"] : []
+    traits: animal.castrado ? ["castrado"] : [],
+    medicalInfo: "" // Adding the required medicalInfo property
   };
 };
