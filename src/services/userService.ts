@@ -36,10 +36,10 @@ export const fetchUsers = async (): Promise<User[]> => {
         console.log('Tentando buscar usuários via edge function...');
         const { data: functionData, error: functionError } = await supabase.functions.invoke('admin', {
           method: 'GET',
-          path: '/users',
           headers: {
             Authorization: `Bearer ${sessionData.session.access_token}`,
-          }
+          },
+          body: { endpoint: '/users' } // Pass the endpoint in the body instead of using path
         });
         
         if (functionError) {
