@@ -3,7 +3,7 @@ export interface UserProfile {
   id: string;
   firstName?: string;
   lastName?: string;
-  email?: string; // Added email field
+  email: string; // Changed from optional to required
   avatarUrl?: string;
   address?: string;
   city?: string;

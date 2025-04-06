@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -53,8 +52,9 @@ const UsersList = () => {
       try {
         setIsLoading(true);
         setError(null);
+        console.log('Iniciando busca de usuários...');
         const data = await fetchUsers();
-        console.log('Fetched users:', data);
+        console.log('Usuários retornados:', data);
         setUsers(data);
       } catch (err) {
         console.error('Error fetching users:', err);
@@ -94,8 +94,8 @@ const UsersList = () => {
   const filteredUsers = users.filter(user => {
     // Search term filter
     const matchesSearch = 
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (user.phone && user.phone.includes(searchTerm)) ||
       (user.address?.neighborhood && user.address.neighborhood.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (user.address?.city && user.address.city.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -248,6 +248,11 @@ const UsersList = () => {
             >
               Tentar novamente
             </Button>
+          </div>
+        ) : users.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>Nenhum usuário encontrado no banco de dados.</p>
+            <p className="text-sm mt-2">Verifique se existem usuários cadastrados ou se você tem permissão para visualizá-los.</p>
           </div>
         ) : (
           <>

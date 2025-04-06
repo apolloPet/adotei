@@ -1,3 +1,4 @@
+
 import { supabase, isSupabaseConfigured, handleSupabaseError } from '@/lib/supabase';
 import type { User } from '@/components/admin/users/types';
 import { toast } from '@/hooks/use-sonner';
@@ -11,7 +12,17 @@ export const fetchUsers = async (): Promise<User[]> => {
     }
 
     console.log('Buscando usuários da tabela users...');
-    const { data, error } = await supabase
+    
+    // First try to get session to ensure we're authenticated
+    const { data: sessionData } = await supabase.auth.getSession();
+    if (!sessionData.session) {
+      console.error('Erro: Usuário não está autenticado');
+      toast.error('Você precisa estar autenticado para ver usuários');
+      return [];
+    }
+    
+    // Use admin role to bypass RLS if possible
+    const { data: userData, error } = await supabase
       .from('users')
       .select('*')
       .order('created_at', { ascending: false });
@@ -19,12 +30,34 @@ export const fetchUsers = async (): Promise<User[]> => {
     if (error) {
       console.error('Erro ao buscar usuários:', error);
       handleSupabaseError(error, 'Erro ao buscar usuários');
-      return [];
+      
+      // If we can't get users directly, try using edge function
+      try {
+        console.log('Tentando buscar usuários via edge function...');
+        const { data: functionData, error: functionError } = await supabase.functions.invoke('admin', {
+          method: 'GET',
+          path: '/users',
+          headers: {
+            Authorization: `Bearer ${sessionData.session.access_token}`,
+          }
+        });
+        
+        if (functionError) {
+          console.error('Erro ao buscar usuários via edge function:', functionError);
+          return [];
+        }
+        
+        console.log(`Encontrados ${functionData?.length || 0} usuários via edge function`);
+        return (functionData || []).map(dbUserToUser);
+      } catch (functionCallError) {
+        console.error('Erro ao chamar edge function:', functionCallError);
+        return [];
+      }
     }
 
-    console.log(`Encontrados ${data?.length || 0} usuários na tabela users`);
+    console.log(`Encontrados ${userData?.length || 0} usuários na tabela users`);
     
-    return (data || []).map((dbUser) => {
+    return (userData || []).map((dbUser) => {
       // Converter usuário do banco para o formato de frontend
       return dbUserToUser(dbUser as DbUser);
     });

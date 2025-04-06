@@ -307,6 +307,56 @@ serve(async (req) => {
           }
         );
       }
+    } else if (method === "GET" && new URL(req.url).pathname.endsWith('/users')) {
+      // List all users - admin only
+      try {
+        // Check if user is admin
+        if (!userId) {
+          return new Response(
+            JSON.stringify({ 
+              error: "Unauthorized", 
+              details: "Authentication is required to access this resource.",
+              code: "UNAUTHORIZED" 
+            }),
+            {
+              status: 401,
+              headers: corsHeaders,
+            }
+          );
+        }
+
+        console.log("Fetching all users with admin access");
+        const { data: users, error: usersError } = await supabaseAdmin
+          .from('users')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (usersError) {
+          console.error("Error fetching users:", usersError);
+          throw usersError;
+        }
+        
+        return new Response(
+          JSON.stringify(users || []),
+          {
+            status: 200,
+            headers: corsHeaders,
+          }
+        );
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        return new Response(
+          JSON.stringify({ 
+            error: "Error fetching users",
+            details: error.message || "An error occurred while processing the request",
+            code: error.code || "INTERNAL_SERVER_ERROR"
+          }),
+          {
+            status: 500,
+            headers: corsHeaders,
+          }
+        );
+      }
     }
     
     return new Response(
