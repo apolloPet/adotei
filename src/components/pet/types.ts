@@ -26,15 +26,24 @@ export interface PetCardProps {
   onSwipe: (direction: string, id: string) => void;
 }
 
+// Image interface for the Pet type
+export interface PetImage {
+  id: string;
+  url: string;
+  isPrimary: boolean;
+}
+
 // This interface was previously separate but was causing type conflicts
 // Now Pet extends PetInfo to make them compatible
-export interface Pet extends Omit<PetInfo, 'age' | 'type'> {
+export interface Pet extends Omit<PetInfo, 'age' | 'type' | 'images'> {
   age: string; // In Pet it's a string, in PetInfo it's a number
   species: 'dog' | 'cat' | 'other'; // This replaces 'type' in PetInfo
   shelter: string;
   traits: string[];
   weight: number; // Adding required properties to match error messages
   shelterTime: string; // Adding required properties to match error messages
+  medicalInfo: string; // Added this property that was missing
+  images: PetImage[]; // Changed from string[] to PetImage[]
 }
 
 // Helper function for pet colors
