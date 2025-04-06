@@ -134,48 +134,79 @@ serve(async (req) => {
       console.log("Creating user profile for:", userId);
       
       try {
-        // Check if profile already exists
+        // Use more efficient query with less data and optimized for the index
         const { data: existingProfile, error: profileCheckError } = await supabaseAdmin
           .from('users')
           .select('id')
           .eq('auth_id', userId)
-          .single();
+          .limit(1)
+          .maybeSingle();
           
         if (profileCheckError && profileCheckError.code !== 'PGRST116') {
           console.error("Error checking for existing profile:", profileCheckError);
           throw profileCheckError;
         }
         
+        // Ensure boolean fields are actually booleans
+        const has_children = typeof requestBody.has_children === 'boolean' 
+          ? requestBody.has_children 
+          : requestBody.has_children === 'true' || requestBody.has_children === true;
+          
+        const had_pets_before = typeof requestBody.had_pets_before === 'boolean' 
+          ? requestBody.had_pets_before 
+          : requestBody.had_pets_before === 'true' || requestBody.had_pets_before === true;
+          
+        const has_allergies = typeof requestBody.has_allergies === 'boolean' 
+          ? requestBody.has_allergies 
+          : requestBody.has_allergies === 'true' || requestBody.has_allergies === true;
+
+        // Ensure avatar_url is a string
+        const avatar_url = requestBody.avatar_url !== undefined ? String(requestBody.avatar_url) : '';
+        
         if (existingProfile) {
           console.log("Profile already exists for user:", userId);
           // Update existing profile instead
+          const updatePayload = {
+            name: requestBody.name || '',
+            email: requestBody.email || '',
+            phone: requestBody.phone || '',
+            address: requestBody.address || '',
+            city: requestBody.city || '',
+            state: requestBody.state || '',
+            zip: requestBody.zip || '',
+            housing_type: requestBody.housing_type || 'house',
+            has_children: has_children,
+            children_ages: requestBody.children_ages || '',
+            had_pets_before: had_pets_before,
+            has_allergies: has_allergies,
+            allergies_description: requestBody.allergies_description || '',
+            work_schedule: requestBody.work_schedule || '',
+            avatar_url: avatar_url,
+            updated_at: new Date()
+          };
+          
+          console.log("Updating profile with data:", updatePayload);
+          
           const { data: updatedProfile, error: updateError } = await supabaseAdmin
             .from('users')
-            .update({
-              name: requestBody.name || '',
-              email: requestBody.email || '',
-              phone: requestBody.phone || '',
-              address: requestBody.address || '',
-              city: requestBody.city || '',
-              state: requestBody.state || '',
-              zip: requestBody.zip || '',
-              housing_type: requestBody.housing_type || 'house',
-              has_children: requestBody.has_children !== undefined ? requestBody.has_children : false,
-              children_ages: requestBody.children_ages || '',
-              had_pets_before: requestBody.had_pets_before !== undefined ? requestBody.had_pets_before : false,
-              has_allergies: requestBody.has_allergies !== undefined ? requestBody.has_allergies : false,
-              allergies_description: requestBody.allergies_description || '',
-              work_schedule: requestBody.work_schedule || '',
-              avatar_url: requestBody.avatar_url || '',
-              updated_at: new Date()
-            })
+            .update(updatePayload)
             .eq('auth_id', userId)
             .select()
             .single();
             
           if (updateError) {
             console.error("Error updating user profile:", updateError);
-            throw updateError;
+            return new Response(
+              JSON.stringify({ 
+                error: "Error updating profile",
+                details: updateError.message || "Failed to update profile",
+                code: updateError.code || "UPDATE_ERROR"
+              }),
+              {
+                status: 500,
+                headers: corsHeaders,
+              }
+            );
           }
           
           return new Response(
@@ -191,8 +222,8 @@ serve(async (req) => {
           );
         }
         
-        // Debug logging for profile creation
-        console.log("Creating new profile with fields:", {
+        // Create a new profile using the admin client that bypasses RLS
+        const insertPayload = {
           auth_id: userId,
           email: requestBody.email || '',
           name: requestBody.name || '',
@@ -202,42 +233,37 @@ serve(async (req) => {
           state: requestBody.state || '',
           zip: requestBody.zip || '',
           housing_type: requestBody.housing_type || 'house',
-          has_children: requestBody.has_children !== undefined ? requestBody.has_children : false,
+          has_children: has_children,
           children_ages: requestBody.children_ages || '',
-          had_pets_before: requestBody.had_pets_before !== undefined ? requestBody.had_pets_before : false,
-          has_allergies: requestBody.has_allergies !== undefined ? requestBody.has_allergies : false,
+          had_pets_before: had_pets_before,
+          has_allergies: has_allergies,
           allergies_description: requestBody.allergies_description || '',
-          work_schedule: requestBody.work_schedule || ''
-        });
+          work_schedule: requestBody.work_schedule || '',
+          avatar_url: avatar_url
+        };
         
-        // Create a new profile using the admin client that bypasses RLS
+        console.log("Creating new profile with fields:", insertPayload);
+        
         const { data: newProfile, error: insertError } = await supabaseAdmin
           .from('users')
-          .insert({
-            auth_id: userId,
-            email: requestBody.email || '',
-            name: requestBody.name || '',
-            phone: requestBody.phone || '',
-            address: requestBody.address || '',
-            city: requestBody.city || '',
-            state: requestBody.state || '',
-            zip: requestBody.zip || '',
-            housing_type: requestBody.housing_type || 'house',
-            has_children: requestBody.has_children !== undefined ? requestBody.has_children : false,
-            children_ages: requestBody.children_ages || '',
-            had_pets_before: requestBody.had_pets_before !== undefined ? requestBody.had_pets_before : false,
-            has_allergies: requestBody.has_allergies !== undefined ? requestBody.has_allergies : false,
-            allergies_description: requestBody.allergies_description || '',
-            work_schedule: requestBody.work_schedule || '',
-            avatar_url: requestBody.avatar_url || ''
-          })
+          .insert(insertPayload)
           .select()
           .single();
           
         if (insertError) {
           console.error("Error creating user profile:", insertError);
           console.error("Error details:", JSON.stringify(insertError, null, 2));
-          throw insertError;
+          return new Response(
+            JSON.stringify({ 
+              error: "Error creating profile",
+              details: insertError.message || "Failed to create profile",
+              code: insertError.code || "INSERT_ERROR"
+            }),
+            {
+              status: 500,
+              headers: corsHeaders,
+            }
+          );
         }
         
         console.log("Profile created successfully:", newProfile);
@@ -285,19 +311,21 @@ serve(async (req) => {
       
       try {
         console.log("Fetching profile for user:", userId);
+        // Use more efficient query
         const { data: userProfile, error: profileError } = await supabaseAdmin
           .from('users')
           .select('*')
           .eq('auth_id', userId)
-          .single();
+          .limit(1)
+          .maybeSingle();
           
         if (profileError) {
           if (profileError.code === 'PGRST116') {
             return new Response(
               JSON.stringify({
                 id: userId,
-                email: requestBody.email || '',
-                name: requestBody.name || '',
+                email: '',
+                name: '',
                 message: "Complete profile not created yet"
               }),
               {
@@ -308,7 +336,32 @@ serve(async (req) => {
           }
           
           console.error("Error fetching user profile:", profileError);
-          throw profileError;
+          return new Response(
+            JSON.stringify({ 
+              error: "Error fetching profile",
+              details: profileError.message || "Failed to fetch profile",
+              code: profileError.code || "FETCH_ERROR"
+            }),
+            {
+              status: 500,
+              headers: corsHeaders,
+            }
+          );
+        }
+        
+        if (!userProfile) {
+          return new Response(
+            JSON.stringify({
+              id: userId,
+              email: '',
+              name: '',
+              message: "Profile not found"
+            }),
+            {
+              status: 200,
+              headers: corsHeaders,
+            }
+          );
         }
         
         return new Response(
@@ -351,14 +404,27 @@ serve(async (req) => {
         }
 
         console.log("Fetching all users with admin access");
+        // Use more efficient query with pagination
+        const limit = 50; // Limit the number of users per request
         const { data: users, error: usersError } = await supabaseAdmin
           .from('users')
           .select('*')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .limit(limit);
           
         if (usersError) {
           console.error("Error fetching users:", usersError);
-          throw usersError;
+          return new Response(
+            JSON.stringify({ 
+              error: "Error fetching users",
+              details: usersError.message || "Failed to fetch users",
+              code: usersError.code || "FETCH_ERROR"
+            }),
+            {
+              status: 500,
+              headers: corsHeaders,
+            }
+          );
         }
         
         return new Response(

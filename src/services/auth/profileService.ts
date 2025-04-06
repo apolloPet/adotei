@@ -2,7 +2,6 @@
 import { supabase } from '@/lib/supabase';
 import { UserProfile } from '@/types/user';
 import { toast } from '@/hooks/use-sonner';
-import { handleSupabaseError } from '@/lib/supabase';
 
 /**
  * Fetches the user's profile from the database
@@ -22,11 +21,15 @@ export const getProfile = async (): Promise<UserProfile | null> => {
     try {
       // Call the user-profile edge function with the token
       const { data, error } = await supabase.functions.invoke('user-profile', {
-        method: 'GET'
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${sessionData.session.access_token}`
+        }
       });
       
       if (error) {
         console.error('Error fetching profile from edge function:', error);
+        toast.error('Erro ao buscar perfil: ' + error.message);
         return null;
       }
       
@@ -48,10 +51,10 @@ export const getProfile = async (): Promise<UserProfile | null> => {
         zip: data.zip || '',
         avatarUrl: data.avatar_url || '',
         housingType: data.housing_type || 'house',
-        hasChildren: data.has_children || false,
+        hasChildren: Boolean(data.has_children),
         childrenAges: data.children_ages || '',
-        hadPetsBefore: data.had_pets_before || false,
-        hasAllergies: data.has_allergies || false,
+        hadPetsBefore: Boolean(data.had_pets_before),
+        hasAllergies: Boolean(data.has_allergies),
         allergiesDescription: data.allergies_description || '',
         workSchedule: data.work_schedule || ''
       };
@@ -60,10 +63,12 @@ export const getProfile = async (): Promise<UserProfile | null> => {
       return profile;
     } catch (error) {
       console.error('Error in edge function call:', error);
+      toast.error('Erro ao processar dados do perfil');
       return null;
     }
   } catch (error) {
     console.error('Failed to fetch profile:', error);
+    toast.error('Erro ao buscar perfil');
     return null;
   }
 };
@@ -98,14 +103,14 @@ export const updateProfile = async (profileData: Partial<UserProfile>): Promise<
       city: profileData.city,
       state: profileData.state,
       zip: profileData.zip,
-      avatar_url: profileData.avatarUrl,
-      housing_type: profileData.housingType,
-      has_children: profileData.hasChildren,
-      children_ages: profileData.childrenAges,
-      had_pets_before: profileData.hadPetsBefore,
-      has_allergies: profileData.hasAllergies,
-      allergies_description: profileData.allergiesDescription,
-      work_schedule: profileData.workSchedule
+      avatar_url: profileData.avatarUrl || '',
+      housing_type: profileData.housingType || 'house',
+      has_children: profileData.hasChildren !== undefined ? Boolean(profileData.hasChildren) : false,
+      children_ages: profileData.childrenAges || '',
+      had_pets_before: profileData.hadPetsBefore !== undefined ? Boolean(profileData.hadPetsBefore) : false,
+      has_allergies: profileData.hasAllergies !== undefined ? Boolean(profileData.hasAllergies) : false,
+      allergies_description: profileData.allergiesDescription || '',
+      work_schedule: profileData.workSchedule || ''
     };
     
     console.log('Sending payload to edge function:', payload);
@@ -113,12 +118,15 @@ export const updateProfile = async (profileData: Partial<UserProfile>): Promise<
     // Call the user-profile edge function
     const { data, error } = await supabase.functions.invoke('user-profile', {
       method: 'POST',
-      body: payload
+      body: payload,
+      headers: {
+        Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+      }
     });
     
     if (error) {
       console.error('Error updating profile:', error);
-      toast.error('Erro ao atualizar perfil');
+      toast.error('Erro ao atualizar perfil: ' + error.message);
       return false;
     }
     
@@ -160,24 +168,28 @@ export const createProfile = async (profileData: Partial<UserProfile>): Promise<
       zip: profileData.zip || '',
       avatar_url: profileData.avatarUrl || '',
       housing_type: profileData.housingType || 'house',
-      has_children: profileData.hasChildren || false,
+      has_children: profileData.hasChildren !== undefined ? Boolean(profileData.hasChildren) : false,
       children_ages: profileData.childrenAges || '',
-      had_pets_before: profileData.hadPetsBefore || false,
-      has_allergies: profileData.hasAllergies || false,
+      had_pets_before: profileData.hadPetsBefore !== undefined ? Boolean(profileData.hadPetsBefore) : false,
+      has_allergies: profileData.hasAllergies !== undefined ? Boolean(profileData.hasAllergies) : false,
       allergies_description: profileData.allergiesDescription || '',
       work_schedule: profileData.workSchedule || ''
     };
     
     console.log('Creating profile with data:', payload);
     
-    // Call the edge function
+    // Call the edge function with authentication
     const { data, error } = await supabase.functions.invoke('user-profile', {
       method: 'POST',
-      body: payload
+      body: payload,
+      headers: {
+        Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+      }
     });
     
     if (error) {
       console.error('Error creating profile via edge function:', error);
+      toast.error('Erro ao criar perfil: ' + error.message);
       return false;
     }
     
@@ -185,6 +197,7 @@ export const createProfile = async (profileData: Partial<UserProfile>): Promise<
     return true;
   } catch (error) {
     console.error('Failed to create profile:', error);
+    toast.error('Erro ao criar perfil');
     return false;
   }
 };
