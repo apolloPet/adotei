@@ -58,7 +58,7 @@ serve(async (req) => {
     try {
       if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
         requestBody = await req.json();
-        console.log("Request body:", requestBody);
+        console.log("Request body:", JSON.stringify(requestBody, null, 2));
       }
     } catch (e) {
       console.error("Error parsing request body:", e);
@@ -160,10 +160,10 @@ serve(async (req) => {
               state: requestBody.state || '',
               zip: requestBody.zip || '',
               housing_type: requestBody.housing_type || 'house',
-              has_children: requestBody.has_children || false,
+              has_children: requestBody.has_children !== undefined ? requestBody.has_children : false,
               children_ages: requestBody.children_ages || '',
-              had_pets_before: requestBody.had_pets_before || false,
-              has_allergies: requestBody.has_allergies || false,
+              had_pets_before: requestBody.had_pets_before !== undefined ? requestBody.had_pets_before : false,
+              has_allergies: requestBody.has_allergies !== undefined ? requestBody.has_allergies : false,
               allergies_description: requestBody.allergies_description || '',
               work_schedule: requestBody.work_schedule || '',
               updated_at: new Date()
@@ -190,8 +190,8 @@ serve(async (req) => {
           );
         }
         
-        // Criando um log para ver os campos que estão sendo enviados
-        console.log("Campos para criação de perfil:", {
+        // Debug logging for profile creation
+        console.log("Creating new profile with fields:", {
           auth_id: userId,
           email: requestBody.email || '',
           name: requestBody.name || '',
@@ -201,10 +201,10 @@ serve(async (req) => {
           state: requestBody.state || '',
           zip: requestBody.zip || '',
           housing_type: requestBody.housing_type || 'house',
-          has_children: requestBody.has_children || false,
+          has_children: requestBody.has_children !== undefined ? requestBody.has_children : false,
           children_ages: requestBody.children_ages || '',
-          had_pets_before: requestBody.had_pets_before || false,
-          has_allergies: requestBody.has_allergies || false,
+          had_pets_before: requestBody.had_pets_before !== undefined ? requestBody.had_pets_before : false,
+          has_allergies: requestBody.has_allergies !== undefined ? requestBody.has_allergies : false,
           allergies_description: requestBody.allergies_description || '',
           work_schedule: requestBody.work_schedule || ''
         });
@@ -227,17 +227,19 @@ serve(async (req) => {
             had_pets_before: requestBody.had_pets_before !== undefined ? requestBody.had_pets_before : false,
             has_allergies: requestBody.has_allergies !== undefined ? requestBody.has_allergies : false,
             allergies_description: requestBody.allergies_description || '',
-            work_schedule: requestBody.work_schedule || ''
+            work_schedule: requestBody.work_schedule || '',
+            avatar_url: requestBody.avatar_url || ''
           })
           .select()
           .single();
           
         if (insertError) {
           console.error("Error creating user profile:", insertError);
+          console.error("Error details:", JSON.stringify(insertError, null, 2));
           throw insertError;
         }
         
-        console.log("Perfil criado com sucesso:", newProfile);
+        console.log("Profile created successfully:", newProfile);
         
         return new Response(
           JSON.stringify({ 
