@@ -136,7 +136,7 @@ export const dbPetToPet = (dbPet: DbPet, dbImages: DbPetImage[] = []): Pet => {
     age: ageString,
     gender: dbPet.gender as 'male' | 'female',
     size: dbPet.size as 'small' | 'medium' | 'large',
-    weight: dbPet.weight.toString(),
+    weight: dbPet.weight,
     description: dbPet.description,
     location: dbPet.location,
     shelterTime: dbPet.shelter_time || '',
@@ -149,6 +149,7 @@ export const dbPetToPet = (dbPet: DbPet, dbImages: DbPetImage[] = []): Pet => {
       url: img.url,
       isPrimary: img.is_primary
     })),
+    shelter: 'Unknown' // Adding a default value for the shelter
   };
 };
 
@@ -179,7 +180,7 @@ export const petToDbPet = (pet: Partial<Pet>, shelterId?: string): Partial<DbPet
     ...(ageUnit && { age_unit: ageUnit }),
     ...(pet.gender && { gender: pet.gender }),
     ...(pet.size && { size: pet.size }),
-    ...(pet.weight && { weight: parseFloat(pet.weight) }),
+    ...(pet.weight && { weight: pet.weight }),
     ...(pet.description && { description: pet.description }),
     ...(pet.location && { location: pet.location }),
     ...(shelterId && { shelter_id: shelterId }),
