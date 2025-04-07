@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { UserProfile } from '@/types/user';
 import { toast } from '@/hooks/use-sonner';
@@ -145,10 +144,12 @@ export const updateProfile = async (profileData: Partial<UserProfile>): Promise<
  */
 export const createProfile = async (profileData: Partial<UserProfile>): Promise<boolean> => {
   try {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) {
-      console.error('User not authenticated');
-      toast.error('Você precisa estar logado para criar um perfil');
+    // Check if we have user ID from the parameter (preferred method)
+    const userId = profileData.userId || (await supabase.auth.getUser()).data.user?.id;
+
+    if (!userId) {
+      console.error('No user ID available for profile creation');
+      toast.error('Erro de autenticação. Não foi possível identificar o usuário.');
       return false;
     }
     
@@ -175,28 +176,28 @@ export const createProfile = async (profileData: Partial<UserProfile>): Promise<
       has_allergies: profileData.hasAllergies !== undefined ? Boolean(profileData.hasAllergies) : false,
       allergies_description: profileData.allergiesDescription || '',
       work_schedule: profileData.workSchedule || '',
-      user_id: userData.user.id // Add explicit user ID
+      user_id: userId // Add explicit user ID
     };
     
     console.log('Creating profile with data:', payload);
     
     // Get active session token for authorization
-    const sessionData = await supabase.auth.getSession();
-    const accessToken = sessionData.data.session?.access_token;
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
     
-    if (!accessToken) {
-      console.error('No access token available for profile creation');
+    if (!accessToken && !userId) {
+      console.error('No access token available for profile creation and no user ID');
       toast.error('Erro de autenticação. Tente fazer login novamente.');
       return false;
     }
     
-    // Call the edge function with authentication
+    // Call the edge function with authentication and user ID
     const { data, error } = await supabase.functions.invoke('user-profile', {
       method: 'POST',
       body: payload,
-      headers: {
+      headers: accessToken ? {
         Authorization: `Bearer ${accessToken}`
-      }
+      } : {}
     });
     
     if (error) {

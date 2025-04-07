@@ -138,9 +138,7 @@ const RegisterForm = () => {
       setIsLoading(true);
       setErrors({});
       
-      // Format the full address correctly
-      const fullAddress = `${street}${number ? `, ${number}` : ''}${neighborhood ? `, ${neighborhood}` : ''}`;
-      
+      // Format the address data correctly
       const userData: SignupData = {
         email,
         password,
@@ -148,7 +146,7 @@ const RegisterForm = () => {
         lastName: name.split(' ').slice(1).join(' '),
         phone,
         address: {
-          street: fullAddress,
+          street,
           number,
           neighborhood,
           city,

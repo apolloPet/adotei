@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
@@ -202,6 +203,9 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
     
     // 2. Create user profile via profileService
     try {
+      // Wait for the session to be created first
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const profileData = {
         firstName: userData.firstName || '',
         lastName: userData.lastName || '',
@@ -217,12 +221,13 @@ export const signUp = async (userData: SignupData): Promise<boolean> => {
         hadPetsBefore: userData.hadPetsBefore || false,
         hasAllergies: userData.hasAllergies || false,
         allergiesDescription: userData.allergiesDescription || '',
-        workSchedule: userData.workSchedule || ''
+        workSchedule: userData.workSchedule || '',
+        userId: authData.user.id // Pass the user ID explicitly
       };
       
       console.log("Creating user profile with data:", profileData);
       
-      // Wait for profile creation to complete
+      // Pass the user ID explicitly to avoid authentication issues
       const profileCreated = await createProfileService(profileData);
       
       if (!profileCreated) {

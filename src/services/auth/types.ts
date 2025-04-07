@@ -1,6 +1,4 @@
 
-import { User } from '@supabase/supabase-js';
-
 export interface SignupData {
   email: string;
   password: string;
@@ -29,9 +27,9 @@ export interface UserRoleData {
   userId: string;
   role: string;
   permissions?: {
-    manageAnimals?: boolean;
-    approveAdoptions?: boolean;
-    manageSettings?: boolean;
     manageAdmins?: boolean;
+    manageAnimals?: boolean;
+    manageSettings?: boolean;
+    approveAdoptions?: boolean;
   };
 }

@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -78,68 +77,59 @@ serve(async (req) => {
     // Check authentication - either from request or from request body for signup flow
     let userId: string | null = null;
     
-    // Try to get userId from the auth header
-    const authHeader = headers.get('Authorization');
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      // Extract the JWT
-      const jwt = authHeader.substring(7);
-      
-      // Verify the JWT and get user information - using standard client
-      const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") || "", {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-        global: {
-          headers: {
-            Authorization: `Bearer ${jwt}`,
-          },
-        },
-      });
-      
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError) {
-        console.error("Authentication error:", authError);
-      } else if (user) {
-        userId = user.id;
-        console.log("Authenticated user from token:", userId);
-      }
-    }
-    
-    // For profile creation during signup, get user ID from request body
-    if (!userId && requestBody.operation === 'create-profile' && requestBody.user_id) {
+    // First option: check user_id from the request body
+    if (requestBody.user_id) {
       userId = requestBody.user_id;
       console.log("Using user ID from request body:", userId);
+    }
+    
+    // Second option: try to get userId from the auth header
+    if (!userId) {
+      const authHeader = headers.get('Authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        // Extract the JWT
+        const jwt = authHeader.substring(7);
+        
+        // Verify the JWT and get user information - using standard client
+        const supabase = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY") || "", {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+          global: {
+            headers: {
+              Authorization: `Bearer ${jwt}`,
+            },
+          },
+        });
+        
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError) {
+          console.error("Authentication error:", authError);
+        } else if (user) {
+          userId = user.id;
+          console.log("Authenticated user from token:", userId);
+        }
+      }
     }
 
     // Determine the operation based on the method and path
     if (method === "POST" && requestBody.operation === "create-profile") {
       // Creating a new user profile
       if (!userId) {
-        // Try to get auth_id from the session for newer Supabase client versions
-        const { data: sessionData } = await supabase.auth.getSession();
-        
-        if (sessionData?.session?.user) {
-          userId = sessionData.session.user.id;
-          console.log("Got user ID from session:", userId);
-        }
-        
-        // If still no userId, return authentication error
-        if (!userId) {
-          console.error("No user ID available for profile creation");
-          return new Response(
-            JSON.stringify({ 
-              error: "Authentication required", 
-              details: "No user ID available for profile creation",
-              code: "NO_USER_ID" 
-            }),
-            {
-              status: 401,
-              headers: corsHeaders,
-            }
-          );
-        }
+        console.error("No user ID available for profile creation");
+        return new Response(
+          JSON.stringify({ 
+            error: "Authentication required", 
+            details: "No user ID available for profile creation. Make sure to provide user_id in the request body.",
+            code: "NO_USER_ID" 
+          }),
+          {
+            status: 401,
+            headers: corsHeaders,
+          }
+        );
       }
       
       console.log("Creating user profile for:", userId);
