@@ -5,8 +5,8 @@ export interface SignupData {
   email: string;
   password: string;
   name?: string;
-  firstName?: string; // Added firstName field
-  lastName?: string; // Added lastName field
+  firstName?: string;
+  lastName?: string;
   phone?: string;
   address?: {
     street?: string;

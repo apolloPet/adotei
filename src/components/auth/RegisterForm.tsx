@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -138,12 +139,14 @@ const RegisterForm = () => {
       setIsLoading(true);
       setErrors({});
       
-      const fullAddress = `${street}, ${number}, ${neighborhood}`;
+      // Format the full address correctly
+      const fullAddress = `${street}${number ? `, ${number}` : ''}${neighborhood ? `, ${neighborhood}` : ''}`;
       
       const userData: SignupData = {
         email,
         password,
-        name,
+        firstName: name.split(' ')[0],
+        lastName: name.split(' ').slice(1).join(' '),
         phone,
         address: {
           street: fullAddress,

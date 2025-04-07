@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -160,6 +159,13 @@ serve(async (req) => {
           ? requestBody.has_allergies 
           : requestBody.has_allergies === 'true' || requestBody.has_allergies === true;
 
+        // Process all address-related fields
+        const phone = requestBody.phone || '';
+        const address = requestBody.address || '';
+        const city = requestBody.city || '';
+        const state = requestBody.state || '';
+        const zip = requestBody.zip || '';
+
         // Ensure avatar_url is a string
         const avatar_url = requestBody.avatar_url !== undefined ? String(requestBody.avatar_url) : '';
         
@@ -169,11 +175,11 @@ serve(async (req) => {
           const updatePayload = {
             name: requestBody.name || '',
             email: requestBody.email || '',
-            phone: requestBody.phone || '',
-            address: requestBody.address || '',
-            city: requestBody.city || '',
-            state: requestBody.state || '',
-            zip: requestBody.zip || '',
+            phone: phone,
+            address: address,
+            city: city,
+            state: state,
+            zip: zip,
             housing_type: requestBody.housing_type || 'house',
             has_children: has_children,
             children_ages: requestBody.children_ages || '',
@@ -227,11 +233,11 @@ serve(async (req) => {
           auth_id: userId,
           email: requestBody.email || '',
           name: requestBody.name || '',
-          phone: requestBody.phone || '',
-          address: requestBody.address || '',
-          city: requestBody.city || '',
-          state: requestBody.state || '',
-          zip: requestBody.zip || '',
+          phone: phone,
+          address: address,
+          city: city,
+          state: state,
+          zip: zip,
           housing_type: requestBody.housing_type || 'house',
           has_children: has_children,
           children_ages: requestBody.children_ages || '',
