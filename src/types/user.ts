@@ -1,6 +1,7 @@
 
 export interface UserProfile {
   id: string;
+  userId?: string; // Add userId property which is needed in profileService
   firstName?: string;
   lastName?: string;
   email: string; // Changed from optional to required
