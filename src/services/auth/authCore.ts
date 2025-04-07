@@ -1,8 +1,10 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
 import { SignupData } from './types';
-import { createProfile as createProfileService } from './profileService';
+import { UserProfile } from '@/types/user'; // Add missing import for UserProfile
+import { createProfile as createProfileService } from './profileService'; // Import createProfile function
 
 /**
  * Desloga o usuário atual
@@ -220,7 +222,7 @@ export const signUp = async (data: SignupData): Promise<boolean> => {
     
     // Create the user profile with all information
     console.log('Creating user profile with data:', profileData);
-    const profileSuccess = await createProfile(profileData);
+    const profileSuccess = await createProfileService(profileData);
     
     if (!profileSuccess) {
       console.error('Failed to create user profile');
