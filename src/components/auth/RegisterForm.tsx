@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -163,7 +162,10 @@ const RegisterForm = () => {
         firstName: firstName,
         lastName: lastName,
         phone,
-        address: formattedAddress,
+        address: street,
+        city: city,
+        state: state,
+        zip: cep,
         housingType,
         hasChildren,
         childrenAges: hasChildren ? childrenAges : '',

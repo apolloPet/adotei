@@ -167,28 +167,41 @@ serve(async (req) => {
         let city = requestBody.city || '';
         let state = requestBody.state || '';
         let zip = requestBody.zip || '';
+        let phone = requestBody.phone || '';
         
         // Handle nested address object if present
         if (typeof requestBody.address === 'object' && requestBody.address !== null) {
-          address = [
-            requestBody.address.street || '',
-            requestBody.address.number || '',
-            requestBody.address.neighborhood || ''
-          ].filter(Boolean).join(', ');
+          console.log("Processing nested address object:", requestBody.address);
           
-          city = requestBody.address.city || city;
-          state = requestBody.address.state || state;
-          zip = requestBody.address.cep || zip;
+          // Extract address fields from nested object
+          address = requestBody.address.street || '';
+          city = requestBody.address.city || '';
+          state = requestBody.address.state || '';
+          zip = requestBody.address.cep || requestBody.address.zip || '';
+          
+          if (requestBody.address.number) {
+            address = `${address}, ${requestBody.address.number}`;
+          }
+          
+          if (requestBody.address.neighborhood) {
+            address = `${address}, ${requestBody.address.neighborhood}`;
+          }
         }
         
-        const phone = requestBody.phone || '';
+        // Format name from firstName and lastName if available
+        let name = requestBody.name || '';
+        if (!name && (requestBody.firstName || requestBody.lastName)) {
+          name = `${requestBody.firstName || ''} ${requestBody.lastName || ''}`.trim();
+          console.log("Generated name from firstName/lastName:", name);
+        }
         
         console.log("Address fields processed:", {
           address,
           city,
           state,
           zip,
-          phone
+          phone,
+          name
         });
 
         // Ensure avatar_url is a string
@@ -198,9 +211,9 @@ serve(async (req) => {
           console.log("Profile already exists for user:", userId);
           // Update existing profile instead
           const updatePayload = {
-            name: requestBody.name || '',
+            name: name,
             email: requestBody.email || '',
-            phone: phone,
+            phone: phone || requestBody.phone || '',
             address: address,
             city: city,
             state: state,
@@ -257,8 +270,8 @@ serve(async (req) => {
         const insertPayload = {
           auth_id: userId,
           email: requestBody.email || '',
-          name: requestBody.name || '',
-          phone: phone,
+          name: name,
+          phone: phone || requestBody.phone || '',
           address: address,
           city: city,
           state: state,
@@ -284,6 +297,22 @@ serve(async (req) => {
         if (insertError) {
           console.error("Error creating user profile:", insertError);
           console.error("Error details:", JSON.stringify(insertError, null, 2));
+          
+          // Check if it's a duplicate email error
+          if (insertError.code === '23505' && insertError.message.includes('users_email_key')) {
+            return new Response(
+              JSON.stringify({ 
+                error: "Email already in use",
+                details: "This email address is already registered to another user.",
+                code: "DUPLICATE_EMAIL"
+              }),
+              {
+                status: 409,
+                headers: corsHeaders,
+              }
+            );
+          }
+          
           return new Response(
             JSON.stringify({ 
               error: "Error creating profile",

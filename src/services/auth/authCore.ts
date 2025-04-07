@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
@@ -169,84 +168,71 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
 /**
  * Realiza o cadastro do usuário
  */
-export const signUp = async (userData: SignupData): Promise<boolean> => {
+export const signUp = async (data: SignupData): Promise<boolean> => {
   try {
-    console.log("Attempting to sign up user:", userData.email);
+    console.log('Starting signup process with data:', data);
     
-    // 1. Create auth user
-    const { data: authData, error: signupError } = await supabase.auth.signUp({
-      email: userData.email,
-      password: userData.password,
+    // Register user with Supabase Authentication
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: data.email,
+      password: data.password,
       options: {
-        emailRedirectTo: window.location.origin + '/email-confirmation',
         data: {
-          name: userData.firstName && userData.lastName ? `${userData.firstName} ${userData.lastName}` : userData.name || '',
-          firstName: userData.firstName || '',
-          lastName: userData.lastName || '',
+          name: data.name || '',
+          first_name: data.firstName || '',
+          last_name: data.lastName || ''
         }
       }
     });
-
-    if (signupError) {
-      console.error("Signup error:", signupError);
-      toast.error(`Erro de cadastro: ${signupError.message}`);
-      return false;
+    
+    if (authError) {
+      console.error('Auth error during signup:', authError);
+      throw new Error(authError.message);
     }
-
+    
     if (!authData.user) {
-      console.error("No user returned from signup");
-      toast.error("Falha no registro. Tente novamente.");
-      return false;
+      console.error('No user returned from signup');
+      throw new Error('Failed to create user account');
     }
     
-    console.log("Auth user created successfully:", authData.user.id);
+    console.log('User created successfully:', authData.user.id);
     
-    // 2. Create user profile via profileService
-    try {
-      // Wait for the session to be created first
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const profileData = {
-        firstName: userData.firstName || '',
-        lastName: userData.lastName || '',
-        email: userData.email,
-        phone: userData.phone || '',
-        address: userData.address?.street || '',
-        city: userData.address?.city || '',
-        state: userData.address?.state || '',
-        zip: userData.address?.cep || '',
-        housingType: userData.housingType || 'house',
-        hasChildren: userData.hasChildren || false,
-        childrenAges: userData.childrenAges || '',
-        hadPetsBefore: userData.hadPetsBefore || false,
-        hasAllergies: userData.hasAllergies || false,
-        allergiesDescription: userData.allergiesDescription || '',
-        workSchedule: userData.workSchedule || '',
-        userId: authData.user.id // Pass the user ID explicitly
-      };
-      
-      console.log("Creating user profile with data:", profileData);
-      
-      // Pass the user ID explicitly to avoid authentication issues
-      const profileCreated = await createProfileService(profileData);
-      
-      if (!profileCreated) {
-        console.error("Error creating user profile");
-        // Continue with signup even if profile creation fails - can be fixed later
-      } else {
-        console.log("Profile created successfully");
-      }
-    } catch (profileCreationError) {
-      console.error("Exception in profile creation:", profileCreationError);
-      // Continue with signup even if profile creation fails
+    // Format profile data
+    const profileData: Partial<UserProfile> = {
+      userId: authData.user.id,
+      email: data.email,
+      firstName: data.firstName || '',
+      lastName: data.lastName || '',
+      phone: data.phone || '',
+      // Pass address fields separately
+      address: data.address || '',
+      city: data.city || '',
+      state: data.state || '',
+      zip: data.zip || '',
+      housingType: data.housingType || 'house',
+      hasChildren: data.hasChildren,
+      childrenAges: data.childrenAges || '',
+      hadPetsBefore: data.hadPetsBefore,
+      hasAllergies: data.hasAllergies,
+      allergiesDescription: data.allergiesDescription || '',
+      workSchedule: data.workSchedule || '',
+    };
+    
+    // Create the user profile with all information
+    console.log('Creating user profile with data:', profileData);
+    const profileSuccess = await createProfile(profileData);
+    
+    if (!profileSuccess) {
+      console.error('Failed to create user profile');
+      // We don't want to throw here, as the auth account was created successfully
+      // The user can complete their profile later
     }
-
-    console.log("User signup completed successfully");
+    
+    console.log('Signup process completed successfully');
     return true;
   } catch (error) {
-    console.error("Unexpected error during signup:", error);
-    toast.error("Ocorreu um erro inesperado durante o cadastro. Por favor, tente novamente.");
-    return false;
+    console.error('Signup process failed:', error);
+    throw error;
   }
 };
 

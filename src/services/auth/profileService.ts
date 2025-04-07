@@ -204,7 +204,13 @@ export const createProfile = async (profileData: Partial<UserProfile>): Promise<
     
     if (error) {
       console.error('Error creating profile via edge function:', error);
-      toast.error('Erro ao criar perfil: ' + error.message);
+      
+      // Handling specific error types
+      if (error.message && error.message.includes('Key (email)') && error.message.includes('already exists')) {
+        toast.error('Este email já está cadastrado. Por favor, use outro email.');
+      } else {
+        toast.error('Erro ao criar perfil: ' + error.message);
+      }
       return false;
     }
     

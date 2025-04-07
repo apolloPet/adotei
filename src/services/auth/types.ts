@@ -1,4 +1,3 @@
-
 export interface SignupData {
   email: string;
   password: string;
@@ -6,15 +5,14 @@ export interface SignupData {
   firstName?: string;
   lastName?: string;
   phone?: string;
-  address?: {
-    street?: string;
-    number?: string;
-    neighborhood?: string;
-    city?: string;
-    state?: string;
-    cep?: string;
-  };
-  housingType?: 'house' | 'apartment' | 'other';
+  
+  // Address fields as separate properties
+  address?: string;
+  city?: string;
+  state?: string;
+  zip?: string;
+  
+  housingType?: string;
   hasChildren?: boolean;
   childrenAges?: string;
   hadPetsBefore?: boolean;
