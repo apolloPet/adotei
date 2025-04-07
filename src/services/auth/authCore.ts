@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
 import { SignupData } from './types';
+import { createProfile as createProfileService } from './profileService';
 
 /**
  * Desloga o usuário atual
@@ -168,20 +169,20 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
 /**
  * Realiza o cadastro do usuário
  */
-export const signUp = async (data: SignupData): Promise<{ success: boolean; error?: string }> => {
+export const signUp = async (userData: SignupData): Promise<{ success: boolean; error?: string }> => {
   try {
-    console.log("Attempting to sign up user:", data.email);
+    console.log("Attempting to sign up user:", userData.email);
     
     // 1. Create auth user
     const { data: authData, error: signupError } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
+      email: userData.email,
+      password: userData.password,
       options: {
         emailRedirectTo: window.location.origin + '/email-confirmation',
         data: {
-          name: data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : data.name || '',
-          firstName: data.firstName || '',
-          lastName: data.lastName || '',
+          name: userData.firstName && userData.lastName ? `${userData.firstName} ${userData.lastName}` : userData.name || '',
+          firstName: userData.firstName || '',
+          lastName: userData.lastName || '',
         }
       }
     });
@@ -207,28 +208,31 @@ export const signUp = async (data: SignupData): Promise<{ success: boolean; erro
     // 2. Create user profile via edge function to bypass RLS
     try {
       const profileData = {
-        firstName: data.firstName || '',
-        lastName: data.lastName || '',
-        // Add any additional user data here
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        email: userData.email,
+        phone: userData.phone || '',
+        address: userData.address?.street || '',
+        city: userData.address?.city || '',
+        state: userData.address?.state || '',
+        zip: userData.address?.cep || '',
+        housingType: userData.housingType || 'house',
+        hasChildren: userData.hasChildren || false,
+        childrenAges: userData.childrenAges || '',
+        hadPetsBefore: userData.hadPetsBefore || false,
+        hasAllergies: userData.hasAllergies || false,
+        allergiesDescription: userData.allergiesDescription || '',
+        workSchedule: userData.workSchedule || ''
       };
       
-      // Create profile using service role via edge function
-      // Note: We don't wait for a session since we're using the service role
-      const { data: profileResponse, error: profileError } = await supabase.functions.invoke('user-profile', {
-        method: 'POST',
-        body: { 
-          operation: 'create-profile',
-          user_id: authData.user.id, // Pass the user ID explicitly
-          name: data.firstName && data.lastName ? `${data.firstName} ${data.lastName}` : data.name || '',
-          email: data.email // Pass email explicitly
-        }
-      });
+      // Create profile using the imported createProfileService
+      const profileCreated = await createProfileService(profileData);
       
-      if (profileError) {
-        console.error("Error creating user profile:", profileError);
+      if (!profileCreated) {
+        console.error("Error creating user profile");
         // Continue with signup even if profile creation fails - can be fixed later
       } else {
-        console.log("Profile created successfully:", profileResponse);
+        console.log("Profile created successfully");
       }
     } catch (profileCreationError) {
       console.error("Exception in profile creation:", profileCreationError);
