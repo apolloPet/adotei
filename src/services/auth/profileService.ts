@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { UserProfile } from '@/types/user';
 import { toast } from '@/hooks/use-sonner';
@@ -40,6 +41,7 @@ export const getProfile = async (): Promise<UserProfile | null> => {
       // Transform the data to match the UserProfile interface
       const profile: UserProfile = {
         id: data.id,
+        userId: data.auth_id, // Ensure we get and store the auth_id/userId
         firstName: data.name?.split(' ')[0] || '',
         lastName: data.name?.split(' ').slice(1).join(' ') || '',
         email: data.email || '',

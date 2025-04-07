@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -161,19 +162,33 @@ serve(async (req) => {
           ? requestBody.has_allergies 
           : requestBody.has_allergies === 'true' || requestBody.has_allergies === true;
 
-        // Process all address-related fields with detailed logging
-        const phone = requestBody.phone || '';
-        const address = requestBody.address || '';
-        const city = requestBody.city || '';
-        const state = requestBody.state || '';
-        const zip = requestBody.zip || '';
+        // Process address related fields correctly
+        let address = requestBody.address || '';
+        let city = requestBody.city || '';
+        let state = requestBody.state || '';
+        let zip = requestBody.zip || '';
         
-        console.log("Address fields received:", {
-          phone,
+        // Handle nested address object if present
+        if (typeof requestBody.address === 'object' && requestBody.address !== null) {
+          address = [
+            requestBody.address.street || '',
+            requestBody.address.number || '',
+            requestBody.address.neighborhood || ''
+          ].filter(Boolean).join(', ');
+          
+          city = requestBody.address.city || city;
+          state = requestBody.address.state || state;
+          zip = requestBody.address.cep || zip;
+        }
+        
+        const phone = requestBody.phone || '';
+        
+        console.log("Address fields processed:", {
           address,
           city,
           state,
-          zip
+          zip,
+          phone
         });
 
         // Ensure avatar_url is a string
@@ -369,6 +384,7 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({
               id: userId,
+              auth_id: userId, // Include auth_id for consistency
               email: '',
               name: '',
               message: "Profile not found"
@@ -392,69 +408,6 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             error: "Error fetching profile",
-            details: error.message || "An error occurred while processing the request",
-            code: error.code || "INTERNAL_SERVER_ERROR"
-          }),
-          {
-            status: 500,
-            headers: corsHeaders,
-          }
-        );
-      }
-    } else if (method === "GET" && new URL(req.url).pathname.endsWith('/users')) {
-      // List all users - admin only
-      try {
-        // Check if user is admin
-        if (!userId) {
-          return new Response(
-            JSON.stringify({ 
-              error: "Unauthorized", 
-              details: "Authentication is required to access this resource.",
-              code: "UNAUTHORIZED" 
-            }),
-            {
-              status: 401,
-              headers: corsHeaders,
-            }
-          );
-        }
-
-        console.log("Fetching all users with admin access");
-        // Use more efficient query with pagination
-        const limit = 50; // Limit the number of users per request
-        const { data: users, error: usersError } = await supabaseAdmin
-          .from('users')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .limit(limit);
-          
-        if (usersError) {
-          console.error("Error fetching users:", usersError);
-          return new Response(
-            JSON.stringify({ 
-              error: "Error fetching users",
-              details: usersError.message || "Failed to fetch users",
-              code: usersError.code || "FETCH_ERROR"
-            }),
-            {
-              status: 500,
-              headers: corsHeaders,
-            }
-          );
-        }
-        
-        return new Response(
-          JSON.stringify(users || []),
-          {
-            status: 200,
-            headers: corsHeaders,
-          }
-        );
-      } catch (error) {
-        console.error("Error fetching users:", error);
-        return new Response(
-          JSON.stringify({ 
-            error: "Error fetching users",
             details: error.message || "An error occurred while processing the request",
             code: error.code || "INTERNAL_SERVER_ERROR"
           }),

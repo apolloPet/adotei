@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { CheckCircle } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-sonner";
-import { signUp } from '@/services/auth/authCore'; // Import directly from authCore
+import { signUp } from '@/services/auth/authCore';
 import { SignupData } from '@/services/auth/types';
 
 const RegisterForm = () => {
@@ -138,21 +139,31 @@ const RegisterForm = () => {
       setIsLoading(true);
       setErrors({});
       
-      // Format the address data correctly
+      // Format the address data consistently
+      const formattedAddress = {
+        street: street,
+        number: number,
+        neighborhood: neighborhood,
+        city: city,
+        state: state,
+        cep: cep
+      };
+      
+      // Format full name properly
+      const fullName = `${name}`.trim();
+      const nameParts = fullName.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+      
+      // Format all data consistently
       const userData: SignupData = {
         email,
         password,
-        firstName: name.split(' ')[0],
-        lastName: name.split(' ').slice(1).join(' '),
+        name: fullName,
+        firstName: firstName,
+        lastName: lastName,
         phone,
-        address: {
-          street,
-          number,
-          neighborhood,
-          city,
-          state,
-          cep
-        },
+        address: formattedAddress,
         housingType,
         hasChildren,
         childrenAges: hasChildren ? childrenAges : '',
@@ -162,7 +173,7 @@ const RegisterForm = () => {
         workSchedule
       };
       
-      console.log('Registering user with data:', JSON.stringify(userData));
+      console.log('Registering user with data:', JSON.stringify(userData, null, 2));
       
       const success = await signUp(userData);
       
