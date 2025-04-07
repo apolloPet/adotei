@@ -148,6 +148,7 @@ export const createProfile = async (profileData: Partial<UserProfile>): Promise<
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) {
       console.error('User not authenticated');
+      toast.error('Você precisa estar logado para criar um perfil');
       return false;
     }
     
@@ -173,7 +174,8 @@ export const createProfile = async (profileData: Partial<UserProfile>): Promise<
       had_pets_before: profileData.hadPetsBefore !== undefined ? Boolean(profileData.hadPetsBefore) : false,
       has_allergies: profileData.hasAllergies !== undefined ? Boolean(profileData.hasAllergies) : false,
       allergies_description: profileData.allergiesDescription || '',
-      work_schedule: profileData.workSchedule || ''
+      work_schedule: profileData.workSchedule || '',
+      user_id: userData.user.id // Add explicit user ID
     };
     
     console.log('Creating profile with data:', payload);
@@ -184,6 +186,7 @@ export const createProfile = async (profileData: Partial<UserProfile>): Promise<
     
     if (!accessToken) {
       console.error('No access token available for profile creation');
+      toast.error('Erro de autenticação. Tente fazer login novamente.');
       return false;
     }
     
@@ -203,6 +206,7 @@ export const createProfile = async (profileData: Partial<UserProfile>): Promise<
     }
     
     console.log('Profile created successfully:', data);
+    toast.success('Perfil criado com sucesso!');
     return true;
   } catch (error) {
     console.error('Failed to create profile:', error);

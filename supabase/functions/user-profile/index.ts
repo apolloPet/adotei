@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -116,18 +117,29 @@ serve(async (req) => {
     if (method === "POST" && requestBody.operation === "create-profile") {
       // Creating a new user profile
       if (!userId) {
-        console.error("No user ID available for profile creation");
-        return new Response(
-          JSON.stringify({ 
-            error: "Authentication required", 
-            details: "No user ID available for profile creation",
-            code: "NO_USER_ID" 
-          }),
-          {
-            status: 401,
-            headers: corsHeaders,
-          }
-        );
+        // Try to get auth_id from the session for newer Supabase client versions
+        const { data: sessionData } = await supabase.auth.getSession();
+        
+        if (sessionData?.session?.user) {
+          userId = sessionData.session.user.id;
+          console.log("Got user ID from session:", userId);
+        }
+        
+        // If still no userId, return authentication error
+        if (!userId) {
+          console.error("No user ID available for profile creation");
+          return new Response(
+            JSON.stringify({ 
+              error: "Authentication required", 
+              details: "No user ID available for profile creation",
+              code: "NO_USER_ID" 
+            }),
+            {
+              status: 401,
+              headers: corsHeaders,
+            }
+          );
+        }
       }
       
       console.log("Creating user profile for:", userId);
@@ -159,12 +171,20 @@ serve(async (req) => {
           ? requestBody.has_allergies 
           : requestBody.has_allergies === 'true' || requestBody.has_allergies === true;
 
-        // Process all address-related fields
+        // Process all address-related fields with detailed logging
         const phone = requestBody.phone || '';
         const address = requestBody.address || '';
         const city = requestBody.city || '';
         const state = requestBody.state || '';
         const zip = requestBody.zip || '';
+        
+        console.log("Address fields received:", {
+          phone,
+          address,
+          city,
+          state,
+          zip
+        });
 
         // Ensure avatar_url is a string
         const avatar_url = requestBody.avatar_url !== undefined ? String(requestBody.avatar_url) : '';
