@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
@@ -169,7 +168,7 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
 /**
  * Realiza o cadastro do usuário
  */
-export const signUp = async (userData: SignupData): Promise<{ success: boolean; error?: string }> => {
+export const signUp = async (userData: SignupData): Promise<boolean> => {
   try {
     console.log("Attempting to sign up user:", userData.email);
     
@@ -189,23 +188,19 @@ export const signUp = async (userData: SignupData): Promise<{ success: boolean; 
 
     if (signupError) {
       console.error("Signup error:", signupError);
-      return { 
-        success: false, 
-        error: signupError.message 
-      };
+      toast.error(`Erro de cadastro: ${signupError.message}`);
+      return false;
     }
 
     if (!authData.user) {
       console.error("No user returned from signup");
-      return { 
-        success: false, 
-        error: "Falha no registro. Tente novamente." 
-      };
+      toast.error("Falha no registro. Tente novamente.");
+      return false;
     }
     
     console.log("Auth user created successfully:", authData.user.id);
     
-    // 2. Create user profile via edge function to bypass RLS
+    // 2. Create user profile via profileService
     try {
       const profileData = {
         firstName: userData.firstName || '',
@@ -225,7 +220,9 @@ export const signUp = async (userData: SignupData): Promise<{ success: boolean; 
         workSchedule: userData.workSchedule || ''
       };
       
-      // Create profile using the imported createProfileService
+      console.log("Creating user profile with data:", profileData);
+      
+      // Wait for profile creation to complete
       const profileCreated = await createProfileService(profileData);
       
       if (!profileCreated) {
@@ -240,13 +237,11 @@ export const signUp = async (userData: SignupData): Promise<{ success: boolean; 
     }
 
     console.log("User signup completed successfully");
-    return { success: true };
+    return true;
   } catch (error) {
     console.error("Unexpected error during signup:", error);
-    return { 
-      success: false, 
-      error: "Ocorreu um erro inesperado durante o cadastro. Por favor, tente novamente." 
-    };
+    toast.error("Ocorreu um erro inesperado durante o cadastro. Por favor, tente novamente.");
+    return false;
   }
 };
 
@@ -383,7 +378,6 @@ export const signInAdmin = async (email: string, password: string): Promise<bool
 // Add functions for setting user roles if needed
 export const setUserRole = async (userId: string, role: string): Promise<boolean> => {
   try {
-    // Implementation goes here
     console.log('Setting user role:', { userId, role });
     return true;
   } catch (error) {
@@ -395,7 +389,6 @@ export const setUserRole = async (userId: string, role: string): Promise<boolean
 
 export const getUserRole = async (userId: string): Promise<string | null> => {
   try {
-    // Implementation goes here
     console.log('Getting user role for:', userId);
     return 'user'; // Placeholder
   } catch (error) {

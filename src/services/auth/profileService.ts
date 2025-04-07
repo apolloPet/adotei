@@ -156,7 +156,7 @@ export const createProfile = async (profileData: Partial<UserProfile>): Promise<
       ? `${profileData.firstName} ${profileData.lastName}` 
       : profileData.firstName || '';
     
-    // Prepare data for the edge function
+    // Prepare data for the edge function - ensure all address fields are included
     const payload = {
       operation: 'create-profile',
       name,
@@ -178,12 +178,21 @@ export const createProfile = async (profileData: Partial<UserProfile>): Promise<
     
     console.log('Creating profile with data:', payload);
     
+    // Get active session token for authorization
+    const sessionData = await supabase.auth.getSession();
+    const accessToken = sessionData.data.session?.access_token;
+    
+    if (!accessToken) {
+      console.error('No access token available for profile creation');
+      return false;
+    }
+    
     // Call the edge function with authentication
     const { data, error } = await supabase.functions.invoke('user-profile', {
       method: 'POST',
       body: payload,
       headers: {
-        Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        Authorization: `Bearer ${accessToken}`
       }
     });
     

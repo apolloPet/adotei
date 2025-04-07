@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { CheckCircle } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-sonner";
-import { signUp } from '@/services/auth/authCore'; // Update import to get it directly from authCore
+import { signUp } from '@/services/auth/authCore'; // Import directly from authCore
 import { SignupData } from '@/services/auth/types';
 
 const RegisterForm = () => {
