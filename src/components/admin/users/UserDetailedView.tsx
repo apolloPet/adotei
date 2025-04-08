@@ -37,8 +37,9 @@ const UserDetailedView = ({ users, formatDate }: UserDetailedViewProps) => {
               <div>
                 <h4 className="text-sm font-medium mb-2">Endereço</h4>
                 <p className="text-sm">
-                  {user.address.street}, {user.address.number}<br />
-                  {user.address.neighborhood}, {user.address.city}<br />
+                  {user.address.street}{user.address.number ? `, ${user.address.number}` : ''}<br />
+                  {user.address.neighborhood ? `${user.address.neighborhood}, ` : ''}
+                  {user.address.city}{user.address.state ? `, ${user.address.state}` : ''}<br />
                   CEP: {user.address.cep}
                 </p>
               </div>
@@ -51,7 +52,7 @@ const UserDetailedView = ({ users, formatDate }: UserDetailedViewProps) => {
                     user.housingType === 'house' ? 'Casa' : 'Outro'
                   }<br />
                   <span className="text-muted-foreground">Crianças:</span> {
-                    user.hasChildren ? `Sim (${user.childrenAges})` : 'Não'
+                    user.hasChildren ? `Sim${user.childrenAges ? ` (${user.childrenAges})` : ''}` : 'Não'
                   }
                 </p>
               </div>
@@ -63,7 +64,7 @@ const UserDetailedView = ({ users, formatDate }: UserDetailedViewProps) => {
                     user.hadPetsBefore ? 'Sim' : 'Não'
                   }<br />
                   <span className="text-muted-foreground">Alergias:</span> {
-                    user.hasAllergies ? `Sim (${user.allergiesDescription})` : 'Não'
+                    user.hasAllergies ? `Sim${user.allergiesDescription ? ` (${user.allergiesDescription})` : ''}` : 'Não'
                   }
                 </p>
               </div>
@@ -71,7 +72,7 @@ const UserDetailedView = ({ users, formatDate }: UserDetailedViewProps) => {
               <div>
                 <h4 className="text-sm font-medium mb-2">Rotina</h4>
                 <p className="text-sm">
-                  <span className="text-muted-foreground">Trabalho:</span> {user.workSchedule}
+                  <span className="text-muted-foreground">Trabalho:</span> {user.workSchedule || 'Não informado'}
                 </p>
               </div>
             </div>

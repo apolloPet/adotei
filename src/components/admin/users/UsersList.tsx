@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -47,7 +46,6 @@ const UsersList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Fetch users from the API
   useEffect(() => {
     const loadUsers = async () => {
       try {
@@ -74,7 +72,6 @@ const UsersList = () => {
     loadUsers();
   }, []);
 
-  // Count active filters
   useEffect(() => {
     let count = 0;
     if (filters.housingType.length > 0) count++;
@@ -87,7 +84,6 @@ const UsersList = () => {
     setActiveFiltersCount(count);
   }, [filters]);
 
-  // Get unique options for filters
   const cityOptions = Array.from(new Set(users
     .map(user => user.address?.city || '')
     .filter(Boolean)));
@@ -99,55 +95,43 @@ const UsersList = () => {
   console.log('Opções de cidades disponíveis:', cityOptions);
   console.log('Opções de bairros disponíveis:', neighborhoodOptions);
 
-  // Filter users based on search term and filters
   const filteredUsers = users.filter(user => {
-    // Search term filter
     const matchesSearch = 
       (user.name && user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (user.phone && user.phone.includes(searchTerm)) ||
       (user.address?.neighborhood && user.address.neighborhood.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (user.address?.city && user.address.city.toLowerCase().includes(searchTerm.toLowerCase()));
+      (user.address?.city && user.address.city.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user.address?.state && user.address.state.toLowerCase().includes(searchTerm.toLowerCase()));
     
     if (!matchesSearch) return false;
     
-    // Housing type filter
     if (filters.housingType.length > 0 && !filters.housingType.includes(user.housingType)) {
       return false;
     }
     
-    // Had pets before filter
     if (filters.hadPetsBefore !== null && user.hadPetsBefore !== filters.hadPetsBefore) {
       return false;
     }
     
-    // Has allergies filter
     if (filters.hasAllergies !== null && user.hasAllergies !== filters.hasAllergies) {
       return false;
     }
     
-    // Has children filter
     if (filters.hasChildren !== null && user.hasChildren !== filters.hasChildren) {
       return false;
     }
     
-    // City filter
     if (filters.city.length > 0 && (!user.address?.city || !filters.city.includes(user.address.city))) {
       return false;
     }
     
-    // Neighborhood filter
     if (filters.neighborhood.length > 0 && (!user.address?.neighborhood || !filters.neighborhood.includes(user.address.neighborhood))) {
       return false;
     }
     
     return true;
   });
-
-  // Get paginated users
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
 
   const formatDate = (dateString: string) => {
     try {
@@ -166,7 +150,7 @@ const UsersList = () => {
       ...prev,
       [key]: value
     }));
-    setCurrentPage(1); // Reset to first page when filter changes
+    setCurrentPage(1);
   };
 
   const toggleArrayFilter = (key: keyof FilterType, value: string) => {
@@ -184,12 +168,12 @@ const UsersList = () => {
         };
       }
     });
-    setCurrentPage(1); // Reset to first page when filter changes
+    setCurrentPage(1);
   };
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    setCurrentPage(1); // Reset to first page when search changes
+    setCurrentPage(1);
   };
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
@@ -271,7 +255,6 @@ const UsersList = () => {
               <UserDetailedView users={paginatedUsers} formatDate={formatDate} />
             )}
             
-            {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex justify-center space-x-2 mt-4">
                 <Button
