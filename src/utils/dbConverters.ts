@@ -103,14 +103,19 @@ export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []) => {
   const species = normalizedSpecies === 'dog' || normalizedSpecies === 'cachorro' ? 'dog' :
                  normalizedSpecies === 'cat' || normalizedSpecies === 'gato' ? 'cat' : 'other';
                       
+  // Normalize size to match the required union type
+  const normalizedSize = dbPet.size.toLowerCase();
+  const size = normalizedSize === 'small' || normalizedSize === 'pequeno' ? 'small' :
+               normalizedSize === 'medium' || normalizedSize === 'medio' ? 'medium' : 'large';
+
   return {
     id: dbPet.id,
     name: dbPet.name,
-    species: species as 'dog' | 'cat' | 'other', // Ensure this is the correct union type
+    species: species as 'dog' | 'cat' | 'other',
     breed: dbPet.breed,
     age: age,
     gender: dbPet.gender,
-    size: dbPet.size,
+    size: size as 'small' | 'medium' | 'large',
     weight: dbPet.weight,
     description: dbPet.description,
     location: dbPet.location,
@@ -122,6 +127,6 @@ export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []) => {
     medicalInfo: dbPet.medical_info || '',
     images: images.map(img => img.url),
     primaryImage: primaryImage,
-    shelter: dbPet.shelter_id  // Adding the missing shelter property
+    shelter: dbPet.shelter_id  // Adding the shelter property
   };
 };

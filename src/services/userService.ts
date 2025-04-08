@@ -48,7 +48,7 @@ export const fetchUsers = async (): Promise<User[]> => {
         }
         
         console.log(`Encontrados ${functionData?.length || 0} usuários via edge function`);
-        return (functionData || []).map(dbUserToUser);
+        return (functionData || []).map((dbUser: DbUser) => dbUserToUser(dbUser));
       } catch (functionCallError) {
         console.error('Erro ao chamar edge function:', functionCallError);
         return [];
