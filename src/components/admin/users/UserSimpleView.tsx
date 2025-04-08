@@ -34,9 +34,9 @@ const UserSimpleView = ({ users, formatDate }: UserSimpleViewProps) => {
             <TableRow key={user.id}>
               <TableCell className="font-medium">{user.name}</TableCell>
               <TableCell>{user.email}</TableCell>
-              <TableCell>{user.phone}</TableCell>
+              <TableCell>{user.phone || '-'}</TableCell>
               <TableCell>
-                {user.address.city}/{user.address.neighborhood}
+                {user.address?.city || '-'}/{user.address?.neighborhood || '-'}
               </TableCell>
               <TableCell>{formatDate(user.registrationDate)}</TableCell>
             </TableRow>

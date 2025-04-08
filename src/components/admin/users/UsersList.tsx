@@ -1,18 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { toast } from "@/hooks/use-sonner";
-import { Search, Filter, X, AlertTriangle } from "lucide-react";
+import { Search, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuCheckboxItem, 
-  DropdownMenuSeparator,
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -27,7 +17,7 @@ import UserFilterDropdown from './UserFilterDropdown';
 import UserFilterBadges from './UserFilterBadges';
 import UserSimpleView from './UserSimpleView';
 import UserDetailedView from './UserDetailedView';
-import { fetchUsers } from '@/services/userService';
+import { queryUsers } from '@/services/userQueryService';
 
 const UsersList = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -52,8 +42,8 @@ const UsersList = () => {
       try {
         setIsLoading(true);
         setError(null);
-        console.log('Iniciando busca de usuários...');
-        const data = await fetchUsers();
+        console.log('Iniciando busca de usuários com a função dedicada...');
+        const data = await queryUsers();
         console.log('Usuários retornados:', data);
         if (data && data.length > 0) {
           setUsers(data);
@@ -64,7 +54,6 @@ const UsersList = () => {
       } catch (err) {
         console.error('Error fetching users:', err);
         setError('Erro ao carregar usuários. Por favor, tente novamente mais tarde.');
-        toast.error('Erro ao carregar usuários');
       } finally {
         setIsLoading(false);
       }
