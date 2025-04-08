@@ -38,12 +38,13 @@ export interface PetImage {
 export interface Pet extends Omit<PetInfo, 'age' | 'type' | 'images'> {
   age: string; // In Pet it's a string, in PetInfo it's a number
   species: 'dog' | 'cat' | 'other'; // This replaces 'type' in PetInfo
-  shelter: string;
+  shelter: string; // This is required in the Pet interface
   traits: string[];
-  weight: number; // Adding required properties to match error messages
-  shelterTime: string; // Adding required properties to match error messages
-  medicalInfo: string; // Added this property that was missing
-  images: PetImage[]; // Changed from string[] to PetImage[]
+  weight: number; 
+  shelterTime: string;
+  medicalInfo: string;
+  images: string[]; // Changed from PetImage[] to string[] to match what dbPetToPet returns
+  primaryImage: string; // Added to match what dbPetToPet returns
 }
 
 // Helper function for pet colors

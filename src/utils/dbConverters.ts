@@ -116,6 +116,7 @@ export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []) => {
     healthIssues: dbPet.health_issues,
     medicalInfo: dbPet.medical_info || '',
     images: images.map(img => img.url),
-    primaryImage: primaryImage
+    primaryImage: primaryImage,
+    shelter: dbPet.shelter_id  // Adding the missing shelter property to match the Pet interface
   };
 };
