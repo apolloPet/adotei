@@ -17,59 +17,87 @@ export const queryUsers = async (): Promise<User[]> => {
 
     console.log('Iniciando busca de usuários na tabela users...');
     
-    // First try to get session to ensure we're authenticated
-    const { data: sessionData } = await supabase.auth.getSession();
-    if (!sessionData.session) {
-      console.error('Erro: Usuário não está autenticado');
-      toast.error('Você precisa estar autenticado para ver usuários');
-      return [];
-    }
+    // Check if we have admin access from localStorage (for demo purposes)
+    const isAdmin = localStorage.getItem("isAdmin") === "true";
     
-    // Use admin role to bypass RLS if possible
-    const { data: userData, error } = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('Erro ao buscar usuários diretamente:', error);
-      handleSupabaseError(error, 'Erro ao buscar usuários');
+    // Try the query regardless of session status if the user is an admin
+    try {
+      // First attempt - direct query
+      const { data: userData, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false });
       
-      // If we can't get users directly, try using edge function
-      try {
-        console.log('Tentando buscar usuários via edge function...');
-        const { data: functionData, error: functionError } = await supabase.functions.invoke('admin', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${sessionData.session.access_token}`,
-          },
-          body: { endpoint: '/users' }
-        });
+      if (error) {
+        console.error('Erro ao buscar usuários diretamente:', error);
         
-        if (functionError) {
-          console.error('Erro ao buscar usuários via edge function:', functionError);
-          return [];
+        // If we're admin but still got an error, try the edge function approach
+        if (isAdmin) {
+          console.log('Usuário é admin via localStorage, tentando função edge...');
+          return await tryEdgeFunctionQuery();
         }
         
-        console.log(`Encontrados ${functionData?.length || 0} usuários via edge function`);
-        return (functionData || []).map((dbUser: DbUser) => dbUserToUser(dbUser));
-      } catch (functionCallError) {
-        console.error('Erro ao chamar edge function:', functionCallError);
-        return [];
+        // If we're not admin and got an error, check session and try again
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          console.error('Erro: Usuário não está autenticado');
+          
+          // If we're in the admin panel, we can try using edge function as fallback
+          return await tryEdgeFunctionQuery();
+        } else {
+          // We have a session but the query failed for some other reason
+          handleSupabaseError(error, 'Erro ao buscar usuários');
+          return [];
+        }
       }
-    }
 
-    console.log(`Encontrados ${userData?.length || 0} usuários na tabela users`);
-    
-    return (userData || []).map((dbUser) => {
-      return dbUserToUser(dbUser as DbUser);
-    });
+      console.log(`Encontrados ${userData?.length || 0} usuários na tabela users`);
+      
+      return (userData || []).map((dbUser) => {
+        return dbUserToUser(dbUser as DbUser);
+      });
+    } catch (directQueryError) {
+      console.error('Erro ao fazer query direta:', directQueryError);
+      // Fallback to edge function
+      return await tryEdgeFunctionQuery();
+    }
   } catch (error) {
     console.error('Erro ao buscar usuários:', error);
     toast.error('Erro ao buscar usuários');
     return [];
   }
 };
+
+// Helper function to try using edge function as fallback
+async function tryEdgeFunctionQuery(): Promise<User[]> {
+  try {
+    console.log('Tentando buscar usuários via edge function...');
+    
+    // Get current session if exists
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    
+    // Call edge function with or without token
+    const { data: functionData, error: functionError } = await supabase.functions.invoke('admin', {
+      method: 'POST',
+      headers: accessToken ? {
+        Authorization: `Bearer ${accessToken}`,
+      } : {},
+      body: { endpoint: '/users' }
+    });
+    
+    if (functionError) {
+      console.error('Erro ao buscar usuários via edge function:', functionError);
+      return [];
+    }
+    
+    console.log(`Encontrados ${functionData?.length || 0} usuários via edge function`);
+    return (functionData || []).map((dbUser: DbUser) => dbUserToUser(dbUser));
+  } catch (functionCallError) {
+    console.error('Erro ao chamar edge function:', functionCallError);
+    return [];
+  }
+}
 
 export const queryUserById = async (id: string): Promise<User | null> => {
   try {

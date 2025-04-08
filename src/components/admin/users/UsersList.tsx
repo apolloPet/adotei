@@ -18,6 +18,7 @@ import UserFilterBadges from './UserFilterBadges';
 import UserSimpleView from './UserSimpleView';
 import UserDetailedView from './UserDetailedView';
 import { queryUsers } from '@/services/userQueryService';
+import { toast } from '@/hooks/use-sonner';
 
 const UsersList = () => {
   const [users, setUsers] = useState<User[]>([]);

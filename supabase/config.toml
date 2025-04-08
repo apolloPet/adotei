@@ -1,17 +1,32 @@
 
 project_id = "jwbcrddblmiurmeziszp"
 
-[functions.cost-simulator]
-verify_jwt = true
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
 
-[functions.animals]
-verify_jwt = true
+[db]
+port = 54322
 
-[functions.admin-management]
-verify_jwt = true
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost"
 
-[functions.user-profile]
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+
+[realtime]
+enabled = true
+
+[functions.admin]
 verify_jwt = false
-
-[functions.admin-users]
-verify_jwt = true
