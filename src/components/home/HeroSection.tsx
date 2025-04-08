@@ -3,8 +3,21 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { useAuth } from '@/hooks/auth';
+import { useNavigate } from 'react-router-dom';
 
 const HeroSection = () => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleButtonClick = (path: string) => {
+    if (isAuthenticated) {
+      navigate(path);
+    } else {
+      navigate('/register');
+    }
+  };
+
   return (
     <section className="relative pt-32 pb-20 md:pt-40 md:pb-28">
       <div className="container mx-auto px-4">
@@ -23,18 +36,23 @@ const HeroSection = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link to="/register">
-                <Button size="lg" className="rounded-full px-8 py-6 text-base">
-                  Comece a adotar
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
+              <Button 
+                size="lg" 
+                className="rounded-full px-8 py-6 text-base"
+                onClick={() => handleButtonClick('/browse')}
+              >
+                Comece a adotar
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
               
-              <Link to="/browse">
-                <Button variant="secondary" size="lg" className="rounded-full px-8 py-6 text-base">
-                  Explorar pets
-                </Button>
-              </Link>
+              <Button 
+                variant="secondary" 
+                size="lg" 
+                className="rounded-full px-8 py-6 text-base"
+                onClick={() => handleButtonClick('/browse')}
+              >
+                Explorar pets
+              </Button>
             </div>
           </motion.div>
         </div>

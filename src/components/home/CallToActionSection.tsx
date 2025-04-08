@@ -1,13 +1,25 @@
 
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
+import { useAuth } from '@/hooks/auth';
+import { useNavigate } from 'react-router-dom';
 
 interface CallToActionSectionProps {
   isVisible: boolean;
 }
 
 const CallToActionSection = ({ isVisible }: CallToActionSectionProps) => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleButtonClick = (path: string) => {
+    if (isAuthenticated) {
+      navigate(path);
+    } else {
+      navigate('/register');
+    }
+  };
+
   return (
     <section id="callToAction" className="py-20 bg-primary">
       <div className="container mx-auto px-4">
@@ -28,17 +40,23 @@ const CallToActionSection = ({ isVisible }: CallToActionSectionProps) => {
           </p>
           
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link to="/register">
-              <Button size="lg" variant="secondary" className="rounded-full px-8 py-6 text-primary text-base">
-                Criar uma conta
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              variant="secondary" 
+              className="rounded-full px-8 py-6 text-primary text-base"
+              onClick={() => navigate('/register')}
+            >
+              Criar uma conta
+            </Button>
             
-            <Link to="/browse">
-              <Button size="lg" variant="outline" className="rounded-full px-8 py-6 text-white border-white/30 hover:bg-white/10 text-base">
-                Explorar pets
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="rounded-full px-8 py-6 text-white border-white/30 hover:bg-white/10 text-base"
+              onClick={() => handleButtonClick('/browse')}
+            >
+              Explorar pets
+            </Button>
           </div>
         </motion.div>
       </div>
