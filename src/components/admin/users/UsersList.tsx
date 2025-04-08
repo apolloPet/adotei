@@ -177,6 +177,9 @@ const UsersList = () => {
   };
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <Card>
