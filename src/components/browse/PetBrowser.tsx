@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PetCard from "@/components/PetCard";
 import NoResults from "@/components/browse/NoResults";
-import { Pet, PetInfo, PetImage } from "@/components/pet/types";
+import { Pet, PetInfo } from "@/components/pet/types";
 
 interface PetBrowserProps {
   pets: Pet[];
@@ -20,8 +20,8 @@ const PetBrowser = ({ pets, onSwipe, onReset }: PetBrowserProps) => {
     return {
       id: pet.id,
       name: pet.name,
-      // Convert PetImage[] to string[] by extracting URLs
-      images: pet.images.map(img => img.url),
+      // Pet.images is now already string[], so no need to extract URLs
+      images: pet.images,
       age: parseInt(pet.age) || 0,
       gender: pet.gender,
       size: pet.size,
@@ -29,11 +29,11 @@ const PetBrowser = ({ pets, onSwipe, onReset }: PetBrowserProps) => {
       type: pet.species,
       description: pet.description,
       location: pet.location,
-      shelterTime: "recente", // Default value
-      weight: 0, // Default value
+      shelterTime: pet.shelterTime,
+      weight: pet.weight,
       personality: pet.traits,
-      specialNeeds: false,
-      healthIssues: false,
+      specialNeeds: pet.specialNeeds,
+      healthIssues: pet.healthIssues,
       species: pet.species,
       shelter: pet.shelter,
       traits: pet.traits

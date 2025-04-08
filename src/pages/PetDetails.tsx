@@ -44,8 +44,8 @@ const PetDetails = () => {
     return <PetNotFound />;
   }
   
-  // Convert PetImage[] to string[] for the gallery component
-  const imageUrls = pet.images.map(img => img.url);
+  // Pet.images is already string[] so we can use it directly
+  const imageUrls = pet.images;
   
   return (
     <div className="container mx-auto p-4 pb-16">

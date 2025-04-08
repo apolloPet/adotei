@@ -1,6 +1,6 @@
 
 import { Animal } from "@/services/animalService";
-import { Pet, PetImage } from "@/components/pet/types";
+import { Pet } from "@/components/pet/types";
 
 /**
  * Converte um animal do modelo de banco de dados para o modelo de interface Pet
@@ -20,18 +20,11 @@ export const animalToPet = (animal: Animal): Pet => {
   // If no valid images, use fallback image
   const fallbackImageUrl = '/placeholder.svg';
   const imageUrls = processedImageUrls.length > 0 ? processedImageUrls : [fallbackImageUrl];
-  
-  // Convert string URLs to PetImage objects
-  const petImages: PetImage[] = imageUrls.map((url, index) => ({
-    id: `${animal.id}-image-${index}`,
-    url: url,
-    isPrimary: index === 0
-  }));
 
   return {
     id: animal.id,
     name: animal.nome,
-    images: petImages,
+    images: imageUrls, // Now properly returns string[] as expected by Pet
     age: animal.idade.toString(),
     gender: animal.sexo === 'macho' ? 'male' : 'female',
     size: animal.porte === 'pequeno' ? 'small' : 
@@ -48,6 +41,7 @@ export const animalToPet = (animal: Animal): Pet => {
     healthIssues: false,
     shelter: "PetMatch",
     traits: animal.castrado ? ["castrado"] : [],
-    medicalInfo: "" // Adding the required medicalInfo property
+    medicalInfo: "", // Adding the required medicalInfo property
+    primaryImage: imageUrls[0] || fallbackImageUrl
   };
 };

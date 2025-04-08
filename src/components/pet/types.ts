@@ -26,15 +26,14 @@ export interface PetCardProps {
   onSwipe: (direction: string, id: string) => void;
 }
 
-// Image interface for the Pet type
+// This interface is now just for compatibility and not used directly
 export interface PetImage {
   id: string;
   url: string;
   isPrimary: boolean;
 }
 
-// This interface was previously separate but was causing type conflicts
-// Now Pet extends PetInfo to make them compatible
+// Updated Pet interface to match dbPetToPet return type
 export interface Pet extends Omit<PetInfo, 'age' | 'type' | 'images'> {
   age: string; // In Pet it's a string, in PetInfo it's a number
   species: 'dog' | 'cat' | 'other'; // This replaces 'type' in PetInfo
@@ -43,7 +42,7 @@ export interface Pet extends Omit<PetInfo, 'age' | 'type' | 'images'> {
   weight: number; 
   shelterTime: string;
   medicalInfo: string;
-  images: string[]; // Changed from PetImage[] to string[] to match what dbPetToPet returns
+  images: string[]; // Now expecting string[] to match what dbPetToPet returns
   primaryImage: string; // Added to match what dbPetToPet returns
 }
 
