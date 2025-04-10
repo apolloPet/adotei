@@ -118,7 +118,6 @@ export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []): Pet => {
     traits: dbPet.traits || [],
     healthIssues: dbPet.health_issues,
     specialNeeds: dbPet.special_needs,
-    mainImage: primaryImage,
     images: [primaryImage, ...additionalImages].filter(Boolean),
     medicalInfo: dbPet.medical_info || ''
   };
