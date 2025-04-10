@@ -1,30 +1,24 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Search, AlertTriangle } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { format } from 'date-fns';
-import { FilterType, User } from './types';
+import { FilterType } from './types';
 import UserFilterDropdown from './UserFilterDropdown';
 import UserFilterBadges from './UserFilterBadges';
 import UserSimpleView from './UserSimpleView';
 import UserDetailedView from './UserDetailedView';
+import UserSearchBar from './UserSearchBar';
+import UserViewToggle from './UserViewToggle';
+import UserPagination from './UserPagination';
 import { queryUsers } from '@/services/userQueryService';
-import { toast } from '@/hooks/use-sonner';
+import { format } from 'date-fns';
 
 const UsersList = () => {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState<FilterType>({
     housingType: [],
     hadPetsBefore: null,
@@ -97,6 +91,7 @@ const UsersList = () => {
     
     if (!matchesSearch) return false;
     
+    // Apply filters logic
     if (filters.housingType.length > 0 && !filters.housingType.includes(user.housingType)) {
       return false;
     }
@@ -168,7 +163,6 @@ const UsersList = () => {
   };
 
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
 
@@ -182,28 +176,15 @@ const UsersList = () => {
           </div>
           
           <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-            <Select
-              value={viewMode}
-              onValueChange={(value: 'simple' | 'detailed') => setViewMode(value)}
-            >
-              <SelectTrigger className="w-[140px]">
-                <SelectValue placeholder="Visualização" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="simple">Resumida</SelectItem>
-                <SelectItem value="detailed">Detalhada</SelectItem>
-              </SelectContent>
-            </Select>
+            <UserViewToggle 
+              viewMode={viewMode} 
+              setViewMode={setViewMode}
+            />
             
-            <div className="relative w-full max-w-sm">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nome, email, telefone..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => handleSearch(e.target.value)}
-              />
-            </div>
+            <UserSearchBar 
+              searchTerm={searchTerm}
+              handleSearch={handleSearch}
+            />
             
             <UserFilterDropdown 
               filters={filters}
@@ -250,29 +231,11 @@ const UsersList = () => {
             )}
             
             {totalPages > 1 && (
-              <div className="flex justify-center space-x-2 mt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                >
-                  Anterior
-                </Button>
-                <div className="flex items-center">
-                  <span className="text-sm text-muted-foreground">
-                    Página {currentPage} de {totalPages}
-                  </span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                >
-                  Próxima
-                </Button>
-              </div>
+              <UserPagination 
+                currentPage={currentPage}
+                totalPages={totalPages}
+                setCurrentPage={setCurrentPage}
+              />
             )}
             
             <p className="text-xs text-muted-foreground mt-4">
