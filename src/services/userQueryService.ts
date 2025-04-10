@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { dbUserToUser } from '@/utils/dbConverters';
@@ -12,10 +13,9 @@ export const queryUsers = async (filters?: Record<string, any>): Promise<User[]>
     let query = supabase.from('users').select('*');
     
     // Apply filters one by one if provided to avoid deep type instantiation
-    if (filters) {
-      Object.keys(filters).forEach(key => {
-        const value = filters[key];
-        
+    if (filters && typeof filters === 'object') {
+      // Using explicit type for PostgrestFilterBuilder
+      Object.entries(filters).forEach(([key, value]) => {
         // Skip undefined or null values
         if (value === undefined || value === null) return;
         
@@ -138,15 +138,17 @@ export const getUsersByCharacteristics = async (characteristics: Record<string, 
       .select('*');
     
     // Apply each characteristic as a filter
-    Object.entries(characteristics).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        if (typeof value === 'boolean') {
-          query = query.eq(key, value);
-        } else if (Array.isArray(value) && value.length > 0) {
-          query = query.in(key, value);
+    if (characteristics && typeof characteristics === 'object') {
+      Object.entries(characteristics).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          if (typeof value === 'boolean') {
+            query = query.eq(key, value);
+          } else if (Array.isArray(value) && value.length > 0) {
+            query = query.in(key, value);
+          }
         }
-      }
-    });
+      });
+    }
     
     const { data, error } = await query;
     
