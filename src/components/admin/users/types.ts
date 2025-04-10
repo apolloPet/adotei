@@ -20,6 +20,7 @@ export interface User {
   hasAllergies: boolean;
   allergiesDescription?: string;
   workSchedule: string;
+  avatarUrl?: string;
 }
 
 export type FilterType = {
