@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-sonner';
 import { Json } from '@/lib/database.types';
@@ -287,10 +288,10 @@ export const getAnimals = async (filters?: {
       if (filters.nome) {
         query = query.ilike('nome', `%${filters.nome}%`);
       }
-      if (filters.tipo) {
+      if (filters.tipo && filters.tipo !== 'all') {
         query = query.eq('tipo', filters.tipo);
       }
-      if (filters.porte) {
+      if (filters.porte && filters.porte !== 'all') {
         query = query.eq('porte', filters.porte);
       }
       if (filters.responsavel_id) {
@@ -358,20 +359,67 @@ export const getAnimalById = async (id: string): Promise<Animal | null> => {
 };
 
 // Update an animal
-export const updateAnimal = async (id: string, animalData: Partial<AnimalCreateData>): Promise<Animal | null> => {
+export const updateAnimal = async (id: string, animalData: Partial<Animal>): Promise<Animal | null> => {
   try {
+    // Create a properly formatted object for the update
+    const updateData: any = {};
+    
+    if (animalData.nome !== undefined) updateData.nome = animalData.nome.trim();
+    if (animalData.idade !== undefined) updateData.idade = animalData.idade;
+    if (animalData.tipo !== undefined) updateData.tipo = animalData.tipo;
+    if (animalData.porte !== undefined) updateData.porte = animalData.porte;
+    if (animalData.sexo !== undefined) updateData.sexo = animalData.sexo;
+    if (animalData.castrado !== undefined) updateData.castrado = animalData.castrado;
+    if (animalData.descricao !== undefined) updateData.descricao = animalData.descricao?.trim();
+    
+    // Handle vacinas array
+    if (animalData.vacinas !== undefined) {
+      updateData.vacinas = Array.isArray(animalData.vacinas) ? animalData.vacinas : [];
+    }
+    
+    // Handle fotos array
+    if (animalData.fotos !== undefined) {
+      updateData.fotos = Array.isArray(animalData.fotos) ? animalData.fotos : [];
+    }
+    
+    // Handle fotoPrincipal
+    if (animalData.fotoPrincipal !== undefined) {
+      updateData.fotoprincipal = animalData.fotoPrincipal;
+    }
+
+    console.log('Atualizando animal com ID:', id, 'Dados:', updateData);
+    
     const { data, error } = await supabase
       .from('animals')
-      .update(animalData)
+      .update(updateData)
       .eq('id', id)
-      .select();
+      .select()
+      .single();
 
     if (error) {
       console.error('Error updating animal:', error);
+      if (error.code === '42501') {
+        toast.error('Permissão negada', {
+          description: 'Você não tem permissão para atualizar este animal.'
+        });
+      } else {
+        toast.error('Erro ao atualizar animal', {
+          description: error.message
+        });
+      }
       throw new Error(error.message);
     }
+    
+    if (!data) {
+      console.error('Nenhum dado retornado após atualização');
+      toast.error('Falha ao atualizar animal');
+      throw new Error('Falha ao atualizar animal: Nenhum dado retornado do servidor');
+    }
 
-    return data?.[0] ? dbAnimalToAnimal(data[0]) : null;
+    const updatedAnimal = dbAnimalToAnimal(data);
+    console.log('Animal atualizado com sucesso:', updatedAnimal);
+    
+    return updatedAnimal;
   } catch (error) {
     console.error('Error in updateAnimal:', error);
     if (error instanceof Error) {

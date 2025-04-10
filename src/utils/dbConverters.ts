@@ -113,9 +113,8 @@ export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []): Pet => {
     weight: dbPet.weight,
     description: dbPet.description,
     location: dbPet.location,
-    shelter: dbPet.shelter_id, // Changed from shelter_id to shelter to match the Pet interface
+    shelter: dbPet.shelter_id, // This field name has to match the Pet interface
     shelterTime: dbPet.shelter_time,
-    adoptionStatus: 'available', // Default status
     traits: dbPet.traits || [],
     healthIssues: dbPet.health_issues,
     specialNeeds: dbPet.special_needs,
@@ -124,4 +123,3 @@ export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []): Pet => {
     medicalInfo: dbPet.medical_info || ''
   };
 };
-

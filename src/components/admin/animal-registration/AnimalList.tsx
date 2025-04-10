@@ -6,9 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Search, Edit, Trash2, Eye } from 'lucide-react';
-import { getAnimals, deleteAnimal, Animal } from '@/services/animalService';
+import { getAnimals, deleteAnimal, getAnimalById, updateAnimal, Animal } from '@/services/animalService';
 import { toast } from '@/hooks/use-sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { useNavigate } from 'react-router-dom';
+import AnimalDetailView from './AnimalDetailView';
+import AnimalEditForm from './AnimalEditForm';
 
 const AnimalList = () => {
   const [animals, setAnimals] = useState<Animal[]>([]);
@@ -17,6 +20,10 @@ const AnimalList = () => {
   const [filterType, setFilterType] = useState('all');
   const [filterSize, setFilterSize] = useState('all');
   const [confirmDelete, setConfirmDelete] = useState<{ open: boolean, id: string | null }>({ open: false, id: null });
+  const [viewAnimal, setViewAnimal] = useState<{ open: boolean, animal: Animal | null }>({ open: false, animal: null });
+  const [editAnimal, setEditAnimal] = useState<{ open: boolean, animal: Animal | null }>({ open: false, animal: null });
+  
+  const navigate = useNavigate();
 
   useEffect(() => {
     console.log('AnimalList component mounted - fetching animals');
@@ -62,6 +69,51 @@ const AnimalList = () => {
       toast.error('Não foi possível excluir o animal.');
     } finally {
       setConfirmDelete({ open: false, id: null });
+    }
+  };
+
+  const handleViewAnimal = async (id: string) => {
+    try {
+      const animal = await getAnimalById(id);
+      if (animal) {
+        setViewAnimal({ open: true, animal });
+      } else {
+        toast.error('Animal não encontrado');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar detalhes do animal:', error);
+      toast.error('Não foi possível carregar os detalhes do animal.');
+    }
+  };
+
+  const handleEditAnimal = async (id: string) => {
+    try {
+      const animal = await getAnimalById(id);
+      if (animal) {
+        setEditAnimal({ open: true, animal });
+      } else {
+        toast.error('Animal não encontrado');
+      }
+    } catch (error) {
+      console.error('Erro ao buscar dados do animal para edição:', error);
+      toast.error('Não foi possível carregar os dados do animal para edição.');
+    }
+  };
+
+  const handleSaveEdit = async (updatedAnimal: Animal) => {
+    try {
+      const result = await updateAnimal(updatedAnimal.id, updatedAnimal);
+      if (result) {
+        // Update the animals list with the updated animal
+        setAnimals(animals.map(animal => 
+          animal.id === updatedAnimal.id ? updatedAnimal : animal
+        ));
+        setEditAnimal({ open: false, animal: null });
+        toast.success('Animal atualizado com sucesso!');
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar animal:', error);
+      toast.error('Não foi possível atualizar os dados do animal.');
     }
   };
 
@@ -172,10 +224,20 @@ const AnimalList = () => {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="icon" title="Ver detalhes">
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          title="Ver detalhes"
+                          onClick={() => handleViewAnimal(animal.id)}
+                        >
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="icon" title="Editar">
+                        <Button 
+                          variant="outline" 
+                          size="icon" 
+                          title="Editar"
+                          onClick={() => handleEditAnimal(animal.id)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
@@ -196,6 +258,7 @@ const AnimalList = () => {
         </CardContent>
       </Card>
       
+      {/* Confirm Delete Dialog */}
       <Dialog open={confirmDelete.open} onOpenChange={(open) => setConfirmDelete({ ...confirmDelete, open })}>
         <DialogContent>
           <DialogHeader>
@@ -217,6 +280,37 @@ const AnimalList = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* View Animal Details Dialog */}
+      {viewAnimal.animal && (
+        <Dialog open={viewAnimal.open} onOpenChange={(open) => setViewAnimal({ ...viewAnimal, open })}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Detalhes do Animal</DialogTitle>
+            </DialogHeader>
+            <AnimalDetailView 
+              animal={viewAnimal.animal} 
+              onClose={() => setViewAnimal({ open: false, animal: null })}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Edit Animal Dialog */}
+      {editAnimal.animal && (
+        <Dialog open={editAnimal.open} onOpenChange={(open) => setEditAnimal({ ...editAnimal, open })}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Editar Animal</DialogTitle>
+            </DialogHeader>
+            <AnimalEditForm 
+              animal={editAnimal.animal}
+              onSave={handleSaveEdit}
+              onCancel={() => setEditAnimal({ open: false, animal: null })}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
