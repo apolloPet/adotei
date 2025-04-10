@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { dbUserToUser } from '@/utils/dbConverters';
@@ -10,10 +9,9 @@ export const queryUsers = async (filters?: Record<string, any>): Promise<User[]>
     console.log('Fetching users with filters:', filters);
     
     // Build the query with filters if provided
-    let query = supabase
-      .from('users')
-      .select('*');
+    let query = supabase.from('users').select('*');
     
+    // Apply filters one by one if provided to avoid deep type instantiation
     if (filters) {
       Object.keys(filters).forEach(key => {
         const value = filters[key];
