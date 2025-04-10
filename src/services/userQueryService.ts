@@ -3,6 +3,8 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { dbUserToUser } from '@/utils/dbConverters';
 import type { User } from '@/components/admin/users/types';
+import { PostgrestFilterBuilder } from '@supabase/supabase-js';
+import { Database } from '@/lib/database.types';
 
 // Query users from the database
 export const queryUsers = async (filters?: Record<string, any>): Promise<User[]> => {
@@ -12,12 +14,12 @@ export const queryUsers = async (filters?: Record<string, any>): Promise<User[]>
     // Build the query with filters if provided
     let query = supabase.from('users').select('*');
     
-    // Apply filters one by one if provided to avoid deep type instantiation
+    // Apply filters one by one if provided
     if (filters && typeof filters === 'object') {
-      // Using explicit type for PostgrestFilterBuilder
-      Object.entries(filters).forEach(([key, value]) => {
+      // Process each filter separately to avoid deep type recursion
+      for (const [key, value] of Object.entries(filters)) {
         // Skip undefined or null values
-        if (value === undefined || value === null) return;
+        if (value === undefined || value === null) continue;
         
         // Special handling for array values (OR conditions)
         if (Array.isArray(value) && value.length > 0) {
@@ -31,7 +33,7 @@ export const queryUsers = async (filters?: Record<string, any>): Promise<User[]>
         else if (typeof value === 'string' && value.trim() !== '') {
           query = query.ilike(key, `%${value}%`);
         }
-      });
+      }
     }
     
     const { data, error } = await query;
@@ -139,7 +141,7 @@ export const getUsersByCharacteristics = async (characteristics: Record<string, 
     
     // Apply each characteristic as a filter
     if (characteristics && typeof characteristics === 'object') {
-      Object.entries(characteristics).forEach(([key, value]) => {
+      for (const [key, value] of Object.entries(characteristics)) {
         if (value !== undefined && value !== null) {
           if (typeof value === 'boolean') {
             query = query.eq(key, value);
@@ -147,7 +149,7 @@ export const getUsersByCharacteristics = async (characteristics: Record<string, 
             query = query.in(key, value);
           }
         }
-      });
+      }
     }
     
     const { data, error } = await query;
