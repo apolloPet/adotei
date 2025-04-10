@@ -1,3 +1,4 @@
+
 import type { User } from '@/components/admin/users/types';
 import type { Pet } from '@/components/pet/types';
 
@@ -112,7 +113,7 @@ export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []): Pet => {
     weight: dbPet.weight,
     description: dbPet.description,
     location: dbPet.location,
-    shelter_id: dbPet.shelter_id,
+    shelter: dbPet.shelter_id, // Changed from shelter_id to shelter to match the Pet interface
     shelterTime: dbPet.shelter_time,
     adoptionStatus: 'available', // Default status
     traits: dbPet.traits || [],
@@ -123,3 +124,4 @@ export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []): Pet => {
     medicalInfo: dbPet.medical_info || ''
   };
 };
+
