@@ -33,15 +33,15 @@ export const queryUsers = async (filters?: Record<string, SimpleFilter>): Promis
         
         // Special handling for array values (OR conditions)
         if (Array.isArray(value) && value.length > 0) {
-          query = query.in(key, value);
+          query = query.in(key, value) as SupabaseQuery;
         } 
         // Special handling for boolean values
         else if (typeof value === 'boolean') {
-          query = query.eq(key, value);
+          query = query.eq(key, value) as SupabaseQuery;
         } 
         // String search - use ilike for partial matches
         else if (typeof value === 'string' && value.trim() !== '') {
-          query = query.ilike(key, `%${value}%`);
+          query = query.ilike(key, `%${value}%`) as SupabaseQuery;
         }
       }
     }
@@ -159,9 +159,9 @@ export const getUsersByCharacteristics = async (characteristics: Record<string, 
         
         if (value !== undefined && value !== null) {
           if (typeof value === 'boolean') {
-            query = query.eq(key, value);
+            query = query.eq(key, value) as SupabaseQuery;
           } else if (Array.isArray(value) && value.length > 0) {
-            query = query.in(key, value);
+            query = query.in(key, value) as SupabaseQuery;
           }
         }
       }
