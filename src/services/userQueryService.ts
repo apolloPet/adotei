@@ -4,8 +4,11 @@ import { toast } from '@/hooks/use-sonner';
 import { dbUserToUser } from '@/utils/dbConverters';
 import type { User } from '@/components/admin/users/types';
 
+// Define a simpler FilterType to avoid excessive type inference
+type SimpleFilter = string | boolean | string[] | null | undefined;
+
 // Query users from the database
-export const queryUsers = async (filters?: Record<string, any>): Promise<User[]> => {
+export const queryUsers = async (filters?: Record<string, SimpleFilter>): Promise<User[]> => {
   try {
     console.log('Fetching users with filters:', filters);
     
@@ -15,7 +18,7 @@ export const queryUsers = async (filters?: Record<string, any>): Promise<User[]>
     // Apply filters one by one if provided
     if (filters && typeof filters === 'object') {
       // Process each filter separately to avoid deep type recursion issues
-      for (const key in filters) {
+      Object.keys(filters).forEach(key => {
         const value = filters[key];
         // Skip undefined or null values
         if (value === undefined || value === null) continue;
@@ -32,7 +35,7 @@ export const queryUsers = async (filters?: Record<string, any>): Promise<User[]>
         else if (typeof value === 'string' && value.trim() !== '') {
           query = query.ilike(key, `%${value}%`);
         }
-      }
+      });
     }
     
     const { data, error } = await query;
@@ -130,7 +133,7 @@ export const searchUsers = async (searchTerm: string): Promise<User[]> => {
 };
 
 // Get users with specific characteristics (for matching)
-export const getUsersByCharacteristics = async (characteristics: Record<string, any>): Promise<User[]> => {
+export const getUsersByCharacteristics = async (characteristics: Record<string, SimpleFilter>): Promise<User[]> => {
   try {
     console.log('Fetching users with characteristics:', characteristics);
     
@@ -140,7 +143,7 @@ export const getUsersByCharacteristics = async (characteristics: Record<string, 
     
     // Apply each characteristic as a filter
     if (characteristics && typeof characteristics === 'object') {
-      for (const key in characteristics) {
+      Object.keys(characteristics).forEach(key => {
         const value = characteristics[key];
         if (value !== undefined && value !== null) {
           if (typeof value === 'boolean') {
@@ -149,7 +152,7 @@ export const getUsersByCharacteristics = async (characteristics: Record<string, 
             query = query.in(key, value);
           }
         }
-      }
+      });
     }
     
     const { data, error } = await query;
