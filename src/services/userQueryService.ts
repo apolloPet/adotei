@@ -18,26 +18,28 @@ export const queryUsers = async (filters?: Record<string, SimpleFilter>): Promis
     // Apply filters one by one if provided
     if (filters && typeof filters === 'object') {
       // Process each filter separately to avoid deep type recursion issues
-      Object.keys(filters).forEach(key => {
-        const value = filters[key];
-        // Skip undefined or null values
-        if (value === undefined || value === null) {
-          return; // Use return instead of continue in forEach
+      for (const key in filters) {
+        if (Object.prototype.hasOwnProperty.call(filters, key)) {
+          const value = filters[key];
+          // Skip undefined or null values
+          if (value === undefined || value === null) {
+            continue;
+          }
+          
+          // Special handling for array values (OR conditions)
+          if (Array.isArray(value) && value.length > 0) {
+            query = query.in(key, value);
+          } 
+          // Special handling for boolean values
+          else if (typeof value === 'boolean') {
+            query = query.eq(key, value);
+          } 
+          // String search - use ilike for partial matches
+          else if (typeof value === 'string' && value.trim() !== '') {
+            query = query.ilike(key, `%${value}%`);
+          }
         }
-        
-        // Special handling for array values (OR conditions)
-        if (Array.isArray(value) && value.length > 0) {
-          query = query.in(key, value);
-        } 
-        // Special handling for boolean values
-        else if (typeof value === 'boolean') {
-          query = query.eq(key, value);
-        } 
-        // String search - use ilike for partial matches
-        else if (typeof value === 'string' && value.trim() !== '') {
-          query = query.ilike(key, `%${value}%`);
-        }
-      });
+      }
     }
     
     const { data, error } = await query;
@@ -145,16 +147,18 @@ export const getUsersByCharacteristics = async (characteristics: Record<string, 
     
     // Apply each characteristic as a filter
     if (characteristics && typeof characteristics === 'object') {
-      Object.keys(characteristics).forEach(key => {
-        const value = characteristics[key];
-        if (value !== undefined && value !== null) {
-          if (typeof value === 'boolean') {
-            query = query.eq(key, value);
-          } else if (Array.isArray(value) && value.length > 0) {
-            query = query.in(key, value);
+      for (const key in characteristics) {
+        if (Object.prototype.hasOwnProperty.call(characteristics, key)) {
+          const value = characteristics[key];
+          if (value !== undefined && value !== null) {
+            if (typeof value === 'boolean') {
+              query = query.eq(key, value);
+            } else if (Array.isArray(value) && value.length > 0) {
+              query = query.in(key, value);
+            }
           }
         }
-      });
+      }
     }
     
     const { data, error } = await query;
