@@ -21,7 +21,9 @@ export const queryUsers = async (filters?: Record<string, SimpleFilter>): Promis
       Object.keys(filters).forEach(key => {
         const value = filters[key];
         // Skip undefined or null values
-        if (value === undefined || value === null) continue;
+        if (value === undefined || value === null) {
+          return; // Use return instead of continue in forEach
+        }
         
         // Special handling for array values (OR conditions)
         if (Array.isArray(value) && value.length > 0) {
