@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-sonner";
-import { AlertTriangle, Bell, Check, X, Calendar, Phone, Mail } from "lucide-react";
+import { AlertTriangle, Bell, Info } from "lucide-react";
 import { 
   fetchAdoptions, 
   updateAdoptionStage,
@@ -43,18 +44,22 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
     try {
       setIsLoading(true);
       setError(null);
+      console.log('Fetching adoption matches...');
       const adoptionMatches = await fetchAdoptions();
       console.log('Fetched adoption matches:', adoptionMatches);
       
       if (adoptionMatches && adoptionMatches.length > 0) {
         setMatches(adoptionMatches);
+        toast.success(`${adoptionMatches.length} solicitações de adoção carregadas`);
       } else {
         console.warn('No adoption matches found, using mock data');
         if (process.env.NODE_ENV === 'development') {
           const { mockAdoptionMatches } = await import('./types');
           setMatches(mockAdoptionMatches);
+          toast.info('Dados mockados carregados para desenvolvimento');
         } else {
           setMatches([]);
+          toast.info('Nenhuma solicitação de adoção encontrada');
         }
       }
     } catch (error) {
@@ -65,6 +70,7 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
       if (process.env.NODE_ENV === 'development') {
         const { mockAdoptionMatches } = await import('./types');
         setMatches(mockAdoptionMatches);
+        toast.info('Dados mockados carregados para desenvolvimento devido a erro');
       }
     } finally {
       setIsLoading(false);
@@ -85,13 +91,19 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
     if (!selectedAdoption) return;
     
     try {
-      let additionalData = {};
+      setIsLoading(true);
       
-      if (newStage === 'rejected' && rejectionReason) {
-        additionalData = { rejectionReason };
-      } else if (notes) {
-        additionalData = { notes };
+      // Confirm for rejections
+      if (newStage === 'rejected' && !rejectionReason) {
+        toast.error('É necessário informar o motivo da rejeição');
+        return;
       }
+      
+      console.log(`Updating adoption ${selectedAdoption.id} to stage ${newStage}`);
+      console.log('Additional data:', { 
+        notes, 
+        rejectionReason: newStage === 'rejected' ? rejectionReason : undefined
+      });
       
       await updateAdoptionStage(
         selectedAdoption.id, 
@@ -108,6 +120,8 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
     } catch (error) {
       console.error('Error updating adoption stage:', error);
       toast.error('Erro ao atualizar estágio da adoção');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -115,6 +129,7 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
     setSelectedAdoption(adoption);
     setNotes(adoption.notes || '');
     setShowStageDialog(true);
+    setRejectionReason('');
   };
 
   const formatDate = (dateString?: string): string => {
@@ -193,6 +208,10 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
         return [];
     }
   };
+  
+  const handleRefresh = async () => {
+    await fetchMatchData();
+  };
 
   return (
     <Card>
@@ -201,17 +220,25 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
           <CardTitle className="text-xl">Gerenciamento de Adoções</CardTitle>
           <CardDescription>Acompanhe e gerencie as solicitações de adoção</CardDescription>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
-            className="ml-auto flex items-center gap-1"
+            onClick={handleRefresh}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Carregando...' : 'Atualizar'}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1"
             onClick={() => {
               setShowPendingFollowUps(true);
             }}
           >
             <Bell className="h-4 w-4" />
-            {pendingFollowUps.length > 0 ? pendingFollowUps.length.toString() : "0"} acompanhamentos pendentes
+            {pendingFollowUps.length > 0 ? pendingFollowUps.length.toString() : "0"} acompanhamentos
           </Button>
         </div>
       </CardHeader>
@@ -266,12 +293,8 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
                     <TableCell>{match.petName}</TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="flex items-center text-sm">
-                          <Phone className="w-3 h-3 mr-1" /> {match.userPhone}
-                        </span>
-                        <span className="flex items-center text-sm">
-                          <Mail className="w-3 h-3 mr-1" /> {match.userEmail}
-                        </span>
+                        <span className="text-sm">{match.userPhone}</span>
+                        <span className="text-sm text-muted-foreground">{match.userEmail}</span>
                       </div>
                     </TableCell>
                     <TableCell>{formatDate(match.createdAt)}</TableCell>
@@ -286,7 +309,7 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
                         size="sm"
                         onClick={() => handleOpenStageDialog(match)}
                         className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                        disabled={match.currentStage === 'completed'}
+                        disabled={match.currentStage === 'completed' || isLoading}
                       >
                         Atualizar
                       </Button>
@@ -298,8 +321,17 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
-            <AlertTriangle className="h-8 w-8 mb-2 text-amber-500" />
+            <Info className="h-8 w-8 mb-2 text-amber-500" />
             <p>Nenhuma solicitação de adoção encontrada neste estágio.</p>
+            {activeTab !== 'all' && (
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => setActiveTab('all')}
+              >
+                Ver todas as solicitações
+              </Button>
+            )}
           </div>
         )}
       </CardContent>
@@ -385,7 +417,7 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
                             size="sm"
                             className="mb-2"
                             onClick={() => {
-                              if (confirm("Tem certeza que deseja rejeitar esta adoção?")) {
+                              if (window.confirm("Tem certeza que deseja rejeitar esta adoção?")) {
                                 setRejectionReason('');
                                 const dialogElem = document.getElementById('rejection-reason');
                                 if (dialogElem) {
@@ -445,6 +477,7 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
                           variant={stage === 'completed' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => handleStageChange(stage)}
+                          disabled={isLoading}
                         >
                           {getStageLabel(stage)}
                         </Button>

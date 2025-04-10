@@ -28,18 +28,27 @@ export const isSupabaseConfigured = async () => {
     
     // Test if we can query something from Supabase
     try {
-      // Tentamos a tabela users especificamente para este caso
-      const { data, error } = await supabase.from('users').select('count', { count: 'exact', head: true });
+      // Check if we can access the users table
+      console.log('Tentando acessar tabela users...');
+      const { data: usersData, error: usersError } = await supabase.from('users').select('count', { count: 'exact', head: true });
       
-      if (error) {
-        console.warn('Teste de consulta à tabela users falhou:', error);
-        // Não retorna false, pois a autenticação pode funcionar sem as tabelas
+      if (usersError) {
+        console.warn('Teste de acesso à tabela users falhou:', usersError);
+        console.log('Tentando tabela alternativa...');
+        
+        // Try an alternative table
+        const { data: adoptionsData, error: adoptionsError } = await supabase.from('adoptions').select('count', { count: 'exact', head: true });
+        
+        if (adoptionsError) {
+          console.warn('Teste de acesso à tabela adoptions falhou:', adoptionsError);
+        } else {
+          console.log('Acesso à tabela adoptions bem-sucedido!');
+        }
       } else {
-        console.log('Consulta à tabela users bem-sucedida!', data);
+        console.log('Acesso à tabela users bem-sucedido!', usersData);
       }
     } catch (queryError) {
-      console.warn('Teste de consulta à tabela users falhou:', queryError);
-      // Não retorna false, pois a autenticação pode funcionar sem as tabelas
+      console.warn('Teste de consulta às tabelas falhou:', queryError);
     }
     
     return true;
