@@ -3,8 +3,6 @@ import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { dbUserToUser } from '@/utils/dbConverters';
 import type { User } from '@/components/admin/users/types';
-import { PostgrestFilterBuilder } from '@supabase/supabase-js';
-import { Database } from '@/lib/database.types';
 
 // Query users from the database
 export const queryUsers = async (filters?: Record<string, any>): Promise<User[]> => {
@@ -16,8 +14,9 @@ export const queryUsers = async (filters?: Record<string, any>): Promise<User[]>
     
     // Apply filters one by one if provided
     if (filters && typeof filters === 'object') {
-      // Process each filter separately to avoid deep type recursion
-      for (const [key, value] of Object.entries(filters)) {
+      // Process each filter separately to avoid deep type recursion issues
+      for (const key in filters) {
+        const value = filters[key];
         // Skip undefined or null values
         if (value === undefined || value === null) continue;
         
@@ -141,7 +140,8 @@ export const getUsersByCharacteristics = async (characteristics: Record<string, 
     
     // Apply each characteristic as a filter
     if (characteristics && typeof characteristics === 'object') {
-      for (const [key, value] of Object.entries(characteristics)) {
+      for (const key in characteristics) {
+        const value = characteristics[key];
         if (value !== undefined && value !== null) {
           if (typeof value === 'boolean') {
             query = query.eq(key, value);
