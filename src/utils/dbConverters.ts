@@ -1,5 +1,6 @@
 
 import type { User } from '@/components/admin/users/types';
+import type { Pet } from '@/components/pet/types';
 
 export type DbUser = {
   id: string;
@@ -86,8 +87,8 @@ export type DbPetImage = {
   created_at: string;
 };
 
-// Updated pet converter function with missing properties
-export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []) => {
+// Updated pet converter function with normalized properties
+export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []): Pet => {
   const primaryImage = images.find(img => img.is_primary)?.url || images[0]?.url || '';
   const additionalImages = images.filter(img => !img.is_primary).map(img => img.url);
   
@@ -106,6 +107,16 @@ export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []) => {
     return 'male'; // Default to male for any other values
   };
   
+  // Normalize size to match the expected type
+  const normalizedSize = (): 'small' | 'medium' | 'large' => {
+    const size = dbPet.size.toLowerCase();
+    if (size === 'small' || size === 'pequeno') return 'small';
+    if (size === 'medium' || size === 'médio' || size === 'medio') return 'medium';
+    if (size === 'large' || size === 'grande') return 'large';
+    // Default to medium if size doesn't match any of the expected values
+    return 'medium';
+  };
+  
   return {
     id: dbPet.id,
     name: dbPet.name,
@@ -114,7 +125,7 @@ export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []) => {
     age: `${dbPet.age} ${dbPet.age_unit === 'years' ? 'anos' : 
           dbPet.age_unit === 'months' ? 'meses' : 'dias'}`,
     gender: normalizedGender(),
-    size: dbPet.size,
+    size: normalizedSize(),
     weight: dbPet.weight,
     description: dbPet.description,
     location: dbPet.location,
