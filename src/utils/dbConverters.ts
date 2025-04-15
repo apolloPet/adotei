@@ -53,3 +53,82 @@ export const dbUserToUser = (dbUser: DbUser): User => {
     updated_at: dbUser.updated_at
   };
 };
+
+// Add missing types for Pet-related functionality
+export type DbPet = {
+  id: string;
+  name: string;
+  species: string;
+  breed: string;
+  age: number;
+  age_unit: string;
+  gender: string;
+  size: string;
+  weight: number;
+  description: string;
+  location: string;
+  shelter_id: string;
+  shelter_time?: string;
+  special_needs?: boolean;
+  health_issues?: boolean;
+  traits?: string[];
+  created_at: string;
+  updated_at: string;
+  medical_info?: string;
+  [key: string]: any;
+};
+
+export type DbPetImage = {
+  id: string;
+  pet_id: string;
+  url: string;
+  is_primary: boolean;
+  created_at: string;
+};
+
+// Add pet converter function
+export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []) => {
+  const primaryImage = images.find(img => img.is_primary)?.url || images[0]?.url || '';
+  const additionalImages = images.filter(img => !img.is_primary).map(img => img.url);
+  
+  return {
+    id: dbPet.id,
+    name: dbPet.name,
+    species: dbPet.species,
+    breed: dbPet.breed,
+    age: `${dbPet.age} ${dbPet.age_unit === 'years' ? 'anos' : 
+          dbPet.age_unit === 'months' ? 'meses' : 'dias'}`,
+    gender: dbPet.gender,
+    size: dbPet.size,
+    weight: dbPet.weight,
+    description: dbPet.description,
+    location: dbPet.location,
+    shelterTime: dbPet.shelter_time,
+    specialNeeds: dbPet.special_needs,
+    healthIssues: dbPet.health_issues,
+    traits: dbPet.traits || [],
+    primaryImage,
+    additionalImages,
+    medicalInfo: dbPet.medical_info,
+    shelterId: dbPet.shelter_id,
+    created_at: dbPet.created_at,
+    updated_at: dbPet.updated_at
+  };
+};
+
+// Add shelter-related types
+export type DbShelter = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  zip: string;
+  logo_url?: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+  [key: string]: any;
+};

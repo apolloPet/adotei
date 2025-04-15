@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
@@ -13,6 +12,7 @@ import UserViewToggle from './UserViewToggle';
 import UserPagination from './UserPagination';
 import { queryUsers } from '@/services/userQueryService';
 import { format } from 'date-fns';
+import { supabase } from '@/lib/supabase';
 
 const UsersList = () => {
   const [users, setUsers] = useState([]);
@@ -38,7 +38,6 @@ const UsersList = () => {
         setIsLoading(true);
         setError(null);
         console.log('Iniciando busca de usuários com a função dedicada...');
-        // Adicionando informações de depuração adicionais
         console.log('Estado de autenticação:', await supabase.auth.getSession());
         const data = await queryUsers();
         console.log('Usuários retornados:', data);
@@ -47,7 +46,6 @@ const UsersList = () => {
           console.log('Detalhes do primeiro usuário:', data[0]);
         } else {
           console.warn('Nenhum usuário encontrado ou array vazio retornado');
-          // Tentar obter usuários diretamente
           const { data: directData, error: directError } = await supabase.from('users').select('*');
           console.log('Tentativa direta de busca:', { data: directData, error: directError });
         }
@@ -96,7 +94,6 @@ const UsersList = () => {
     
     if (!matchesSearch) return false;
     
-    // Apply filters logic
     if (filters.housingType.length > 0 && !filters.housingType.includes(user.housingType)) {
       return false;
     }
