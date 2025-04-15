@@ -91,10 +91,18 @@ export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []) => {
   const primaryImage = images.find(img => img.is_primary)?.url || images[0]?.url || '';
   const additionalImages = images.filter(img => !img.is_primary).map(img => img.url);
   
+  // Ensure species is properly mapped to the expected type
+  const normalizedSpecies = (): 'dog' | 'cat' | 'other' => {
+    const species = dbPet.species.toLowerCase();
+    if (species === 'dog' || species === 'cachorro') return 'dog';
+    if (species === 'cat' || species === 'gato') return 'cat';
+    return 'other';
+  };
+  
   return {
     id: dbPet.id,
     name: dbPet.name,
-    species: dbPet.species,
+    species: normalizedSpecies(),
     breed: dbPet.breed,
     age: `${dbPet.age} ${dbPet.age_unit === 'years' ? 'anos' : 
           dbPet.age_unit === 'months' ? 'meses' : 'dias'}`,
