@@ -99,6 +99,13 @@ export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []) => {
     return 'other';
   };
   
+  // Normalize gender to match the expected type
+  const normalizedGender = (): 'male' | 'female' => {
+    const gender = dbPet.gender.toLowerCase();
+    if (gender === 'female' || gender === 'fêmea' || gender === 'femea') return 'female';
+    return 'male'; // Default to male for any other values
+  };
+  
   return {
     id: dbPet.id,
     name: dbPet.name,
@@ -106,7 +113,7 @@ export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []) => {
     breed: dbPet.breed,
     age: `${dbPet.age} ${dbPet.age_unit === 'years' ? 'anos' : 
           dbPet.age_unit === 'months' ? 'meses' : 'dias'}`,
-    gender: dbPet.gender,
+    gender: normalizedGender(),
     size: dbPet.size,
     weight: dbPet.weight,
     description: dbPet.description,
