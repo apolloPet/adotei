@@ -90,7 +90,7 @@ export type DbPetImage = {
 // Updated pet converter function with normalized properties
 export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []): Pet => {
   const primaryImage = images.find(img => img.is_primary)?.url || images[0]?.url || '';
-  const additionalImages = images.filter(img => !img.is_primary).map(img => img.url);
+  const allImages = [primaryImage, ...images.filter(img => !img.is_primary).map(img => img.url)].filter(Boolean);
   
   // Ensure species is properly mapped to the expected type
   const normalizedSpecies = (): 'dog' | 'cat' | 'other' => {
@@ -134,14 +134,13 @@ export const dbPetToPet = (dbPet: DbPet, images: DbPetImage[] = []): Pet => {
     healthIssues: dbPet.health_issues,
     traits: dbPet.traits || [],
     primaryImage,
-    additionalImages,
+    images: allImages,
     medicalInfo: dbPet.medical_info,
     shelterId: dbPet.shelter_id,
     created_at: dbPet.created_at,
     updated_at: dbPet.updated_at,
     // Add missing required properties
-    shelter: dbPet.shelter_id || '', // Using shelter_id as shelter, could be improved later by looking up shelter details
-    images: [primaryImage, ...additionalImages].filter(Boolean) // Combine all images into a single array
+    shelter: dbPet.shelter_id || '' // Using shelter_id as shelter, could be improved later by looking up shelter details
   };
 };
 
