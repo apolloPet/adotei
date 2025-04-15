@@ -38,6 +38,8 @@ const UsersList = () => {
         setIsLoading(true);
         setError(null);
         console.log('Iniciando busca de usuários com a função dedicada...');
+        // Adicionando informações de depuração adicionais
+        console.log('Estado de autenticação:', await supabase.auth.getSession());
         const data = await queryUsers();
         console.log('Usuários retornados:', data);
         if (data && data.length > 0) {
@@ -45,6 +47,9 @@ const UsersList = () => {
           console.log('Detalhes do primeiro usuário:', data[0]);
         } else {
           console.warn('Nenhum usuário encontrado ou array vazio retornado');
+          // Tentar obter usuários diretamente
+          const { data: directData, error: directError } = await supabase.from('users').select('*');
+          console.log('Tentativa direta de busca:', { data: directData, error: directError });
         }
       } catch (err) {
         console.error('Error fetching users:', err);

@@ -1,27 +1,29 @@
 
-export interface User {
+export type User = {
   id: string;
   name: string;
   email: string;
-  phone: string;
+  phone?: string;
   registrationDate: string;
-  address: {
-    cep: string;
-    street: string;
-    number: string;
-    neighborhood: string;
-    city: string;
-    state: string;
+  address?: {
+    cep?: string;
+    street?: string;
+    number?: string;
+    neighborhood?: string;
+    city?: string;
+    state?: string;
   };
-  housingType: 'apartment' | 'house' | 'other';
-  hasChildren: boolean;
+  housingType?: 'apartment' | 'house' | 'other';
+  hasChildren?: boolean;
   childrenAges?: string;
-  hadPetsBefore: boolean;
-  hasAllergies: boolean;
+  hadPetsBefore?: boolean;
+  hasAllergies?: boolean;
   allergiesDescription?: string;
-  workSchedule: string;
-  avatarUrl?: string;
-}
+  workSchedule?: string;
+  auth_id?: string;
+  created_at?: string;
+  updated_at?: string;
+};
 
 export type FilterType = {
   housingType: string[];
