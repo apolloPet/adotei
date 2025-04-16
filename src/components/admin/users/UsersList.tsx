@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
@@ -59,7 +60,20 @@ const UsersList = () => {
         }
 
         const isMainAdmin = session.user.email === 'admin@petmatch.com';
-        const hasAdminPermission = isMainAdmin || (roleData?.permissions?.manageAdmins === true);
+        
+        // Fix the type issue here by properly handling the permissions object
+        let hasAdminPermission = isMainAdmin;
+        
+        // Make sure roleData exists and has permissions before accessing manageAdmins
+        if (roleData && roleData.permissions) {
+          // Check if permissions is a string (JSON string) and parse it if needed
+          const permissions = typeof roleData.permissions === 'string' 
+            ? JSON.parse(roleData.permissions) 
+            : roleData.permissions;
+            
+          // Now safely access the manageAdmins property
+          hasAdminPermission = hasAdminPermission || permissions?.manageAdmins === true;
+        }
 
         setHasPermission(hasAdminPermission);
 
