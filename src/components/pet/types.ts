@@ -1,4 +1,5 @@
-import type { JsonValue } from '@/lib/database.types';
+
+import type { Json } from '@/lib/database.types';
 
 export interface PetInfo {
   id: string;
