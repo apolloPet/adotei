@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,53 +9,11 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-sonner";
 import { PlusCircle, Trash2, Shield } from "lucide-react";
-
-interface AdminUser {
-  id: string;
-  name: string;
-  email: string;
-  isActive: boolean;
-  permissions: {
-    manageAnimals: boolean;
-    approveAdoptions: boolean;
-    manageSettings: boolean;
-    manageAdmins: boolean;
-  };
-  createdAt: string;
-}
-
-// Mock data for admin users
-const mockAdmins: AdminUser[] = [
-  {
-    id: "1",
-    name: "Admin Principal",
-    email: "admin@petmatch.com",
-    isActive: true,
-    permissions: {
-      manageAnimals: true,
-      approveAdoptions: true,
-      manageSettings: true,
-      manageAdmins: true
-    },
-    createdAt: "2023-05-10"
-  },
-  {
-    id: "2",
-    name: "Coordenador de Adoções",
-    email: "adocoes@petmatch.com",
-    isActive: true,
-    permissions: {
-      manageAnimals: true,
-      approveAdoptions: true,
-      manageSettings: false,
-      manageAdmins: false
-    },
-    createdAt: "2023-08-15"
-  }
-];
+import { AdminUser, createAdminUser, getAdminUsers, updateAdminPermissions, removeAdminRole } from '@/services/adminService';
 
 const AdminUserManagement = () => {
-  const [admins, setAdmins] = useState<AdminUser[]>(mockAdmins);
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newAdmin, setNewAdmin] = useState({
     name: '',
@@ -75,6 +33,23 @@ const AdminUserManagement = () => {
     password: '',
     passwordConfirm: ''
   });
+
+  useEffect(() => {
+    fetchAdmins();
+  }, []);
+
+  const fetchAdmins = async () => {
+    setIsLoading(true);
+    try {
+      const adminsData = await getAdminUsers();
+      setAdmins(adminsData);
+    } catch (error) {
+      console.error('Error fetching admins:', error);
+      toast.error('Erro ao buscar administradores');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -141,74 +116,80 @@ const AdminUserManagement = () => {
     return isValid;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
 
-    // In a real application, this would be an API call
-    const newAdminUser: AdminUser = {
-      id: Date.now().toString(),
-      name: newAdmin.name,
-      email: newAdmin.email,
-      isActive: true,
-      permissions: newAdmin.permissions,
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-
-    setAdmins([...admins, newAdminUser]);
-    setIsDialogOpen(false);
+    setIsLoading(true);
     
-    // Reset form
-    setNewAdmin({
-      name: '',
-      email: '',
-      password: '',
-      passwordConfirm: '',
-      permissions: {
-        manageAnimals: true,
-        approveAdoptions: true,
-        manageSettings: false,
-        manageAdmins: false
+    try {
+      const result = await createAdminUser(
+        newAdmin.email,
+        newAdmin.password,
+        newAdmin.name,
+        newAdmin.permissions
+      );
+      
+      if (result.success) {
+        toast.success(result.message);
+        setIsDialogOpen(false);
+        await fetchAdmins();
+        
+        // Reset form
+        setNewAdmin({
+          name: '',
+          email: '',
+          password: '',
+          passwordConfirm: '',
+          permissions: {
+            manageAnimals: true,
+            approveAdoptions: true,
+            manageSettings: false,
+            manageAdmins: false
+          }
+        });
+      } else {
+        toast.error(result.message);
       }
-    });
-
-    toast.success("Administrador adicionado com sucesso!", {
-      description: `${newAdmin.name} agora tem acesso ao painel.`
-    });
-  };
-
-  const toggleAdminStatus = (id: string) => {
-    setAdmins(prev => 
-      prev.map(admin => 
-        admin.id === id ? { ...admin, isActive: !admin.isActive } : admin
-      )
-    );
-
-    const admin = admins.find(a => a.id === id);
-    if (admin) {
-      toast.success(`Status de ${admin.name} atualizado`, {
-        description: `O administrador está agora ${!admin.isActive ? 'ativo' : 'inativo'}.`
-      });
+    } catch (error) {
+      console.error('Error creating admin:', error);
+      toast.error('Erro ao criar administrador');
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const removeAdmin = (id: string) => {
-    const admin = admins.find(a => a.id === id);
-    if (admin && confirm(`Tem certeza que deseja remover ${admin.name} como administrador?`)) {
-      setAdmins(prev => prev.filter(admin => admin.id !== id));
-      
-      toast.success("Administrador removido", {
-        description: `${admin.name} não tem mais acesso administrativo.`
-      });
+  const handlePermissionUpdate = async (id: string, currentPermissions: AdminUser['permissions']) => {
+    try {
+      const success = await updateAdminPermissions(id, currentPermissions);
+      if (success) {
+        await fetchAdmins();
+      }
+    } catch (error) {
+      console.error('Error updating permissions:', error);
+      toast.error('Erro ao atualizar permissões');
+    }
+  };
+
+  const handleAdminRemoval = async (id: string, email: string) => {
+    if (confirm(`Tem certeza que deseja remover ${email} como administrador?`)) {
+      try {
+        const success = await removeAdminRole(id);
+        if (success) {
+          await fetchAdmins();
+        }
+      } catch (error) {
+        console.error('Error removing admin:', error);
+        toast.error('Erro ao remover administrador');
+      }
     }
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('pt-BR').format(date);
+    return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
   return (
@@ -334,7 +315,9 @@ const AdminUserManagement = () => {
               </div>
               
               <DialogFooter className="pt-4">
-                <Button type="submit" className="w-full md:w-auto">Criar Administrador</Button>
+                <Button type="submit" className="w-full md:w-auto" disabled={isLoading}>
+                  {isLoading ? "Criando..." : "Criar Administrador"}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -346,11 +329,9 @@ const AdminUserManagement = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Permissões</TableHead>
                 <TableHead>Desde</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead className="w-[100px]">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -359,9 +340,8 @@ const AdminUserManagement = () => {
                 <TableRow key={admin.id}>
                   <TableCell className="font-medium flex items-center gap-2">
                     <Shield className="h-4 w-4 text-primary" />
-                    {admin.name}
+                    {admin.email}
                   </TableCell>
-                  <TableCell>{admin.email}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {admin.permissions.manageAnimals && (
@@ -386,19 +366,12 @@ const AdminUserManagement = () => {
                       )}
                     </div>
                   </TableCell>
-                  <TableCell>{formatDate(admin.createdAt)}</TableCell>
-                  <TableCell>
-                    <Switch 
-                      checked={admin.isActive}
-                      onCheckedChange={() => toggleAdminStatus(admin.id)}
-                      aria-label={`${admin.isActive ? 'Desativar' : 'Ativar'} admin`}
-                    />
-                  </TableCell>
+                  <TableCell>{admin.created_at ? formatDate(admin.created_at) : 'N/A'}</TableCell>
                   <TableCell>
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      onClick={() => removeAdmin(admin.id)}
+                      onClick={() => handleAdminRemoval(admin.id, admin.email)}
                       disabled={admin.email === 'admin@petmatch.com'} // Prevent removing the main admin
                       className="text-red-500 hover:text-red-700 hover:bg-red-50"
                     >
@@ -412,7 +385,11 @@ const AdminUserManagement = () => {
         </div>
         {admins.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
-            Nenhum administrador cadastrado.
+            {isLoading ? (
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary mx-auto"></div>
+            ) : (
+              "Nenhum administrador cadastrado."
+            )}
           </div>
         )}
       </CardContent>
