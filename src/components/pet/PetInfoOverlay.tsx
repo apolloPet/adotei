@@ -1,16 +1,13 @@
-
 import { MapPin } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
-import { Pet, PetInfo, getPetColors } from './types';
+import { Pet, PetInfo, getPetColors } from '@/types/pets';
 
-// Update the props to accept either PetInfo or Pet
 interface PetInfoOverlayProps {
   pet: Pet | PetInfo;
   setShowDetails: (show: boolean) => void;
 }
 
 const PetInfoOverlay = ({ pet, setShowDetails }: PetInfoOverlayProps) => {
-  // Check if pet has species (it's a Pet) or type (it's a PetInfo)
   const isPet = 'species' in pet;
   const petSpecies = isPet ? (pet as Pet).species : (pet as PetInfo).type === 'dog' ? 'dog' : 'cat';
   const petColors = getPetColors(petSpecies as 'dog' | 'cat');

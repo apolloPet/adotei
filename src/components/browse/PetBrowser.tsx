@@ -1,9 +1,8 @@
-
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import PetCard from "@/components/PetCard";
 import NoResults from "@/components/browse/NoResults";
-import { Pet, PetInfo } from "@/components/pet/types";
+import { Pet, PetInfo } from "@/types/pets";
 
 interface PetBrowserProps {
   pets: Pet[];
@@ -15,12 +14,10 @@ const PetBrowser = ({ pets, onSwipe, onReset }: PetBrowserProps) => {
   const [currentPetIndex, setCurrentPetIndex] = useState(0);
   const currentPet = pets[currentPetIndex];
   
-  // Convert Pet to PetInfo for compatibility with PetCard
   const convertToCardPet = (pet: Pet): PetInfo => {
     return {
       id: pet.id,
       name: pet.name,
-      // Pet.images is now already string[], so no need to extract URLs
       images: pet.images,
       age: parseInt(pet.age) || 0,
       gender: pet.gender,
@@ -41,10 +38,8 @@ const PetBrowser = ({ pets, onSwipe, onReset }: PetBrowserProps) => {
   };
   
   const handleSwipe = (direction: 'left' | 'right', petId: string) => {
-    // Forward the swipe to the parent component
     onSwipe(direction, petId);
     
-    // Move to the next pet
     if (currentPetIndex < pets.length - 1) {
       setTimeout(() => {
         setCurrentPetIndex(currentPetIndex + 1);
