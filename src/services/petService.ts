@@ -1,6 +1,5 @@
-
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { Pet } from '@/components/pet/types';
+import { Pet } from '@/types/pets';
 import { toast } from '@/hooks/use-sonner';
 import { dbPetToPet, DbPet, DbPetImage } from '@/utils/dbConverters';
 
@@ -23,7 +22,6 @@ export const fetchPets = async (filters?: PetFilters): Promise<Pet[]> => {
 
     let query = supabase.from('pets').select('*');
     
-    // Apply filters if they exist
     if (filters) {
       if (filters.species && filters.species !== 'all') {
         query = query.eq('species', filters.species);
@@ -41,7 +39,7 @@ export const fetchPets = async (filters?: PetFilters): Promise<Pet[]> => {
         query = query
           .gte('age', filters.ageRange[0])
           .lte('age', filters.ageRange[1])
-          .eq('age_unit', 'years'); // Assuming age range is in years
+          .eq('age_unit', 'years');
       }
 
       if (filters.hasSpecialNeeds) {
@@ -62,7 +60,6 @@ export const fetchPets = async (filters?: PetFilters): Promise<Pet[]> => {
     if (petsError) throw petsError;
     if (!petsData) return [];
     
-    // For each pet, fetch its images
     const pets = await Promise.all(
       petsData.map(async (pet) => {
         const { data: imagesData, error: imagesError } = await supabase
@@ -128,7 +125,6 @@ export const getFeaturedPets = async (limit: number = 6): Promise<Pet[]> => {
     if (petsError) throw petsError;
     if (!petsData) return [];
     
-    // For each pet, fetch its images
     const pets = await Promise.all(
       petsData.map(async (pet) => {
         const { data: imagesData, error: imagesError } = await supabase
@@ -156,7 +152,6 @@ export const createPet = async (pet: Omit<Pet, 'id'>, images: File[]): Promise<P
       return null;
     }
 
-    // Convert frontend pet to database pet
     const dbPet = {
       name: pet.name,
       species: pet.species,
@@ -169,14 +164,13 @@ export const createPet = async (pet: Omit<Pet, 'id'>, images: File[]): Promise<P
       weight: pet.weight,
       description: pet.description,
       location: pet.location,
-      shelter_id: '', // This would need to be set based on the logged-in shelter
+      shelter_id: '',
       shelter_time: pet.shelterTime,
       traits: pet.traits,
       special_needs: pet.specialNeeds || false,
       health_issues: pet.healthIssues || false,
     };
     
-    // Insert pet into database
     const { data: newPet, error: petError } = await supabase
       .from('pets')
       .insert(dbPet)
@@ -186,7 +180,6 @@ export const createPet = async (pet: Omit<Pet, 'id'>, images: File[]): Promise<P
     if (petError) throw petError;
     if (!newPet) throw new Error('Failed to create pet');
     
-    // Upload images to storage
     const uploadedImages = await Promise.all(
       images.map(async (file, index) => {
         const filePath = `pets/${newPet.id}/${Date.now()}-${file.name}`;
@@ -196,18 +189,16 @@ export const createPet = async (pet: Omit<Pet, 'id'>, images: File[]): Promise<P
         
         if (uploadError) throw uploadError;
         
-        // Get public URL
         const { data: urlData } = supabase.storage
           .from('pet-images')
           .getPublicUrl(filePath);
         
-        // Insert image record
         const { data: imageData, error: imageError } = await supabase
           .from('pet_images')
           .insert({
             pet_id: newPet.id,
             url: urlData.publicUrl,
-            is_primary: index === 0, // First image is primary
+            is_primary: index === 0,
           })
           .select()
           .single();
@@ -232,7 +223,6 @@ export const updatePet = async (id: string, updates: Partial<Pet>, newImages?: F
       return null;
     }
 
-    // Convert frontend updates to database updates
     const dbUpdates: any = {};
     
     if (updates.name) dbUpdates.name = updates.name;
@@ -254,7 +244,6 @@ export const updatePet = async (id: string, updates: Partial<Pet>, newImages?: F
     if (updates.specialNeeds !== undefined) dbUpdates.special_needs = updates.specialNeeds;
     if (updates.healthIssues !== undefined) dbUpdates.health_issues = updates.healthIssues;
     
-    // Update pet in database
     const { data: updatedPet, error: updateError } = await supabase
       .from('pets')
       .update(dbUpdates)
@@ -265,7 +254,6 @@ export const updatePet = async (id: string, updates: Partial<Pet>, newImages?: F
     if (updateError) throw updateError;
     if (!updatedPet) throw new Error('Failed to update pet');
     
-    // Handle new images if provided
     let images = [];
     if (newImages && newImages.length > 0) {
       const uploadedImages = await Promise.all(
@@ -277,18 +265,16 @@ export const updatePet = async (id: string, updates: Partial<Pet>, newImages?: F
           
           if (uploadError) throw uploadError;
           
-          // Get public URL
           const { data: urlData } = supabase.storage
             .from('pet-images')
             .getPublicUrl(filePath);
           
-          // Insert image record
           const { data: imageData, error: imageError } = await supabase
             .from('pet_images')
             .insert({
               pet_id: id,
               url: urlData.publicUrl,
-              is_primary: false, // New images are not primary by default
+              is_primary: false,
             })
             .select()
             .single();
@@ -302,7 +288,6 @@ export const updatePet = async (id: string, updates: Partial<Pet>, newImages?: F
       images = uploadedImages;
     }
     
-    // Fetch existing images
     const { data: existingImages, error: imagesError } = await supabase
       .from('pet_images')
       .select('*')
@@ -324,7 +309,6 @@ export const deletePet = async (id: string): Promise<boolean> => {
       return false;
     }
 
-    // First delete all images for this pet
     const { error: deleteImagesError } = await supabase
       .from('pet_images')
       .delete()
@@ -332,7 +316,6 @@ export const deletePet = async (id: string): Promise<boolean> => {
     
     if (deleteImagesError) throw deleteImagesError;
     
-    // Delete pet from database
     const { error: deletePetError } = await supabase
       .from('pets')
       .delete()

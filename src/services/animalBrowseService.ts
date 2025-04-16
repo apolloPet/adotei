@@ -1,7 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-sonner';
-import { Pet } from '@/components/pet/types';
+import { Pet } from '@/types/pets';
 import { getAnimals, Animal } from './animalService';
 import { animalToPet } from '@/utils/animalAdapter';
 import { PetFilters } from './petService';

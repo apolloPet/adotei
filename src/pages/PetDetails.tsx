@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from "lucide-react";
@@ -12,7 +11,7 @@ import PetAdoptionProcess from "@/components/pet-details/PetAdoptionProcess";
 import PetNotFound from "@/components/pet-details/PetNotFound";
 import PetLoading from "@/components/pet-details/PetLoading";
 import { fetchPetById } from '@/services/petService';
-import { Pet } from '@/components/pet/types';
+import { Pet } from '@/types/pets';
 
 const PetDetails = () => {
   const { id } = useParams();
@@ -44,7 +43,6 @@ const PetDetails = () => {
     return <PetNotFound />;
   }
   
-  // Pet.images is already string[] so we can use it directly
   const imageUrls = pet.images;
   
   return (
@@ -57,13 +55,11 @@ const PetDetails = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Image gallery */}
         <PetImageGallery 
           images={imageUrls} 
           petName={pet.name} 
         />
         
-        {/* Pet details */}
         <div>
           <PetHeader 
             id={pet.id}

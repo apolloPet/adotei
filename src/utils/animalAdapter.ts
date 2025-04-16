@@ -1,6 +1,5 @@
-
 import { Animal } from "@/services/animalService";
-import { Pet } from "@/components/pet/types";
+import { Pet } from "@/types/pets";
 
 /**
  * Converte um animal do modelo de banco de dados para o modelo de interface Pet
@@ -24,24 +23,24 @@ export const animalToPet = (animal: Animal): Pet => {
   return {
     id: animal.id,
     name: animal.nome,
-    images: imageUrls, // Now properly returns string[] as expected by Pet
+    images: imageUrls,
     age: animal.idade.toString(),
     gender: animal.sexo === 'macho' ? 'male' : 'female',
     size: animal.porte === 'pequeno' ? 'small' : 
           animal.porte === 'medio' ? 'medium' : 'large',
-    breed: "Sem raça definida", // Podemos adicionar raça no futuro
+    breed: "Sem raça definida",
     species: animal.tipo === 'cachorro' ? 'dog' : 
              animal.tipo === 'gato' ? 'cat' : 'other',
     description: animal.descricao || '',
-    location: "Próximo a você", // Podemos adicionar localização real no futuro
+    location: "Próximo a você",
     shelterTime: "recente",
-    weight: 0, // Não temos este dado ainda
+    weight: 0,
     personality: [],
     specialNeeds: false,
     healthIssues: false,
     shelter: "PetMatch",
     traits: animal.castrado ? ["castrado"] : [],
-    medicalInfo: "", // Adding the required medicalInfo property
+    medicalInfo: "",
     primaryImage: imageUrls[0] || fallbackImageUrl
   };
 };

@@ -1,7 +1,6 @@
-
 import { useState, useCallback } from 'react';
-import { Pet } from '@/components/pet/types';
 import { PetFilters } from '@/services/petService';
+import { Pet } from '@/types/pets';
 
 type Filters = {
   species: 'dog' | 'cat' | 'other' | 'all';

@@ -1,5 +1,6 @@
+
 import type { User } from '@/components/admin/users/types';
-import type { Pet } from '@/components/pet/types';
+import type { Pet } from '@/types/pets';
 
 export type DbUser = {
   id: string;

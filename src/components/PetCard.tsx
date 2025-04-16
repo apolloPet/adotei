@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react';
 import { motion, PanInfo } from 'framer-motion';
 import { toast } from "@/hooks/use-sonner";
-import { PetCardProps } from './pet/types';
+import { PetCardProps } from '@/types/pets';
 import PetImageCarousel from './pet/PetImageCarousel';
 import PetInfoOverlay from './pet/PetInfoOverlay';
 import PetDetailsView from './pet/PetDetailsView';
