@@ -1,4 +1,3 @@
-
 import { supabase, isSupabaseConfigured, handleSupabaseError } from '@/lib/supabase';
 import type { User } from '@/components/admin/users/types';
 import { toast } from '@/hooks/use-sonner';
@@ -13,7 +12,7 @@ export const fetchUsers = async (): Promise<User[]> => {
 
     console.log('Buscando usuários da tabela users...');
     
-    // First try to get session to ensure we're authenticated
+    // Verificar sessão para garantir autenticação
     const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData.session) {
       console.error('Erro: Usuário não está autenticado');
@@ -21,46 +20,21 @@ export const fetchUsers = async (): Promise<User[]> => {
       return [];
     }
     
-    // Use admin role to bypass RLS if possible
+    // Buscar usuários diretamente da tabela users
     const { data: userData, error } = await supabase
       .from('users')
       .select('*')
       .order('created_at', { ascending: false });
     
     if (error) {
-      console.error('Erro ao buscar usuários diretamente:', error);
+      console.error('Erro ao buscar usuários:', error);
       handleSupabaseError(error, 'Erro ao buscar usuários');
-      
-      // If we can't get users directly, try using edge function
-      try {
-        console.log('Tentando buscar usuários via edge function...');
-        const { data: functionData, error: functionError } = await supabase.functions.invoke('admin', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${sessionData.session.access_token}`,
-          },
-          body: { endpoint: '/users' }
-        });
-        
-        if (functionError) {
-          console.error('Erro ao buscar usuários via edge function:', functionError);
-          return [];
-        }
-        
-        console.log(`Encontrados ${functionData?.length || 0} usuários via edge function`);
-        return (functionData || []).map((dbUser: DbUser) => dbUserToUser(dbUser));
-      } catch (functionCallError) {
-        console.error('Erro ao chamar edge function:', functionCallError);
-        return [];
-      }
+      return [];
     }
 
-    console.log(`Encontrados ${userData?.length || 0} usuários na tabela users`);
+    console.log(`Encontrados ${userData?.length || 0} usuários`);
     
-    return (userData || []).map((dbUser) => {
-      // Converter usuário do banco para o formato de frontend
-      return dbUserToUser(dbUser as DbUser);
-    });
+    return (userData || []).map((dbUser) => dbUserToUser(dbUser as DbUser));
   } catch (error) {
     console.error('Erro ao buscar usuários:', error);
     toast.error('Erro ao buscar usuários');
