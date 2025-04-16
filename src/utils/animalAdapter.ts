@@ -1,3 +1,4 @@
+
 import { Animal } from "@/services/animalService";
 import { Pet } from "@/types/pets";
 
@@ -35,11 +36,10 @@ export const animalToPet = (animal: Animal): Pet => {
     location: "Próximo a você",
     shelterTime: "recente",
     weight: 0,
-    personality: [],
+    traits: animal.castrado ? ["castrado"] : [],
     specialNeeds: false,
     healthIssues: false,
     shelter: "PetMatch",
-    traits: animal.castrado ? ["castrado"] : [],
     medicalInfo: "",
     primaryImage: imageUrls[0] || fallbackImageUrl
   };
