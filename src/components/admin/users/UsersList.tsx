@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { AlertTriangle, ShieldAlert } from "lucide-react";
+import { AlertTriangle, ShieldAlert, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FilterType } from './types';
 import UserFilterDropdown from './UserFilterDropdown';
@@ -14,6 +14,8 @@ import UserPagination from './UserPagination';
 import { queryUsers } from '@/services/userQueryService';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabase';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-sonner";
 
 const UsersList = () => {
   const [users, setUsers] = useState([]);
@@ -32,6 +34,7 @@ const UsersList = () => {
   const [activeFiltersCount, setActiveFiltersCount] = useState(0);
   const [viewMode, setViewMode] = useState<'simple' | 'detailed'>('simple');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showPermissionDialog, setShowPermissionDialog] = useState(false);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -43,6 +46,7 @@ const UsersList = () => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) {
           setError('Você precisa estar autenticado para acessar esta página.');
+          setShowPermissionDialog(true);
           return;
         }
 
@@ -53,16 +57,14 @@ const UsersList = () => {
           .eq('role', 'admin')
           .single();
 
-        if (roleError && roleError.code !== 'PGRST116') {
-          console.error('Erro ao verificar permissões:', roleError);
-          setError('Erro ao verificar permissões de administrador');
-          return;
-        }
-
+        // Verificação por email (método principal)
         const isMainAdmin = session.user.email === 'admin@petmatch.com';
+        const isAdminEmail = isMainAdmin || 
+                            (session.user.email || '').includes('@admin') || 
+                            (session.user.email || '').includes('@ong');
         
         // Fix the type issue here by properly handling the permissions object
-        let hasAdminPermission = isMainAdmin;
+        let hasAdminPermission = isAdminEmail;
         
         // Make sure roleData exists and has permissions before accessing manageAdmins
         if (roleData && roleData.permissions) {
@@ -74,11 +76,50 @@ const UsersList = () => {
           // Now safely access the manageAdmins property
           hasAdminPermission = hasAdminPermission || permissions?.manageAdmins === true;
         }
+        
+        console.log('UsersList: Verificação de permissões', { 
+          isAdminEmail,
+          hasPermission: hasAdminPermission,
+          roleData: roleData ? 'encontrado' : 'não encontrado'
+        });
 
         setHasPermission(hasAdminPermission);
 
         if (!hasAdminPermission) {
           setError('Você não possui permissão para visualizar usuários. Entre em contato com um administrador.');
+          setShowPermissionDialog(true);
+          
+          // Se for admin por email, mas não tem permissão específica, vamos atualizar
+          if (isAdminEmail) {
+            try {
+              if (roleError && roleError.code === 'PGRST116') {
+                // Não encontrou registro, vamos criar
+                await supabase
+                  .from('user_roles')
+                  .insert({
+                    user_id: session.user.id,
+                    role: 'admin',
+                    permissions: {
+                      manageAnimals: true,
+                      approveAdoptions: true,
+                      manageSettings: true,
+                      manageAdmins: true
+                    }
+                  });
+                
+                console.log('UsersList: Registro de admin criado na tabela user_roles');
+                toast.success("Permissões de administração atualizadas! Recarregando...");
+                
+                // Recarregar a página após uma pequena pausa
+                setTimeout(() => {
+                  window.location.reload();
+                }, 1500);
+              }
+            } catch (e) {
+              console.error('Erro ao atualizar permissões:', e);
+            }
+          }
+          
           return;
         }
 
@@ -89,6 +130,7 @@ const UsersList = () => {
       } catch (err) {
         console.error('Error:', err);
         setError('Erro ao carregar usuários. Por favor, tente novamente mais tarde.');
+        setShowPermissionDialog(true);
       } finally {
         setIsLoading(false);
       }
@@ -116,9 +158,6 @@ const UsersList = () => {
   const neighborhoodOptions = Array.from(new Set(users
     .map(user => user.address?.neighborhood || '')
     .filter(Boolean)));
-
-  console.log('Opções de cidades disponíveis:', cityOptions);
-  console.log('Opções de bairros disponíveis:', neighborhoodOptions);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
@@ -206,90 +245,123 @@ const UsersList = () => {
   const paginatedUsers = filteredUsers.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:space-y-0">
-          <div>
-            <CardTitle className="text-xl">Lista de Usuários Cadastrados</CardTitle>
-            <CardDescription>Gerencie e visualize os usuários cadastrados no sistema</CardDescription>
-          </div>
-          
-          {hasPermission && (
-            <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
-              <UserViewToggle 
-                viewMode={viewMode} 
-                setViewMode={setViewMode}
-              />
-              
-              <UserSearchBar 
-                searchTerm={searchTerm}
-                handleSearch={handleSearch}
-              />
-              
-              <UserFilterDropdown 
-                filters={filters}
-                updateFilter={updateFilter}
-                toggleArrayFilter={toggleArrayFilter}
-                cityOptions={cityOptions}
-                neighborhoodOptions={neighborhoodOptions}
-                activeFiltersCount={activeFiltersCount}
-              />
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:space-y-0">
+            <div>
+              <CardTitle className="text-xl">Lista de Usuários Cadastrados</CardTitle>
+              <CardDescription>Gerencie e visualize os usuários cadastrados no sistema</CardDescription>
             </div>
-          )}
-        </div>
-        
-        {hasPermission && (
-          <UserFilterBadges filters={filters} updateFilter={updateFilter} />
-        )}
-      </CardHeader>
-      
-      <CardContent>
-        {isLoading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
-          </div>
-        ) : error ? (
-          <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
-            <AlertTriangle className="h-8 w-8 mb-2 text-red-500" />
-            <p>{error}</p>
-            {!hasPermission && (
-              <div className="mt-4 flex items-center gap-2 text-primary">
-                <ShieldAlert className="h-5 w-5" />
-                <span>Acesso restrito a administradores</span>
+            
+            {hasPermission && (
+              <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                <UserViewToggle 
+                  viewMode={viewMode} 
+                  setViewMode={setViewMode}
+                />
+                
+                <UserSearchBar 
+                  searchTerm={searchTerm}
+                  handleSearch={handleSearch}
+                />
+                
+                <UserFilterDropdown 
+                  filters={filters}
+                  updateFilter={updateFilter}
+                  toggleArrayFilter={toggleArrayFilter}
+                  cityOptions={cityOptions}
+                  neighborhoodOptions={neighborhoodOptions}
+                  activeFiltersCount={activeFiltersCount}
+                />
               </div>
             )}
           </div>
-        ) : users.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>Nenhum usuário encontrado no banco de dados.</p>
-            <p className="text-sm mt-2">Verifique se existem usuários cadastrados.</p>
+          
+          {hasPermission && (
+            <UserFilterBadges filters={filters} updateFilter={updateFilter} />
+          )}
+        </CardHeader>
+        
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+            </div>
+          ) : error ? (
+            <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
+              <AlertTriangle className="h-8 w-8 mb-2 text-red-500" />
+              <p>{error}</p>
+              {!hasPermission && (
+                <div className="mt-4 flex items-center gap-2 text-primary">
+                  <ShieldAlert className="h-5 w-5" />
+                  <span>Acesso restrito a administradores</span>
+                </div>
+              )}
+            </div>
+          ) : users.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>Nenhum usuário encontrado no banco de dados.</p>
+              <p className="text-sm mt-2">Verifique se existem usuários cadastrados.</p>
+            </div>
+          ) : (
+            hasPermission && (
+              <>
+                {viewMode === 'simple' ? (
+                  <UserSimpleView users={paginatedUsers} formatDate={formatDate} />
+                ) : (
+                  <UserDetailedView users={paginatedUsers} formatDate={formatDate} />
+                )}
+                
+                {totalPages > 1 && (
+                  <UserPagination 
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    setCurrentPage={setCurrentPage}
+                  />
+                )}
+                
+                <p className="text-xs text-muted-foreground mt-4">
+                  Exibindo {paginatedUsers.length} de {filteredUsers.length} usuários cadastrados 
+                  {users.length > filteredUsers.length ? ` (total: ${users.length})` : ''}.
+                </p>
+              </>
+            )
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={showPermissionDialog} onOpenChange={setShowPermissionDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="h-5 w-5 text-red-500" />
+              Acesso Restrito
+            </DialogTitle>
+            <DialogDescription>
+              {error || "Verificando suas permissões..."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col items-center py-4">
+            <UserCog className="h-16 w-16 text-muted-foreground mb-4" />
+            <p className="text-center mb-4">
+              Para acessar a lista de usuários, você precisa ter permissões de administrador com acesso ao gerenciamento de usuários.
+            </p>
           </div>
-        ) : (
-          hasPermission && (
-            <>
-              {viewMode === 'simple' ? (
-                <UserSimpleView users={paginatedUsers} formatDate={formatDate} />
-              ) : (
-                <UserDetailedView users={paginatedUsers} formatDate={formatDate} />
-              )}
-              
-              {totalPages > 1 && (
-                <UserPagination 
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  setCurrentPage={setCurrentPage}
-                />
-              )}
-              
-              <p className="text-xs text-muted-foreground mt-4">
-                Exibindo {paginatedUsers.length} de {filteredUsers.length} usuários cadastrados 
-                {users.length > filteredUsers.length ? ` (total: ${users.length})` : ''}.
-              </p>
-            </>
-          )
-        )}
-      </CardContent>
-    </Card>
+          
+          <DialogFooter>
+            <Button 
+              variant="default" 
+              onClick={() => window.location.reload()}
+              className="w-full"
+            >
+              Tentar Novamente
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
