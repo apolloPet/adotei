@@ -73,10 +73,6 @@ const DesktopAuthMenu = ({
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => navigate("/profile")}>
-              <User className="mr-2 h-4 w-4" />
-              Perfil
-            </DropdownMenuItem>
             {isAdmin && (
               <DropdownMenuItem onClick={() => navigate("/admin")} className="text-primary">
                 <ShieldAlert className="mr-2 h-4 w-4" />
