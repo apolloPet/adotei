@@ -12,27 +12,7 @@ export const createAdminUser = async (
   try {
     console.log('Creating admin user with data:', { email, name, permissions });
     
-    // Verificar se existe uma sessão ativa ou se é o admin principal
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    const isLocalAdmin = localStorage.getItem('userEmail') === 'admin@petmatch.com';
-    
-    if (sessionError && !isLocalAdmin) {
-      console.error('Erro ao obter sessão:', sessionError);
-      return {
-        success: false,
-        message: 'Erro ao obter sessão: ' + (sessionError.message || 'Verifique se você está logado')
-      };
-    }
-    
-    // Se não houver sessão, mas for o admin principal por localStorage, prosseguir
-    if (!sessionData.session && !isLocalAdmin) {
-      console.error('Sessão não encontrada e não é admin principal');
-      return {
-        success: false,
-        message: 'Você precisa estar autenticado para criar um administrador. Por favor, faça login novamente.'
-      };
-    }
-    
+    // Criar o payload para envio
     const adminData = {
       email,
       password,
@@ -40,76 +20,74 @@ export const createAdminUser = async (
       permissions
     };
     
-    console.log('Enviando solicitação para edge function de criação de administrador:', JSON.stringify(adminData));
+    console.log('Request payload for admin creation:', adminData);
     
-    // Usar o token da sessão se disponível, ou proceder sem token para admin principal
-    let headers: Record<string, string> = {
+    // Construir o corpo da requisição como JSON string
+    const requestBody = JSON.stringify(adminData);
+    console.log('Serialized request body:', requestBody);
+    
+    // Verificar se a string JSON não está vazia
+    if (!requestBody || requestBody === '{}') {
+      console.error('Request body is empty after serialization');
+      return {
+        success: false,
+        message: 'Erro na preparação dos dados para envio.'
+      };
+    }
+    
+    // Preparar os headers
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json'
     };
     
-    if (sessionData.session?.access_token) {
-      headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
-    } else if (isLocalAdmin) {
-      // Se for admin principal sem sessão, adicionar cabeçalho especial
+    // Verificar se é o admin principal via localStorage ou se tem sessão
+    const isMainAdmin = localStorage.getItem('userEmail') === 'admin@petmatch.com';
+    
+    if (isMainAdmin) {
+      console.log('Using admin override for admin@petmatch.com');
       headers['X-Admin-Override'] = 'true';
       headers['X-Admin-Email'] = 'admin@petmatch.com';
     } else {
-      console.error('Token de acesso não encontrado na sessão');
-      return {
-        success: false,
-        message: 'Sessão inválida. Por favor, faça login novamente.'
-      };
+      // Para usuários normais, obter token da sessão
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (sessionData?.session?.access_token) {
+        console.log('Using access token authentication');
+        headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+      } else {
+        console.error('No authentication method available');
+        return {
+          success: false,
+          message: 'Erro de autenticação. Por favor, faça login novamente.'
+        };
+      }
     }
     
-    // Guarantee that the body is not empty by checking the stringified JSON
-    const requestBody = JSON.stringify(adminData);
-    if (!requestBody || requestBody === '{}' || requestBody === 'null') {
-      console.error('Request body is empty or invalid:', requestBody);
-      return {
-        success: false,
-        message: 'Erro ao preparar dados para envio. Verifique os campos e tente novamente.'
-      };
-    }
+    console.log('Sending request to admin-management function with headers:', Object.keys(headers));
     
+    // Fazer a chamada para o edge function
     const { data, error } = await supabase.functions.invoke('admin-management', {
       method: 'POST',
-      body: requestBody, // Use the validated request body
+      body: requestBody,
       headers
     });
     
     console.log('Response from admin-management:', data, error);
     
     if (error) {
-      console.error('Erro na edge function de criação de administrador:', error);
+      console.error('Error from edge function:', error);
       return {
         success: false,
         message: error.message || 'Erro ao criar administrador'
       };
     }
     
-    if (!data.success) {
+    if (!data || !data.success) {
       console.error('Error response from edge function:', data);
       return {
         success: false,
-        message: data.message || 'Erro ao criar administrador'
+        message: data?.message || 'Erro ao criar administrador'
       };
-    }
-    
-    // Se a criação foi bem-sucedida, atualizar permissões do admin@petmatch.com para ter acesso total
-    if (email === 'admin@petmatch.com' || isLocalAdmin) {
-      try {
-        await supabase.functions.invoke('admin-management', {
-          method: 'POST',
-          body: JSON.stringify({
-            grantSuperAdmin: true,
-            email: 'admin@petmatch.com'
-          }),
-          headers
-        });
-        console.log('Permissões do admin principal atualizadas com sucesso');
-      } catch (updateError) {
-        console.error('Erro ao atualizar permissões do admin principal:', updateError);
-      }
     }
     
     return {

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -98,14 +97,6 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
         passwordLength: newAdmin.password.length,
         permissions: newAdmin.permissions
       });
-
-      const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-      const userEmail = localStorage.getItem("userEmail");
-      if (!isLoggedIn && userEmail !== "admin@petmatch.com") {
-        toast.error("Sessão inválida. Por favor, faça login novamente.");
-        setIsLoading(false);
-        return;
-      }
 
       const result = await createAdminUser(
         newAdmin.email,

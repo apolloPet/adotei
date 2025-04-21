@@ -18,8 +18,11 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log(`[admin-management] Received ${req.method} request`);
+  
   // Handle preflight OPTIONS request
   if (req.method === "OPTIONS") {
+    console.log("[admin-management] Handling OPTIONS request");
     return new Response(null, {
       status: 204,
       headers: corsHeaders,
@@ -32,7 +35,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error("Environment variables not configured: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+      console.error("[admin-management] Environment variables not configured");
       return new Response(
         JSON.stringify({
           success: false,
@@ -56,6 +59,7 @@ serve(async (req) => {
 
     // Handle GET requests separately as they don't need request body
     if (req.method === "GET") {
+      console.log("[admin-management] Processing GET request");
       // Verify authorization for GET requests
       const { isAuthorized, userId, error } = await verifyAuth(req, supabase);
       
@@ -87,90 +91,24 @@ serve(async (req) => {
     // Get request body safely
     let requestData;
     
-    // Only try to parse body for non-GET requests
-    if (req.method !== "GET") {
-      try {
-        // Log request details for debugging
-        console.log(`Processing ${req.method} request to admin-management`);
-        console.log(`Content-type: ${req.headers.get("content-type")}`);
-        console.log(`Content-length: ${req.headers.get("content-length")}`);
-        
-        // Check if content length exists and is not zero
-        const contentLength = req.headers.get("content-length");
-        if (!contentLength || parseInt(contentLength) === 0) {
-          console.error('Request has no content or zero content length');
-          return new Response(
-            JSON.stringify({
-              success: false,
-              message: 'Empty request body: No content provided',
-              code: 'EMPTY_REQUEST'
-            }),
-            {
-              status: 400,
-              headers: corsHeaders
-            }
-          );
-        }
-        
-        const rawBody = await req.text();
-        console.log('Raw body received:', rawBody);
-        
-        if (!rawBody || rawBody.trim() === '') {
-          console.error('Empty request body received');
-          return new Response(
-            JSON.stringify({
-              success: false,
-              message: 'Empty request body: No data provided',
-              code: 'EMPTY_REQUEST'
-            }),
-            {
-              status: 400,
-              headers: corsHeaders
-            }
-          );
-        }
-        
-        try {
-          requestData = JSON.parse(rawBody);
-          console.log('Request data parsed:', requestData);
-        } catch (parseError) {
-          console.error('Error parsing JSON:', parseError, 'Raw body:', rawBody);
-          return new Response(
-            JSON.stringify({
-              success: false,
-              message: `Invalid JSON: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
-              code: 'INVALID_JSON',
-              rawBody: rawBody.substring(0, 100) // Include part of the raw body in the error response
-            }),
-            {
-              status: 400,
-              headers: corsHeaders
-            }
-          );
-        }
-        
-        // Verify we have valid data object
-        if (!requestData || typeof requestData !== 'object') {
-          console.error('Invalid request data structure:', requestData);
-          return new Response(
-            JSON.stringify({
-              success: false,
-              message: 'Invalid request data structure',
-              code: 'INVALID_DATA_STRUCTURE'
-            }),
-            {
-              status: 400,
-              headers: corsHeaders
-            }
-          );
-        }
-      } catch (error) {
-        console.error('Error processing request body:', error);
+    // Log request details for debugging
+    console.log(`[admin-management] Processing ${req.method} request`);
+    console.log(`[admin-management] Content-type: ${req.headers.get("content-type")}`);
+    console.log(`[admin-management] Content-length: ${req.headers.get("content-length")}`);
+    
+    try {
+      // Clone the request to read the body
+      const clonedReq = req.clone();
+      const rawBody = await clonedReq.text();
+      console.log('[admin-management] Raw body received:', rawBody);
+      
+      if (!rawBody || rawBody.trim() === '') {
+        console.error('[admin-management] Empty request body received');
         return new Response(
           JSON.stringify({
             success: false,
-            message: 'Invalid request body: ' + (error instanceof Error ? error.message : 'Unknown parsing error'),
-            code: 'INVALID_REQUEST'
+            message: 'Empty request body: No data provided',
+            code: 'EMPTY_REQUEST'
           }),
           {
             status: 400,
@@ -178,6 +116,54 @@ serve(async (req) => {
           }
         );
       }
+      
+      try {
+        requestData = JSON.parse(rawBody);
+        console.log('[admin-management] Request data parsed:', requestData);
+      } catch (parseError) {
+        console.error('[admin-management] Error parsing JSON:', parseError, 'Raw body:', rawBody);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: `Invalid JSON: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
+            code: 'INVALID_JSON',
+            rawBody: rawBody.substring(0, 100) // Include part of the raw body in the error response
+          }),
+          {
+            status: 400,
+            headers: corsHeaders
+          }
+        );
+      }
+      
+      // Verify we have valid data object
+      if (!requestData || typeof requestData !== 'object') {
+        console.error('[admin-management] Invalid request data structure:', requestData);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'Invalid request data structure',
+            code: 'INVALID_DATA_STRUCTURE'
+          }),
+          {
+            status: 400,
+            headers: corsHeaders
+          }
+        );
+      }
+    } catch (error) {
+      console.error('[admin-management] Error processing request body:', error);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: 'Invalid request body: ' + (error instanceof Error ? error.message : 'Unknown parsing error'),
+          code: 'INVALID_REQUEST'
+        }),
+        {
+          status: 400,
+          headers: corsHeaders
+        }
+      );
     }
 
     // Verify authorization
@@ -215,8 +201,12 @@ serve(async (req) => {
     switch(req.method) {
       case "POST":
         if (!requestData?.grantSuperAdmin) {
+          // Log received data for debugging
+          console.log("[admin-management] POST request data:", requestData);
+          
           // Validate required fields
           if (!requestData?.email || !requestData?.password || !requestData?.name) {
+            console.error("[admin-management] Missing required fields");
             return new Response(
               JSON.stringify({ 
                 success: false,
@@ -233,6 +223,7 @@ serve(async (req) => {
           
           // Validate permissions format
           if (!requestData?.permissions || typeof requestData?.permissions !== 'object') {
+            console.error("[admin-management] Invalid permissions format");
             return new Response(
               JSON.stringify({ 
                 success: false,
@@ -247,6 +238,12 @@ serve(async (req) => {
             );
           }
 
+          console.log("[admin-management] Creating admin user:", 
+            requestData.email, 
+            "name:", requestData.name,
+            "permissions:", requestData.permissions
+          );
+          
           result = await createAdmin(
             supabase,
             requestData.email,
@@ -254,6 +251,8 @@ serve(async (req) => {
             requestData.name,
             requestData.permissions
           );
+          
+          console.log("[admin-management] Create admin result:", result);
         }
         break;
         
