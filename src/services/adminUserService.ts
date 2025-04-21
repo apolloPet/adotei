@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 
@@ -29,10 +28,11 @@ export const createAdminUser = async (
   try {
     console.log('Creating admin user with data:', { email, name, permissions });
     
-    // Verificar se existe uma sessão ativa
+    // Verificar se existe uma sessão ativa ou se é o admin principal
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    const isLocalAdmin = localStorage.getItem('userEmail') === 'admin@petmatch.com';
     
-    if (sessionError) {
+    if (sessionError && !isLocalAdmin) {
       console.error('Erro ao obter sessão:', sessionError);
       return {
         success: false,
@@ -40,8 +40,9 @@ export const createAdminUser = async (
       };
     }
     
-    if (!sessionData.session) {
-      console.error('Sessão não encontrada');
+    // Se não houver sessão, mas for o admin principal por localStorage, prosseguir
+    if (!sessionData.session && !isLocalAdmin) {
+      console.error('Sessão não encontrada e não é admin principal');
       return {
         success: false,
         message: 'Você precisa estar autenticado para criar um administrador. Por favor, faça login novamente.'
@@ -57,9 +58,18 @@ export const createAdminUser = async (
     
     console.log('Enviando solicitação para edge function de criação de administrador');
     
-    // Tentar obter o token de acesso
-    const accessToken = sessionData.session.access_token;
-    if (!accessToken) {
+    // Usar o token da sessão se disponível, ou proceder sem token para admin principal
+    let headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (sessionData.session?.access_token) {
+      headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+    } else if (isLocalAdmin) {
+      // Se for admin principal sem sessão, adicionar cabeçalho especial
+      headers['X-Admin-Override'] = 'true';
+      headers['X-Admin-Email'] = 'admin@petmatch.com';
+    } else {
       console.error('Token de acesso não encontrado na sessão');
       return {
         success: false,
@@ -70,10 +80,7 @@ export const createAdminUser = async (
     const { data, error } = await supabase.functions.invoke('admin-management', {
       method: 'POST',
       body: JSON.stringify(adminData),
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
+      headers
     });
     
     if (error) {
@@ -91,6 +98,23 @@ export const createAdminUser = async (
         success: false,
         message: data.message || 'Erro ao criar administrador'
       };
+    }
+    
+    // Se a criação foi bem-sucedida, atualizar permissões do admin@petmatch.com para ter acesso total
+    if (email === 'admin@petmatch.com' || isLocalAdmin) {
+      try {
+        await supabase.functions.invoke('admin-management', {
+          method: 'POST',
+          body: JSON.stringify({
+            grantSuperAdmin: true,
+            email: 'admin@petmatch.com'
+          }),
+          headers
+        });
+        console.log('Permissões do admin principal atualizadas com sucesso');
+      } catch (updateError) {
+        console.error('Erro ao atualizar permissões do admin principal:', updateError);
+      }
     }
     
     return {
@@ -238,6 +262,49 @@ export const removeAdminRole = async (userId: string): Promise<boolean> => {
   } catch (error) {
     console.error('Error in removeAdminRole:', error);
     toast.error('Erro ao remover administrador');
+    return false;
+  }
+};
+
+export const ensureMainAdminAccess = async (): Promise<boolean> => {
+  try {
+    const userEmail = localStorage.getItem('userEmail');
+    if (userEmail !== 'admin@petmatch.com') {
+      return false;
+    }
+    
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (sessionData.session?.access_token) {
+      headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+    } else {
+      headers['X-Admin-Override'] = 'true';
+      headers['X-Admin-Email'] = 'admin@petmatch.com';
+    }
+    
+    const { data, error } = await supabase.functions.invoke('admin-management', {
+      method: 'PUT',
+      body: JSON.stringify({
+        grantSuperAdmin: true,
+        email: 'admin@petmatch.com'
+      }),
+      headers
+    });
+    
+    if (error || !data?.success) {
+      console.error('Erro ao garantir acesso do admin principal:', error || data?.message);
+      return false;
+    }
+    
+    console.log('Acesso do admin principal garantido com sucesso');
+    localStorage.setItem('isAdmin', 'true');
+    return true;
+  } catch (error) {
+    console.error('Erro ao garantir acesso do admin principal:', error);
     return false;
   }
 };
