@@ -124,6 +124,24 @@ const AdminUserManagement = () => {
     setIsLoading(true);
     
     try {
+      console.log('Verificando sessão antes de criar administrador...');
+      
+      const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+      const userEmail = localStorage.getItem('userEmail');
+      
+      if (!isLoggedIn || !userEmail) {
+        toast.error('Sessão inválida. Por favor, faça login novamente.');
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log('Sessão local válida. Email do usuário:', userEmail);
+      console.log('Enviando dados para criação de administrador:', {
+        email: newAdmin.email,
+        name: newAdmin.name,
+        permissions: newAdmin.permissions
+      });
+      
       const result = await createAdminUser(
         newAdmin.email,
         newAdmin.password,
@@ -149,11 +167,12 @@ const AdminUserManagement = () => {
           }
         });
       } else {
+        console.error('Erro retornado:', result.message);
         toast.error(result.message);
       }
     } catch (error) {
       console.error('Error creating admin:', error);
-      toast.error('Erro ao criar administrador');
+      toast.error('Erro ao criar administrador: ' + (error instanceof Error ? error.message : 'Erro desconhecido'));
     } finally {
       setIsLoading(false);
     }

@@ -29,13 +29,22 @@ export const createAdminUser = async (
   try {
     console.log('Creating admin user with data:', { email, name, permissions });
     
+    // Verificar se existe uma sessão ativa
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     
-    if (sessionError || !sessionData.session) {
+    if (sessionError) {
       console.error('Erro ao obter sessão:', sessionError);
       return {
         success: false,
-        message: 'Você precisa estar autenticado para criar um administrador'
+        message: 'Erro ao obter sessão: ' + (sessionError.message || 'Verifique se você está logado')
+      };
+    }
+    
+    if (!sessionData.session) {
+      console.error('Sessão não encontrada');
+      return {
+        success: false,
+        message: 'Você precisa estar autenticado para criar um administrador. Por favor, faça login novamente.'
       };
     }
     
@@ -48,11 +57,21 @@ export const createAdminUser = async (
     
     console.log('Enviando solicitação para edge function de criação de administrador');
     
+    // Tentar obter o token de acesso
+    const accessToken = sessionData.session.access_token;
+    if (!accessToken) {
+      console.error('Token de acesso não encontrado na sessão');
+      return {
+        success: false,
+        message: 'Sessão inválida. Por favor, faça login novamente.'
+      };
+    }
+    
     const { data, error } = await supabase.functions.invoke('admin-management', {
       method: 'POST',
       body: JSON.stringify(adminData),
       headers: {
-        Authorization: `Bearer ${sessionData.session.access_token}`,
+        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json'
       }
     });
@@ -84,7 +103,7 @@ export const createAdminUser = async (
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
     return {
       success: false,
-      message: errorMessage
+      message: 'Erro ao criar administrador: ' + errorMessage
     };
   }
 };

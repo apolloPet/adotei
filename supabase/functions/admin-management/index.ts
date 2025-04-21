@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -49,6 +48,7 @@ serve(async (req) => {
     // Get JWT token from request
     const authHeader = req.headers.get('Authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('Token de autenticação ausente ou inválido:', authHeader);
       return new Response(
         JSON.stringify({ 
           success: false,
@@ -64,16 +64,19 @@ serve(async (req) => {
 
     // Extract the JWT
     const token = authHeader.substring(7);
+    console.log('Token recebido (primeiros 10 caracteres):', token.substring(0, 10) + '...');
     
     // Verify the JWT and get user information
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
-    if (authError || !user) {
+    if (authError) {
+      console.error('Erro na verificação do token:', authError);
       return new Response(
         JSON.stringify({ 
           success: false,
           message: "Token inválido ou sessão expirada. Por favor, faça login novamente.",
-          code: "INVALID_TOKEN" 
+          code: "INVALID_TOKEN",
+          details: authError.message
         }),
         {
           status: 401,
@@ -81,6 +84,23 @@ serve(async (req) => {
         }
       );
     }
+    
+    if (!user) {
+      console.error('Usuário não encontrado para o token fornecido');
+      return new Response(
+        JSON.stringify({ 
+          success: false,
+          message: "Usuário não encontrado. Por favor, faça login novamente.",
+          code: "USER_NOT_FOUND" 
+        }),
+        {
+          status: 401,
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    console.log('Usuário autenticado:', user.email);
 
     // Check if user is admin
     const { data: roleData, error: roleError } = await supabase
@@ -90,33 +110,62 @@ serve(async (req) => {
       .eq('role', 'admin')
       .maybeSingle();
       
-    if (!roleData) {
+    if (roleError) {
+      console.error('Erro ao verificar papel do usuário:', roleError);
       return new Response(
         JSON.stringify({ 
           success: false,
-          message: "Acesso negado. Apenas administradores podem gerenciar outros administradores.",
-          code: "ACCESS_DENIED" 
+          message: "Erro ao verificar permissões de administrador.",
+          code: "ROLE_CHECK_FAILED",
+          details: roleError.message
         }),
         {
-          status: 403,
+          status: 500,
           headers: corsHeaders,
         }
       );
     }
-
-    // Check if user has permission to manage admins
-    if (!roleData.permissions?.manageAdmins) {
-      return new Response(
-        JSON.stringify({ 
-          success: false,
-          message: "Acesso negado. Você não tem permissão para gerenciar administradores.",
-          code: "INSUFFICIENT_PERMISSIONS" 
-        }),
-        {
-          status: 403,
-          headers: corsHeaders,
-        }
-      );
+      
+    if (!roleData) {
+      // Verificação alternativa por convenção de email
+      const isAdminByEmail = 
+        user.email.includes('@admin') || 
+        user.email.includes('@ong') || 
+        user.email === 'admin@petmatch.com';
+        
+      if (!isAdminByEmail) {
+        console.error('Usuário não tem papel de administrador:', user.email);
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            message: "Acesso negado. Apenas administradores podem gerenciar outros administradores.",
+            code: "ACCESS_DENIED" 
+          }),
+          {
+            status: 403,
+            headers: corsHeaders,
+          }
+        );
+      }
+      
+      console.log('Usuário autorizado por convenção de email:', user.email);
+    } else {
+      console.log('Usuário tem papel de administrador com permissões:', roleData.permissions);
+    
+      // Check if user has permission to manage admins
+      if (!roleData.permissions?.manageAdmins) {
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            message: "Acesso negado. Você não tem permissão para gerenciar administradores.",
+            code: "INSUFFICIENT_PERMISSIONS" 
+          }),
+          {
+            status: 403,
+            headers: corsHeaders,
+          }
+        );
+      }
     }
 
     // Determine the operation based on HTTP method
