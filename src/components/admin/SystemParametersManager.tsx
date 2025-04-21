@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-sonner";
 import { RefreshCw, Edit, Save, Dog, Cat, Utensils } from "lucide-react";
-import { getSystemParameters, updateSystemParameter, createSystemParameter } from '@/services/adminService';
+import { getSystemParameters, updateSystemParameter, createSystemParameter } from '@/services/systemParameterService';
 import { Textarea } from "@/components/ui/textarea";
 
 // Parameter type

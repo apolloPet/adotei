@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,7 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-sonner";
 import { PlusCircle, Trash2, Shield } from "lucide-react";
-import { AdminUser, createAdminUser, getAdminUsers, updateAdminPermissions, removeAdminRole } from '@/services/adminService';
+import { AdminUser, createAdminUser, getAdminUsers, updateAdminPermissions, removeAdminRole } from '@/services/adminUserService';
 
 const AdminUserManagement = () => {
   const [admins, setAdmins] = useState<AdminUser[]>([]);
@@ -58,7 +57,6 @@ const AdminUserManagement = () => {
       [name]: value
     }));
     
-    // Clear error when user types
     if (formErrors[name as keyof typeof formErrors]) {
       setFormErrors(prev => ({
         ...prev,
@@ -138,7 +136,6 @@ const AdminUserManagement = () => {
         setIsDialogOpen(false);
         await fetchAdmins();
         
-        // Reset form
         setNewAdmin({
           name: '',
           email: '',
@@ -372,7 +369,7 @@ const AdminUserManagement = () => {
                       variant="ghost" 
                       size="icon"
                       onClick={() => handleAdminRemoval(admin.id, admin.email)}
-                      disabled={admin.email === 'admin@petmatch.com'} // Prevent removing the main admin
+                      disabled={admin.email === 'admin@petmatch.com'}
                       className="text-red-500 hover:text-red-700 hover:bg-red-50"
                     >
                       <Trash2 className="h-4 w-4" />

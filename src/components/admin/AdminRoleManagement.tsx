@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,7 +14,7 @@ import {
   updateAdminPermissions, 
   removeAdminRole,
   AdminUser 
-} from '@/services/adminService';
+} from '@/services/adminUserService';
 import { format } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
 
@@ -43,7 +42,6 @@ const AdminRoleManagement = () => {
     passwordConfirm: ''
   });
 
-  // Fetch admin users on component mount
   useEffect(() => {
     fetchAdminUsers();
   }, []);
@@ -69,7 +67,6 @@ const AdminRoleManagement = () => {
       [name]: value
     }));
     
-    // Clear error when user types
     if (formErrors[name as keyof typeof formErrors]) {
       setFormErrors(prev => ({
         ...prev,
@@ -137,7 +134,6 @@ const AdminRoleManagement = () => {
     setIsProcessing(true);
     
     try {
-      // Log the data being sent to the backend
       console.log('Creating admin with data:', {
         email: newAdmin.email,
         name: newAdmin.name,
@@ -155,11 +151,9 @@ const AdminRoleManagement = () => {
         throw new Error(result.message);
       }
       
-      // Close dialog and refresh the list
       setIsDialogOpen(false);
       fetchAdminUsers();
       
-      // Reset form
       setNewAdmin({
         name: '',
         email: '',
@@ -196,7 +190,6 @@ const AdminRoleManagement = () => {
       
       await updateAdminPermissions(userId, updatedPermissions);
       
-      // Update local state
       setAdmins(prev => 
         prev.map(admin => 
           admin.id === userId 
@@ -227,7 +220,6 @@ const AdminRoleManagement = () => {
       try {
         await removeAdminRole(userId);
         
-        // Update local state
         setAdmins(prev => prev.filter(admin => admin.id !== userId));
         
         toast.success("Administrador removido", {
@@ -240,7 +232,6 @@ const AdminRoleManagement = () => {
     }
   };
 
-  // Format date to DD/MM/YYYY
   const formatDate = (dateString?: string): string => {
     if (!dateString) return 'N/A';
     try {
@@ -455,7 +446,7 @@ const AdminRoleManagement = () => {
                         variant="ghost" 
                         size="icon"
                         onClick={() => handleRemoveAdmin(admin.id)}
-                        disabled={admin.email === 'admin@petmatch.com'} // Prevent removing the main admin
+                        disabled={admin.email === 'admin@petmatch.com'}
                         className="text-red-500 hover:text-red-700 hover:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4" />

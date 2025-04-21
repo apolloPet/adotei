@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DollarSign, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-sonner";
 import { FeesSection, BankDetailsSection, ContractSection } from "./payment-settings";
-import { getSystemParameters, updateSystemParameter, createSystemParameter } from '@/services/adminService';
+import { getSystemParameters, updateSystemParameter, createSystemParameter } from '@/services/systemParameterService';
 
 export const PaymentSettings = () => {
   const [settings, setSettings] = useState({
@@ -26,7 +25,6 @@ export const PaymentSettings = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Carregar configurações do banco de dados
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -38,7 +36,6 @@ export const PaymentSettings = () => {
         if (data && data.length > 0) {
           const newSettings = { ...settings };
           
-          // Processar os parâmetros e atualizar as configurações
           data.forEach(param => {
             if (param.key === 'adoption_fee') {
               newSettings.fees.adoptionFee = param.value.amount || 120;
@@ -70,7 +67,6 @@ export const PaymentSettings = () => {
     try {
       setIsSaving(true);
       
-      // Preparar os dados para salvar
       const adoptionFeeParam = {
         amount: settings.fees.adoptionFee,
         enabled: settings.fees.enableAdoptionFee
@@ -86,7 +82,6 @@ export const PaymentSettings = () => {
         followUpPeriod: settings.contractDetails.followUpPeriod
       };
       
-      // Buscar parâmetros existentes para saber se devemos atualizar ou criar
       const existingParams = await getSystemParameters('payment');
       
       const saveParam = async (key: string, value: any, description: string) => {
@@ -99,7 +94,6 @@ export const PaymentSettings = () => {
         }
       };
       
-      // Salvar os parâmetros
       await saveParam('adoption_fee', adoptionFeeParam, 'Configurações de taxa de adoção');
       await saveParam('payment_details', paymentDetailsParam, 'Detalhes bancários para pagamento');
       await saveParam('contract_details', contractDetailsParam, 'Configurações de contrato');
