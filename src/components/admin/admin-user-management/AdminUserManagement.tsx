@@ -20,10 +20,17 @@ export const AdminUserManagement = () => {
   useEffect(() => {
     const initializeAdmin = async () => {
       try {
+        console.log('Admin User Management: Initializing admin status');
+        
         if (localStorage.getItem("userEmail") === "admin@petmatch.com") {
           localStorage.setItem("isAdmin", "true");
           localStorage.setItem("isLoggedIn", "true");
-          await ensureMainAdminAccess();
+          
+          console.log('Admin User Management: Found main admin (admin@petmatch.com), ensuring access');
+          const accessEnsured = await ensureMainAdminAccess();
+          console.log('Admin User Management: Main admin access ensured:', accessEnsured);
+        } else {
+          console.log('Admin User Management: Not main admin, checking session');
         }
       } catch (error) {
         console.error("Erro ao inicializar permissões do admin:", error);
@@ -37,7 +44,9 @@ export const AdminUserManagement = () => {
   const fetchAdmins = async () => {
     setIsLoading(true);
     try {
+      console.log('Admin User Management: Fetching admin users');
       const adminsData = await getAdminUsers();
+      console.log('Admin User Management: Fetched admins:', adminsData);
       setAdmins(adminsData);
     } catch (error) {
       console.error("Erro ao buscar administradores:", error);
@@ -49,8 +58,12 @@ export const AdminUserManagement = () => {
 
   const handlePermissionUpdate = async (id: string, currentPermissions: AdminUser["permissions"]) => {
     try {
+      console.log('Admin User Management: Updating permissions for user:', id);
       const success = await updateAdminPermissions(id, currentPermissions);
-      if (success) await fetchAdmins();
+      if (success) {
+        console.log('Admin User Management: Permissions updated successfully');
+        await fetchAdmins();
+      }
     } catch (error) {
       console.error("Erro ao atualizar permissões:", error);
       toast.error("Erro ao atualizar permissões");
@@ -60,8 +73,12 @@ export const AdminUserManagement = () => {
   const handleAdminRemoval = async (id: string, email: string) => {
     if (confirm(`Tem certeza que deseja remover ${email} como administrador?`)) {
       try {
+        console.log('Admin User Management: Removing admin role from user:', id);
         const success = await removeAdminRole(id);
-        if (success) await fetchAdmins();
+        if (success) {
+          console.log('Admin User Management: Admin role removed successfully');
+          await fetchAdmins();
+        }
       } catch (error) {
         console.error("Erro ao remover administrador:", error);
         toast.error("Erro ao remover administrador");
@@ -69,7 +86,8 @@ export const AdminUserManagement = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 

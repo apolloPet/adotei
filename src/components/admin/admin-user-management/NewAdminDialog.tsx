@@ -91,6 +91,14 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
 
     setIsLoading(true);
     try {
+      // Debug info to verify data being sent
+      console.log('Submitting admin creation with data:', {
+        email: newAdmin.email,
+        name: newAdmin.name,
+        passwordLength: newAdmin.password.length,
+        permissions: newAdmin.permissions
+      });
+
       const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
       const userEmail = localStorage.getItem("userEmail");
       if (!isLoggedIn && userEmail !== "admin@petmatch.com") {
@@ -121,6 +129,7 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
         toast.error(result.message);
       }
     } catch (error) {
+      console.error("Erro ao criar administrador:", error);
       toast.error("Erro ao criar administrador");
     } finally {
       setIsLoading(false);

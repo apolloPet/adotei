@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AdminUser } from './types';
@@ -39,7 +40,7 @@ export const createAdminUser = async (
       permissions
     };
     
-    console.log('Enviando solicitação para edge function de criação de administrador');
+    console.log('Enviando solicitação para edge function de criação de administrador:', JSON.stringify(adminData));
     
     // Usar o token da sessão se disponível, ou proceder sem token para admin principal
     let headers: Record<string, string> = {
@@ -60,11 +61,23 @@ export const createAdminUser = async (
       };
     }
     
+    // Guarantee that the body is not empty by checking the stringified JSON
+    const requestBody = JSON.stringify(adminData);
+    if (!requestBody || requestBody === '{}' || requestBody === 'null') {
+      console.error('Request body is empty or invalid:', requestBody);
+      return {
+        success: false,
+        message: 'Erro ao preparar dados para envio. Verifique os campos e tente novamente.'
+      };
+    }
+    
     const { data, error } = await supabase.functions.invoke('admin-management', {
       method: 'POST',
-      body: JSON.stringify(adminData),
+      body: requestBody, // Use the validated request body
       headers
     });
+    
+    console.log('Response from admin-management:', data, error);
     
     if (error) {
       console.error('Erro na edge function de criação de administrador:', error);
@@ -74,9 +87,8 @@ export const createAdminUser = async (
       };
     }
     
-    console.log('Resposta da edge function:', data);
-    
     if (!data.success) {
+      console.error('Error response from edge function:', data);
       return {
         success: false,
         message: data.message || 'Erro ao criar administrador'

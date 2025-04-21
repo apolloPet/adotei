@@ -86,11 +86,15 @@ serve(async (req) => {
     // For non-GET requests, check if there's a body
     // Get request body safely
     let requestData;
-    const contentType = req.headers.get("content-type");
     
     // Only try to parse body for non-GET requests
     if (req.method !== "GET") {
       try {
+        // Log request details for debugging
+        console.log(`Processing ${req.method} request to admin-management`);
+        console.log(`Content-type: ${req.headers.get("content-type")}`);
+        console.log(`Content-length: ${req.headers.get("content-length")}`);
+        
         // Check if content length exists and is not zero
         const contentLength = req.headers.get("content-length");
         if (!contentLength || parseInt(contentLength) === 0) {
@@ -109,7 +113,7 @@ serve(async (req) => {
         }
         
         const rawBody = await req.text();
-        console.log('Raw body received:', rawBody.substring(0, 100) + (rawBody.length > 100 ? '...' : ''));
+        console.log('Raw body received:', rawBody);
         
         if (!rawBody || rawBody.trim() === '') {
           console.error('Empty request body received');
@@ -126,10 +130,42 @@ serve(async (req) => {
           );
         }
         
-        requestData = JSON.parse(rawBody);
-        console.log('Request data parsed:', requestData);
+        try {
+          requestData = JSON.parse(rawBody);
+          console.log('Request data parsed:', requestData);
+        } catch (parseError) {
+          console.error('Error parsing JSON:', parseError, 'Raw body:', rawBody);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: `Invalid JSON: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
+              code: 'INVALID_JSON',
+              rawBody: rawBody.substring(0, 100) // Include part of the raw body in the error response
+            }),
+            {
+              status: 400,
+              headers: corsHeaders
+            }
+          );
+        }
+        
+        // Verify we have valid data object
+        if (!requestData || typeof requestData !== 'object') {
+          console.error('Invalid request data structure:', requestData);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: 'Invalid request data structure',
+              code: 'INVALID_DATA_STRUCTURE'
+            }),
+            {
+              status: 400,
+              headers: corsHeaders
+            }
+          );
+        }
       } catch (error) {
-        console.error('Error parsing request body:', error);
+        console.error('Error processing request body:', error);
         return new Response(
           JSON.stringify({
             success: false,
@@ -185,7 +221,8 @@ serve(async (req) => {
               JSON.stringify({ 
                 success: false,
                 message: "Missing data. Email, password and name are required.",
-                code: "MISSING_DATA" 
+                code: "MISSING_DATA",
+                receivedFields: Object.keys(requestData || {})
               }),
               {
                 status: 400,
@@ -200,7 +237,8 @@ serve(async (req) => {
               JSON.stringify({ 
                 success: false,
                 message: "Invalid format for permissions.",
-                code: "INVALID_PERMISSIONS" 
+                code: "INVALID_PERMISSIONS",
+                receivedPermissions: requestData?.permissions
               }),
               {
                 status: 400,
@@ -225,7 +263,8 @@ serve(async (req) => {
             JSON.stringify({ 
               success: false,
               message: "Missing data. User ID and permissions are required.",
-              code: "MISSING_DATA" 
+              code: "MISSING_DATA",
+              receivedFields: Object.keys(requestData || {})
             }),
             {
               status: 400,
@@ -248,7 +287,8 @@ serve(async (req) => {
             JSON.stringify({ 
               success: false,
               message: "User ID not provided.",
-              code: "MISSING_USER_ID" 
+              code: "MISSING_USER_ID",
+              receivedFields: Object.keys(requestData || {})
             }),
             {
               status: 400,
@@ -264,11 +304,11 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({ 
             success: false,
-            message: "Method not supported",
+            message: `Method ${req.method} not supported`,
             code: "INVALID_METHOD" 
           }),
           {
-            status: 400,
+            status: 405,
             headers: corsHeaders,
           }
         );
