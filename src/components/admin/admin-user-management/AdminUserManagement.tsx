@@ -40,6 +40,7 @@ export const AdminUserManagement = () => {
       const adminsData = await getAdminUsers();
       setAdmins(adminsData);
     } catch (error) {
+      console.error("Erro ao buscar administradores:", error);
       toast.error("Erro ao buscar administradores");
     } finally {
       setIsLoading(false);
@@ -50,7 +51,8 @@ export const AdminUserManagement = () => {
     try {
       const success = await updateAdminPermissions(id, currentPermissions);
       if (success) await fetchAdmins();
-    } catch {
+    } catch (error) {
+      console.error("Erro ao atualizar permissões:", error);
       toast.error("Erro ao atualizar permissões");
     }
   };
@@ -60,7 +62,8 @@ export const AdminUserManagement = () => {
       try {
         const success = await removeAdminRole(id);
         if (success) await fetchAdmins();
-      } catch {
+      } catch (error) {
+        console.error("Erro ao remover administrador:", error);
         toast.error("Erro ao remover administrador");
       }
     }

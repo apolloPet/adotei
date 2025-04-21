@@ -54,6 +54,96 @@ serve(async (req) => {
       },
     });
 
+    // Handle GET requests separately as they don't need request body
+    if (req.method === "GET") {
+      // Verify authorization for GET requests
+      const { isAuthorized, userId, error } = await verifyAuth(req, supabase);
+      
+      if (!isAuthorized) {
+        return new Response(
+          JSON.stringify({ 
+            success: false,
+            message: error || "You are not authorized to perform this operation.",
+            code: "UNAUTHORIZED" 
+          }),
+          {
+            status: 403,
+            headers: corsHeaders,
+          }
+        );
+      }
+      
+      const result = await getAdminUsers(supabase);
+      return new Response(
+        JSON.stringify(result),
+        {
+          status: result.success ? 200 : 500,
+          headers: corsHeaders,
+        }
+      );
+    }
+
+    // For non-GET requests, check if there's a body
+    // Get request body safely
+    let requestData;
+    const contentType = req.headers.get("content-type");
+    
+    // Only try to parse body for non-GET requests
+    if (req.method !== "GET") {
+      try {
+        // Check if content length exists and is not zero
+        const contentLength = req.headers.get("content-length");
+        if (!contentLength || parseInt(contentLength) === 0) {
+          console.error('Request has no content or zero content length');
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: 'Empty request body: No content provided',
+              code: 'EMPTY_REQUEST'
+            }),
+            {
+              status: 400,
+              headers: corsHeaders
+            }
+          );
+        }
+        
+        const rawBody = await req.text();
+        console.log('Raw body received:', rawBody.substring(0, 100) + (rawBody.length > 100 ? '...' : ''));
+        
+        if (!rawBody || rawBody.trim() === '') {
+          console.error('Empty request body received');
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: 'Empty request body: No data provided',
+              code: 'EMPTY_REQUEST'
+            }),
+            {
+              status: 400,
+              headers: corsHeaders
+            }
+          );
+        }
+        
+        requestData = JSON.parse(rawBody);
+        console.log('Request data parsed:', requestData);
+      } catch (error) {
+        console.error('Error parsing request body:', error);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: 'Invalid request body: ' + (error instanceof Error ? error.message : 'Unknown parsing error'),
+            code: 'INVALID_REQUEST'
+          }),
+          {
+            status: 400,
+            headers: corsHeaders
+          }
+        );
+      }
+    }
+
     // Verify authorization
     const { isAuthorized, userId, error } = await verifyAuth(req, supabase);
 
@@ -71,32 +161,8 @@ serve(async (req) => {
       );
     }
 
-    // Verify request body is valid before parsing
-    let requestData;
-    try {
-      const rawBody = await req.text();
-      if (!rawBody || rawBody.trim() === '') {
-        throw new Error('Empty request body');
-      }
-      requestData = JSON.parse(rawBody);
-      console.log('Request data received:', requestData);
-    } catch (error) {
-      console.error('Error parsing request body:', error);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'Invalid request body: ' + (error instanceof Error ? error.message : 'Unknown parsing error'),
-          code: 'INVALID_REQUEST'
-        }),
-        {
-          status: 400,
-          headers: corsHeaders
-        }
-      );
-    }
-
     // Handle super admin grant for admin@petmatch.com
-    if (requestData.grantSuperAdmin && requestData.email === 'admin@petmatch.com') {
+    if (requestData?.grantSuperAdmin && requestData?.email === 'admin@petmatch.com') {
       const result = await grantSuperAdmin(supabase, 'admin@petmatch.com');
       return new Response(
         JSON.stringify(result),
@@ -112,9 +178,9 @@ serve(async (req) => {
     
     switch(req.method) {
       case "POST":
-        if (!requestData.grantSuperAdmin) {
+        if (!requestData?.grantSuperAdmin) {
           // Validate required fields
-          if (!requestData.email || !requestData.password || !requestData.name) {
+          if (!requestData?.email || !requestData?.password || !requestData?.name) {
             return new Response(
               JSON.stringify({ 
                 success: false,
@@ -129,7 +195,7 @@ serve(async (req) => {
           }
           
           // Validate permissions format
-          if (!requestData.permissions || typeof requestData.permissions !== 'object') {
+          if (!requestData?.permissions || typeof requestData?.permissions !== 'object') {
             return new Response(
               JSON.stringify({ 
                 success: false,
@@ -153,12 +219,8 @@ serve(async (req) => {
         }
         break;
         
-      case "GET":
-        result = await getAdminUsers(supabase);
-        break;
-        
       case "PUT":
-        if (!requestData.userId || !requestData.permissions) {
+        if (!requestData?.userId || !requestData?.permissions) {
           return new Response(
             JSON.stringify({ 
               success: false,
@@ -181,7 +243,7 @@ serve(async (req) => {
         break;
         
       case "DELETE":
-        if (!requestData.userId) {
+        if (!requestData?.userId) {
           return new Response(
             JSON.stringify({ 
               success: false,
