@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 
@@ -136,20 +137,36 @@ export const getAdminUsers = async (): Promise<AdminUser[]> => {
   try {
     console.log('Fetching admin users');
     
+    // Verificar se é o admin principal por localStorage
+    const isLocalAdmin = localStorage.getItem('userEmail') === 'admin@petmatch.com';
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     
-    if (sessionError || !sessionData.session) {
+    if (sessionError && !isLocalAdmin) {
       console.error('Erro ao obter sessão:', sessionError);
       toast.error('Você precisa estar autenticado para listar administradores');
       return [];
     }
     
+    // Configurar cabeçalhos dependendo da autenticação
+    let headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (sessionData.session?.access_token) {
+      headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+    } else if (isLocalAdmin) {
+      // Se for admin principal sem sessão, adicionar cabeçalho especial
+      headers['X-Admin-Override'] = 'true';
+      headers['X-Admin-Email'] = 'admin@petmatch.com';
+    } else {
+      console.error('Nem sessão válida nem admin principal detectado');
+      toast.error('Sessão inválida. Por favor, faça login novamente.');
+      return [];
+    }
+    
     const { data, error } = await supabase.functions.invoke('admin-management', {
       method: 'GET',
-      headers: {
-        Authorization: `Bearer ${sessionData.session.access_token}`,
-        'Content-Type': 'application/json'
-      }
+      headers
     });
     
     if (error) {
@@ -183,11 +200,30 @@ export const updateAdminPermissions = async (
   }
 ): Promise<boolean> => {
   try {
+    // Verificar se é o admin principal por localStorage
+    const isLocalAdmin = localStorage.getItem('userEmail') === 'admin@petmatch.com';
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     
-    if (sessionError || !sessionData.session) {
+    if (sessionError && !isLocalAdmin) {
       console.error('Erro ao obter sessão:', sessionError);
       toast.error('Você precisa estar autenticado para atualizar permissões');
+      return false;
+    }
+    
+    // Configurar cabeçalhos dependendo da autenticação
+    let headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (sessionData.session?.access_token) {
+      headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+    } else if (isLocalAdmin) {
+      // Se for admin principal sem sessão, adicionar cabeçalho especial
+      headers['X-Admin-Override'] = 'true';
+      headers['X-Admin-Email'] = 'admin@petmatch.com';
+    } else {
+      console.error('Nem sessão válida nem admin principal detectado');
+      toast.error('Sessão inválida. Por favor, faça login novamente.');
       return false;
     }
     
@@ -199,10 +235,7 @@ export const updateAdminPermissions = async (
     const { data, error } = await supabase.functions.invoke('admin-management', {
       method: 'PUT',
       body: JSON.stringify(requestData),
-      headers: {
-        Authorization: `Bearer ${sessionData.session.access_token}`,
-        'Content-Type': 'application/json'
-      }
+      headers
     });
     
     if (error) {
@@ -228,21 +261,37 @@ export const updateAdminPermissions = async (
 
 export const removeAdminRole = async (userId: string): Promise<boolean> => {
   try {
+    // Verificar se é o admin principal por localStorage
+    const isLocalAdmin = localStorage.getItem('userEmail') === 'admin@petmatch.com';
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     
-    if (sessionError || !sessionData.session) {
+    if (sessionError && !isLocalAdmin) {
       console.error('Erro ao obter sessão:', sessionError);
       toast.error('Você precisa estar autenticado para remover administrador');
+      return false;
+    }
+    
+    // Configurar cabeçalhos dependendo da autenticação
+    let headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    
+    if (sessionData.session?.access_token) {
+      headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
+    } else if (isLocalAdmin) {
+      // Se for admin principal sem sessão, adicionar cabeçalho especial
+      headers['X-Admin-Override'] = 'true';
+      headers['X-Admin-Email'] = 'admin@petmatch.com';
+    } else {
+      console.error('Nem sessão válida nem admin principal detectado');
+      toast.error('Sessão inválida. Por favor, faça login novamente.');
       return false;
     }
     
     const { data, error } = await supabase.functions.invoke('admin-management', {
       method: 'DELETE',
       body: JSON.stringify({ userId }),
-      headers: {
-        Authorization: `Bearer ${sessionData.session.access_token}`,
-        'Content-Type': 'application/json'
-      }
+      headers
     });
     
     if (error) {
@@ -286,8 +335,10 @@ export const ensureMainAdminAccess = async (): Promise<boolean> => {
       headers['X-Admin-Email'] = 'admin@petmatch.com';
     }
     
+    console.log('Enviando solicitação para garantir acesso do admin principal');
+    
     const { data, error } = await supabase.functions.invoke('admin-management', {
-      method: 'PUT',
+      method: 'POST',
       body: JSON.stringify({
         grantSuperAdmin: true,
         email: 'admin@petmatch.com'

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,20 +35,23 @@ const AdminUserManagement = () => {
 
   useEffect(() => {
     const initializeAdmin = async () => {
-      // Verificar se está usando o admin principal
-      if (localStorage.getItem('userEmail') === 'admin@petmatch.com') {
-        try {
+      try {
+        if (localStorage.getItem('userEmail') === 'admin@petmatch.com') {
           console.log("Garantindo permissões para o admin principal...");
+          localStorage.setItem('isAdmin', 'true');
+          localStorage.setItem('isLoggedIn', 'true');
           const success = await ensureMainAdminAccess();
           if (success) {
             toast.success("Permissões de administrador principal inicializadas com sucesso");
+          } else {
+            toast.error("Erro ao inicializar permissões de administrador");
           }
-        } catch (error) {
-          console.error("Erro ao inicializar permissões do admin:", error);
         }
+      } catch (error) {
+        console.error("Erro ao inicializar permissões do admin:", error);
+      } finally {
+        fetchAdmins();
       }
-      
-      fetchAdmins();
     };
     
     initializeAdmin();
@@ -146,6 +148,7 @@ const AdminUserManagement = () => {
       
       const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
       const userEmail = localStorage.getItem('userEmail');
+      const isAdmin = localStorage.getItem('isAdmin') === 'true';
       
       if (!isLoggedIn && userEmail !== 'admin@petmatch.com') {
         toast.error('Sessão inválida. Por favor, faça login novamente.');
@@ -154,6 +157,7 @@ const AdminUserManagement = () => {
       }
       
       console.log('Sessão local válida ou é admin principal. Email do usuário:', userEmail);
+      console.log('É admin?', isAdmin);
       console.log('Enviando dados para criação de administrador:', {
         email: newAdmin.email,
         name: newAdmin.name,

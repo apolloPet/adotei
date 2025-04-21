@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 
@@ -61,7 +62,7 @@ serve(async (req) => {
           .from('users')
           .select('auth_id')
           .eq('email', 'admin@petmatch.com')
-          .single();
+          .maybeSingle();
         
         if (userData && !userError) {
           userId = userData.auth_id;
@@ -220,8 +221,31 @@ serve(async (req) => {
       );
     }
 
+    // Verifica se o body é válido antes de tentar fazer o parse
+    let requestData;
+    try {
+      const rawBody = await req.text();
+      if (!rawBody || rawBody.trim() === '') {
+        throw new Error('Empty request body');
+      }
+      requestData = JSON.parse(rawBody);
+      console.log('Request data received:', requestData);
+    } catch (error) {
+      console.error('Error parsing request body:', error);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: 'Invalid request body: ' + (error instanceof Error ? error.message : 'Unknown parsing error'),
+          code: 'INVALID_REQUEST'
+        }),
+        {
+          status: 400,
+          headers: corsHeaders
+        }
+      );
+    }
+
     // Concessão de super admin
-    const requestData = await req.json();
     if (requestData.grantSuperAdmin && requestData.email === 'admin@petmatch.com') {
       console.log('Processando solicitação para conceder super admin a admin@petmatch.com');
       
@@ -264,7 +288,7 @@ serve(async (req) => {
         .select('*')
         .eq('user_id', adminUser.id)
         .eq('role', 'admin')
-        .single();
+        .maybeSingle();
       
       if (existingRoleError && existingRoleError.code !== 'PGRST116') {
         console.error('Erro ao verificar registro de admin existente:', existingRoleError);
@@ -386,79 +410,113 @@ serve(async (req) => {
 
         console.log(`Criando administrador: ${requestData.email}, permissions:`, requestData.permissions);
         
-        // Step 1: Create user in Supabase Auth
-        const { data: userData, error: userError } = await supabase.auth.admin.createUser({
-          email: requestData.email,
-          password: requestData.password,
-          email_confirm: true,
-          user_metadata: { name: requestData.name, isAdmin: true }
-        });
-        
-        if (userError) {
-          console.error('Erro ao criar usuário:', userError);
-          return new Response(
-            JSON.stringify({ 
-              success: false,
-              message: userError.message,
-              code: userError.code || "USER_CREATION_FAILED" 
-            }),
-            {
-              status: 500,
-              headers: corsHeaders,
-            }
-          );
-        }
-        
-        if (!userData.user) {
-          return new Response(
-            JSON.stringify({ 
-              success: false,
-              message: "Erro ao criar usuário. Nenhum usuário retornado.",
-              code: "USER_CREATION_FAILED" 
-            }),
-            {
-              status: 500,
-              headers: corsHeaders,
-            }
-          );
-        }
-        
-        console.log(`Usuário criado com ID: ${userData.user.id}`);
-        
-        // Step 2: Assign admin role to user
-        const roleInsertData = {
-          user_id: userData.user.id,
-          role: 'admin',
-          permissions: requestData.permissions || {
-            manageAnimals: true,
-            approveAdoptions: true,
-            manageSettings: false,
-            manageAdmins: false
-          }
-        };
-        
-        console.log('Atribuindo papel de administrador com dados:', roleInsertData);
-        
-        const { error: roleInsertError } = await supabase
-          .from('user_roles')
-          .insert(roleInsertData);
-        
-        if (roleInsertError) {
-          console.error('Erro ao atribuir papel de administrador:', roleInsertError);
+        try {
+          // Step 1: Create user in Supabase Auth
+          const { data: userData, error: userError } = await supabase.auth.admin.createUser({
+            email: requestData.email,
+            password: requestData.password,
+            email_confirm: true,
+            user_metadata: { name: requestData.name, isAdmin: true }
+          });
           
-          // Attempt to clean up the created user since role assignment failed
-          try {
-            await supabase.auth.admin.deleteUser(userData.user.id);
-            console.log(`Usuário removido após falha na atribuição de papel: ${userData.user.id}`);
-          } catch (cleanupError) {
-            console.error('Erro ao remover usuário após falha:', cleanupError);
+          if (userError) {
+            console.error('Erro ao criar usuário:', userError);
+            return new Response(
+              JSON.stringify({ 
+                success: false,
+                message: userError.message,
+                code: userError.code || "USER_CREATION_FAILED" 
+              }),
+              {
+                status: 500,
+                headers: corsHeaders,
+              }
+            );
           }
           
+          if (!userData.user) {
+            return new Response(
+              JSON.stringify({ 
+                success: false,
+                message: "Erro ao criar usuário. Nenhum usuário retornado.",
+                code: "USER_CREATION_FAILED" 
+              }),
+              {
+                status: 500,
+                headers: corsHeaders,
+              }
+            );
+          }
+          
+          console.log(`Usuário criado com ID: ${userData.user.id}`);
+          
+          // Step 2: Assign admin role to user
+          const roleInsertData = {
+            user_id: userData.user.id,
+            role: 'admin',
+            permissions: requestData.permissions || {
+              manageAnimals: true,
+              approveAdoptions: true,
+              manageSettings: false,
+              manageAdmins: false
+            }
+          };
+          
+          console.log('Atribuindo papel de administrador com dados:', roleInsertData);
+          
+          const { error: roleInsertError } = await supabase
+            .from('user_roles')
+            .insert(roleInsertData);
+          
+          if (roleInsertError) {
+            console.error('Erro ao atribuir papel de administrador:', roleInsertError);
+            
+            // Attempt to clean up the created user since role assignment failed
+            try {
+              await supabase.auth.admin.deleteUser(userData.user.id);
+              console.log(`Usuário removido após falha na atribuição de papel: ${userData.user.id}`);
+            } catch (cleanupError) {
+              console.error('Erro ao remover usuário após falha:', cleanupError);
+            }
+            
+            return new Response(
+              JSON.stringify({ 
+                success: false,
+                message: roleInsertError.message,
+                code: roleInsertError.code || "ROLE_ASSIGNMENT_FAILED" 
+              }),
+              {
+                status: 500,
+                headers: corsHeaders,
+              }
+            );
+          }
+          
+          // Return successful response with created admin data
+          return new Response(
+            JSON.stringify({
+              success: true,
+              message: "Administrador criado com sucesso",
+              data: {
+                id: userData.user.id,
+                email: userData.user.email,
+                role: 'admin',
+                created_at: userData.user.created_at,
+                permissions: roleInsertData.permissions
+              }
+            }),
+            {
+              status: 201,
+              headers: corsHeaders,
+            }
+          );
+        } catch (error) {
+          console.error('Erro não tratado ao criar administrador:', error);
           return new Response(
             JSON.stringify({ 
               success: false,
-              message: roleInsertError.message,
-              code: roleInsertError.code || "ROLE_ASSIGNMENT_FAILED" 
+              message: error instanceof Error ? error.message : "Erro interno ao criar administrador",
+              code: "INTERNAL_SERVER_ERROR" 
             }),
             {
               status: 500,
@@ -466,25 +524,6 @@ serve(async (req) => {
             }
           );
         }
-        
-        // Return successful response with created admin data
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: "Administrador criado com sucesso",
-            data: {
-              id: userData.user.id,
-              email: userData.user.email,
-              role: 'admin',
-              created_at: userData.user.created_at,
-              permissions: roleInsertData.permissions
-            }
-          }),
-          {
-            status: 201,
-            headers: corsHeaders,
-          }
-        );
       }
     } else if (req.method === "GET") {
       // Get admin users
@@ -549,8 +588,6 @@ serve(async (req) => {
         }
       );
     } else if (req.method === "PUT") {
-      const requestData = await req.json();
-      
       if (!requestData.userId || !requestData.permissions) {
         return new Response(
           JSON.stringify({ 
@@ -566,7 +603,7 @@ serve(async (req) => {
       }
       
       // Prevent self-modification
-      if (requestData.userId === user.id) {
+      if (userId && requestData.userId === userId) {
         return new Response(
           JSON.stringify({ 
             success: false,
@@ -611,8 +648,6 @@ serve(async (req) => {
         }
       );
     } else if (req.method === "DELETE") {
-      const requestData = await req.json();
-      
       if (!requestData.userId) {
         return new Response(
           JSON.stringify({ 
@@ -628,7 +663,7 @@ serve(async (req) => {
       }
       
       // Prevent self-deletion
-      if (requestData.userId === user.id) {
+      if (userId && requestData.userId === userId) {
         return new Response(
           JSON.stringify({ 
             success: false,
