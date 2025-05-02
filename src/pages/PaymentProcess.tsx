@@ -1,8 +1,8 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Container } from "../components/ui/container";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
+import { Container } from "@/components/ui/container";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import PaymentForm from '../components/payment/PaymentForm';
 import PaymentInfoSidebar from '../components/payment/PaymentInfoSidebar';
 import PaymentNotFound from '../components/payment/PaymentNotFound';
@@ -148,12 +148,18 @@ const PaymentProcess = () => {
             </div>
             
             <div className="lg:col-span-1">
-              <PaymentInfoSidebar 
-                adoption={adoption} 
-                fee={settings?.adoptionFee || 120}
-                ngoPercentage={settings?.ngoPercentage || 90}
-                platformPercentage={settings?.platformPercentage || 10}
-              />
+              {adoption && settings && (
+                <PaymentInfoSidebar 
+                  adoption={{
+                    petName: adoption.petName || "Pet",
+                    fee: settings.adoptionFee || 120,
+                    userName: adoption.userName
+                  }}
+                  fee={settings.adoptionFee || 120}
+                  ngoPercentage={settings.ngoPercentage || 90}
+                  platformPercentage={settings.platformPercentage || 10}
+                />
+              )}
             </div>
           </div>
         )}

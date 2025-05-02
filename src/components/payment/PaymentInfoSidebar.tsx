@@ -1,49 +1,70 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { DollarSign, Percent, CreditCard } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Check, Percent } from "lucide-react";
 
-const PaymentInfoSidebar = () => {
+interface PaymentInfoSidebarProps {
+  adoption: {
+    petName: string;
+    fee: number;
+    userName?: string;
+  };
+  fee: number;
+  ngoPercentage: number;
+  platformPercentage: number;
+}
+
+const PaymentInfoSidebar = ({ 
+  adoption,
+  fee, 
+  ngoPercentage, 
+  platformPercentage 
+}: PaymentInfoSidebarProps) => {
+  const ngoAmount = fee * (ngoPercentage / 100);
+  const platformFee = fee * (platformPercentage / 100);
+
   return (
-    <Card>
+    <Card className="shadow-md">
       <CardHeader>
-        <CardTitle className="text-lg">Sobre a Contribuição</CardTitle>
+        <CardTitle>Resumo da Adoção</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 text-sm">
+      <CardContent>
         <div>
-          <h4 className="font-medium mb-1 flex items-center">
-            <DollarSign className="h-4 w-4 mr-1" />
-            Para que serve?
-          </h4>
-          <p className="text-muted-foreground">
-            Sua contribuição ajuda a cobrir despesas com vacinas, castração, microchipagem e cuidados médicos que o pet recebeu.
-          </p>
-        </div>
-        
-        <div>
-          <h4 className="font-medium mb-1 flex items-center">
-            <Percent className="h-4 w-4 mr-1" />
-            Como o valor é dividido?
-          </h4>
-          <p className="text-muted-foreground">
-            90% do valor vai diretamente para a ONG responsável pelo pet, e 10% ajuda a manter nossa plataforma funcionando.
-          </p>
-        </div>
-        
-        <div>
-          <h4 className="font-medium mb-1 flex items-center">
-            <CreditCard className="h-4 w-4 mr-1" />
-            Pagamento seguro
-          </h4>
-          <p className="text-muted-foreground">
-            Usamos criptografia e os mais altos padrões de segurança para proteger suas informações de pagamento.
-          </p>
-        </div>
-        
-        <div className="pt-2">
-          <Button variant="outline" className="w-full" onClick={() => window.open('/how-it-works', '_blank')}>
-            Saiba mais sobre o processo
-          </Button>
+          <div className="mb-6">
+            <h3 className="font-semibold text-lg">{adoption.petName}</h3>
+            {adoption.userName && (
+              <p className="text-muted-foreground">{adoption.userName}</p>
+            )}
+          </div>
+          
+          <Separator className="my-6" />
+          
+          <div className="space-y-2 mb-6">
+            <div className="flex justify-between">
+              <span>Taxa de adoção</span>
+              <span>R$ {fee.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span className="flex items-center">
+                <Percent className="h-4 w-4 mr-1 inline" />
+                Destinado à ONG ({ngoPercentage}%)
+              </span>
+              <span>R$ {ngoAmount.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm text-muted-foreground">
+              <span className="flex items-center">
+                <Percent className="h-4 w-4 mr-1 inline" />
+                Taxa de plataforma ({platformPercentage}%)
+              </span>
+              <span>R$ {platformFee.toFixed(2)}</span>
+            </div>
+          </div>
+          
+          <div className="bg-muted p-4 rounded-lg">
+            <p className="text-sm">
+              Sua contribuição ajuda a manter os serviços da plataforma e apoiar as ONGs parceiras na continuidade do trabalho de resgate e cuidado animal.
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>

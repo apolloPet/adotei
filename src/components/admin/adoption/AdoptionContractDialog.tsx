@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,8 +21,27 @@ const AdoptionContractDialog = ({
 }: AdoptionContractDialogProps) => {
   const [contractSigned, setContractSigned] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
+  const [settings, setSettings] = useState({
+    adoptionFee: 120,
+    ngoPercentage: 90,
+    platformPercentage: 10,
+    pixKey: "",
+    contractText: "Eu, adotante, me comprometo a cuidar do animal adotado, fornecendo abrigo, alimentação adequada, cuidados veterinários e carinho. Concordo em permitir visitas de acompanhamento pelo período estabelecido e em não abandonar ou maltratar o animal sob quaisquer circunstâncias. Entendo que o animal é um ser senciente e merece respeito e amor.",
+    followUpPeriod: 90
+  });
   
-  const settings = getAdminSettings();
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settingsData = await getAdminSettings();
+        setSettings(settingsData);
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    };
+    
+    loadSettings();
+  }, []);
   
   const handleConfirm = () => {
     onComplete(match.id, contractSigned, paymentComplete);
