@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import './App.css';
@@ -22,8 +21,8 @@ import { AdminLoginProps } from './components/AdminLoginProps';
 import { AdminPanelProps } from './components/AdminPanelProps';
 import { toast } from '@/hooks/use-sonner';
 import { AuthProvider, useAuth } from './hooks/auth';
+import ResetPassword from './pages/ResetPassword';
 import ResetPasswordConfirm from './pages/ResetPasswordConfirm';
-import ResetPasswordForm from './components/auth/ResetPasswordForm';
 import EmailConfirmation from './pages/EmailConfirmation';
 
 // Protected route component
@@ -79,7 +78,7 @@ function AppContent() {
           <Route path="/contact" element={<Contact />} />
           
           <Route path="/login" element={<LoginWithProps onLogin={() => {}} />} />
-          <Route path="/reset-password" element={<ResetPasswordForm />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/reset-password-confirm" element={<ResetPasswordConfirm />} />
           
           <Route

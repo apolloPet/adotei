@@ -12,12 +12,14 @@ import {
   PawPrint, 
   Settings, 
   Users, 
-  ShieldCheck
+  ShieldCheck,
+  Globe
 } from 'lucide-react';
 import { UsersList } from './admin/users';
 import AdminUserManagement from './admin/AdminUserManagement';
 import PaymentSettings from './admin/PaymentSettings';
 import AnimalRegistrationForm from './admin/animal-registration';
+import WebsiteContentManager from './admin/WebsiteContentManager';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -57,6 +59,10 @@ const AdminPanel = () => {
                 <PawPrint className="h-4 w-4" />
                 <span className="hidden sm:inline">Animais</span>
               </TabsTrigger>
+              <TabsTrigger value="website" className="flex items-center gap-1">
+                <Globe className="h-4 w-4" />
+                <span className="hidden sm:inline">Conteúdo do Site</span>
+              </TabsTrigger>
               <TabsTrigger value="settings" className="flex items-center gap-1">
                 <Settings className="h-4 w-4" />
                 <span className="hidden sm:inline">Configurações</span>
@@ -69,6 +75,10 @@ const AdminPanel = () => {
             
             <TabsContent value="animals">
               <AnimalRegistrationForm />
+            </TabsContent>
+            
+            <TabsContent value="website">
+              <WebsiteContentManager />
             </TabsContent>
             
             <TabsContent value="settings">

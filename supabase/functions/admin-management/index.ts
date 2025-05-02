@@ -198,13 +198,51 @@ serve(async (req) => {
             );
           }
           
-          result = await createAdmin(
-            supabase,
-            requestData.email,
-            requestData.password,
-            requestData.name,
-            requestData.permissions
-          );
+          try {
+            result = await createAdmin(
+              supabase,
+              requestData.email,
+              requestData.password,
+              requestData.name,
+              requestData.permissions
+            );
+          } catch (createError) {
+            console.error('Error during admin creation:', createError);
+            
+            // Improved error handling
+            let message = "Erro ao criar administrador";
+            let code = "CREATION_ERROR";
+            let status = 500;
+            
+            if (createError instanceof Error) {
+              message = createError.message;
+              
+              // Check for specific error types
+              if (message.includes('duplicate') || message.includes('already exists')) {
+                code = "DUPLICATE_EMAIL";
+                status = 409;
+                message = "Este email já está em uso por outro usuário.";
+              } else if (message.includes('validation')) {
+                code = "VALIDATION_ERROR";
+                status = 400;
+                message = "Os dados fornecidos não passaram na validação.";
+              } else if (message.includes('permission') || message.includes('not allowed')) {
+                code = "PERMISSION_ERROR";
+                status = 403;
+                message = "Você não tem permissão para criar administradores.";
+              }
+            }
+            
+            return new Response(
+              JSON.stringify({
+                success: false,
+                message,
+                code,
+                originalError: createError instanceof Error ? createError.message : String(createError)
+              }),
+              { status, headers: corsHeaders }
+            );
+          }
         }
         break;
 
