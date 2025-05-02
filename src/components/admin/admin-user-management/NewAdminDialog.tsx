@@ -1,13 +1,15 @@
+
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, AlertCircle } from "lucide-react";
 import { toast } from "@/hooks/use-sonner";
 import { createAdminUser } from "@/services/adminUserService";
 import type { NewAdminState, FormErrors } from "./types";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Props {
   isOpen: boolean;
@@ -37,11 +39,13 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
     passwordConfirm: "",
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setNewAdmin((prev) => ({ ...prev, [name]: value }));
     setFormErrors((prev) => ({ ...prev, [name]: "" }));
+    setSubmitError(null);
   };
 
   const handlePermissionChange = (permission: keyof NewAdminState["permissions"]) => {
@@ -52,6 +56,7 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
         [permission]: !prev.permissions[permission],
       },
     }));
+    setSubmitError(null);
   };
 
   const validateForm = (): boolean => {
@@ -89,6 +94,8 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setSubmitError(null);
+    
     try {
       // Debug info to verify data being sent
       console.log('Submitting admin creation with data:', {
@@ -117,10 +124,13 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
           permissions: INITIAL_PERMISSIONS,
         });
       } else {
+        setSubmitError(result.message);
         toast.error(result.message);
       }
     } catch (error) {
       console.error("Erro ao criar administrador:", error);
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+      setSubmitError(`Falha na comunicação com o servidor. Por favor, tente novamente ou contate o suporte técnico.`);
       toast.error("Erro ao criar administrador");
     } finally {
       setIsLoading(false);
@@ -143,6 +153,14 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
+          {submitError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Erro</AlertTitle>
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          )}
+          
           <div className="space-y-2">
             <Label htmlFor="name">Nome Completo</Label>
             <Input
@@ -154,6 +172,7 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
             />
             {formErrors.name && <p className="text-sm text-red-500">{formErrors.name}</p>}
           </div>
+          
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -166,6 +185,7 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
             />
             {formErrors.email && <p className="text-sm text-red-500">{formErrors.email}</p>}
           </div>
+          
           <div className="space-y-2">
             <Label htmlFor="password">Senha</Label>
             <Input
@@ -178,6 +198,7 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
             />
             {formErrors.password && <p className="text-sm text-red-500">{formErrors.password}</p>}
           </div>
+          
           <div className="space-y-2">
             <Label htmlFor="passwordConfirm">Confirmar Senha</Label>
             <Input
@@ -192,52 +213,54 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
               <p className="text-sm text-red-500">{formErrors.passwordConfirm}</p>
             )}
           </div>
+          
           <div className="space-y-3 pt-2">
             <Label>Permissões</Label>
+            
             <div className="flex items-center justify-between">
-              <Label htmlFor="manage-animals" className="cursor-pointer">
-                Gerenciar Animais
-              </Label>
-              <Switch
+              <Label htmlFor="manage-animals" className="cursor-pointer">Gerenciar Animais</Label>
+              <Switch 
                 id="manage-animals"
                 checked={newAdmin.permissions.manageAnimals}
                 onCheckedChange={() => handlePermissionChange("manageAnimals")}
               />
             </div>
+            
             <div className="flex items-center justify-between">
-              <Label htmlFor="approve-adoptions" className="cursor-pointer">
-                Aprovar Adoções
-              </Label>
-              <Switch
+              <Label htmlFor="approve-adoptions" className="cursor-pointer">Aprovar Adoções</Label>
+              <Switch 
                 id="approve-adoptions"
                 checked={newAdmin.permissions.approveAdoptions}
                 onCheckedChange={() => handlePermissionChange("approveAdoptions")}
               />
             </div>
+            
             <div className="flex items-center justify-between">
-              <Label htmlFor="manage-settings" className="cursor-pointer">
-                Configurar Parâmetros
-              </Label>
-              <Switch
+              <Label htmlFor="manage-settings" className="cursor-pointer">Configurar Parâmetros</Label>
+              <Switch 
                 id="manage-settings"
                 checked={newAdmin.permissions.manageSettings}
                 onCheckedChange={() => handlePermissionChange("manageSettings")}
               />
             </div>
+            
             <div className="flex items-center justify-between">
-              <Label htmlFor="manage-admins" className="cursor-pointer">
-                Gerenciar Administradores
-              </Label>
-              <Switch
+              <Label htmlFor="manage-admins" className="cursor-pointer">Gerenciar Administradores</Label>
+              <Switch 
                 id="manage-admins"
                 checked={newAdmin.permissions.manageAdmins}
                 onCheckedChange={() => handlePermissionChange("manageAdmins")}
               />
             </div>
           </div>
+          
           <DialogFooter className="pt-4">
-            <Button type="submit" className="w-full md:w-auto" disabled={isLoading}>
-              {isLoading ? "Criando..." : "Criar Administrador"}
+            <Button 
+              type="submit" 
+              className="w-full md:w-auto"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Criando...' : 'Criar Administrador'}
             </Button>
           </DialogFooter>
         </form>

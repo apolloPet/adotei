@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.36.0";
 import { verifyAuth } from "./auth.ts";
@@ -16,48 +17,55 @@ const corsHeaders = {
   "Content-Type": "application/json",
 };
 
-// ------------ Funções Auxiliares ------------
+// ------------ Helper Functions ------------
 
-// Parseia o corpo da requisição e valida JSON
+// Parse the request body and validate JSON
 async function parseRequestBody(req: Request) {
   try {
     const clonedReq = req.clone();
     const rawBody = await clonedReq.text();
+    
+    console.log('Raw request body received:', rawBody ? rawBody.substring(0, 200) + '...' : 'empty');
+    
     if (!rawBody || rawBody.trim() === '') {
       return { error: { 
         success: false, 
-        message: 'Empty request body: No data provided', 
+        message: 'Corpo da requisição vazio: Nenhum dado fornecido', 
         code: 'EMPTY_REQUEST'
       }};
     }
+    
     try {
       const json = JSON.parse(rawBody);
+      console.log('Parsed request body successfully:', Object.keys(json));
       return { data: json };
     } catch (parseError) {
+      console.error('JSON parse error:', parseError);
       return { error: { 
         success: false,
-        message: `Invalid JSON: ${parseError instanceof Error ? parseError.message : 'Unknown error'}`,
+        message: `JSON inválido: ${parseError instanceof Error ? parseError.message : 'Erro desconhecido'}`,
         code: 'INVALID_JSON',
         rawBody: rawBody.substring(0, 100)
       }};
     }
   } catch (error) {
+    console.error('Request body parsing error:', error);
     return { error: { 
       success: false,
-      message: 'Invalid request body: ' + (error instanceof Error ? error.message : 'Unknown parsing error'),
+      message: 'Corpo da requisição inválido: ' + (error instanceof Error ? error.message : 'Erro de análise desconhecido'),
       code: 'INVALID_REQUEST'
     }};
   }
 }
 
-// Faz a verificação de autorização para GET ou demais métodos
+// Handle GET request authorization and processing
 async function handleGetRequest(req: Request, supabase: any) {
   const { isAuthorized, userId, error } = await verifyAuth(req, supabase);
   if (!isAuthorized) {
     return new Response(
       JSON.stringify({
         success: false,
-        message: error || "You are not authorized to perform this operation.",
+        message: error || "Você não está autorizado a realizar esta operação.",
         code: "UNAUTHORIZED"
       }),
       { status: 403, headers: corsHeaders }
@@ -73,7 +81,7 @@ async function handleGetRequest(req: Request, supabase: any) {
   );
 }
 
-// Processa e valida o corpo da requisição para métodos não-GET (POST/PUT/DELETE)
+// Process and validate request body for non-GET methods
 async function handleNonGetBody(req: Request) {
   const { data, error } = await parseRequestBody(req);
   if (error) {
@@ -84,7 +92,7 @@ async function handleNonGetBody(req: Request) {
       parsed: null,
       errorResponse: new Response(JSON.stringify({
         success: false,
-        message: 'Invalid request data structure',
+        message: 'Estrutura de dados da requisição inválida',
         code: 'INVALID_DATA_STRUCTURE'
       }), { status: 400, headers: corsHeaders })
     };
@@ -92,7 +100,7 @@ async function handleNonGetBody(req: Request) {
   return { parsed: data, errorResponse: null };
 }
 
-// Handler principal da função
+// Main handler function
 serve(async (req) => {
   console.log(`[admin-management] Received ${req.method} request`);
   
@@ -113,7 +121,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           success: false,
-          message: "Server configuration incomplete. Check environment variables.",
+          message: "Configuração do servidor incompleta. Verifique as variáveis de ambiente.",
           code: "ENV_VARS_MISSING"
         }),
         {
@@ -123,7 +131,7 @@ serve(async (req) => {
       );
     }
 
-    // Instancia supabase client
+    // Initialize Supabase client
     const supabase = createClient(supabaseUrl, supabaseKey, {
       auth: { autoRefreshToken: false, persistSession: false },
     });
@@ -132,17 +140,17 @@ serve(async (req) => {
       return await handleGetRequest(req, supabase);
     }
 
-    // --------- Não-GET: Body parse + validações ---------
+    // --------- Non-GET: Body parsing + validation ---------
     const { parsed: requestData, errorResponse } = await handleNonGetBody(req);
     if (errorResponse) return errorResponse;
 
-    // --------- Autorização ---------
+    // --------- Authorization ---------
     const { isAuthorized, userId, error } = await verifyAuth(req, supabase);
     if (!isAuthorized) {
       return new Response(
         JSON.stringify({
           success: false,
-          message: error || "You are not authorized to perform this operation.",
+          message: error || "Você não está autorizado a realizar esta operação.",
           code: "UNAUTHORIZED"
         }),
         { status: 403, headers: corsHeaders }
@@ -158,35 +166,38 @@ serve(async (req) => {
       });
     }
 
-    // --------- Switch de operações ----------
+    // --------- Operation switch ----------
     let result;
     switch (req.method) {
       case "POST":
         if (!requestData?.grantSuperAdmin) {
-          // Validação campos obrigatórios
+          // Required fields validation
           if (!requestData?.email || !requestData?.password || !requestData?.name) {
+            console.error('Missing required fields in POST request:', Object.keys(requestData || {}));
             return new Response(
               JSON.stringify({
                 success: false,
-                message: "Missing data. Email, password and name are required.",
+                message: "Dados incompletos. Email, senha e nome são obrigatórios.",
                 code: "MISSING_DATA",
                 receivedFields: Object.keys(requestData || {})
               }),
               { status: 400, headers: corsHeaders }
             );
           }
-          // Validação permissions
+          // Permissions validation
           if (!requestData?.permissions || typeof requestData?.permissions !== 'object') {
+            console.error('Invalid permissions format:', requestData?.permissions);
             return new Response(
               JSON.stringify({
                 success: false,
-                message: "Invalid format for permissions.",
+                message: "Formato inválido para permissões.",
                 code: "INVALID_PERMISSIONS",
                 receivedPermissions: requestData?.permissions
               }),
               { status: 400, headers: corsHeaders }
             );
           }
+          
           result = await createAdmin(
             supabase,
             requestData.email,
@@ -202,7 +213,7 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({
               success: false,
-              message: "Missing data. User ID and permissions are required.",
+              message: "Dados incompletos. ID do usuário e permissões são obrigatórios.",
               code: "MISSING_DATA",
               receivedFields: Object.keys(requestData || {})
             }),
@@ -217,7 +228,7 @@ serve(async (req) => {
           return new Response(
             JSON.stringify({
               success: false,
-              message: "User ID not provided.",
+              message: "ID do usuário não fornecido.",
               code: "MISSING_USER_ID",
               receivedFields: Object.keys(requestData || {})
             }),
@@ -231,28 +242,29 @@ serve(async (req) => {
         return new Response(
           JSON.stringify({
             success: false,
-            message: `Method ${req.method} not supported`,
+            message: `Método ${req.method} não suportado`,
             code: "INVALID_METHOD"
           }),
           { status: 405, headers: corsHeaders }
         );
     }
 
-    // --------- Resposta final ----------
+    // --------- Final response ----------
     if (!result) {
       return new Response(
         JSON.stringify({
           success: false,
-          message: "Operation failed - no result returned",
+          message: "Operação falhou - nenhum resultado retornado",
           code: "OPERATION_FAILED"
         }),
         { status: 500, headers: corsHeaders }
       );
     }
+    
     return new Response(
       JSON.stringify(result),
       {
-        status: result.success ? (req.method === "POST" ? 201 : 200) : 500,
+        status: result.success ? (req.method === "POST" ? 201 : 200) : (result.code === "DUPLICATE_EMAIL" ? 409 : 500),
         headers: corsHeaders,
       }
     );
@@ -261,7 +273,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        message: error instanceof Error ? error.message : "Internal server error",
+        message: error instanceof Error ? error.message : "Erro interno do servidor",
         code: "SERVER_ERROR"
       }),
       { status: 500, headers: corsHeaders }

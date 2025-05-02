@@ -12,7 +12,31 @@ export const createAdminUser = async (
   try {
     console.log('Creating admin user with data:', { email, name, permissions });
     
-    // Criar o payload para envio
+    // Verify all required fields
+    if (!email || !name || !password) {
+      return {
+        success: false,
+        message: 'Todos os campos obrigatórios precisam ser preenchidos.'
+      };
+    }
+    
+    // Validate email format
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      return {
+        success: false,
+        message: 'Formato de email inválido.'
+      };
+    }
+    
+    // Validate password
+    if (password.length < 6) {
+      return {
+        success: false,
+        message: 'A senha deve ter pelo menos 6 caracteres.'
+      };
+    }
+    
+    // Create the payload
     const adminData = {
       email,
       password,
@@ -22,11 +46,11 @@ export const createAdminUser = async (
     
     console.log('Request payload for admin creation:', adminData);
     
-    // Construir o corpo da requisição como JSON string
+    // Serialize request body
     const requestBody = JSON.stringify(adminData);
     console.log('Serialized request body:', requestBody);
     
-    // Verificar se a string JSON não está vazia
+    // Check if JSON is valid
     if (!requestBody || requestBody === '{}') {
       console.error('Request body is empty after serialization');
       return {
@@ -35,12 +59,12 @@ export const createAdminUser = async (
       };
     }
     
-    // Preparar os headers
+    // Prepare headers
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
     };
     
-    // Verificar se é o admin principal via localStorage ou se tem sessão
+    // Check if it's the main admin via localStorage or has a session
     const isMainAdmin = localStorage.getItem('userEmail') === 'admin@petmatch.com';
     
     if (isMainAdmin) {
@@ -48,7 +72,7 @@ export const createAdminUser = async (
       headers['X-Admin-Override'] = 'true';
       headers['X-Admin-Email'] = 'admin@petmatch.com';
     } else {
-      // Para usuários normais, obter token da sessão
+      // For normal users, get session token
       const { data: sessionData } = await supabase.auth.getSession();
       
       if (sessionData?.session?.access_token) {
@@ -65,7 +89,7 @@ export const createAdminUser = async (
     
     console.log('Sending request to admin-management function with headers:', Object.keys(headers));
     
-    // Fazer a chamada para o edge function
+    // Call the edge function
     const { data, error } = await supabase.functions.invoke('admin-management', {
       method: 'POST',
       body: requestBody,
@@ -76,6 +100,15 @@ export const createAdminUser = async (
     
     if (error) {
       console.error('Error from edge function:', error);
+      
+      // Handle specific known error cases
+      if (error.message?.includes('duplicate')) {
+        return {
+          success: false,
+          message: 'Este email já está em uso por outro usuário.'
+        };
+      }
+      
       return {
         success: false,
         message: error.message || 'Erro ao criar administrador'

@@ -17,7 +17,29 @@ export async function createAdmin(
   permissions: AdminPermissions
 ) {
   try {
-    console.log(`Criando administrador: ${email}, permissions:`, permissions);
+    console.log(`Creating admin: ${email}, with name: ${name}, permissions:`, permissions);
+    
+    if (!email || !password || !name) {
+      console.error('Missing required fields:', { 
+        hasEmail: Boolean(email), 
+        hasPassword: Boolean(password), 
+        hasName: Boolean(name) 
+      });
+      return {
+        success: false,
+        message: "Dados incompletos. Email, senha e nome são obrigatórios.",
+        code: "MISSING_REQUIRED_FIELDS"
+      };
+    }
+    
+    if (!permissions || typeof permissions !== 'object') {
+      console.error('Invalid permissions format:', permissions);
+      return {
+        success: false,
+        message: "Formato de permissões inválido.",
+        code: "INVALID_PERMISSIONS"
+      };
+    }
     
     // Step 1: Create user in Supabase Auth
     const { data: userData, error: userError } = await supabase.auth.admin.createUser({
@@ -28,15 +50,34 @@ export async function createAdmin(
     });
     
     if (userError) {
-      console.error('Erro ao criar usuário:', userError);
+      console.error('Error creating user:', userError);
+      
+      // Provide more specific error messages based on error codes
+      if (userError.message.includes('duplicate')) {
+        return {
+          success: false,
+          message: "Este email já está em uso. Por favor, use outro email.",
+          code: "DUPLICATE_EMAIL"
+        };
+      }
+      
+      if (userError.message.includes('password')) {
+        return {
+          success: false,
+          message: "Senha inválida. A senha deve ter pelo menos 6 caracteres.",
+          code: "INVALID_PASSWORD"
+        };
+      }
+      
       return {
         success: false,
-        message: userError.message,
+        message: userError.message || "Erro ao criar usuário",
         code: userError.code || "USER_CREATION_FAILED"
       };
     }
     
     if (!userData.user) {
+      console.error('No user returned after creation');
       return {
         success: false,
         message: "Erro ao criar usuário. Nenhum usuário retornado.",
@@ -44,7 +85,7 @@ export async function createAdmin(
       };
     }
     
-    console.log(`Usuário criado com ID: ${userData.user.id}`);
+    console.log(`User created with ID: ${userData.user.id}`);
     
     // Step 2: Assign admin role to user
     const roleInsertData = {
@@ -58,26 +99,26 @@ export async function createAdmin(
       }
     };
     
-    console.log('Atribuindo papel de administrador com dados:', roleInsertData);
+    console.log('Assigning admin role with data:', roleInsertData);
     
     const { error: roleInsertError } = await supabase
       .from('user_roles')
       .insert(roleInsertData);
     
     if (roleInsertError) {
-      console.error('Erro ao atribuir papel de administrador:', roleInsertError);
+      console.error('Error assigning admin role:', roleInsertError);
       
       // Attempt to clean up the created user since role assignment failed
       try {
         await supabase.auth.admin.deleteUser(userData.user.id);
-        console.log(`Usuário removido após falha na atribuição de papel: ${userData.user.id}`);
+        console.log(`User removed after role assignment failure: ${userData.user.id}`);
       } catch (cleanupError) {
-        console.error('Erro ao remover usuário após falha:', cleanupError);
+        console.error('Error removing user after failure:', cleanupError);
       }
       
       return {
         success: false,
-        message: roleInsertError.message,
+        message: "Erro ao atribuir papel de administrador: " + roleInsertError.message,
         code: roleInsertError.code || "ROLE_ASSIGNMENT_FAILED"
       };
     }
@@ -95,10 +136,12 @@ export async function createAdmin(
       }
     };
   } catch (error) {
-    console.error('Erro não tratado ao criar administrador:', error);
+    console.error('Unhandled error creating admin:', error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : "Erro interno ao criar administrador",
+      message: error instanceof Error ? 
+        "Erro interno ao criar administrador: " + error.message : 
+        "Erro interno desconhecido ao criar administrador",
       code: "INTERNAL_SERVER_ERROR"
     };
   }
