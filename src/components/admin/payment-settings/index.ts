@@ -12,6 +12,20 @@ export interface PaymentSettingsProps {
     bankDetails: {
       pixKey: string;
       companyBankInfo: string;
+      ongBankAccount?: {
+        bank: string;
+        agency: string;
+        accountNumber: string;
+        accountHolder: string;
+        documentNumber: string;
+      };
+      companyBankAccount?: {
+        bank: string;
+        agency: string;
+        accountNumber: string;
+        accountHolder: string;
+        documentNumber: string;
+      };
     };
     contractDetails: {
       contractText: string;

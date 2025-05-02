@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,6 +6,14 @@ import { DollarSign, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-sonner";
 import { FeesSection, BankDetailsSection, ContractSection } from "./payment-settings";
 import { getSystemParameters, updateSystemParameter, createSystemParameter } from '@/services/systemParameterService';
+
+const defaultBankAccount = {
+  bank: "",
+  agency: "",
+  accountNumber: "",
+  accountHolder: "",
+  documentNumber: ""
+};
 
 export const PaymentSettings = () => {
   const [settings, setSettings] = useState({
@@ -14,7 +23,9 @@ export const PaymentSettings = () => {
     },
     bankDetails: {
       pixKey: '',
-      companyBankInfo: ''
+      companyBankInfo: '',
+      ongBankAccount: defaultBankAccount,
+      companyBankAccount: defaultBankAccount
     },
     contractDetails: {
       contractText: '',
@@ -43,6 +54,16 @@ export const PaymentSettings = () => {
             } else if (param.key === 'payment_details') {
               newSettings.bankDetails.pixKey = param.value.pixKey || '';
               newSettings.bankDetails.companyBankInfo = param.value.bankInfo || '';
+              
+              // Carregar informações de conta bancária da ONG
+              if (param.value.ongBankAccount) {
+                newSettings.bankDetails.ongBankAccount = param.value.ongBankAccount;
+              }
+              
+              // Carregar informações de conta bancária da empresa
+              if (param.value.companyBankAccount) {
+                newSettings.bankDetails.companyBankAccount = param.value.companyBankAccount;
+              }
             } else if (param.key === 'contract_details') {
               newSettings.contractDetails.contractText = param.value.text || '';
               newSettings.contractDetails.followUpPeriod = param.value.followUpPeriod || 90;
@@ -74,13 +95,17 @@ export const PaymentSettings = () => {
       
       const paymentDetailsParam = {
         pixKey: settings.bankDetails.pixKey,
-        bankInfo: settings.bankDetails.companyBankInfo
+        bankInfo: settings.bankDetails.companyBankInfo,
+        ongBankAccount: settings.bankDetails.ongBankAccount,
+        companyBankAccount: settings.bankDetails.companyBankAccount
       };
       
       const contractDetailsParam = {
         text: settings.contractDetails.contractText,
         followUpPeriod: settings.contractDetails.followUpPeriod
       };
+      
+      console.log('Saving payment details:', paymentDetailsParam);
       
       const existingParams = await getSystemParameters('payment');
       

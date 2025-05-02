@@ -18,6 +18,13 @@ interface PaymentFormProps {
   followUpPeriod?: number;
   petName?: string;
   adopterName?: string;
+  bankData?: {
+    bank?: string;
+    agency?: string;
+    accountNumber?: string;
+    accountHolder?: string;
+    documentNumber?: string;
+  };
 }
 
 const PaymentForm = ({ 
@@ -25,6 +32,7 @@ const PaymentForm = ({
   onSuccess, 
   isProcessing, 
   pixKey = '', 
+  bankData,
   contractText = '',
   followUpPeriod = 90,
   petName = 'Pet',
@@ -104,9 +112,9 @@ const PaymentForm = ({
               <CreditCard className="h-4 w-4 mr-2" />
               Cartão de Crédito
             </TabsTrigger>
-            <TabsTrigger value="pix" className="flex items-center" disabled={!pixKey}>
+            <TabsTrigger value="pix" className="flex items-center" disabled={!pixKey && !bankData}>
               <QrCode className="h-4 w-4 mr-2" />
-              PIX
+              PIX/Transferência
             </TabsTrigger>
           </TabsList>
           
@@ -115,7 +123,7 @@ const PaymentForm = ({
           </TabsContent>
           
           <TabsContent value="pix">
-            <PixPaymentForm pixKey={pixKey} />
+            <PixPaymentForm pixKey={pixKey} bankData={bankData} />
           </TabsContent>
         </Tabs>
         
