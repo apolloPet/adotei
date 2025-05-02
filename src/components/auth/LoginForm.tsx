@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,7 @@ const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { setIsAuthenticated, setIsAdmin } = useAuth();
+  const { fetchUserData } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   
@@ -32,8 +33,10 @@ const LoginForm = () => {
       const success = await signIn(email, password);
       
       if (success) {
-        setIsAuthenticated(true);
-        setIsAdmin(email.includes('@admin') || email.includes('@ong') || email === 'admin@petmatch.com');
+        // Call fetchUserData to update the auth state
+        if (fetchUserData) {
+          await fetchUserData();
+        }
         
         toast.success("Login realizado com sucesso!");
         navigate('/browse');

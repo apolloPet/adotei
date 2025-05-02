@@ -72,7 +72,8 @@ const WebsiteContentManager = () => {
         if (error) throw error;
         
         if (data && data.length > 0) {
-          setContentItems(data as ContentItem[]);
+          // Type assertion to ensure data is of ContentItem type
+          setContentItems(data as unknown as ContentItem[]);
         } else {
           // Use default content if no data exists
           setContentItems(defaultContent[activeSection]);
