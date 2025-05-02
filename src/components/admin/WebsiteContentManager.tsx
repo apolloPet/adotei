@@ -19,6 +19,16 @@ interface ContentItem {
   section: ContentSection;
 }
 
+// Define the website_content table type to extend Supabase types
+type WebsiteContent = {
+  id: string;
+  title: string;
+  content: string;
+  section: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 const defaultContent: Record<ContentSection, ContentItem[]> = {
   header: [
     { id: 'header-1', title: 'Encontrar Pets', content: 'Explore nossa seleção de animais disponíveis para adoção.', section: 'header' },
@@ -63,17 +73,23 @@ const WebsiteContentManager = () => {
     const loadContent = async () => {
       setIsLoading(true);
       try {
-        // Fetch content from database
+        // Use explicit type casting for the Supabase query
         const { data, error } = await supabase
           .from('website_content')
           .select('*')
-          .eq('section', activeSection);
+          .eq('section', activeSection) as { data: WebsiteContent[] | null; error: Error | null };
           
         if (error) throw error;
         
         if (data && data.length > 0) {
-          // Type assertion to ensure data is of ContentItem type
-          setContentItems(data as unknown as ContentItem[]);
+          // Transform database records to ContentItem type
+          const transformedData: ContentItem[] = data.map(item => ({
+            id: item.id,
+            title: item.title,
+            content: item.content,
+            section: item.section as ContentSection
+          }));
+          setContentItems(transformedData);
         } else {
           // Use default content if no data exists
           setContentItems(defaultContent[activeSection]);
@@ -108,7 +124,7 @@ const WebsiteContentManager = () => {
             title: item.title,
             content: item.content,
             section: item.section
-          }, { onConflict: 'id' });
+          }) as { error: Error | null };
           
         if (error) throw error;
       }

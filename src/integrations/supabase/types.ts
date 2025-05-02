@@ -1025,6 +1025,33 @@ export type Database = {
         }
         Relationships: []
       }
+      website_content: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          section: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          section: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          section?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
