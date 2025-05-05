@@ -6,62 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/hooks/use-sonner";
-import { supabase } from '@/lib/supabase';
 import { Loader2, Save } from 'lucide-react';
-
-type ContentSection = 'header' | 'home' | 'howItWorks' | 'petMatch' | 'institution' | 'contact';
-
-interface ContentItem {
-  id: string;
-  title: string;
-  content: string;
-  section: ContentSection;
-}
-
-// Define the website_content table type to extend Supabase types
-type WebsiteContent = {
-  id: string;
-  title: string;
-  content: string;
-  section: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-const defaultContent: Record<ContentSection, ContentItem[]> = {
-  header: [
-    { id: 'header-1', title: 'Encontrar Pets', content: 'Explore nossa seleção de animais disponíveis para adoção.', section: 'header' },
-    { id: 'header-2', title: 'Como Funciona', content: 'Conheça nosso processo de adoção e como funciona o PetMatch.', section: 'header' },
-    { id: 'header-3', title: 'PetMatch', content: 'Informações sobre nossa plataforma de adoção.', section: 'header' },
-    { id: 'header-4', title: 'ONG Parceira', content: 'Conheça a ONG parceira e seu trabalho.', section: 'header' },
-    { id: 'header-5', title: 'Contato', content: 'Entre em contato conosco para mais informações.', section: 'header' }
-  ],
-  home: [
-    { id: 'home-1', title: 'Encontre seu amigo perfeito', content: 'Conectamos animais que precisam de um lar com pessoas que procuram um novo amigo.', section: 'home' },
-    { id: 'home-2', title: 'Como funciona', content: 'Navegar, escolher, adotar. Simples assim!', section: 'home' }
-  ],
-  howItWorks: [
-    { id: 'how-1', title: 'Passo 1', content: 'Cadastre-se em nossa plataforma.', section: 'howItWorks' },
-    { id: 'how-2', title: 'Passo 2', content: 'Explore os animais disponíveis para adoção.', section: 'howItWorks' },
-    { id: 'how-3', title: 'Passo 3', content: 'Agende uma visita para conhecer o animal.', section: 'howItWorks' },
-    { id: 'how-4', title: 'Passo 4', content: 'Finalize o processo de adoção.', section: 'howItWorks' }
-  ],
-  petMatch: [
-    { id: 'pet-1', title: 'Sobre o PetMatch', content: 'PetMatch é uma plataforma que conecta pessoas a animais disponíveis para adoção.', section: 'petMatch' },
-    { id: 'pet-2', title: 'Nossa Missão', content: 'Reduzir o número de animais abandonados e promover a adoção responsável.', section: 'petMatch' }
-  ],
-  institution: [
-    { id: 'inst-1', title: 'Quem Somos', content: 'Somos uma organização dedicada ao bem-estar animal.', section: 'institution' },
-    { id: 'inst-2', title: 'Nossa História', content: 'Fundada em 2015, nossa instituição já ajudou mais de 2.000 animais a encontrarem novos lares.', section: 'institution' },
-    { id: 'inst-3', title: 'Programas', content: 'Castração solidária, educação nas escolas, apadrinhamento e mais.', section: 'institution' }
-  ],
-  contact: [
-    { id: 'contact-1', title: 'Endereço', content: 'Avenida Principal, 123, São Paulo, SP', section: 'contact' },
-    { id: 'contact-2', title: 'Email', content: 'contato@petmatch.com', section: 'contact' },
-    { id: 'contact-3', title: 'Telefone', content: '(11) 1234-5678', section: 'contact' }
-  ]
-};
+import { 
+  ContentSection, 
+  ContentItem,
+  defaultContent,
+  fetchSectionContent,
+  saveContentItems 
+} from '@/services/websiteContentService';
 
 const WebsiteContentManager = () => {
   const [activeSection, setActiveSection] = useState<ContentSection>('header');
@@ -73,31 +25,8 @@ const WebsiteContentManager = () => {
     const loadContent = async () => {
       setIsLoading(true);
       try {
-        // Use explicit type casting for the Supabase query
-        const { data, error } = await supabase
-          .from('website_content')
-          .select('*')
-          .eq('section', activeSection) as { data: WebsiteContent[] | null; error: Error | null };
-          
-        if (error) throw error;
-        
-        if (data && data.length > 0) {
-          // Transform database records to ContentItem type
-          const transformedData: ContentItem[] = data.map(item => ({
-            id: item.id,
-            title: item.title,
-            content: item.content,
-            section: item.section as ContentSection
-          }));
-          setContentItems(transformedData);
-        } else {
-          // Use default content if no data exists
-          setContentItems(defaultContent[activeSection]);
-        }
-      } catch (error) {
-        console.error('Error loading content:', error);
-        toast.error('Erro ao carregar conteúdo do site');
-        setContentItems(defaultContent[activeSection]);
+        const data = await fetchSectionContent(activeSection);
+        setContentItems(data);
       } finally {
         setIsLoading(false);
       }
@@ -115,24 +44,7 @@ const WebsiteContentManager = () => {
   const handleSaveContent = async () => {
     setIsSaving(true);
     try {
-      // For each content item, upsert to database
-      for (const item of contentItems) {
-        const { error } = await supabase
-          .from('website_content')
-          .upsert({
-            id: item.id,
-            title: item.title,
-            content: item.content,
-            section: item.section
-          }) as { error: Error | null };
-          
-        if (error) throw error;
-      }
-      
-      toast.success('Conteúdo salvo com sucesso!');
-    } catch (error) {
-      console.error('Error saving content:', error);
-      toast.error('Erro ao salvar conteúdo');
+      await saveContentItems(contentItems);
     } finally {
       setIsSaving(false);
     }
