@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, RefreshCw } from 'lucide-react';
-import { useAuth } from '@/hooks/use-auth';
-import { resendVerificationEmail } from '@/services/authService';
+import { useAuth } from '@/hooks/auth';
+import { resendVerificationEmail } from '@/services/auth';
 import { toast } from '@/hooks/use-sonner';
 
 const EmailConfirmation = () => {
