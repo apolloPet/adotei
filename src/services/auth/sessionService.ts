@@ -1,6 +1,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { Session } from '@supabase/supabase-js';
+import { toast } from '@/hooks/use-sonner';
 
 /**
  * Interface for session information displayed to the user
@@ -24,57 +25,79 @@ export const createSessionLog = async (session: Session | null, eventType: strin
       return;
     }
     
-    // Log para debugging
-    console.log(`Criando log de sessão: ${eventType}, sessionId: ${session.access_token ? session.access_token.slice(0, 8) + '...' : 'N/A'}`);
+    const sessionId = session.access_token || session.refresh_token;
+    if (!sessionId) {
+      console.warn('Sessão sem tokens válidos');
+      return;
+    }
     
-    // Como a tabela session_logs não existe no esquema, este código foi comentado
-    // Este é um placeholder para implementação futura
-    console.log('Função createSessionLog foi chamada, mas a tabela session_logs não está disponível.');
+    const userAgent = navigator.userAgent;
+    const deviceInfo = {
+      platform: navigator.platform,
+      language: navigator.language,
+      screenWidth: window.screen.width,
+      screenHeight: window.screen.height,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+    };
     
-    // Código original comentado para evitar erros de TS:
-    /*
-    const { error } = await supabase
-      .from('session_logs')
-      .insert({
-        user_id: session.user.id,
-        session_id: session.access_token,
-        event_type: eventType,
-        timestamp: new Date().toISOString(),
-        user_agent: navigator.userAgent,
-        ip_address: null // IP deve ser capturado no backend por segurança
-      });
-      
+    // Chamar a edge function para registrar o log de sessão
+    const { error } = await supabase.functions.invoke('session-management', {
+      body: {
+        method: 'createSessionLog',
+        sessionId,
+        eventType,
+        userAgent,
+        deviceInfo
+      }
+    });
+    
     if (error) {
       console.error('Erro ao criar log de sessão:', error);
     }
-    */
   } catch (error) {
     console.error('Erro inesperado ao criar log de sessão:', error);
   }
 };
 
 /**
- * Mock function to get session history until we implement session_logs table
+ * Recupera o histórico de sessões do usuário
  */
 export const getSessionHistory = async (userId: string): Promise<UserSession[]> => {
   try {
     console.log('Buscando histórico de sessão para userId:', userId);
     
-    // Retornando dados fictícios como placeholder até que a tabela real exista
-    const currentSession = await getCurrentSession();
-    
-    const mockSessions: UserSession[] = [
-      {
-        id: currentSession?.access_token || 'current-session',
-        device: 'Seu dispositivo atual',
-        browser: navigator.userAgent.split(' ').slice(-1)[0],
-        lastActive: new Date().toISOString(),
-        createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-        isCurrentSession: true
+    // Chamar a edge function para buscar histórico de sessões
+    const { data, error } = await supabase.functions.invoke('session-management', {
+      body: {
+        method: 'getUserSessions'
       }
-    ];
+    });
     
-    return mockSessions;
+    if (error) {
+      throw error;
+    }
+    
+    if (!data || !Array.isArray(data)) {
+      return [];
+    }
+    
+    const currentSession = await getCurrentSession();
+    const currentSessionId = currentSession?.access_token || '';
+    
+    // Mapear os dados retornados para o formato UserSession
+    return data.map(session => {
+      const deviceInfo = session.device_info || {};
+      const isCurrentSession = session.session_id === currentSessionId;
+      
+      return {
+        id: session.session_id,
+        device: getBrowserDevice(session.user_agent),
+        browser: getBrowserInfo(session.user_agent),
+        lastActive: session.timestamp,
+        createdAt: session.created_at,
+        isCurrentSession
+      };
+    });
   } catch (error) {
     console.error('Erro ao recuperar histórico de sessões:', error);
     return [];
@@ -94,7 +117,7 @@ export const getCurrentSessionInfo = async (session: Session | null): Promise<Us
     return {
       id: session.access_token || 'unknown',
       device: navigator.userAgent.includes('Mobile') ? 'Dispositivo Móvel' : 'Computador',
-      browser: getBrowserInfo(),
+      browser: getBrowserInfo(navigator.userAgent),
       lastActive: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       isCurrentSession: true
@@ -114,50 +137,21 @@ export const getCurrentSession = async (): Promise<Session | null> => {
 };
 
 /**
- * Mock function to get user sessions
+ * Get user sessions
  */
 export const getUserSessions = async (): Promise<UserSession[]> => {
   const session = await getCurrentSession();
   if (!session) return [];
   
-  // Criar algumas sessões fictícias para exibição, até implementarmos a tabela real
-  const currentSession: UserSession = {
-    id: session.access_token || 'current-session',
-    device: navigator.userAgent.includes('Mobile') ? 'Dispositivo Móvel' : 'Computador',
-    browser: getBrowserInfo(),
-    lastActive: new Date().toISOString(),
-    createdAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(), // 5 minutos atrás
-    isCurrentSession: true
-  };
-  
-  // Sessões adicionais fictícias
-  const olderSessions: UserSession[] = [
-    {
-      id: 'past-session-1',
-      device: 'iPhone',
-      browser: 'Safari Mobile',
-      lastActive: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 dia atrás
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(), // 3 dias atrás
-      isCurrentSession: false
-    },
-    {
-      id: 'past-session-2',
-      device: 'Windows PC',
-      browser: 'Chrome',
-      lastActive: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(), // 5 dias atrás
-      createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10).toISOString(), // 10 dias atrás
-      isCurrentSession: false
-    }
-  ];
-  
-  return [currentSession, ...olderSessions];
+  return getSessionHistory(session.user.id);
 };
 
 /**
  * Extract browser info from user agent
  */
-const getBrowserInfo = (): string => {
-  const ua = navigator.userAgent;
+const getBrowserInfo = (ua: string): string => {
+  if (!ua) return 'Desconhecido';
+  
   if (ua.includes('Firefox')) return 'Firefox';
   if (ua.includes('Chrome')) return 'Chrome';
   if (ua.includes('Safari')) return 'Safari';
@@ -167,14 +161,41 @@ const getBrowserInfo = (): string => {
 };
 
 /**
- * Mock function to terminate a session
+ * Extract device info from user agent
+ */
+const getBrowserDevice = (ua: string): string => {
+  if (!ua) return 'Desconhecido';
+  
+  if (ua.includes('iPhone') || ua.includes('iPad')) return 'iOS';
+  if (ua.includes('Android')) return 'Android';
+  if (ua.includes('Windows Phone')) return 'Windows Phone';
+  if (ua.includes('Windows')) return 'Windows';
+  if (ua.includes('Mac OS')) return 'Mac OS';
+  if (ua.includes('Linux')) return 'Linux';
+  return 'Desconhecido';
+};
+
+/**
+ * Terminate a session
  */
 export const terminateSession = async (sessionId: string): Promise<boolean> => {
   try {
     const currentSession = await getCurrentSession();
     
     // Se for a sessão atual, faça logout
-    if (currentSession && (currentSession.access_token === sessionId || sessionId === 'current-session')) {
+    if (currentSession && currentSession.access_token === sessionId) {
+      // Registrar o encerramento da sessão antes do logout
+      try {
+        await supabase.functions.invoke('session-management', {
+          body: {
+            method: 'terminateSession',
+            sessionId
+          }
+        });
+      } catch (error) {
+        console.error('Erro ao registrar encerramento de sessão:', error);
+      }
+      
       // Fazer logout com escopo global para remover todas as sessões do usuário
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) {
@@ -204,13 +225,20 @@ export const terminateSession = async (sessionId: string): Promise<boolean> => {
       return true;
     }
     
-    // Para sessões fictícias, apenas simular sucesso
-    if (sessionId === 'past-session-1' || sessionId === 'past-session-2') {
-      return true;
+    // Para sessões que não são a atual, chamar a edge function
+    const { error } = await supabase.functions.invoke('session-management', {
+      body: {
+        method: 'terminateSession',
+        sessionId
+      }
+    });
+    
+    if (error) {
+      console.error('Erro ao encerrar sessão:', error);
+      return false;
     }
     
-    console.log('Sessão não encontrada para encerrar:', sessionId);
-    return false;
+    return true;
   } catch (error) {
     console.error('Erro ao encerrar sessão:', error);
     return false;

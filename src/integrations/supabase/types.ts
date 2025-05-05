@@ -482,6 +482,56 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          adoption_id: string | null
+          amount: number
+          created_at: string | null
+          id: string
+          payment_date: string | null
+          payment_details: Json | null
+          payment_method: string
+          payment_status: string
+          transaction_id: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          adoption_id?: string | null
+          amount: number
+          created_at?: string | null
+          id?: string
+          payment_date?: string | null
+          payment_details?: Json | null
+          payment_method: string
+          payment_status?: string
+          transaction_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          adoption_id?: string | null
+          amount?: number
+          created_at?: string | null
+          id?: string
+          payment_date?: string | null
+          payment_details?: Json | null
+          payment_method?: string
+          payment_status?: string
+          transaction_id?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_adoption_id_fkey"
+            columns: ["adoption_id"]
+            isOneToOne: false
+            referencedRelation: "adoptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pet_images: {
         Row: {
           created_at: string
@@ -679,6 +729,42 @@ export type Database = {
           updated_at?: string | null
           work_schedule?: string | null
           zip?: string | null
+        }
+        Relationships: []
+      }
+      session_logs: {
+        Row: {
+          created_at: string | null
+          device_info: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          session_id: string
+          timestamp: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          device_info?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          session_id: string
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          device_info?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          session_id?: string
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }

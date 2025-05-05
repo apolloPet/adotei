@@ -1,55 +1,84 @@
 
 import { supabase } from "@/lib/supabase";
 import { getSystemParameters } from './systemParameterService';
+import { toast } from '@/hooks/use-sonner';
 
-// Mock data for the adoption details
-export const mockAdoptions = [
-  {
-    id: "1",
-    petName: "Luna",
-    petImage: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?ixlib=rb-1.2.1&auto=format&fit=crop&w=1027&q=80",
-    shelter: "ONG Amigos dos Animais",
-    fee: 120,
-    status: 'pending',
-    userName: "Maria Silva"
-  },
-  {
-    id: "2",
-    petName: "Max",
-    petImage: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1074&q=80",
-    shelter: "ONG Patinhas Carentes",
-    fee: 150,
-    status: 'pending',
-    userName: "João Pereira"
-  },
-];
+// Interface para pagamentos
+export interface Payment {
+  id: string;
+  amount: number;
+  payment_method: string;
+  payment_status: string;
+  payment_date: string;
+  transaction_id?: string;
+  created_at: string;
+  user_id: string;
+  adoption_id?: string;
+}
 
-// Function to get adoption by ID - em um ambiente real, isso buscaria do banco de dados
-export const getAdoptionById = async (id: string) => {
+// Interface para detalhes da adoção
+export interface AdoptionDetails {
+  id: string;
+  petName: string;
+  petImage?: string;
+  shelter?: string;
+  fee: number;
+  status: string;
+  userName: string;
+}
+
+// Função para obter adoção por ID
+export const getAdoptionById = async (id: string): Promise<AdoptionDetails | null> => {
   try {
-    // Primeiro, tente obter da API real
+    // Tentar obter da API
     const { data, error } = await supabase
       .from('adoptions')
       .select(`
         id,
         current_stage,
         adoption_fee_paid,
-        pets:pet_id (name),
-        users:user_id (name)
+        pets:pet_id (
+          id,
+          name
+        ),
+        users:user_id (name),
+        animals:animal_id (
+          id,
+          nome
+        )
       `)
       .eq('id', id)
       .single();
     
     if (error) {
       console.error('Error fetching adoption:', error);
-      // Fallback para dados mockados
-      return mockAdoptions.find(adoption => adoption.id === id) || null;
+      return null;
     }
     
     if (data) {
+      // Verificar se usamos pet_id ou animal_id
+      const petName = data.pets?.name || data.animals?.nome || "Pet";
+      
+      let petImage = '';
+      
+      // Tentar buscar imagem do pet se tivermos um pet_id
+      if (data.pets?.id) {
+        const { data: imageData } = await supabase
+          .from('pet_images')
+          .select('url')
+          .eq('pet_id', data.pets.id)
+          .eq('is_primary', true)
+          .maybeSingle();
+        
+        if (imageData) {
+          petImage = imageData.url;
+        }
+      }
+      
       return {
         id: data.id,
-        petName: data.pets?.name || "Pet",
+        petName,
+        petImage,
         status: data.current_stage,
         fee: await getAdoptionFee(),
         userName: data.users?.name || "Adotante"
@@ -59,12 +88,11 @@ export const getAdoptionById = async (id: string) => {
     return null;
   } catch (error) {
     console.error('Error in getAdoptionById:', error);
-    // Fallback para dados mockados
-    return mockAdoptions.find(adoption => adoption.id === id) || null;
+    return null;
   }
 };
 
-// Function to get admin settings
+// Função para obter configurações administrativas
 export const getAdminSettings = async () => {
   try {
     const systemParams = await getSystemParameters('payment');
@@ -134,24 +162,56 @@ export const getAdoptionFee = async (): Promise<number> => {
   }
 };
 
-// In a real app, this would be an API call
-export const processPayment = async (adoptionId: string): Promise<boolean> => {
+// Processar pagamento usando a edge function
+export const processPayment = async (
+  adoptionId: string, 
+  amount: number, 
+  paymentMethod: string, 
+  paymentDetails?: any
+): Promise<boolean> => {
   try {
-    // Atualiza o status de pagamento no banco de dados
-    const { error } = await supabase
-      .from('adoptions')
-      .update({ adoption_fee_paid: true })
-      .eq('id', adoptionId);
+    const { data, error } = await supabase.functions.invoke('payment-processing', {
+      body: {
+        method: 'processPayment',
+        adoptionId,
+        amount,
+        paymentMethod,
+        paymentDetails
+      }
+    });
     
     if (error) {
-      console.error('Error updating adoption payment status:', error);
+      console.error('Erro ao processar pagamento:', error);
+      toast.error('Erro ao processar pagamento: ' + error.message);
       return false;
     }
     
+    toast.success('Pagamento processado com sucesso!');
     return true;
   } catch (error) {
-    console.error('Error in processPayment:', error);
-    // Simula um sucesso em caso de falha para ambiente de desenvolvimento
-    return true;
+    console.error('Erro em processPayment:', error);
+    toast.error('Erro ao processar pagamento');
+    return false;
+  }
+};
+
+// Obter histórico de pagamentos do usuário
+export const getPaymentHistory = async (): Promise<Payment[]> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('payment-processing', {
+      body: {
+        method: 'getPaymentHistory'
+      }
+    });
+    
+    if (error) {
+      console.error('Erro ao buscar histórico de pagamentos:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    console.error('Erro em getPaymentHistory:', error);
+    return [];
   }
 };
