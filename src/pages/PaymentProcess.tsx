@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import PaymentForm from '../components/payment/PaymentForm';
 import PaymentInfoSidebar from '../components/payment/PaymentInfoSidebar';
 import PaymentNotFound from '../components/payment/PaymentNotFound';
-import { getAdoptionById, getAdminSettings, processPayment } from '../services/paymentService';
+import { getAdoptionById, getAdminSettings, processPayment } from '../services/payment';
 import { toast } from '@/hooks/use-sonner';
 import { getSystemParameters } from '@/services/systemParameterService';
 
