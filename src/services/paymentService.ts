@@ -1,4 +1,3 @@
-
 import { supabase } from "@/lib/supabase";
 import { getSystemParameters } from './systemParameterService';
 import { toast } from '@/hooks/use-sonner';
@@ -57,7 +56,10 @@ export const getAdoptionById = async (id: string): Promise<AdoptionDetails | nul
     
     if (data) {
       // Verificar se usamos pet_id ou animal_id
-      const petName = data.pets?.name || (data.animals ? data.animals?.nome : "Pet");
+      // Primeiro verificar se pets e animals são objetos válidos antes de acessar suas propriedades
+      const petName = data.pets?.name || 
+        (data.animals && typeof data.animals === 'object' && 'nome' in data.animals ? 
+          data.animals.nome : "Pet");
       
       let petImage = '';
       
