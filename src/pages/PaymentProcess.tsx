@@ -91,7 +91,7 @@ const PaymentProcess = () => {
       
       if (!id) return;
       
-      // Processa o pagamento
+      // Processa o pagamento com os parâmetros padrão
       const success = await processPayment(id);
       
       if (success) {

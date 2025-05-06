@@ -51,7 +51,9 @@ function App() {
         
         {/* Rotas Admin */}
         <Route path="/admin/*" element={
-          <AdminProtectedRoute />
+          <AdminProtectedRoute>
+            {/* Children do AdminProtectedRoute */}
+          </AdminProtectedRoute>
         } />
         
         <Route path="*" element={<NotFound />} />

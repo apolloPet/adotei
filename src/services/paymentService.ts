@@ -57,7 +57,7 @@ export const getAdoptionById = async (id: string): Promise<AdoptionDetails | nul
     
     if (data) {
       // Verificar se usamos pet_id ou animal_id
-      const petName = data.pets?.name || data.animals?.nome || "Pet";
+      const petName = data.pets?.name || (data.animals ? data.animals?.nome : "Pet");
       
       let petImage = '';
       
@@ -164,10 +164,10 @@ export const getAdoptionFee = async (): Promise<number> => {
 
 // Processar pagamento usando a edge function
 export const processPayment = async (
-  adoptionId: string, 
-  amount: number, 
-  paymentMethod: string, 
-  paymentDetails?: any
+  adoptionId: string,
+  amount: number = 120,
+  paymentMethod: string = 'pix',
+  paymentDetails: any = {}
 ): Promise<boolean> => {
   try {
     const { data, error } = await supabase.functions.invoke('payment-processing', {

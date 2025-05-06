@@ -60,6 +60,7 @@ export const updatePassword = async (newPassword: string): Promise<boolean> => {
 
 /**
  * Change admin password (requires authentication)
+ * @param currentPassword The current password
  * @param newPassword The new password
  * @returns True if successful, false otherwise
  */

@@ -15,6 +15,8 @@ export interface Supplier {
   contact_person?: string;
   created_at: string;
   ratings?: SupplierRating[];
+  notes?: string;
+  average_rating?: number;
 }
 
 // Interface para avaliações de fornecedores
