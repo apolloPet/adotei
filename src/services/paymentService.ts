@@ -1,3 +1,4 @@
+
 import { supabase } from "@/lib/supabase";
 import { getSystemParameters } from './systemParameterService';
 import { toast } from '@/hooks/use-sonner';
@@ -74,7 +75,10 @@ export const getAdoptionById = async (id: string): Promise<AdoptionDetails | nul
           .maybeSingle();
         
         if (imageData && imageData.url) {
-          petImage = imageData.url as string;
+          // Fix here: properly type the URL by checking its type and converting it
+          if (typeof imageData.url === 'string') {
+            petImage = imageData.url;
+          }
         }
       }
       
