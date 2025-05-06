@@ -47,6 +47,7 @@ export const getAdminSettings = async (): Promise<AdminSettings> => {
       ngoPercentage: 90,
       platformPercentage: 10,
       pixKey: "ong@example.com",
+      bankData: null,
       contractText: "Eu, adotante, me comprometo a cuidar do animal adotado, fornecendo abrigo, alimentação adequada, cuidados veterinários e carinho. Concordo em permitir visitas de acompanhamento pelo período estabelecido e em não abandonar ou maltratar o animal sob quaisquer circunstâncias. Entendo que o animal é um ser senciente e merece respeito e amor.",
       followUpPeriod: 90
     };

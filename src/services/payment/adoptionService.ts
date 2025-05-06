@@ -51,7 +51,7 @@ export const getAdoptionById = async (id: string): Promise<AdoptionDetails | nul
           .eq('is_primary', true)
           .maybeSingle();
         
-        // Type guard to ensure imageData exists and url is a string
+        // Proper type guard to ensure imageData exists and url is a string
         if (imageData && typeof imageData === 'object' && 
             'url' in imageData && typeof imageData.url === 'string') {
           petImage = imageData.url;
