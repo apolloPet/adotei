@@ -63,6 +63,7 @@ export const getAdoptionById = async (id: string): Promise<AdoptionDetails | nul
         (hasAnimals && 'nome' in data.animals! ? 
           data.animals!.nome : "Pet");
       
+      // Initialize petImage as empty string
       let petImage = '';
       
       // Tentar buscar imagem do pet se tivermos um pet_id
@@ -74,8 +75,8 @@ export const getAdoptionById = async (id: string): Promise<AdoptionDetails | nul
           .eq('is_primary', true)
           .maybeSingle();
         
-        // Type guard to ensure imageData.url is a string before assignment
-        if (imageData && imageData.url && typeof imageData.url === 'string') {
+        // Type guard to ensure imageData exists and url is a string
+        if (imageData && 'url' in imageData && typeof imageData.url === 'string') {
           petImage = imageData.url;
         }
       }
