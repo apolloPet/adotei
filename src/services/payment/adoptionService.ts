@@ -61,7 +61,7 @@ export const getAdoptionById = async (id: string): Promise<AdoptionDetails | nul
       return {
         id: data.id,
         petName,
-        petImage,
+        petImage, // This line is causing the error
         status: data.current_stage,
         fee: await getAdoptionFee(),
         userName: data.users?.name || "Adotante"
