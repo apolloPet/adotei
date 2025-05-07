@@ -51,9 +51,11 @@ export const getAdoptionById = async (id: string): Promise<AdoptionDetails | nul
           .eq('is_primary', true)
           .maybeSingle();
         
-        // Proper type guard to ensure imageData exists and url is a string
-        if (imageData && typeof imageData === 'object' && 
-            'url' in imageData && typeof imageData.url === 'string') {
+        // Explicitly check if imageData is an object with a url string property
+        if (imageData && 
+            typeof imageData === 'object' && 
+            'url' in imageData && 
+            typeof imageData.url === 'string') {
           petImage = imageData.url;
         }
       }
@@ -61,7 +63,7 @@ export const getAdoptionById = async (id: string): Promise<AdoptionDetails | nul
       return {
         id: data.id,
         petName,
-        petImage, // This line is causing the error
+        petImage, // Now petImage is guaranteed to be a string
         status: data.current_stage,
         fee: await getAdoptionFee(),
         userName: data.users?.name || "Adotante"
