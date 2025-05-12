@@ -16,7 +16,7 @@ export interface Payment {
 export interface AdoptionDetails {
   id: string;
   petName: string;
-  petImage?: string;
+  petImage: string;
   shelter?: string;
   fee: number;
   status: string;
