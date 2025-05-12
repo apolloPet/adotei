@@ -39,8 +39,8 @@ export const getAdoptionById = async (id: string): Promise<AdoptionDetails | nul
         (hasAnimals && 'nome' in data.animals! ? 
           data.animals!.nome : "Pet");
       
-      // Initialize petImage as empty string
-      let petImage = '';
+      // Initialize petImage as empty string to guarantee string type
+      let petImage: string = '';
       
       // Try to fetch pet image if we have a pet_id
       if (data.pets?.id) {
@@ -63,7 +63,7 @@ export const getAdoptionById = async (id: string): Promise<AdoptionDetails | nul
       return {
         id: data.id,
         petName,
-        petImage, // Now petImage is guaranteed to be a string
+        petImage, // Now petImage is explicitly typed as string
         status: data.current_stage,
         fee: await getAdoptionFee(),
         userName: data.users?.name || "Adotante"
