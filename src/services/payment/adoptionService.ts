@@ -59,7 +59,11 @@ const getAdoptionByIdFallback = async (id: string): Promise<AdoptionDetails | nu
     
     if (error) {
       console.error('Error fetching adoption:', error);
-      toast.error('Error fetching adoption details');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Error fetching adoption details"
+      });
       return null;
     }
     
@@ -83,7 +87,7 @@ const getAdoptionByIdFallback = async (id: string): Promise<AdoptionDetails | nu
           .eq('is_primary', true)
           .maybeSingle<{ url: string }>();
         
-        if (imageData !== null && typeof imageData === 'object' && 'url' in imageData) {
+        if (imageData?.url) {
           petImage = imageData.url;
         }
       }
@@ -101,7 +105,11 @@ const getAdoptionByIdFallback = async (id: string): Promise<AdoptionDetails | nu
     return null;
   } catch (error) {
     console.error('Error in getAdoptionByIdFallback:', error);
-    toast.error('Error fetching adoption details');
+    toast({
+      variant: "destructive",
+      title: "Error",
+      description: "Error fetching adoption details"
+    });
     return null;
   }
 };
