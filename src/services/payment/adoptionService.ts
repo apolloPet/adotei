@@ -51,7 +51,7 @@ export const getAdoptionById = async (id: string): Promise<AdoptionDetails | nul
           .eq('is_primary', true)
           .maybeSingle();
         
-        // Explicitly check if imageData is an object with a url string property
+        // Fixed type guard: Ensure imageData exists, is an object, has url property, and url is a string
         if (imageData && 
             typeof imageData === 'object' && 
             'url' in imageData && 
