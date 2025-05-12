@@ -49,13 +49,10 @@ export const getAdoptionById = async (id: string): Promise<AdoptionDetails | nul
           .select('url')
           .eq('pet_id', data.pets.id)
           .eq('is_primary', true)
-          .maybeSingle();
+          .maybeSingle<{ url: string }>();
         
-        // Fixed type guard: Ensure imageData exists, is an object, has url property, and url is a string
-        if (imageData && 
-            typeof imageData === 'object' && 
-            'url' in imageData && 
-            typeof imageData.url === 'string') {
+        // Use optional chaining with proper type assertion
+        if (imageData?.url) {
           petImage = imageData.url;
         }
       }
