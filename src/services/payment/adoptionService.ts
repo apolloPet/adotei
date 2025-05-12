@@ -51,9 +51,13 @@ export const getAdoptionById = async (id: string): Promise<AdoptionDetails | nul
           .eq('is_primary', true)
           .maybeSingle<{ url: string }>();
         
-        // Use optional chaining with proper type assertion
-        if (imageData?.url) {
-          petImage = imageData.url;
+        // Fix the type issue by explicit type guard and handling
+        if (imageData !== null && typeof imageData === 'object' && 'url' in imageData) {
+          // Explicitly cast to string only after validation
+          const urlValue = imageData.url;
+          if (typeof urlValue === 'string') {
+            petImage = urlValue;
+          }
         }
       }
       
