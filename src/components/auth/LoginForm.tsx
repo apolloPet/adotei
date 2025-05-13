@@ -30,9 +30,11 @@ const LoginForm = () => {
     try {
       setIsLoading(true);
       
+      console.log("LoginForm: Attempting login with", email);
       const success = await signIn(email, password);
       
       if (success) {
+        console.log("LoginForm: Login successful, fetching user data");
         // Call fetchUserData to update the auth state
         if (fetchUserData) {
           await fetchUserData();
@@ -41,6 +43,7 @@ const LoginForm = () => {
         toast.success("Login realizado com sucesso!");
         navigate('/browse');
       } else {
+        console.log("LoginForm: Login failed - invalid credentials");
         toast.error("Credenciais inválidas. Verifique seu email e senha.");
       }
     } catch (error: any) {

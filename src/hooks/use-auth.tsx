@@ -1,3 +1,9 @@
 
-// Reexportamos tudo do novo módulo auth para manter compatibilidade
-export * from './auth';
+// Re-export from the auth module for backward compatibility
+export { 
+  useAuth, 
+  AuthProvider, 
+  useAuthState,
+  useAuthSubscription,
+  useAuditLog 
+} from './auth';

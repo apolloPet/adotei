@@ -41,6 +41,7 @@ const Login = ({ onLogin }: LoginProps = {}) => {
     
     try {
       setIsLoading(true);
+      console.log("Login: Tentando login com", email);
       
       // Performance: processamento de login otimizado
       const success = await signIn(email, password);
@@ -50,6 +51,7 @@ const Login = ({ onLogin }: LoginProps = {}) => {
         
         // Performance: apenas uma chamada de função para atualizar dados
         if (fetchUserData) {
+          console.log("Login: Login bem-sucedido, buscando dados do usuário");
           // Executar de forma assíncrona sem aguardar a conclusão
           fetchUserData().catch(error => {
             console.error("Erro ao buscar dados do usuário:", error);
@@ -63,6 +65,9 @@ const Login = ({ onLogin }: LoginProps = {}) => {
         
         // Performance: redirecionar imediatamente sem setTimeout
         navigate("/browse", { replace: true });
+      } else {
+        console.log("Login: Falha no login - credenciais inválidas");
+        toast.error("Credenciais inválidas. Verifique seu email e senha.");
       }
     } catch (error) {
       console.error("Login error:", error);

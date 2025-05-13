@@ -1,10 +1,9 @@
-
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
 import { AuthError } from '@supabase/supabase-js';
 import { SignupData } from './types';
-import { UserProfile } from '@/types/user'; // Add missing import for UserProfile
-import { createProfile as createProfileService } from './profileService'; // Import createProfile function
+import { UserProfile } from '@/types/user';
+import { createProfile as createProfileService } from './profileService';
 
 /**
  * Desloga o usuário atual
@@ -104,10 +103,7 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
   try {
     console.log('Iniciando login com:', { email });
     
-    // Performance: remover limpeza de localStorage antes da tentativa de login
-    // para evitar operações desnecessárias se o login falhar
-    
-    // Validação básica de entrada
+    // Validaç��o básica de entrada
     if (!email || !password) {
       console.error('Email ou senha não fornecidos');
       toast.error('Email e senha são obrigatórios');
