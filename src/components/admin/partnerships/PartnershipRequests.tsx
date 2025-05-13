@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,12 +69,11 @@ const PartnershipRequests = () => {
   const handleRefresh = () => {
     setFilters({});
     fetchPartnerships();
-    createLogEntry(
-      'view',
-      'partnerships',
-      undefined,
-      { message: 'Admin refreshed partnerships list' }
-    );
+    createLogEntry({
+      action: 'view',
+      resource: 'partnerships',
+      details: { message: 'Admin refreshed partnerships list' }
+    });
   };
 
   return (
