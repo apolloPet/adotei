@@ -23,6 +23,8 @@ import PaymentProcess from './pages/PaymentProcess'
 import SecuritySettings from './pages/SecuritySettings'
 import PaymentHistory from './pages/PaymentHistory'
 import Suppliers from './pages/Suppliers'
+import AdminPanel from './components/AdminPanel'
+import AdminLogin from './components/AdminLogin'
 
 function App() {
   return (
@@ -50,11 +52,12 @@ function App() {
         <Route path="/suppliers" element={<Suppliers />} />
         
         {/* Rotas Admin */}
-        <Route path="/admin/*" element={
+        <Route path="/admin" element={
           <AdminProtectedRoute>
-            {/* Children do AdminProtectedRoute */}
+            <AdminPanel />
           </AdminProtectedRoute>
         } />
+        <Route path="/admin-login" element={<AdminLogin />} />
         
         <Route path="*" element={<NotFound />} />
       </Routes>

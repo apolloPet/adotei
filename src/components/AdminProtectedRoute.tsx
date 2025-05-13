@@ -21,16 +21,16 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
   const navigate = useNavigate();
   
   useEffect(() => {
-    // Flag to prevent multiple operations if the component unmounts
+    // Flag para prevenir operações múltiplas se o componente desmontar
     let isMounted = true;
     
     const verifyAdmin = async () => {
       try {
-        // Check localStorage first (highest priority)
+        // Verificar localStorage primeiro (maior prioridade)
         const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
         
         if (localStorageAdmin) {
-          console.log('AdminProtectedRoute: Access confirmed via localStorage');
+          console.log('AdminProtectedRoute: Acesso confirmado via localStorage');
           if (isMounted) {
             setIsVerified(true);
             setIsVerifying(false);
@@ -38,26 +38,26 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
           return;
         }
         
-        // If auth state is still loading, wait
+        // Se o estado de autenticação ainda está carregando, aguardar
         if (isLoading) {
-          console.log('AdminProtectedRoute: Auth state still loading, waiting...');
+          console.log('AdminProtectedRoute: Estado de autenticação ainda carregando, aguardando...');
           return;
         }
 
-        // If user is not authenticated, redirect to login
+        // Se o usuário não está autenticado, redirecionar para login
         if (!isAuthenticated) {
-          console.log('AdminProtectedRoute: User not authenticated, redirecting');
+          console.log('AdminProtectedRoute: Usuário não autenticado, redirecionando');
           if (isMounted) {
-            setVerificationError("You need to be authenticated to access this page");
+            setVerificationError("Você precisa estar autenticado para acessar esta página");
             setIsVerifying(false);
             navigate('/admin-login', { replace: true });
           }
           return;
         }
         
-        // If already confirmed as admin via global state
+        // Se já confirmado como admin via estado global
         if (isAdmin) {
-          console.log('AdminProtectedRoute: Access confirmed via global state');
+          console.log('AdminProtectedRoute: Acesso confirmado via estado global');
           if (isMounted) {
             setIsVerified(true);
             setIsVerifying(false);
@@ -65,11 +65,11 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
           return;
         }
         
-        // If we get here and the user exists, verify via email or database
+        // Se chegamos aqui e o usuário existe, verificar via email ou banco de dados
         if (user) {
-          console.log('AdminProtectedRoute: Verifying permissions by email or database');
+          console.log('AdminProtectedRoute: Verificando permissões por email ou banco de dados');
           
-          // Email verification (for compatibility)
+          // Verificação de email (para compatibilidade)
           const adminEmails = ['admin@petmatch.com'];
           const adminDomains = ['@admin', '@ong'];
           
@@ -77,7 +77,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
                             adminDomains.some(domain => (user.email || '').includes(domain));
           
           if (isAdminEmail) {
-            console.log('AdminProtectedRoute: Admin email detected');
+            console.log('AdminProtectedRoute: Email admin detectado');
             localStorage.setItem("isAdmin", "true");
             if (isMounted) {
               setIsVerified(true);
@@ -86,9 +86,9 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
             return;
           }
           
-          // Check the user_roles table
+          // Verificar a tabela user_roles
           try {
-            console.log('AdminProtectedRoute: Checking admin role in user_roles table');
+            console.log('AdminProtectedRoute: Verificando papel de admin na tabela user_roles');
             
             const { data: roleData, error: roleError } = await supabase
               .from('user_roles')
@@ -98,7 +98,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
               .maybeSingle();
               
             if (roleData) {
-              console.log('AdminProtectedRoute: User found in user_roles table');
+              console.log('AdminProtectedRoute: Usuário encontrado na tabela user_roles');
               localStorage.setItem("isAdmin", "true");
               if (isMounted) {
                 setIsVerified(true);
@@ -107,58 +107,59 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
               return;
             }
           } catch (roleError) {
-            console.error('Error checking role:', roleError);
+            console.error('Erro ao verificar papel:', roleError);
           }
         }
         
-        // If we reach here, not an admin - redirect after a timeout
+        // Se chegamos aqui, não é um admin - redirecionar após um timeout
         if (isMounted) {
-          console.log('AdminProtectedRoute: Access denied, redirecting');
-          setVerificationError("You do not have permission to access this page");
+          console.log('AdminProtectedRoute: Acesso negado, redirecionando');
+          setVerificationError("Você não tem permissão para acessar esta página");
           setIsVerifying(false);
           navigate('/admin-login', { replace: true });
         }
         
       } catch (error) {
-        console.error("Error verifying admin status:", error);
+        console.error("Erro ao verificar status de admin:", error);
         if (isMounted) {
-          setVerificationError("Error verifying permissions");
+          setVerificationError("Erro ao verificar permissões");
           setIsVerifying(false);
           navigate('/admin-login', { replace: true });
         }
       } finally {
-        // End verification after timeout to prevent hanging
+        // Finalizar verificação após timeout para evitar travamentos
         if (isMounted) {
           setIsVerifying(false);
         }
       }
     };
 
-    // Start verification and set up timer to ensure it doesn't get stuck
+    // Iniciar verificação e configurar timer para garantir que não fique preso
     verifyAdmin();
     
-    // Safety timer to not get stuck in verification
+    // Timer de segurança para não ficar preso na verificação
     const timeoutId = setTimeout(() => {
       if (isMounted && isVerifying) {
-        console.log('AdminProtectedRoute: Verification timeout exceeded');
+        console.log('AdminProtectedRoute: Tempo de verificação excedido');
         setIsVerifying(false);
-        setVerificationError("Verification timeout exceeded");
+        setVerificationError("Tempo de verificação excedido");
         navigate('/admin-login', { replace: true });
       }
-    }, 3000); // Maximum time of 3 seconds to verify
+    }, 3000); // Tempo máximo de 3 segundos para verificar
     
-    // Cleanup to prevent operations on unmounted component
+    // Cleanup para evitar operações em componente desmontado
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
     };
   }, [isLoading, user, isAdmin, isAuthenticated, navigate]);
   
+  // Se está verificado, renderizar filhos
   if (isVerified) {
     return <>{children}</>;
   }
   
-  // Show loader while verifying
+  // Mostrar loader enquanto verifica
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
       <div className="flex flex-col items-center gap-4 p-8 border rounded-lg shadow-sm">
