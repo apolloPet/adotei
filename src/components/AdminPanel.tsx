@@ -20,15 +20,29 @@ import AdminUserManagement from './admin/AdminUserManagement';
 import PaymentSettings from './admin/PaymentSettings';
 import AnimalRegistrationForm from './admin/animal-registration';
 import WebsiteContentManager from './admin/WebsiteContentManager';
+import { signOut } from '@/services/auth'; 
+import { useAuth } from '@/hooks/auth';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
-
-  const handleLogout = () => {
-    localStorage.removeItem("isAdmin");
-    toast.success("Logout realizado com sucesso");
-    navigate("/");
+  const { isAdmin, isAuthenticated } = useAuth();
+  
+  const handleLogout = async () => {
+    try {
+      // Usar a função signOut do serviço de autenticação para garantir logout correto
+      await signOut();
+      toast.success("Logout realizado com sucesso");
+      navigate("/");
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+      toast.error("Erro ao fazer logout");
+    }
   };
+  
+  // Verificar status de autenticação
+  if (!isAuthenticated || !isAdmin) {
+    return null; // O AdminProtectedRoute já lida com o redirecionamento
+  }
 
   return (
     <div className="container py-8 max-w-7xl mx-auto px-4 mt-16">

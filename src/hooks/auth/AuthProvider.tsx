@@ -48,8 +48,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       fetchUserData();
     }, 0);
     
-    return () => clearTimeout(timer);
-  }, []);
+    // Adicionar listener para evento personalizado de mudança de autenticação
+    const handleAuthChange = () => {
+      console.log('Evento authStateChanged detectado, atualizando dados do usuário');
+      fetchUserData();
+    };
+    
+    window.addEventListener('authStateChanged', handleAuthChange);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('authStateChanged', handleAuthChange);
+    };
+  }, [fetchUserData]);
 
   // Performance: memorização de valor do contexto
   const value = {

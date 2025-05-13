@@ -15,6 +15,7 @@ export function useAuthState() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [lastCheck, setLastCheck] = useState(0);
+  const [sessionCheckInterval, setSessionCheckInterval] = useState<number | null>(null);
 
   const fetchUserData = useCallback(async () => {
     // Evitar chamadas em rápida sucessão (debounce)
@@ -44,7 +45,7 @@ export function useAuthState() {
         setSession(null);
         setProfile(null);
         setIsAdmin(localStorageAdmin); 
-        setIsAuthenticated(localStorageLoggedIn); 
+        setIsAuthenticated(localStorageLoggedIn);
         return;
       }
       
@@ -165,6 +166,32 @@ export function useAuthState() {
       console.log('Verificação de autenticação concluída');
     }
   }, [lastCheck]);
+
+  // Verificar sessão periodicamente para evitar logout automático
+  useEffect(() => {
+    // Inicializar autenticação na montagem
+    fetchUserData();
+
+    // Configurar verificação periódica
+    if (!sessionCheckInterval) {
+      const interval = window.setInterval(() => {
+        // Verificar token apenas se o usuário estiver autenticado
+        if (isAuthenticated) {
+          console.log('Verificação periódica de sessão');
+          fetchUserData();
+        }
+      }, 60000); // Verificar a cada 1 minuto
+      
+      setSessionCheckInterval(interval);
+    }
+    
+    // Limpar intervalo na desmontagem
+    return () => {
+      if (sessionCheckInterval) {
+        window.clearInterval(sessionCheckInterval);
+      }
+    };
+  }, [fetchUserData, isAuthenticated, sessionCheckInterval]);
 
   return {
     user,

@@ -13,14 +13,37 @@ export function useAuthSubscription({
     // Performance: improved setup for auth events
     console.log('Setting up subscription for authentication events');
     
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+    // Importante: usar objeto data para garantir tipagem correta
+    const { data } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       console.log('Authentication event detected:', event);
       
-      // Performance: update session state immediately
-      setSession(newSession);
-      
-      if (newSession?.user) {
+      // Não remover ou alterar a sessão em eventos que não sejam explicitamente SIGNED_OUT
+      if (event === 'SIGNED_OUT') {
+        console.log('Usuário fez logout explicitamente');
+        
         // Performance: set user immediately
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        setIsAdmin(false);
+        
+        // Clear localStorage on explicit logout
+        localStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("isAdmin");
+        localStorage.removeItem("userEmail");
+        
+        return;
+      }
+      
+      // Para outros eventos, atualizar apenas se houver uma sessão válida
+      if (newSession?.user) {
+        console.log('Sessão atualizada:', { 
+          userId: newSession.user.id,
+          event 
+        });
+        
+        // Performance: set user and session immediately
+        setSession(newSession);
         setUser(newSession.user);
         
         // Check admin status
@@ -41,8 +64,6 @@ export function useAuthSubscription({
           localStorage.setItem("isLoggedIn", "true");
           localStorage.setItem("isAdmin", isAdminUser.toString());
           localStorage.setItem("userEmail", userEmail);
-        } else {
-          setIsAdmin(false);
         }
         
         // Performance: fetch user profile in background
@@ -59,21 +80,11 @@ export function useAuthSubscription({
             console.error('Error fetching profile in background:', error);
           }
         }, 100);
-        
-      } else {
-        // Session ended
-        setUser(null);
-        setProfile(null);
-        setIsAdmin(false);
-        
-        // Clear localStorage on logout
-        if (event === 'SIGNED_OUT') {
-          localStorage.removeItem("isLoggedIn");
-          localStorage.removeItem("isAdmin");
-          localStorage.removeItem("userEmail");
-        }
       }
     });
+    
+    // Importante: obter subscription do objeto data
+    const subscription = data.subscription;
 
     // Performance: proper cleanup on component unmount
     return () => {
