@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getProfile } from '@/services/auth/profileService';
 
@@ -9,13 +9,24 @@ export function useAuthSubscription({
   setProfile,
   setIsAdmin
 }) {
+  // Use uma ref para controlar subscrições duplicadas
+  const subscriptionRef = useRef(null);
+  
   useEffect(() => {
+    // Evitar múltiplas subscrições
+    if (subscriptionRef.current) return;
+    
     // Performance: improved setup for auth events
     console.log('Setting up subscription for authentication events');
     
     // Importante: usar objeto data para garantir tipagem correta
     const { data } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       console.log('Authentication event detected:', event);
+      
+      // Verificar tipos de eventos importantes
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('Token atualizado com sucesso');
+      }
       
       // Não remover ou alterar a sessão em eventos que não sejam explicitamente SIGNED_OUT
       if (event === 'SIGNED_OUT') {
@@ -32,6 +43,9 @@ export function useAuthSubscription({
         localStorage.removeItem("isAdmin");
         localStorage.removeItem("userEmail");
         
+        // Adicionar evento personalizado para informar todos os componentes
+        window.dispatchEvent(new Event('authStateChanged'));
+        
         return;
       }
       
@@ -39,7 +53,9 @@ export function useAuthSubscription({
       if (newSession?.user) {
         console.log('Sessão atualizada:', { 
           userId: newSession.user.id,
-          event 
+          event,
+          accessToken: newSession.access_token ? 'presente' : 'ausente',
+          expiraEm: newSession.expires_at ? new Date(newSession.expires_at * 1000).toISOString() : 'desconhecido'
         });
         
         // Performance: set user and session immediately
@@ -66,6 +82,9 @@ export function useAuthSubscription({
           localStorage.setItem("userEmail", userEmail);
         }
         
+        // Adicionar evento personalizado para informar todos os componentes
+        window.dispatchEvent(new Event('authStateChanged'));
+        
         // Performance: fetch user profile in background
         setTimeout(async () => {
           try {
@@ -80,16 +99,24 @@ export function useAuthSubscription({
             console.error('Error fetching profile in background:', error);
           }
         }, 100);
+      } else if (event !== 'INITIAL_SESSION') {
+        // Para eventos sem sessão (exceto verificação inicial), notificar mudança
+        console.log('Evento de autenticação sem sessão:', event);
+        window.dispatchEvent(new Event('authStateChanged'));
       }
     });
     
     // Importante: obter subscription do objeto data
     const subscription = data.subscription;
+    subscriptionRef.current = subscription;
 
     // Performance: proper cleanup on component unmount
     return () => {
       console.log('Cancelling authentication event subscription');
-      subscription.unsubscribe();
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
     };
   }, [setUser, setSession, setProfile, setIsAdmin]);
 }

@@ -17,6 +17,21 @@ export function useAuthState() {
   const [lastCheck, setLastCheck] = useState(0);
   const [sessionCheckInterval, setSessionCheckInterval] = useState<number | null>(null);
 
+  // Função para verificar se uma sessão está expirada
+  const isSessionExpired = (session: Session | null): boolean => {
+    if (!session) return true;
+    
+    // Verificar se a sessão tem um token de acesso e data de expiração
+    if (!session.access_token || !session.expires_at) return true;
+    
+    // Calcular quando o token expira (em milissegundos)
+    const expiresAt = session.expires_at * 1000; // convert to milliseconds
+    const now = Date.now();
+    
+    // Sessão expirada se a data atual é posterior à de expiração
+    return now >= expiresAt;
+  };
+
   const fetchUserData = useCallback(async () => {
     // Evitar chamadas em rápida sucessão (debounce)
     const now = Date.now();
@@ -52,8 +67,37 @@ export function useAuthState() {
       const currentSession = sessionData.session;
       setSession(currentSession);
       
-      if (currentSession) {
-        // Usuário autenticado via Supabase
+      // Verificar se a sessão está expirada
+      if (currentSession && isSessionExpired(currentSession)) {
+        console.log('Sessão Supabase expirada, tentando atualizar...');
+        
+        // Tentar atualizar a sessão
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError || !refreshData.session) {
+          console.error('Não foi possível atualizar a sessão:', refreshError);
+          
+          // Manter admin demo via localStorage se aplicável
+          if (localStorageAdmin && localStorageLoggedIn) {
+            setIsAdmin(true);
+            setIsAuthenticated(true);
+          } else {
+            setUser(null);
+            setSession(null);
+            setProfile(null);
+            setIsAdmin(false);
+            setIsAuthenticated(false);
+          }
+          return;
+        } else {
+          // Sessão atualizada com sucesso
+          console.log('Sessão atualizada com sucesso');
+          setSession(refreshData.session);
+          setUser(refreshData.session.user);
+          setIsAuthenticated(true);
+        }
+      } else if (currentSession) {
+        // Usuário autenticado via Supabase com sessão válida
         const userData = currentSession.user;
         setUser(userData);
         setIsAuthenticated(true);
@@ -85,13 +129,12 @@ export function useAuthState() {
           setIsAdmin(finalAdminStatus);
           
           // Atualizar localStorage apenas se necessário
-          if (finalAdminStatus && localStorage.getItem("isAdmin") !== "true") {
+          if (finalAdminStatus) {
             localStorage.setItem("isLoggedIn", "true");
             localStorage.setItem("isAdmin", "true");
-          }
-          
-          if (!localStorage.getItem("userEmail")) {
-            localStorage.setItem("userEmail", userData.email);
+            if (!localStorage.getItem("userEmail")) {
+              localStorage.setItem("userEmail", userData.email);
+            }
           }
         } else if (localStorageAdmin) {
           // Manter admin via localStorage se não temos email
@@ -180,7 +223,7 @@ export function useAuthState() {
           console.log('Verificação periódica de sessão');
           fetchUserData();
         }
-      }, 60000); // Verificar a cada 1 minuto
+      }, 30000); // Verificar a cada 30 segundos (reduzido de 60s para 30s)
       
       setSessionCheckInterval(interval);
     }

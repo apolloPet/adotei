@@ -14,7 +14,7 @@ interface AdminProtectedRouteProps {
 const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ 
   children 
 }) => {
-  const { user, isAdmin, isLoading, isAuthenticated } = useAuth();
+  const { user, isAdmin, isLoading, isAuthenticated, fetchUserData } = useAuth();
   const [isVerifying, setIsVerifying] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
@@ -23,13 +23,31 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
   useEffect(() => {
     // Flag para prevenir operações múltiplas se o componente desmontar
     let isMounted = true;
+    let verificationTimeout: number | null = null;
     
     const verifyAdmin = async () => {
       try {
+        console.log('AdminProtectedRoute: Iniciando verificação de admin');
+        
+        // Se a função fetchUserData existe, chame-a para atualizar o estado global
+        if (fetchUserData) {
+          await fetchUserData();
+        }
+        
         // Verificar localStorage primeiro (maior prioridade)
         const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
+        const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
         
-        if (localStorageAdmin) {
+        // Log do estado atual para debug
+        console.log('AdminProtectedRoute: Estado atual', {
+          isAdmin,
+          isAuthenticated,
+          localStorageAdmin,
+          localStorageLoggedIn,
+          isLoading
+        });
+        
+        if (localStorageAdmin && localStorageLoggedIn) {
           console.log('AdminProtectedRoute: Acesso confirmado via localStorage');
           if (isMounted) {
             setIsVerified(true);
@@ -45,7 +63,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         }
 
         // Se o usuário não está autenticado, redirecionar para login
-        if (!isAuthenticated) {
+        if (!isAuthenticated && !localStorageLoggedIn) {
           console.log('AdminProtectedRoute: Usuário não autenticado, redirecionando');
           if (isMounted) {
             setVerificationError("Você precisa estar autenticado para acessar esta página");
@@ -56,7 +74,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         }
         
         // Se já confirmado como admin via estado global
-        if (isAdmin) {
+        if (isAdmin || localStorageAdmin) {
           console.log('AdminProtectedRoute: Acesso confirmado via estado global');
           if (isMounted) {
             setIsVerified(true);
@@ -74,10 +92,11 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
           const adminDomains = ['@admin', '@ong'];
           
           const isAdminEmail = adminEmails.includes(user.email || '') || 
-                            adminDomains.some(domain => (user.email || '').includes(domain));
+                              adminDomains.some(domain => (user.email || '').includes(domain));
           
           if (isAdminEmail) {
             console.log('AdminProtectedRoute: Email admin detectado');
+            localStorage.setItem("isLoggedIn", "true");
             localStorage.setItem("isAdmin", "true");
             if (isMounted) {
               setIsVerified(true);
@@ -99,6 +118,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
               
             if (roleData) {
               console.log('AdminProtectedRoute: Usuário encontrado na tabela user_roles');
+              localStorage.setItem("isLoggedIn", "true");
               localStorage.setItem("isAdmin", "true");
               if (isMounted) {
                 setIsVerified(true);
@@ -127,14 +147,14 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
           navigate('/admin-login', { replace: true });
         }
       } finally {
-        // Finalizar verificação após timeout para evitar travamentos
+        // Finalizar verificação para evitar travamentos
         if (isMounted) {
           setIsVerifying(false);
         }
       }
     };
 
-    // Iniciar verificação e configurar timer para garantir que não fique preso
+    // Iniciar verificação
     verifyAdmin();
     
     // Timer de segurança para não ficar preso na verificação
@@ -142,17 +162,49 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
       if (isMounted && isVerifying) {
         console.log('AdminProtectedRoute: Tempo de verificação excedido');
         setIsVerifying(false);
-        setVerificationError("Tempo de verificação excedido");
-        navigate('/admin-login', { replace: true });
+        
+        // Se temos credenciais no localStorage, confiar nelas mesmo com timeout
+        const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
+        const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+        
+        if (localStorageAdmin && localStorageLoggedIn) {
+          console.log('AdminProtectedRoute: Usando credenciais do localStorage após timeout');
+          setIsVerified(true);
+        } else {
+          setVerificationError("Tempo de verificação excedido");
+          navigate('/admin-login', { replace: true });
+        }
       }
     }, 3000); // Tempo máximo de 3 segundos para verificar
+    
+    // Configurar verificação periódica do status de autenticação
+    const intervalId = setInterval(() => {
+      const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
+      const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+      
+      // Se já foi verificado que é admin, não precisamos continuar verificando
+      if (isVerified) return;
+      
+      if (localStorageAdmin && localStorageLoggedIn && isMounted) {
+        console.log('AdminProtectedRoute: Verificação periódica confirmou acesso admin');
+        setIsVerified(true);
+        setIsVerifying(false);
+      } else if (isMounted && !isVerifying) {
+        // Se não está verificando e não é admin, iniciar nova verificação
+        verifyAdmin();
+      }
+    }, 5000); // Verificar a cada 5 segundos
     
     // Cleanup para evitar operações em componente desmontado
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
+      clearInterval(intervalId);
+      if (verificationTimeout) {
+        clearTimeout(verificationTimeout);
+      }
     };
-  }, [isLoading, user, isAdmin, isAuthenticated, navigate]);
+  }, [isLoading, user, isAdmin, isAuthenticated, navigate, fetchUserData]);
   
   // Se está verificado, renderizar filhos
   if (isVerified) {

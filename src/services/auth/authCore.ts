@@ -12,6 +12,15 @@ export const signOut = async (): Promise<void> => {
   try {
     console.log('Attempting to sign out user');
     
+    // Primeiro, armazenar uma cópia do estado atual para análise
+    const previousState = {
+      isLoggedIn: localStorage.getItem("isLoggedIn"),
+      isAdmin: localStorage.getItem("isAdmin"),
+      userEmail: localStorage.getItem("userEmail")
+    };
+    
+    console.log('Estado antes do logout:', previousState);
+    
     // Primeiro, fazer o signOut do Supabase (antes de limpar localStorage)
     // para garantir que todos os tokens sejam invalidados no servidor
     const { error } = await supabase.auth.signOut({ scope: 'global' });
@@ -36,13 +45,17 @@ export const signOut = async (): Promise<void> => {
     sessionStorage.clear(); // Limpar todo o sessionStorage também
     
     // Para browsers mais recentes, também pode-se usar
-    if (window.indexedDB) {
-      const databases = await window.indexedDB.databases();
-      databases.forEach(db => {
-        if (db.name) {
-          window.indexedDB.deleteDatabase(db.name);
-        }
-      });
+    try {
+      if (window.indexedDB && window.indexedDB.databases) {
+        const databases = await window.indexedDB.databases();
+        databases.forEach(db => {
+          if (db.name) {
+            window.indexedDB.deleteDatabase(db.name);
+          }
+        });
+      }
+    } catch (dbError) {
+      console.warn('Erro ao limpar IndexedDB (não crítico):', dbError);
     }
     
     // Forçar a atualização do estado de autenticação em toda a aplicação
@@ -51,6 +64,11 @@ export const signOut = async (): Promise<void> => {
     
     // Logs para debug
     console.log('User signed out successfully, localStorage and sessionStorage cleared');
+    console.log('Estado após logout:', {
+      isLoggedIn: localStorage.getItem("isLoggedIn"),
+      isAdmin: localStorage.getItem("isAdmin"),
+      userEmail: localStorage.getItem("userEmail")
+    });
     
     // Adicionar um pequeno atraso para garantir que a limpeza de estado seja concluída
     await new Promise(resolve => setTimeout(resolve, 500));

@@ -1,5 +1,5 @@
 
-import { createContext, useEffect } from 'react';
+import { createContext, useEffect, useMemo } from 'react';
 import { AuthContextType, AuthProviderProps } from './types';
 import { useAuthState } from './useAuthState';
 import { useAuthSubscription } from './useAuthSubscription';
@@ -43,10 +43,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     console.log('AuthProvider montado - carregando dados iniciais do usuário');
     
-    // Performance: executar em segundo plano para não bloquear a renderização
-    const timer = setTimeout(() => {
-      fetchUserData();
-    }, 0);
+    // Executar imediatamente a primeira verificação
+    fetchUserData();
+    
+    // Performance: executar verificações adicionais em segundo plano para não bloquear a renderização
+    const periodicCheck = setInterval(() => {
+      // Verificar apenas se localStorage indica que o usuário está logado
+      const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+      if (localStorageLoggedIn) {
+        console.log('Verificação periódica de AuthProvider');
+        fetchUserData();
+      }
+    }, 60000); // Verificação a cada minuto
     
     // Adicionar listener para evento personalizado de mudança de autenticação
     const handleAuthChange = () => {
@@ -55,15 +63,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
     
     window.addEventListener('authStateChanged', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
     
     return () => {
-      clearTimeout(timer);
+      clearInterval(periodicCheck);
       window.removeEventListener('authStateChanged', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
     };
   }, [fetchUserData]);
 
   // Performance: memorização de valor do contexto
-  const value = {
+  const value = useMemo(() => ({
     user,
     session,
     profile,
@@ -71,7 +81,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     isAdmin,
     isAuthenticated,
     fetchUserData
-  };
+  }), [user, session, profile, isLoading, isAdmin, isAuthenticated, fetchUserData]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
