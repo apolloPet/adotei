@@ -352,9 +352,12 @@ export const signInAdmin = async (email: string, password: string): Promise<bool
         console.warn("Erro ao atualizar metadados", metadataError);
       }
       
-      // Disparar eventos de mudança de estado
-      window.dispatchEvent(new Event('storage'));
-      window.dispatchEvent(new Event('authStateChanged'));
+      // Importante: garantir que os eventos sejam disparados de forma assíncrona
+      // para evitar problemas de concorrência
+      setTimeout(() => {
+        window.dispatchEvent(new Event('storage'));
+        window.dispatchEvent(new Event('authStateChanged'));
+      }, 50);
       
       return true;
     } else {

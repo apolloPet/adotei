@@ -59,7 +59,10 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         // Se o estado de autenticação ainda está carregando, aguardar
         if (isLoading) {
           console.log('AdminProtectedRoute: Estado de autenticação ainda carregando, aguardando...');
-          return;
+          if (isMounted) {
+            // Não alterar estado ainda, continuar aguardando
+            return;
+          }
         }
 
         // Se o usuário não está autenticado, redirecionar para login
@@ -68,14 +71,14 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
           if (isMounted) {
             setVerificationError("Você precisa estar autenticado para acessar esta página");
             setIsVerifying(false);
-            navigate('/admin-login', { replace: true });
+            setTimeout(() => navigate('/admin-login', { replace: true }), 100);
           }
           return;
         }
         
         // Se já confirmado como admin via estado global
         if (isAdmin || localStorageAdmin) {
-          console.log('AdminProtectedRoute: Acesso confirmado via estado global');
+          console.log('AdminProtectedRoute: Acesso confirmado via estado global ou localStorage');
           if (isMounted) {
             setIsVerified(true);
             setIsVerifying(false);
@@ -136,7 +139,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
           console.log('AdminProtectedRoute: Acesso negado, redirecionando');
           setVerificationError("Você não tem permissão para acessar esta página");
           setIsVerifying(false);
-          navigate('/admin-login', { replace: true });
+          setTimeout(() => navigate('/admin-login', { replace: true }), 100);
         }
         
       } catch (error) {
@@ -144,7 +147,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         if (isMounted) {
           setVerificationError("Erro ao verificar permissões");
           setIsVerifying(false);
-          navigate('/admin-login', { replace: true });
+          setTimeout(() => navigate('/admin-login', { replace: true }), 100);
         }
       } finally {
         // Finalizar verificação para evitar travamentos
@@ -185,6 +188,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
       // Se já foi verificado que é admin, não precisamos continuar verificando
       if (isVerified) return;
       
+      // Verificar continuamente a sessão do usuário
       if (localStorageAdmin && localStorageLoggedIn && isMounted) {
         console.log('AdminProtectedRoute: Verificação periódica confirmou acesso admin');
         setIsVerified(true);

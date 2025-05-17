@@ -50,17 +50,25 @@ export function useAuthState() {
       const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
       const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
       
+      // Se é admin de demonstração, aplicar configuração imediatamente
+      if (localStorageAdmin && localStorageLoggedIn) {
+        console.log('Admin via localStorage detectado, aplicando configurações');
+        setIsAdmin(true);
+        setIsAuthenticated(true);
+      }
+      
       // Performance: verificar diretamente a sessão do Supabase para evitar chamadas extras
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError) {
         console.error('Erro ao obter sessão do Supabase:', sessionError);
         // Manter status de admin do localStorage mesmo em caso de erro
-        setUser(null);
-        setSession(null);
-        setProfile(null);
-        setIsAdmin(localStorageAdmin); 
-        setIsAuthenticated(localStorageLoggedIn);
+        // mas apenas se não for o login de demonstração
+        if (!localStorageAdmin || !localStorageLoggedIn) {
+          setUser(null);
+          setSession(null);
+          setProfile(null);
+        }
         return;
       }
       
@@ -79,8 +87,8 @@ export function useAuthState() {
           
           // Manter admin demo via localStorage se aplicável
           if (localStorageAdmin && localStorageLoggedIn) {
-            setIsAdmin(true);
-            setIsAuthenticated(true);
+            console.log('Sessão expirada mas mantendo login admin demo');
+            // Não alterar estado, manter o que foi definido anteriormente
           } else {
             setUser(null);
             setSession(null);
@@ -88,13 +96,28 @@ export function useAuthState() {
             setIsAdmin(false);
             setIsAuthenticated(false);
           }
-          return;
         } else {
           // Sessão atualizada com sucesso
           console.log('Sessão atualizada com sucesso');
           setSession(refreshData.session);
           setUser(refreshData.session.user);
           setIsAuthenticated(true);
+          
+          // Verificar se o email indica administrador
+          const userEmail = refreshData.session.user?.email;
+          if (userEmail) {
+            const isAdminEmail = userEmail.includes('@ong') || 
+                             userEmail.includes('@admin') || 
+                             userEmail === 'admin@petmatch.com';
+                             
+            if (isAdminEmail) {
+              setIsAdmin(true);
+              localStorage.setItem("isAdmin", "true");
+            }
+            
+            localStorage.setItem("isLoggedIn", "true");
+            localStorage.setItem("userEmail", userEmail);
+          }
         }
       } else if (currentSession) {
         // Usuário autenticado via Supabase com sessão válida
@@ -129,18 +152,14 @@ export function useAuthState() {
           setIsAdmin(finalAdminStatus);
           
           // Atualizar localStorage apenas se necessário
+          localStorage.setItem("isLoggedIn", "true");
           if (finalAdminStatus) {
-            localStorage.setItem("isLoggedIn", "true");
             localStorage.setItem("isAdmin", "true");
-            if (!localStorage.getItem("userEmail")) {
-              localStorage.setItem("userEmail", userData.email);
-            }
           }
+          localStorage.setItem("userEmail", userData.email);
         } else if (localStorageAdmin) {
           // Manter admin via localStorage se não temos email
           setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
         }
         
         // Obter perfil do usuário em segundo plano (não bloquear)
@@ -219,11 +238,11 @@ export function useAuthState() {
     if (!sessionCheckInterval) {
       const interval = window.setInterval(() => {
         // Verificar token apenas se o usuário estiver autenticado
-        if (isAuthenticated) {
+        if (isAuthenticated || localStorage.getItem("isLoggedIn") === "true") {
           console.log('Verificação periódica de sessão');
           fetchUserData();
         }
-      }, 30000); // Verificar a cada 30 segundos (reduzido de 60s para 30s)
+      }, 15000); // Verificar a cada 15 segundos (reduzido para maior frequência)
       
       setSessionCheckInterval(interval);
     }

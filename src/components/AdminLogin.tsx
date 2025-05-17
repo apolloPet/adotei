@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,8 +38,9 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
         
         // Verificar localStorage primeiro (método mais rápido)
         const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
+        const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
         
-        if ((isAdmin || localStorageAdmin) && isAuthenticated) {
+        if ((isAdmin || localStorageAdmin) && (isAuthenticated || localStorageLoggedIn)) {
           console.log('AdminLogin: Usuário já autenticado como admin, redirecionando para /admin');
           hasRedirected.current = true;
           navigate('/admin', { replace: true });
@@ -71,72 +71,18 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
       
       console.log('Tentando login administrativo com:', { email, isDemoAdmin });
       
-      // Verificar se o usuário tem papel de admin na tabela user_roles
-      let adminUserFound = false;
+      // Login via signInAdmin (serviço centralizado)
+      const success = await signInAdmin(email, password);
       
-      if (!isDemoAdmin) {
-        // Primeiro fazer login normal
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
+      if (success) {
+        console.log('Login administrativo realizado com sucesso');
         
-        if (authError) {
-          console.error('Falha no login:', authError);
-          toast.error("Credenciais inválidas. Verifique seu email e senha.");
-          setIsLoading(false);
-          return;
-        }
-        
-        if (!authData.user) {
-          toast.error("Usuário não encontrado");
-          setIsLoading(false);
-          return;
-        }
-        
-        // Agora verificar se o usuário tem papel de admin
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('user_id', authData.user.id)
-          .eq('role', 'admin')
-          .single();
-        
-        // Verificar se o email indica administrador
-        const isAdminEmail = 
-          email.includes('@admin') || 
-          email.includes('@ong') || 
-          email === 'admin@petmatch.com';
-          
-        adminUserFound = !!roleData || isAdminEmail;
-        
-        if (adminUserFound) {
-          console.log('Login administrativo bem-sucedido via validação de papel/email');
-          localStorage.setItem("isLoggedIn", "true");
-          localStorage.setItem("isAdmin", "true");
-          localStorage.setItem("userEmail", email);
-        } else {
-          // Fazer logout se não for admin
-          await supabase.auth.signOut();
-          toast.error("Você não tem permissão de administrador");
-          setIsLoading(false);
-          return;
-        }
-      } else {
-        // Força definição no localStorage para admin de demonstração
-        console.log('Login administrativo de demonstração realizado com sucesso!');
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("isAdmin", "true");
-        localStorage.setItem("userEmail", email);
-        adminUserFound = true;
-      }
-      
-      if (adminUserFound) {
-        // Atualizar estado global
+        // Atualizar estado global - obrigatório
         if (fetchUserData) {
           await fetchUserData();
         }
         
+        // Callback opcional
         if (onLogin) {
           onLogin();
         }
@@ -146,10 +92,13 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
         // Marcar que já redirecionamos
         hasRedirected.current = true;
         
-        // Usar setTimeout com um pequeno atraso para garantir que o estado seja atualizado
+        // Forçar um evento de alteração de autenticação para garantir que outros componentes sejam notificados
+        window.dispatchEvent(new Event('authStateChanged'));
+        
+        // Usar setTimeout com um atraso para garantir que o estado seja atualizado
         setTimeout(() => {
           navigate("/admin", { replace: true });
-        }, 300);
+        }, 500);
       } else {
         toast.error("Credenciais inválidas ou usuário não tem permissão de administrador");
       }
@@ -235,7 +184,9 @@ const AdminLogin = ({ onLogin }: { onLogin?: () => void }) => {
   };
   
   // Não renderizar se já foi confirmado como admin
-  if ((isAdmin || localStorage.getItem("isAdmin") === "true") && isAuthenticated && redirectChecked) {
+  if ((isAdmin || localStorage.getItem("isAdmin") === "true") && 
+      (isAuthenticated || localStorage.getItem("isLoggedIn") === "true") && 
+      redirectChecked) {
     return null;
   }
   
