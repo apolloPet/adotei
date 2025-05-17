@@ -25,8 +25,24 @@ import PaymentHistory from './pages/PaymentHistory'
 import Suppliers from './pages/Suppliers'
 import AdminPanel from './components/AdminPanel'
 import AdminLogin from './components/AdminLogin'
+import { signOut } from '@/services/auth'
+import { toast } from './hooks/use-sonner'
+import { useNavigate } from 'react-router-dom'
 
 function App() {
+  // Add a function for handling logout
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success("Logout realizado com sucesso");
+      // No need for navigate here since the AdminPanel component
+      // will have its own navigation logic
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+      toast.error("Erro ao fazer logout");
+    }
+  };
+
   return (
     <>
       <Header />
@@ -54,7 +70,7 @@ function App() {
         {/* Rotas Admin */}
         <Route path="/admin" element={
           <AdminProtectedRoute>
-            <AdminPanel />
+            <AdminPanel onLogout={handleLogout} />
           </AdminProtectedRoute>
         } />
         <Route path="/admin-login" element={<AdminLogin />} />

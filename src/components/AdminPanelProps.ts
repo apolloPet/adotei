@@ -1,5 +1,5 @@
 
 export interface AdminPanelProps {
-  onLogout?: () => void;
+  onLogout: () => void;
   onAuthError?: () => void;
 }
