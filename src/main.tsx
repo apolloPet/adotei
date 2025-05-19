@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.tsx'
 import './index.css'
 import { webhookService } from './services/webhookService'
+import { AuthProvider } from './hooks/auth/AuthProvider'
 
 // Inicializa o serviço de webhooks para que eventos possam ser capturados
 webhookService.initWebhookListeners();
@@ -19,10 +20,21 @@ if (import.meta.env.DEV) {
   });
 }
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+// Create root element and ensure it exists
+const rootElement = document.getElementById('root');
+if (!rootElement) {
+  throw new Error("Root element with id 'root' not found in the DOM");
+}
+
+const root = ReactDOM.createRoot(rootElement);
+
+// Render with proper provider hierarchy
+root.render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </BrowserRouter>
   </React.StrictMode>,
 )

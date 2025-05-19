@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ShieldAlert, UserPlus } from 'lucide-react';
-import { useAuth } from '@/hooks/auth';
-import { DialogTrigger } from "@/components/ui/dialog";
+import { useAuth } from '@/hooks/auth/useAuth';
+import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import AdminLoginForm from './AdminLoginForm';
 import NewAdminDialog from './NewAdminDialog';
 import DemoCredentialsInfo from './DemoCredentialsInfo';
@@ -92,20 +92,19 @@ const AdminLogin = ({ onLogin }: AdminLoginProps) => {
             <AdminLoginForm onAdminLogin={handleAdminLogin} />
             
             <div className="mt-6">
-              <NewAdminDialog
-                open={showNewAdminDialog}
-                onOpenChange={setShowNewAdminDialog}
-              />
-              
-              <DialogTrigger asChild onClick={() => setShowNewAdminDialog(true)}>
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Criar Novo Administrador
-                </Button>
-              </DialogTrigger>
+              <Dialog open={showNewAdminDialog} onOpenChange={setShowNewAdminDialog}>
+                <NewAdminDialog />
+                
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Criar Novo Administrador
+                  </Button>
+                </DialogTrigger>
+              </Dialog>
             </div>
             
             <DemoCredentialsInfo />
