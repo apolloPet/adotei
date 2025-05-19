@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-sonner";
 import {
-  Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -14,12 +13,7 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 
-interface NewAdminDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-}
-
-const NewAdminDialog = ({ open, onOpenChange }: NewAdminDialogProps) => {
+const NewAdminDialog = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [newAdmin, setNewAdmin] = useState({
     email: '',
@@ -87,8 +81,6 @@ const NewAdminDialog = ({ open, onOpenChange }: NewAdminDialogProps) => {
           password: '',
           name: ''
         });
-        
-        onOpenChange(false);
       }
     } catch (error) {
       console.error("Erro ao criar administrador:", error);
@@ -99,62 +91,60 @@ const NewAdminDialog = ({ open, onOpenChange }: NewAdminDialogProps) => {
   };
   
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Criar Novo Administrador</DialogTitle>
-          <DialogDescription>
-            Preencha os dados para criar uma nova conta administrativa com acesso total.
-          </DialogDescription>
-        </DialogHeader>
+    <DialogContent>
+      <DialogHeader>
+        <DialogTitle>Criar Novo Administrador</DialogTitle>
+        <DialogDescription>
+          Preencha os dados para criar uma nova conta administrativa com acesso total.
+        </DialogDescription>
+      </DialogHeader>
+      
+      <form onSubmit={handleCreateAdmin} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="new-admin-name">Nome</Label>
+          <Input 
+            id="new-admin-name" 
+            placeholder="Nome do administrador" 
+            value={newAdmin.name}
+            onChange={(e) => setNewAdmin({...newAdmin, name: e.target.value})}
+            required
+          />
+        </div>
         
-        <form onSubmit={handleCreateAdmin} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="new-admin-name">Nome</Label>
-            <Input 
-              id="new-admin-name" 
-              placeholder="Nome do administrador" 
-              value={newAdmin.name}
-              onChange={(e) => setNewAdmin({...newAdmin, name: e.target.value})}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="new-admin-email">Email</Label>
-            <Input 
-              id="new-admin-email" 
-              type="email" 
-              placeholder="novo.admin@exemplo.com" 
-              value={newAdmin.email}
-              onChange={(e) => setNewAdmin({...newAdmin, email: e.target.value})}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="new-admin-password">Senha</Label>
-            <Input 
-              id="new-admin-password" 
-              type="password" 
-              placeholder="••••••••" 
-              value={newAdmin.password}
-              onChange={(e) => setNewAdmin({...newAdmin, password: e.target.value})}
-              required
-            />
-          </div>
-          
-          <DialogFooter>
-            <Button 
-              type="submit"
-              disabled={isLoading}
-            >
-              {isLoading ? "Criando..." : "Criar Administrador"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <div className="space-y-2">
+          <Label htmlFor="new-admin-email">Email</Label>
+          <Input 
+            id="new-admin-email" 
+            type="email" 
+            placeholder="novo.admin@exemplo.com" 
+            value={newAdmin.email}
+            onChange={(e) => setNewAdmin({...newAdmin, email: e.target.value})}
+            required
+          />
+        </div>
+        
+        <div className="space-y-2">
+          <Label htmlFor="new-admin-password">Senha</Label>
+          <Input 
+            id="new-admin-password" 
+            type="password" 
+            placeholder="••••••••" 
+            value={newAdmin.password}
+            onChange={(e) => setNewAdmin({...newAdmin, password: e.target.value})}
+            required
+          />
+        </div>
+        
+        <DialogFooter>
+          <Button 
+            type="submit"
+            disabled={isLoading}
+          >
+            {isLoading ? "Criando..." : "Criar Administrador"}
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
   );
 };
 
