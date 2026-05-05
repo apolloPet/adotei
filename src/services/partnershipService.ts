@@ -4,7 +4,7 @@ import { toast } from '@/hooks/use-sonner';
 
 // Cache para parâmetros de parceria que mudam com pouca frequência
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos em milissegundos
-let partnershipTypesCache = {
+let partnershipTypesCache: { data: string[] | null; timestamp: number } = {
   data: null,
   timestamp: 0
 };
@@ -199,7 +199,7 @@ export const getPartnershipTypes = async (): Promise<string[]> => {
     }
 
     // Extrair tipos únicos
-    const types = [...new Set(data.map(item => item.partnership_type))];
+    const types = [...new Set((data || []).map((item: any) => item.partnership_type).filter(Boolean))] as string[];
     
     // Atualizar cache
     partnershipTypesCache = {

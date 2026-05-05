@@ -85,7 +85,7 @@ const getAdoptionByIdFallback = async (id: string): Promise<AdoptionDetails | nu
           .select('url')
           .eq('pet_id', data.pets.id)
           .eq('is_primary', true)
-          .maybeSingle<{ url: string }>();
+            .maybeSingle();
         
         if (imageData?.url) {
           petImage = imageData.url;
