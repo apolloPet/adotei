@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/lib/database.types';
-import { AdoptionMatch } from '@/components/admin/adoption/types';
+import { AdoptionMatch, mockAdoptionMatches } from '@/components/admin/adoption/types';
 import { AdoptionStage } from '@/components/adoption/AdoptionStages';
 import { fetchPetById } from './petService';
 import { fetchUserById } from './userService';
@@ -28,6 +28,9 @@ const extractPetImage = (petImages: any): string => {
 // Fetch all adoptions
 export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
   try {
+    console.log('Modo local ativo: usando adoções mockadas');
+    return mockAdoptionMatches;
+
     console.log('Fetching all adoption matches');
     
     // First try using the edge function to get complete data
@@ -190,6 +193,10 @@ export const updateAdoptionStage = async (
   rejectionReason?: string
 ): Promise<boolean> => {
   try {
+    console.log('Modo local ativo: atualização de estágio simulada', { id, stage, notes, rejectionReason });
+    toast.success('Estágio atualizado localmente');
+    return true;
+
     console.log(`Updating adoption ${id} to stage ${stage}`);
     
     // Build updates object based on the stage
@@ -301,6 +308,15 @@ export const recordPetMatch = async (
   matchType: 'liked' | 'disliked'
 ): Promise<boolean> => {
   try {
+    console.log('Modo local ativo: match registrado localmente', { petId, userId, matchType });
+    if (matchType === 'liked') {
+      toast.success('Você demonstrou interesse neste pet!', {
+        description: 'Modo local: a interação foi simulada.',
+        duration: 5000
+      });
+    }
+    return true;
+
     // Verify userID is valid
     let userIdToUse = userId;
     
