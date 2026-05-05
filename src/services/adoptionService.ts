@@ -462,6 +462,8 @@ export const recordPetMatch = async (
 // Get adoptions by stage
 export const getAdoptionsByStage = async (stage: AdoptionStage): Promise<AdoptionMatch[]> => {
   try {
+    return mockAdoptionMatches.filter((match) => match.currentStage === stage);
+
     const { data: adoptions, error } = await supabase
       .from('adoptions')
       .select('*')
@@ -516,6 +518,8 @@ export const getAdoptionsByStage = async (stage: AdoptionStage): Promise<Adoptio
 // Get pending follow-ups
 export const getPendingFollowUps = async (): Promise<AdoptionMatch[]> => {
   try {
+    return mockAdoptionMatches.filter((match) => match.currentStage === 'completed');
+
     const today = new Date().toISOString().split('T')[0];
     
     const { data: adoptions, error } = await supabase
@@ -577,6 +581,10 @@ export const assignResponsible = async (
   responsibleId: string
 ): Promise<boolean> => {
   try {
+    console.log('Modo local ativo: responsável atribuído localmente', { adoptionId, responsibleId });
+    toast.success('Responsável atribuído localmente');
+    return true;
+
     const { error } = await supabase
       .from('adoptions')
       .update({ responsible_id: responsibleId })
@@ -600,6 +608,10 @@ export const recordFollowUp = async (
   status: 'successful' | 'needs_attention' | 'failed'
 ): Promise<boolean> => {
   try {
+    console.log('Modo local ativo: acompanhamento registrado localmente', { adoptionId, notes, status });
+    toast.success('Acompanhamento registrado localmente');
+    return true;
+
     // Record the follow-up
     const { error: followUpError } = await supabase
       .from('adoption_follow_ups')
