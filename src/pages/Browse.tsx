@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { generateMockPets } from "@/data/mockPets";
 import { recordPetMatch } from "@/services/adoptionService";
 import { toast } from "@/hooks/use-sonner";
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from "@/hooks/auth";
 
 const Browse = () => {

@@ -53,7 +53,7 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
         toast.success(`${adoptionMatches.length} solicitações de adoção carregadas`);
       } else {
         console.warn('No adoption matches found, using mock data');
-        if (process.env.NODE_ENV === 'development') {
+        if (import.meta.env.DEV) {
           const { mockAdoptionMatches } = await import('./types');
           setMatches(mockAdoptionMatches);
           toast.info('Dados mockados carregados para desenvolvimento');
@@ -67,7 +67,7 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
       setError('Erro ao carregar solicitações de adoção.');
       toast.error('Erro ao carregar solicitações de adoção');
       
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         const { mockAdoptionMatches } = await import('./types');
         setMatches(mockAdoptionMatches);
         toast.info('Dados mockados carregados para desenvolvimento devido a erro');

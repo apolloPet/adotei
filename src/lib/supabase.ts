@@ -1,60 +1,19 @@
 
-import { createClient } from '@supabase/supabase-js';
-import { Database } from './database.types';
 import { toast } from '@/hooks/use-sonner';
+import { offlineSupabase } from './offlineSupabase';
 
-// Use the Supabase integration client information
-import { supabase as integrationClient } from '@/integrations/supabase/client';
-
-// Export the client directly from the integration
-export const supabase = integrationClient;
+// Backend remoto desligado temporariamente: o app usa um cliente local compatível
+// para impedir chamadas a tabelas/funções inexistentes no ambiente atual.
+export const supabase = offlineSupabase as any;
 
 // Function to check if Supabase connection is properly configured
 export const isSupabaseConfigured = async () => {
   try {
-    console.log('Testando conexão com Supabase...');
-    
-    // Testa primeiro a autenticação (não precisa de tabelas)
-    const { data: authData, error: authError } = await supabase.auth.getSession();
-    
-    if (authError) {
-      console.error('Erro ao testar conexão de autenticação do Supabase:', authError);
-      toast.error('Não foi possível conectar ao Supabase. Verifique as configurações.');
-      return false;
-    }
-    
-    console.log('Conexão de autenticação do Supabase bem-sucedida!', authData);
-    console.log('Status da autenticação:', authData.session ? 'Autenticado' : 'Não autenticado');
-    
-    // Test if we can query something from Supabase
-    try {
-      // Check if we can access the users table
-      console.log('Tentando acessar tabela users...');
-      const { data: usersData, error: usersError } = await supabase.from('users').select('count', { count: 'exact', head: true });
-      
-      if (usersError) {
-        console.warn('Teste de acesso à tabela users falhou:', usersError);
-        console.log('Tentando tabela alternativa...');
-        
-        // Try an alternative table
-        const { data: adoptionsData, error: adoptionsError } = await supabase.from('adoptions').select('count', { count: 'exact', head: true });
-        
-        if (adoptionsError) {
-          console.warn('Teste de acesso à tabela adoptions falhou:', adoptionsError);
-        } else {
-          console.log('Acesso à tabela adoptions bem-sucedido!');
-        }
-      } else {
-        console.log('Acesso à tabela users bem-sucedido!', usersData);
-      }
-    } catch (queryError) {
-      console.warn('Teste de consulta às tabelas falhou:', queryError);
-    }
-    
+    console.log('Modo local ativo: conexão remota desabilitada temporariamente.');
     return true;
   } catch (error) {
-    console.error('Erro ao conectar ao Supabase:', error);
-    toast.error('Erro de configuração do Supabase');
+    console.error('Erro ao iniciar modo local:', error);
+    toast.error('Erro ao iniciar modo local');
     return false;
   }
 };
