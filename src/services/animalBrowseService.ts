@@ -1,4 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-sonner';
 import { Pet } from '@/types/pets';
 import { getAnimals, Animal } from './animalService';
