@@ -3,7 +3,7 @@ import FilterPanel from "@/components/browse/FilterPanel";
 import PetBrowser from "@/components/browse/PetBrowser";
 import { usePetBrowse } from "@/hooks/use-pet-browse";
 import { useEffect, useState } from "react";
-import { fetchAnimalsForBrowse } from "@/services/animalBrowseService";
+import { generateMockPets } from "@/data/mockPets";
 import { recordPetMatch } from "@/services/adoptionService";
 import { toast } from "@/hooks/use-sonner";
 import { supabase } from '@/integrations/supabase/client';
@@ -57,8 +57,21 @@ const Browse = () => {
     const loadPets = async () => {
       setIsLoading(true);
       try {
-        // Usar o novo serviço para buscar animais 
-        const petsData = await fetchAnimalsForBrowse(filters);
+        // Mock temporário: animais aleatórios para apresentação
+        let petsData = generateMockPets(12);
+        if (filters.species !== 'all') {
+          petsData = petsData.filter(p => p.species === filters.species);
+        }
+        if (filters.size !== 'all') {
+          petsData = petsData.filter(p => p.size === filters.size);
+        }
+        if (filters.gender !== 'all') {
+          petsData = petsData.filter(p => p.gender === filters.gender);
+        }
+        petsData = petsData.filter(p => {
+          const age = parseInt(p.age) || 0;
+          return age >= filters.ageRange[0] && age <= filters.ageRange[1];
+        });
         setPets(petsData);
       } catch (error) {
         console.error('Error fetching pets:', error);
