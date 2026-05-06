@@ -20,6 +20,17 @@ import {
 import { AdoptionMatch, MatchCardProps } from './types';
 import MatchCompatibilityDialog from './MatchCompatibilityDialog';
 import SchedulingDialog from './SchedulingDialog';
+import { getProfileAlerts } from '@/utils/profileAlerts';
+import { UserProfile } from '@/types/user';
+
+const loadExtendedFor = (userId: string) => {
+  try {
+    const all = JSON.parse(localStorage.getItem('user_profile_extended') || '{}');
+    return all[userId] || undefined;
+  } catch {
+    return undefined;
+  }
+};
 
 const MatchCard = ({
   match,
@@ -143,7 +154,17 @@ const MatchCard = ({
 
   const showInterestIcon = match.currentStage === 'interested' && match.matchDate;
   const isMatchInterest = match.matchDate && match.matchDate !== match.createdAt;
-  
+
+  const candidateProfile: UserProfile = {
+    id: match.userId,
+    email: match.userEmail,
+    extended: loadExtendedFor(match.userId),
+  };
+  const alerts = getProfileAlerts(candidateProfile);
+  const sevColor = (s: string) =>
+    s === 'critical' ? 'bg-red-100 text-red-800 border-red-200'
+    : s === 'warning' ? 'bg-amber-100 text-amber-800 border-amber-200'
+    : 'bg-blue-100 text-blue-800 border-blue-200';
   return (
     <>
       {/* Main Card */}
@@ -176,11 +197,11 @@ const MatchCard = ({
                 </div>
               </div>
             </div>
-            
+
             <div className="flex flex-wrap items-center gap-2">
               {getAvailableActions()}
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="icon"
                 onClick={() => setExpanded(!expanded)}
               >
@@ -188,7 +209,17 @@ const MatchCard = ({
               </Button>
             </div>
           </div>
-          
+
+          {alerts.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {alerts.map((a, i) => (
+                <Badge key={i} variant="outline" className={sevColor(a.severity)}>
+                  ⚠ {a.message}
+                </Badge>
+              ))}
+            </div>
+          )}
+
           {expanded && (
             <div className="mt-4 pt-4 border-t">
               <div className="mb-4">

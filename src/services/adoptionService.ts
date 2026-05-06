@@ -30,20 +30,33 @@ export const updateAdoptionStage = async (
   return true;
 };
 
+export type PetMatchType = 'liked' | 'disliked' | 'saved';
+
+const STORAGE_KEY = 'pet_matches_local';
+
+const readMatches = (): Array<{ petId: string; userId: string; matchType: PetMatchType; at: string }> => {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  } catch {
+    return [];
+  }
+};
+
+export const getSavedPetIds = (userId: string): string[] =>
+  readMatches().filter((m) => m.userId === userId && m.matchType === 'saved').map((m) => m.petId);
+
 export const recordPetMatch = async (
   petId: string,
   userId: string,
-  matchType: 'liked' | 'disliked'
+  matchType: PetMatchType
 ): Promise<boolean> => {
-  console.log('Modo local ativo: interação com pet simulada', { petId, userId, matchType });
+  const all = readMatches();
+  all.push({ petId, userId, matchType, at: new Date().toISOString() });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
 
-  if (matchType === 'liked') {
-    toast.success('Você demonstrou interesse neste pet!', {
-      description: 'Modo local: a interação foi simulada.',
-      duration: 5000,
-    });
+  if (matchType === 'saved') {
+    toast.success('Animal salvo para acompanhar 🔖');
   }
-
   return true;
 };
 
