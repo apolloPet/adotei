@@ -6,7 +6,7 @@ import { Pet, PetInfo } from "@/types/pets";
 
 interface PetBrowserProps {
   pets: Pet[];
-  onSwipe: (direction: 'left' | 'right', petId: string) => void;
+  onSwipe: (direction: 'left' | 'right' | 'save', petId: string) => void;
   onReset: () => void;
 }
 
@@ -37,13 +37,12 @@ const PetBrowser = ({ pets, onSwipe, onReset }: PetBrowserProps) => {
     };
   };
   
-  const handleSwipe = (direction: 'left' | 'right', petId: string) => {
-    onSwipe(direction, petId);
-    
+  const handleSwipe = (direction: string, petId: string) => {
+    onSwipe(direction as 'left' | 'right' | 'save', petId);
     if (currentPetIndex < pets.length - 1) {
-      setTimeout(() => {
-        setCurrentPetIndex(currentPetIndex + 1);
-      }, 300);
+      setTimeout(() => setCurrentPetIndex(currentPetIndex + 1), 300);
+    } else {
+      setCurrentPetIndex(currentPetIndex + 1);
     }
   };
 

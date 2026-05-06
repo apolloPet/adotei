@@ -28,15 +28,9 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
     }
   };
 
-  // Handle manual like/dislike
-  const handleLike = () => {
-    onSwipe('right', pet.id);
-    // Remover o toast daqui pois será tratado pelo serviço de adoção
-  };
-
-  const handleDislike = () => {
-    onSwipe('left', pet.id);
-  };
+  const handleLike = () => onSwipe('right', pet.id);
+  const handleDislike = () => onSwipe('left', pet.id);
+  const handleSave = () => onSwipe('save', pet.id);
 
   return (
     <div className="w-full max-w-md mx-auto h-[28rem] relative">
@@ -73,6 +67,7 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
       <ActionButtons 
         onLike={handleLike} 
         onDislike={handleDislike} 
+        onSave={handleSave}
         onInfo={() => setShowDetails(!showDetails)}
         isDetailsOpen={showDetails}
       />
