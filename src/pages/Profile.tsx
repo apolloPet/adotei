@@ -1,86 +1,176 @@
 import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from '@/hooks/use-sonner';
-import { UserProfile } from '@/types/user';
+import { ExtendedProfile, UserProfile } from '@/types/user';
 import { getProfile, updateProfile } from '@/services/auth';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { useAuth } from "@/hooks/auth";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/hooks/auth';
+import { fileToDataUrl } from '@/utils/fileUpload';
+import {
+  housingSchema,
+  experienceSchema,
+  financialSchema,
+  intentionSchema,
+  HousingForm,
+  ExperienceForm,
+  FinancialForm,
+  IntentionForm,
+} from '@/lib/schemas/profile';
+import { AlertTriangle } from 'lucide-react';
+
+const EXTENDED_KEY = 'user_profile_extended';
+
+const loadExtended = (userId?: string): ExtendedProfile => {
+  if (!userId) return {};
+  try {
+    const all = JSON.parse(localStorage.getItem(EXTENDED_KEY) || '{}');
+    return all[userId] || {};
+  } catch {
+    return {};
+  }
+};
+const saveExtended = (userId: string, ext: ExtendedProfile) => {
+  const all = JSON.parse(localStorage.getItem(EXTENDED_KEY) || '{}');
+  all[userId] = ext;
+  localStorage.setItem(EXTENDED_KEY, JSON.stringify(all));
+};
 
 export default function Profile() {
   const { user, fetchUserData } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  
+  const [extended, setExtended] = useState<ExtendedProfile>({});
+
+  // Forms
+  const housingForm = useForm<HousingForm>({
+    resolver: zodResolver(housingSchema),
+    defaultValues: {
+      type: 'house',
+      ownership: 'owned',
+      hasYard: false,
+      numResidents: 1,
+      hasChildren: false,
+    },
+  });
+  const experienceForm = useForm<ExperienceForm>({
+    resolver: zodResolver(experienceSchema),
+    defaultValues: { hadPetsBefore: false, currentlyHasPets: false, returnedAnimal: false },
+  });
+  const financialForm = useForm<FinancialForm>({
+    resolver: zodResolver(financialSchema),
+    defaultValues: {
+      awareOfCosts: false,
+      monthlyBudget: '300-600',
+      willCoverVaccines: true,
+      willCoverNeutering: true,
+      willCoverEmergencies: true,
+    },
+  });
+  const intentionForm = useForm<IntentionForm>({
+    resolver: zodResolver(intentionSchema),
+    defaultValues: {
+      reasonToAdopt: '',
+      hoursAloneDaily: 4,
+      ifDestroyed: '',
+      ifSick: '',
+      willAdapt: true,
+    },
+  });
+
   useEffect(() => {
-    async function loadData() {
+    (async () => {
       if (!user) return;
-      
+      setLoading(true);
       try {
-        setLoading(true);
-        console.log('Loading profile data...');
-        const fetchedProfile = await getProfile();
-        
-        if (fetchedProfile) {
-          console.log('Profile data loaded:', fetchedProfile);
-          setProfile(fetchedProfile);
-        } else {
-          console.log('No profile found, creating a default one');
-          setProfile({
-            id: '',
-            firstName: user.user_metadata?.firstName || '',
-            lastName: user.user_metadata?.lastName || '',
-            email: user.email || '',
-            phone: '',
-            address: '',
-            city: '',
-            state: '',
-            zip: '',
-            avatarUrl: '',
-            housingType: 'house',
-            hasChildren: false,
-            childrenAges: '',
-            hadPetsBefore: false,
-            hasAllergies: false,
-            allergiesDescription: '',
-            workSchedule: ''
-          });
-        }
-      } catch (error) {
-        console.error('Error loading profile:', error);
+        const fetched = await getProfile();
+        const base: UserProfile = fetched ?? {
+          id: '',
+          firstName: user.user_metadata?.firstName || '',
+          lastName: user.user_metadata?.lastName || '',
+          email: user.email || '',
+          phone: '',
+          address: '',
+          city: '',
+          state: '',
+          zip: '',
+          avatarUrl: '',
+          housingType: 'house',
+          hasChildren: false,
+          childrenAges: '',
+          hadPetsBefore: false,
+          hasAllergies: false,
+          allergiesDescription: '',
+          workSchedule: '',
+        };
+        setProfile(base);
+        const ext = loadExtended(user.id);
+        setExtended(ext);
+        if (ext.housing) housingForm.reset(ext.housing as HousingForm);
+        if (ext.experience) experienceForm.reset(ext.experience as ExperienceForm);
+        if (ext.financial) financialForm.reset(ext.financial as FinancialForm);
+        if (ext.intention) intentionForm.reset(ext.intention as IntentionForm);
+      } catch (e) {
+        console.error(e);
         toast.error('Erro ao carregar perfil');
       } finally {
         setLoading(false);
       }
-    }
-    
-    loadData();
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
-  
-  async function handleUpdateProfile() {
+
+  const handleSavePersonal = async () => {
     if (!profile) return;
-    
+    setSaving(true);
     try {
-      setSaving(true);
-      const success = await updateProfile(profile);
-      
-      if (success) {
-        toast.success('Perfil atualizado com sucesso!');
-        fetchUserData();
-      }
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast.error('Erro ao atualizar perfil');
+      await updateProfile(profile);
+      fetchUserData();
     } finally {
       setSaving(false);
     }
-  }
-  
+  };
+
+  const persistExtended = (next: ExtendedProfile) => {
+    if (!user?.id) return;
+    setExtended(next);
+    saveExtended(user.id, next);
+    toast.success('Informações salvas');
+  };
+
+  const handleHousing = housingForm.handleSubmit((data) => persistExtended({ ...extended, housing: data }));
+  const handleExperience = experienceForm.handleSubmit((data) => persistExtended({ ...extended, experience: data }));
+  const handleFinancial = financialForm.handleSubmit((data) => persistExtended({ ...extended, financial: data }));
+  const handleIntention = intentionForm.handleSubmit((data) => persistExtended({ ...extended, intention: data }));
+
+  const handleProofUpload = async (kind: 'photo' | 'video', file: File) => {
+    try {
+      const url = await fileToDataUrl(
+        file,
+        kind === 'photo' ? 2 * 1024 * 1024 : 10 * 1024 * 1024,
+        kind === 'photo' ? 'image/' : 'video/'
+      );
+      const next = {
+        ...extended,
+        proof: {
+          ...(extended.proof || {}),
+          [kind === 'photo' ? 'environmentPhotoUrl' : 'environmentVideoUrl']: url,
+        },
+      };
+      persistExtended(next);
+    } catch (e: any) {
+      toast.error(e.message || 'Erro no upload');
+    }
+  };
+
   if (!user) {
     return (
       <Card className="max-w-4xl mx-auto my-8">
@@ -91,246 +181,313 @@ export default function Profile() {
       </Card>
     );
   }
-  
-  if (loading) {
+
+  if (loading || !profile) {
     return (
       <Card className="max-w-4xl mx-auto my-8">
         <CardHeader>
           <CardTitle>Perfil</CardTitle>
           <CardDescription>Carregando suas informações...</CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center p-6">
-          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
-        </CardContent>
       </Card>
     );
   }
-  
-  if (!profile) {
-    return (
-      <Card className="max-w-4xl mx-auto my-8">
-        <CardHeader>
-          <CardTitle>Perfil não encontrado</CardTitle>
-          <CardDescription>Não foi possível carregar suas informações</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={() => window.location.reload()}>
-            Tentar novamente
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  }
-  
+
+  const housingOwn = housingForm.watch('ownership');
+  const housingHasChildren = housingForm.watch('hasChildren');
+  const expHasPets = experienceForm.watch('currentlyHasPets');
+  const reasonLen = intentionForm.watch('reasonToAdopt')?.length ?? 0;
+
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 pt-32">
       <Card className="max-w-4xl mx-auto my-4">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">Seu Perfil</CardTitle>
-          <CardDescription>Mantenha suas informações atualizadas para facilitar o processo de adoção</CardDescription>
+          <CardDescription>
+            Complete todas as etapas para se tornar elegível para adoção.
+          </CardDescription>
         </CardHeader>
-        
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Informações Pessoais</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">Nome</Label>
-                <Input
-                  id="firstName"
-                  value={profile?.firstName || ''}
-                  onChange={(e) => setProfile(profile ? {...profile, firstName: e.target.value} : null)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Sobrenome</Label>
-                <Input
-                  id="lastName"
-                  value={profile?.lastName || ''}
-                  onChange={(e) => setProfile(profile ? {...profile, lastName: e.target.value} : null)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={profile?.email || ''}
-                  disabled
-                />
-                <p className="text-xs text-muted-foreground">
-                  Email não pode ser alterado
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input
-                  id="phone"
-                  value={profile?.phone || ''}
-                  onChange={(e) => setProfile(profile ? {...profile, phone: e.target.value} : null)}
-                  placeholder="(XX) XXXXX-XXXX"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="avatarUrl">URL da Foto de Perfil</Label>
-                <Input
-                  id="avatarUrl"
-                  value={profile?.avatarUrl || ''}
-                  onChange={(e) => setProfile(profile ? {...profile, avatarUrl: e.target.value} : null)}
-                  placeholder="https://..."
-                />
-              </div>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Endereço</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="address">Endereço</Label>
-                <Input
-                  id="address"
-                  value={profile?.address || ''}
-                  onChange={(e) => setProfile(profile ? {...profile, address: e.target.value} : null)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="city">Cidade</Label>
-                <Input
-                  id="city"
-                  value={profile?.city || ''}
-                  onChange={(e) => setProfile(profile ? {...profile, city: e.target.value} : null)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="state">Estado</Label>
-                <Input
-                  id="state"
-                  value={profile?.state || ''}
-                  onChange={(e) => setProfile(profile ? {...profile, state: e.target.value} : null)}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="zip">CEP</Label>
-                <Input
-                  id="zip"
-                  value={profile?.zip || ''}
-                  onChange={(e) => setProfile(profile ? {...profile, zip: e.target.value} : null)}
-                  placeholder="00000-000"
-                />
-              </div>
-            </div>
-          </div>
-          
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Informações para Adoção</h3>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="housingType">Tipo de Moradia</Label>
-                <Select
-                  value={profile?.housingType || 'house'}
-                  onValueChange={(value) => setProfile(profile ? {...profile, housingType: value} : null)}
-                >
-                  <SelectTrigger id="housingType">
-                    <SelectValue placeholder="Selecione o tipo de moradia" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="house">Casa</SelectItem>
-                    <SelectItem value="apartment">Apartamento</SelectItem>
-                    <SelectItem value="other">Outro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="workSchedule">Horário de Trabalho</Label>
-                <Input
-                  id="workSchedule"
-                  value={profile?.workSchedule || ''}
-                  onChange={(e) => setProfile(profile ? {...profile, workSchedule: e.target.value} : null)}
-                  placeholder="Ex: Trabalho remoto, horário comercial, etc"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="hasChildren">Tem Crianças</Label>
-                  <Switch
-                    id="hasChildren"
-                    checked={profile?.hasChildren || false}
-                    onCheckedChange={(checked) => {
-                      setProfile(profile ? {...profile, hasChildren: checked} : null)
-                    }}
-                  />
+        <CardContent>
+          <Tabs defaultValue="personal" className="w-full">
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="personal">Pessoal</TabsTrigger>
+              <TabsTrigger value="housing">Moradia</TabsTrigger>
+              <TabsTrigger value="experience">Experiência</TabsTrigger>
+              <TabsTrigger value="financial">Financeiro</TabsTrigger>
+              <TabsTrigger value="intention">Intenção</TabsTrigger>
+              <TabsTrigger value="proof">Comprovação</TabsTrigger>
+            </TabsList>
+
+            {/* PERSONAL */}
+            <TabsContent value="personal" className="space-y-4 pt-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nome</Label>
+                  <Input value={profile.firstName || ''} onChange={(e) => setProfile({ ...profile, firstName: e.target.value })} />
                 </div>
-                {profile?.hasChildren && (
-                  <Input
-                    placeholder="Idades das crianças"
-                    value={profile?.childrenAges || ''}
-                    onChange={(e) => setProfile(profile ? {...profile, childrenAges: e.target.value} : null)}
-                    className="mt-2"
-                  />
+                <div className="space-y-2">
+                  <Label>Sobrenome</Label>
+                  <Input value={profile.lastName || ''} onChange={(e) => setProfile({ ...profile, lastName: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input value={profile.email} disabled />
+                </div>
+                <div className="space-y-2">
+                  <Label>Telefone</Label>
+                  <Input value={profile.phone || ''} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Endereço</Label>
+                  <Input value={profile.address || ''} onChange={(e) => setProfile({ ...profile, address: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Cidade</Label>
+                  <Input value={profile.city || ''} onChange={(e) => setProfile({ ...profile, city: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Estado</Label>
+                  <Input value={profile.state || ''} onChange={(e) => setProfile({ ...profile, state: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>CEP</Label>
+                  <Input value={profile.zip || ''} onChange={(e) => setProfile({ ...profile, zip: e.target.value })} />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Possui alergia a animais</Label>
+                    <Switch
+                      checked={!!profile.hasAllergies}
+                      onCheckedChange={(checked) => setProfile({ ...profile, hasAllergies: checked, allergiesDescription: checked ? profile.allergiesDescription : '' })}
+                    />
+                  </div>
+                  {profile.hasAllergies && (
+                    <Textarea
+                      placeholder="Descreva a alergia"
+                      value={profile.allergiesDescription || ''}
+                      onChange={(e) => setProfile({ ...profile, allergiesDescription: e.target.value })}
+                    />
+                  )}
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={handleSavePersonal} disabled={saving}>Salvar</Button>
+              </div>
+            </TabsContent>
+
+            {/* HOUSING */}
+            <TabsContent value="housing" className="pt-4">
+              <form onSubmit={handleHousing} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Tipo de moradia</Label>
+                    <Select value={housingForm.watch('type')} onValueChange={(v) => housingForm.setValue('type', v as any)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="house">Casa</SelectItem>
+                        <SelectItem value="apartment">Apartamento</SelectItem>
+                        <SelectItem value="farm">Chácara/sítio</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Imóvel</Label>
+                    <Select value={housingOwn} onValueChange={(v) => housingForm.setValue('ownership', v as any)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="owned">Próprio</SelectItem>
+                        <SelectItem value="rented">Alugado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {housingOwn === 'rented' && (
+                    <div className="md:col-span-2 flex items-center justify-between rounded-md border p-3">
+                      <Label>Aluguel permite animais?</Label>
+                      <Switch
+                        checked={!!housingForm.watch('rentAllowsPets')}
+                        onCheckedChange={(c) => housingForm.setValue('rentAllowsPets', c, { shouldValidate: true })}
+                      />
+                    </div>
+                  )}
+                  {housingForm.formState.errors.rentAllowsPets && (
+                    <p className="text-xs text-destructive md:col-span-2">{housingForm.formState.errors.rentAllowsPets.message}</p>
+                  )}
+
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <Label>Possui quintal?</Label>
+                    <Switch checked={!!housingForm.watch('hasYard')} onCheckedChange={(c) => housingForm.setValue('hasYard', c)} />
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <Label>Quintal é murado?</Label>
+                    <Switch checked={!!housingForm.watch('yardWalled')} onCheckedChange={(c) => housingForm.setValue('yardWalled', c)} />
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <Label>Tela em janelas (gatos)?</Label>
+                    <Switch checked={!!housingForm.watch('hasWindowScreens')} onCheckedChange={(c) => housingForm.setValue('hasWindowScreens', c)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Quantas pessoas moram com você?</Label>
+                    <Input type="number" min={1} {...housingForm.register('numResidents')} />
+                    {housingForm.formState.errors.numResidents && (
+                      <p className="text-xs text-destructive">{housingForm.formState.errors.numResidents.message}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <Label>Tem crianças?</Label>
+                    <Switch checked={!!housingHasChildren} onCheckedChange={(c) => housingForm.setValue('hasChildren', c)} />
+                  </div>
+                  {housingHasChildren && (
+                    <div className="space-y-2 md:col-span-2">
+                      <Label>Idades das crianças</Label>
+                      <Input placeholder="Ex: 5, 8, 12" {...housingForm.register('childrenAges')} />
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-end"><Button type="submit">Salvar moradia</Button></div>
+              </form>
+            </TabsContent>
+
+            {/* EXPERIENCE */}
+            <TabsContent value="experience" className="pt-4">
+              <form onSubmit={handleExperience} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <Label>Já teve pets antes?</Label>
+                    <Switch checked={!!experienceForm.watch('hadPetsBefore')} onCheckedChange={(c) => experienceForm.setValue('hadPetsBefore', c)} />
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <Label>Atualmente tem pets?</Label>
+                    <Switch checked={!!expHasPets} onCheckedChange={(c) => experienceForm.setValue('currentlyHasPets', c)} />
+                  </div>
+                  {expHasPets && (
+                    <>
+                      <div className="space-y-2">
+                        <Label>Quantos?</Label>
+                        <Input type="number" min={0} {...experienceForm.register('currentPetsCount')} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Quais?</Label>
+                        <Input placeholder="Ex: 1 cão SRD, 1 gato" {...experienceForm.register('currentPetsTypes')} />
+                      </div>
+                      <div className="flex items-center justify-between rounded-md border p-3">
+                        <Label>Vacinados?</Label>
+                        <Switch checked={!!experienceForm.watch('petsVaccinated')} onCheckedChange={(c) => experienceForm.setValue('petsVaccinated', c)} />
+                      </div>
+                      <div className="flex items-center justify-between rounded-md border p-3">
+                        <Label>Castrados?</Label>
+                        <Switch checked={!!experienceForm.watch('petsNeutered')} onCheckedChange={(c) => experienceForm.setValue('petsNeutered', c)} />
+                      </div>
+                    </>
+                  )}
+                  <div className="flex items-center justify-between rounded-md border p-3 md:col-span-2">
+                    <Label>Já devolveu algum animal?</Label>
+                    <Switch checked={!!experienceForm.watch('returnedAnimal')} onCheckedChange={(c) => experienceForm.setValue('returnedAnimal', c)} />
+                  </div>
+                </div>
+                <div className="flex justify-end"><Button type="submit">Salvar experiência</Button></div>
+              </form>
+            </TabsContent>
+
+            {/* FINANCIAL */}
+            <TabsContent value="financial" className="pt-4">
+              <form onSubmit={handleFinancial} className="space-y-4">
+                <div className="flex items-center justify-between rounded-md border p-3">
+                  <Label>Está ciente dos custos mensais de um pet?</Label>
+                  <Switch checked={!!financialForm.watch('awareOfCosts')} onCheckedChange={(c) => financialForm.setValue('awareOfCosts', c)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Estimativa de gasto mensal viável</Label>
+                  <Select
+                    value={financialForm.watch('monthlyBudget')}
+                    onValueChange={(v) => financialForm.setValue('monthlyBudget', v as any)}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="100-300">R$ 100–300</SelectItem>
+                      <SelectItem value="300-600">R$ 300–600</SelectItem>
+                      <SelectItem value="600+">R$ 600+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <Label>Vacinas?</Label>
+                    <Switch checked={!!financialForm.watch('willCoverVaccines')} onCheckedChange={(c) => financialForm.setValue('willCoverVaccines', c)} />
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <Label>Castração?</Label>
+                    <Switch checked={!!financialForm.watch('willCoverNeutering')} onCheckedChange={(c) => financialForm.setValue('willCoverNeutering', c)} />
+                  </div>
+                  <div className="flex items-center justify-between rounded-md border p-3">
+                    <Label>Emergências vet.?</Label>
+                    <Switch checked={!!financialForm.watch('willCoverEmergencies')} onCheckedChange={(c) => financialForm.setValue('willCoverEmergencies', c)} />
+                  </div>
+                </div>
+                <div className="flex justify-end"><Button type="submit">Salvar financeiro</Button></div>
+              </form>
+            </TabsContent>
+
+            {/* INTENTION */}
+            <TabsContent value="intention" className="pt-4">
+              <form onSubmit={handleIntention} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Por que deseja adotar? (mín. 1000 caracteres)</Label>
+                  <Textarea rows={8} {...intentionForm.register('reasonToAdopt')} />
+                  <p className={`text-xs ${reasonLen < 1000 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                    {reasonLen}/1000
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Quanto tempo o animal ficaria sozinho por dia (horas)?</Label>
+                  <Input type="number" min={0} max={24} {...intentionForm.register('hoursAloneDaily')} />
+                </div>
+                <div className="space-y-2">
+                  <Label>O que faria se o animal destruísse algo?</Label>
+                  <Textarea {...intentionForm.register('ifDestroyed')} />
+                  {intentionForm.formState.errors.ifDestroyed && (
+                    <p className="text-xs text-destructive">{intentionForm.formState.errors.ifDestroyed.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>O que faria se o animal ficasse doente?</Label>
+                  <Textarea {...intentionForm.register('ifSick')} />
+                  {intentionForm.formState.errors.ifSick && (
+                    <p className="text-xs text-destructive">{intentionForm.formState.errors.ifSick.message}</p>
+                  )}
+                </div>
+                <div className="flex items-center justify-between rounded-md border p-3">
+                  <Label>Está disposto à adaptação inicial?</Label>
+                  <Switch checked={!!intentionForm.watch('willAdapt')} onCheckedChange={(c) => intentionForm.setValue('willAdapt', c)} />
+                </div>
+                {intentionForm.formState.errors.reasonToAdopt && (
+                  <p className="text-xs text-destructive">{intentionForm.formState.errors.reasonToAdopt.message}</p>
+                )}
+                <div className="flex justify-end"><Button type="submit">Salvar intenção</Button></div>
+              </form>
+            </TabsContent>
+
+            {/* PROOF */}
+            <TabsContent value="proof" className="pt-4 space-y-6">
+              <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm flex gap-2">
+                <AlertTriangle className="h-4 w-4 mt-0.5" />
+                <span>Envie comprovação visual do ambiente onde o animal viverá. Reduz drasticamente o risco de adoção mal sucedida.</span>
+              </div>
+              <div className="space-y-2">
+                <Label>Foto do local (máx 2MB)</Label>
+                <Input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && handleProofUpload('photo', e.target.files[0])} />
+                {extended.proof?.environmentPhotoUrl && (
+                  <img src={extended.proof.environmentPhotoUrl} alt="Local" className="mt-2 rounded-md max-h-48 object-cover" />
                 )}
               </div>
-              
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="hadPetsBefore">Já teve pets antes</Label>
-                  <Switch
-                    id="hadPetsBefore"
-                    checked={profile?.hadPetsBefore || false}
-                    onCheckedChange={(checked) => setProfile(profile ? {...profile, hadPetsBefore: checked} : null)}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2 md:col-span-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="hasAllergies">Tem alergias relacionadas a animais</Label>
-                  <Switch
-                    id="hasAllergies"
-                    checked={profile?.hasAllergies || false}
-                    onCheckedChange={(checked) => {
-                      setProfile(profile ? {...profile, hasAllergies: checked} : null)
-                      if (!checked) setProfile({...profile, hasAllergies: false, allergiesDescription: ''})
-                    }}
-                  />
-                </div>
-                {profile?.hasAllergies && (
-                  <Textarea
-                    placeholder="Descreva as alergias"
-                    value={profile?.allergiesDescription || ''}
-                    onChange={(e) => setProfile(profile ? {...profile, allergiesDescription: e.target.value} : null)}
-                    className="mt-2"
-                  />
+                <Label>Vídeo curto do ambiente (máx 10MB)</Label>
+                <Input type="file" accept="video/*" onChange={(e) => e.target.files?.[0] && handleProofUpload('video', e.target.files[0])} />
+                {extended.proof?.environmentVideoUrl && (
+                  <video src={extended.proof.environmentVideoUrl} controls className="mt-2 rounded-md max-h-48" />
                 )}
               </div>
-            </div>
-          </div>
-          
-          <div className="pt-4 flex justify-end">
-            <Button 
-              onClick={handleUpdateProfile}
-              disabled={saving}
-            >
-              {saving ? (
-                <>
-                  <span className="animate-spin mr-2">⏳</span>
-                  Salvando...
-                </>
-              ) : 'Salvar Alterações'}
-            </Button>
-          </div>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
