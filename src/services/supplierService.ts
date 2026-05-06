@@ -43,7 +43,7 @@ export const getSuppliers = async (): Promise<Supplier[]> => {
       return [];
     }
     
-    return data || [];
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('Erro em getSuppliers:', error);
     return [];
