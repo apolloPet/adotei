@@ -34,8 +34,9 @@ const Suppliers = () => {
       setIsLoading(true);
       try {
         const supplierData = await getSuppliers();
-        setSuppliers(supplierData);
-        setFilteredSuppliers(supplierData);
+        const safeData = Array.isArray(supplierData) ? supplierData : [];
+        setSuppliers(safeData);
+        setFilteredSuppliers(safeData);
       } catch (error) {
         console.error('Erro ao buscar fornecedores:', error);
       } finally {
