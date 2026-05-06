@@ -146,10 +146,10 @@ export default function Profile() {
     toast.success('Informações salvas');
   };
 
-  const handleHousing = housingForm.handleSubmit((data) => persistExtended({ ...extended, housing: data }));
-  const handleExperience = experienceForm.handleSubmit((data) => persistExtended({ ...extended, experience: data }));
-  const handleFinancial = financialForm.handleSubmit((data) => persistExtended({ ...extended, financial: data }));
-  const handleIntention = intentionForm.handleSubmit((data) => persistExtended({ ...extended, intention: data }));
+  const handleHousing = housingForm.handleSubmit((data) => persistExtended({ ...extended, housing: data as any }));
+  const handleExperience = experienceForm.handleSubmit((data) => persistExtended({ ...extended, experience: data as any }));
+  const handleFinancial = financialForm.handleSubmit((data) => persistExtended({ ...extended, financial: data as any }));
+  const handleIntention = intentionForm.handleSubmit((data) => persistExtended({ ...extended, intention: data as any }));
 
   const handleProofUpload = async (kind: 'photo' | 'video', file: File) => {
     try {
