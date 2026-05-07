@@ -13,13 +13,15 @@ import {
   Settings, 
   Users, 
   ShieldCheck,
-  Globe
+  Globe,
+  Heart
 } from 'lucide-react';
 import { UsersList } from './admin/users';
 import AdminUserManagement from './admin/AdminUserManagement';
 import PaymentSettings from './admin/PaymentSettings';
 import AnimalRegistrationForm from './admin/animal-registration';
 import WebsiteContentManager from './admin/WebsiteContentManager';
+import AdopterCompatibility from './admin/AdopterCompatibility';
 import { signOut } from '@/services/auth'; 
 import { useAuth } from '@/hooks/auth';
 
@@ -161,6 +163,10 @@ const AdminPanel = ({ onLogout }) => {
             
             <TabsContent value="animals">
               <AnimalRegistrationForm />
+            </TabsContent>
+            
+            <TabsContent value="compatibility">
+              <AdopterCompatibility />
             </TabsContent>
             
             <TabsContent value="website">
