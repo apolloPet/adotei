@@ -13,13 +13,15 @@ import {
   Settings, 
   Users, 
   ShieldCheck,
-  Globe
+  Globe,
+  Heart
 } from 'lucide-react';
 import { UsersList } from './admin/users';
 import AdminUserManagement from './admin/AdminUserManagement';
 import PaymentSettings from './admin/PaymentSettings';
 import AnimalRegistrationForm from './admin/animal-registration';
 import WebsiteContentManager from './admin/WebsiteContentManager';
+import AdopterCompatibility from './admin/AdopterCompatibility';
 import { signOut } from '@/services/auth'; 
 import { useAuth } from '@/hooks/auth';
 
@@ -145,6 +147,10 @@ const AdminPanel = ({ onLogout }) => {
                 <PawPrint className="h-4 w-4" />
                 <span className="hidden sm:inline">Animais</span>
               </TabsTrigger>
+              <TabsTrigger value="compatibility" className="flex items-center gap-1">
+                <Heart className="h-4 w-4" />
+                <span className="hidden sm:inline">Compatibilidade</span>
+              </TabsTrigger>
               <TabsTrigger value="website" className="flex items-center gap-1">
                 <Globe className="h-4 w-4" />
                 <span className="hidden sm:inline">Conteúdo do Site</span>
@@ -161,6 +167,10 @@ const AdminPanel = ({ onLogout }) => {
             
             <TabsContent value="animals">
               <AnimalRegistrationForm />
+            </TabsContent>
+            
+            <TabsContent value="compatibility">
+              <AdopterCompatibility />
             </TabsContent>
             
             <TabsContent value="website">
