@@ -9,6 +9,7 @@ import AnimalCharacteristics from './AnimalCharacteristics';
 import AnimalHealthInfo from './AnimalHealthInfo';
 import AnimalImages from './AnimalImages';
 import AnimalLocationStaff from './AnimalLocationStaff';
+import AnimalAdopterProfile from './AnimalAdopterProfile';
 import AnimalRequirements from './AnimalRequirements';
 import { AnimalFormData } from './types';
 import AnimalList from './AnimalList';
@@ -408,7 +409,14 @@ const AnimalRegistrationForm = () => {
                   )}
                   
                   {currentStep === 6 && (
-                    <AnimalRequirements 
+                    <AnimalAdopterProfile
+                      formData={formData}
+                      onFormChange={handleChangeMultiple}
+                    />
+                  )}
+
+                  {currentStep === 7 && (
+                    <AnimalRequirements
                       formData={formData}
                       onFormChange={handleChangeMultiple}
                     />
