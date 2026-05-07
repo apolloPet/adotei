@@ -147,6 +147,10 @@ const AdminPanel = ({ onLogout }) => {
                 <PawPrint className="h-4 w-4" />
                 <span className="hidden sm:inline">Animais</span>
               </TabsTrigger>
+              <TabsTrigger value="compatibility" className="flex items-center gap-1">
+                <Heart className="h-4 w-4" />
+                <span className="hidden sm:inline">Compatibilidade</span>
+              </TabsTrigger>
               <TabsTrigger value="website" className="flex items-center gap-1">
                 <Globe className="h-4 w-4" />
                 <span className="hidden sm:inline">Conteúdo do Site</span>
