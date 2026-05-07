@@ -41,6 +41,19 @@ export interface AnimalFormData {
   // Requirements
   adoptionRequirements: string[];
   requirements: string[];
+
+  // Adopter matching profile (mirrors user profile fields)
+  suitableHousing: ('house' | 'apartment' | 'farm')[];
+  requiresYard: boolean;
+  requiresWalledYard: boolean;
+  requiresWindowScreens: boolean;
+  allowsRented: boolean;
+  minResidentExperience: 'none' | 'some' | 'experienced';
+  suitableForChildren: boolean;
+  suitableForFirstTimers: boolean;
+  maxHoursAloneDaily: number;
+  estimatedMonthlyCost: '100-300' | '300-600' | '600+';
+  requiresEmergencyBudget: boolean;
 }
 
 export interface FormStep {

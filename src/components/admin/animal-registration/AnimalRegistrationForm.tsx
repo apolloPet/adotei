@@ -48,13 +48,24 @@ const AnimalRegistrationForm = () => {
     responsible: '',
     responsibleContact: '',
     adoptionRequirements: [],
-    requirements: []
+    requirements: [],
+    suitableHousing: ['house', 'apartment', 'farm'],
+    requiresYard: false,
+    requiresWalledYard: false,
+    requiresWindowScreens: false,
+    allowsRented: true,
+    minResidentExperience: 'none',
+    suitableForChildren: true,
+    suitableForFirstTimers: true,
+    maxHoursAloneDaily: 8,
+    estimatedMonthlyCost: '300-600',
+    requiresEmergencyBudget: true,
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stepErrors, setStepErrors] = useState<{[key: number]: string}>({});
   
-  const totalSteps = 6;
+  const totalSteps = 7;
   
   const handleNextStep = () => {
     if (!validateCurrentStep()) return;
@@ -256,7 +267,18 @@ const AnimalRegistrationForm = () => {
         responsible: '',
         responsibleContact: '',
         adoptionRequirements: [],
-        requirements: []
+        requirements: [],
+        suitableHousing: ['house', 'apartment', 'farm'],
+        requiresYard: false,
+        requiresWalledYard: false,
+        requiresWindowScreens: false,
+        allowsRented: true,
+        minResidentExperience: 'none',
+        suitableForChildren: true,
+        suitableForFirstTimers: true,
+        maxHoursAloneDaily: 8,
+        estimatedMonthlyCost: '300-600',
+        requiresEmergencyBudget: true,
       });
       
       // Reset to first step
