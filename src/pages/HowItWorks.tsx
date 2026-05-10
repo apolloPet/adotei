@@ -1,110 +1,213 @@
-import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Heart, MessageCircle, PawPrint, Search, ShieldCheck, User } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { UserPlus, Sparkles, Heart, MessageCircle, PawPrint, ArrowRight, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 const HowItWorks = () => {
+  const navigate = useNavigate();
+
   const steps = [
     {
-      icon: <User className="h-10 w-10 text-primary" />,
-      title: "Crie sua conta",
-      description: "Cadastre-se gratuitamente na plataforma, fornecendo informações sobre você e seu estilo de vida."
+      icon: UserPlus,
+      number: '01',
+      title: 'Crie seu perfil',
+      description: 'Conte sobre você, seu estilo de vida e o tipo de companheiro que está procurando. Leva menos de 2 minutos.',
+      accent: 'rotina, espaço, experiência',
     },
     {
-      icon: <Search className="h-10 w-10 text-primary" />,
-      title: "Encontre um pet",
-      description: "Navegue pelos perfis dos animais disponíveis ou use filtros para encontrar o pet perfeito para você."
+      icon: Sparkles,
+      number: '02',
+      title: 'Encontre pets compatíveis',
+      description: 'Nosso algoritmo cruza seu perfil com centenas de animais resgatados e mostra os matches mais prováveis para você.',
+      accent: 'compatibilidade real, não só fofura',
     },
     {
-      icon: <Heart className="h-10 w-10 text-primary" />,
-      title: "Demonstre interesse",
-      description: "Quando encontrar um animal que goste, solicite um 'match' para demonstrar seu interesse em adotá-lo."
+      icon: Heart,
+      number: '03',
+      title: 'Dê match',
+      description: 'Deslize, curta e demonstre interesse. Quando há match, a ONG é avisada na hora.',
+      accent: 'swipe leve, decisão consciente',
     },
     {
-      icon: <ShieldCheck className="h-10 w-10 text-primary" />,
-      title: "Avaliação da ONG",
-      description: "A ONG responsável pelo animal avaliará seu perfil para garantir que você é um bom match para o pet."
+      icon: MessageCircle,
+      number: '04',
+      title: 'Converse com a ONG',
+      description: 'A ONG entra em contato, tira dúvidas e organiza uma visita ou videochamada para você conhecer o pet.',
+      accent: 'sem burocracia, com cuidado',
     },
     {
-      icon: <MessageCircle className="h-10 w-10 text-primary" />,
-      title: "Conheça o pet",
-      description: "Após a aprovação inicial, você será convidado para conhecer o animal pessoalmente no abrigo."
+      icon: PawPrint,
+      number: '05',
+      title: 'Transforme uma vida',
+      description: 'Levando seu novo amigo pra casa, você muda a história dele — e a sua. Suporte pós-adoção incluído.',
+      accent: 'pra sempre 🐾',
     },
-    {
-      icon: <PawPrint className="h-10 w-10 text-primary" />,
-      title: "Adoção finalizada",
-      description: "Se tudo der certo, você assinará um termo de adoção responsável e levará seu novo amigo para casa!"
-    }
   ];
 
   const faqs = [
     {
-      question: "Há algum custo para adotar um animal pelo PetMatch?",
-      answer: "O PetMatch é uma plataforma gratuita. No entanto, algumas ONGs podem solicitar uma taxa de adoção para cobrir custos com vacinas, castração e cuidados veterinários."
+      question: 'Há algum custo para adotar pelo PetMatch?',
+      answer: 'A plataforma é 100% gratuita para adotantes. Algumas ONGs cobram uma taxa simbólica para cobrir vacinas e castração.',
     },
     {
-      question: "Como sei se um pet é adequado para mim?",
-      answer: "Consideramos vários fatores como seu estilo de vida, espaço em casa, tempo disponível e experiência prévia com animais. Nossa plataforma sugere pets que combinam com seu perfil."
+      question: 'Como sei se um pet combina comigo?',
+      answer: 'Cruzamos seu estilo de vida (rotina, espaço, tempo, experiência) com o perfil de cada animal. Você vê uma % de compatibilidade em cada match.',
     },
     {
-      question: "O que acontece se a adoção não der certo?",
-      answer: "As ONGs parceiras oferecem suporte pós-adoção. Se surgir algum problema, entre em contato imediatamente. Em casos extremos onde a adaptação não é possível, o animal pode retornar à ONG."
+      question: 'Posso adotar morando em apartamento?',
+      answer: 'Sim. Muitos pets se adaptam super bem a apartamentos — o filtro já considera isso na compatibilidade.',
     },
     {
-      question: "Posso adotar se moro em apartamento?",
-      answer: "Sim! Muitos pets se adaptam perfeitamente a apartamentos. O importante é que o animal receba atenção, exercícios adequados e um ambiente seguro."
+      question: 'E se a adaptação não der certo?',
+      answer: 'Oferecemos suporte pós-adoção junto com a ONG parceira. Em casos raros, o pet pode retornar com segurança.',
     },
-    {
-      question: "Como funciona o processo de aprovação?",
-      answer: "As ONGs avaliam fatores como condições de moradia, rotina familiar, experiência com animais e compromisso com a adoção responsável. O objetivo é garantir o bem-estar do animal a longo prazo."
-    }
   ];
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 pt-32 pb-16">
-        <Card className="max-w-4xl mx-auto mb-10">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold">Como Funciona</CardTitle>
-            <CardDescription>Entenda o processo de adoção passo a passo</CardDescription>
-          </CardHeader>
-          
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-8">
-              {steps.map((step, index) => (
-                <div key={index} className="flex gap-4 items-start">
-                  <div className="p-3 rounded-full bg-primary/10 flex-shrink-0">
-                    {step.icon}
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">
-                      <span className="text-primary mr-2">{index + 1}.</span> 
+      <main className="container mx-auto px-4 pt-32 pb-20">
+        {/* Hero */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="max-w-3xl mx-auto text-center mb-20"
+        >
+          <span className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+            </span>
+            onboarding em 5 passos
+          </span>
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6 leading-[1.05]">
+            do swipe ao <span className="text-primary">pra sempre</span>
+          </h1>
+          <p className="text-lg text-muted-foreground leading-relaxed">
+            Um caminho leve, transparente e moderno entre você e seu próximo melhor amigo.
+          </p>
+        </motion.div>
+
+        {/* Timeline */}
+        <div className="relative max-w-4xl mx-auto mb-24">
+          {/* vertical line */}
+          <div
+            aria-hidden
+            className="absolute left-8 md:left-1/2 top-2 bottom-2 w-px bg-gradient-to-b from-primary/40 via-primary/20 to-transparent md:-translate-x-px"
+          />
+
+          <div className="space-y-12 md:space-y-20">
+            {steps.map((step, i) => {
+              const Icon = step.icon;
+              const isLeft = i % 2 === 0;
+              return (
+                <motion.div
+                  key={step.number}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-80px' }}
+                  transition={{ duration: 0.5, delay: 0.05 * i }}
+                  className={`relative grid md:grid-cols-2 gap-6 md:gap-12 items-center ${
+                    isLeft ? '' : 'md:[&>*:first-child]:order-2'
+                  }`}
+                >
+                  {/* Card */}
+                  <div className={`pl-20 md:pl-0 ${isLeft ? 'md:text-right md:pr-8' : 'md:pl-8'}`}>
+                    <span className="text-xs font-mono text-primary/70 tracking-widest">
+                      PASSO {step.number}
+                    </span>
+                    <h3 className="text-2xl md:text-3xl font-bold mt-2 mb-3 leading-tight">
                       {step.title}
                     </h3>
-                    <p className="text-muted-foreground">{step.description}</p>
+                    <p className="text-muted-foreground leading-relaxed mb-3">
+                      {step.description}
+                    </p>
+                    <span
+                      className={`inline-flex items-center gap-1.5 text-xs font-medium text-primary/80 ${
+                        isLeft ? 'md:flex-row-reverse' : ''
+                      }`}
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      {step.accent}
+                    </span>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="max-w-4xl mx-auto">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold">Perguntas Frequentes</CardTitle>
-            <CardDescription>Tire suas dúvidas sobre o processo de adoção</CardDescription>
-          </CardHeader>
-          
-          <CardContent>
-            <div className="space-y-6">
-              {faqs.map((faq, index) => (
-                <div key={index} className="rounded-lg border p-4 hover:bg-secondary/50 transition-colors">
-                  <h3 className="text-lg font-bold mb-2">{faq.question}</h3>
-                  <p className="text-muted-foreground">{faq.answer}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+
+                  {/* Icon node */}
+                  <div
+                    className={`absolute left-0 md:left-1/2 top-0 md:-translate-x-1/2 ${
+                      isLeft ? 'md:order-1' : ''
+                    }`}
+                  >
+                    <motion.div
+                      whileHover={{ scale: 1.08, rotate: 4 }}
+                      transition={{ type: 'spring', stiffness: 300 }}
+                      className="relative"
+                    >
+                      <div className="h-16 w-16 rounded-2xl bg-card border border-border shadow-lg flex items-center justify-center">
+                        <Icon className="h-7 w-7 text-primary" />
+                      </div>
+                      <motion.span
+                        animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }}
+                        transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.3 }}
+                        className="absolute inset-0 rounded-2xl bg-primary/20 -z-10"
+                      />
+                    </motion.div>
+                  </div>
+
+                  {/* Spacer for symmetry on desktop */}
+                  <div className="hidden md:block" />
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* CTA strip */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="max-w-4xl mx-auto rounded-3xl bg-gradient-to-br from-primary/10 via-secondary to-primary/5 border border-primary/20 p-8 md:p-12 text-center mb-24"
+        >
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            pronto pra encontrar seu match?
+          </h2>
+          <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
+            Centenas de pets esperando uma família. O próximo swipe pode mudar tudo.
+          </p>
+          <Button
+            size="lg"
+            className="rounded-full px-8 py-6 text-base shadow-lg shadow-primary/30 hover:scale-[1.02] transition-all"
+            onClick={() => navigate('/browse')}
+          >
+            encontrar meu match
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+        </motion.div>
+
+        {/* FAQ */}
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-3">perguntas frequentes</h2>
+            <p className="text-muted-foreground">tudo o que você precisa saber antes de começar</p>
+          </div>
+          <div className="space-y-4">
+            {faqs.map((faq, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: i * 0.05 }}
+                className="rounded-2xl border border-border bg-card p-6 hover:border-primary/40 transition-colors"
+              >
+                <h3 className="text-lg font-semibold mb-2">{faq.question}</h3>
+                <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       </main>
     </div>
   );
