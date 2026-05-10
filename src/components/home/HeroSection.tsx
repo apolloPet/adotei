@@ -1,10 +1,10 @@
 
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Heart, Sparkles } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/hooks/auth';
 import { useNavigate } from 'react-router-dom';
+import heroPets from '@/assets/hero-pets.jpg';
 
 const HeroSection = () => {
   const { isAuthenticated } = useAuth();
@@ -83,13 +83,47 @@ const HeroSection = () => {
         transition={{ duration: 0.8, delay: 0.2 }}
         className="mt-16 max-w-5xl mx-auto px-4"
       >
-        <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+        <div className="relative rounded-3xl overflow-hidden shadow-2xl">
           <img 
-            src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?ixlib=rb-1.2.1&auto=format&fit=crop&w=1516&q=80" 
-            alt="Cão e gato juntos"
+            src={heroPets}
+            alt="Cão e gato resgatados olhando para a câmera"
+            width={1920}
+            height={1080}
             className="w-full h-auto object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-secondary/40 via-transparent to-transparent"></div>
+
+          <motion.div
+            initial={{ opacity: 0, x: -20, y: 20 }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.8 }}
+            className="hidden sm:flex absolute bottom-6 left-6 items-center gap-3 bg-card/95 backdrop-blur-md rounded-2xl pl-3 pr-5 py-3 shadow-xl border border-border/50"
+          >
+            <div className="relative">
+              <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                <Heart className="h-5 w-5 text-primary fill-primary" />
+              </div>
+              <motion.span
+                animate={{ scale: [1, 1.4, 1], opacity: [0.6, 0, 0.6] }}
+                transition={{ duration: 1.8, repeat: Infinity }}
+                className="absolute inset-0 rounded-full bg-primary/30"
+              />
+            </div>
+            <div className="text-left">
+              <p className="text-xs text-muted-foreground leading-tight">novo match</p>
+              <p className="text-sm font-semibold leading-tight">Bidu + Marina 🎉</p>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20, y: -10 }}
+            animate={{ opacity: 1, x: 0, y: 0 }}
+            transition={{ duration: 0.6, delay: 1 }}
+            className="hidden sm:flex absolute top-6 right-6 items-center gap-2 bg-secondary text-secondary-foreground rounded-full px-4 py-2 shadow-xl"
+          >
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold">92% compatível</span>
+          </motion.div>
         </div>
       </motion.div>
     </section>
