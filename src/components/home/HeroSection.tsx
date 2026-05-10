@@ -27,33 +27,51 @@ const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-              Encontre seu <span className="text-primary">melhor amigo</span>
+            <motion.span
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 mb-6 rounded-full bg-primary/10 text-primary text-sm font-medium border border-primary/20"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+              </span>
+              novos pets toda semana
+            </motion.span>
+
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-[1.05]">
+              um swipe pode <br className="hidden sm:block" />
+              <span className="text-primary">mudar uma vida</span> 🐾
             </h1>
             
-            <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Um app que conecta animais de abrigo a lares cheios de amor. Faça o match perfeito com seu novo companheiro de quatro patas.
+            <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
+              Conectamos animais resgatados a famílias reais através de uma experiência leve, moderna e cheia de afeto. Menos abandono. Mais encontros.
             </p>
             
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
               <Button 
                 size="lg" 
-                className="rounded-full px-8 py-6 text-base"
+                className="rounded-full px-8 py-6 text-base shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.02] transition-all"
                 onClick={() => handleButtonClick('/browse')}
               >
-                Comece a adotar
+                começar a dar match
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               
               <Button 
-                variant="secondary" 
+                variant="ghost" 
                 size="lg" 
-                className="rounded-full px-8 py-6 text-base"
+                className="rounded-full px-8 py-6 text-base hover:bg-secondary/5"
                 onClick={() => handleButtonClick('/browse')}
               >
-                Explorar pets
+                explorar pets
               </Button>
             </div>
+
+            <p className="mt-6 text-sm text-muted-foreground/80">
+              +1.200 adoções realizadas · 100% gratuito para adotantes
+            </p>
           </motion.div>
         </div>
       </div>
