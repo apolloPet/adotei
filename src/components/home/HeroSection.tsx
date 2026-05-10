@@ -1,10 +1,10 @@
 
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Heart, Sparkles } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/hooks/auth';
 import { useNavigate } from 'react-router-dom';
+import heroPets from '@/assets/hero-pets.jpg';
 
 const HeroSection = () => {
   const { isAuthenticated } = useAuth();
