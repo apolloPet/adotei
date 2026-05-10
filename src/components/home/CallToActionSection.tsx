@@ -46,7 +46,7 @@ const CallToActionSection = ({ isVisible }: CallToActionSectionProps) => {
               className="rounded-full px-8 py-6 text-primary text-base"
               onClick={() => navigate('/register')}
             >
-              Criar uma conta
+              criar minha conta
             </Button>
             
             <Button 
@@ -55,7 +55,7 @@ const CallToActionSection = ({ isVisible }: CallToActionSectionProps) => {
               className="rounded-full px-8 py-6 text-white border-white/30 hover:bg-white/10 text-base"
               onClick={() => handleButtonClick('/browse')}
             >
-              Explorar pets
+              ver animais disponíveis
             </Button>
           </div>
         </motion.div>
