@@ -55,7 +55,7 @@ const HeroSection = () => {
                 className="rounded-full px-8 py-6 text-base shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-[1.02] transition-all"
                 onClick={() => handleButtonClick('/browse')}
               >
-                começar a dar match
+                encontrar meu match
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               
