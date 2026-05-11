@@ -60,7 +60,7 @@ const HowItWorksSection = ({ isVisible }: HowItWorksSectionProps) => {
   ];
 
   return (
-    <section id="howItWorks" className="py-24 bg-secondary">
+    <section id="howItWorks" className="py-24 bg-background">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
