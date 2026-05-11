@@ -162,30 +162,6 @@ const HowItWorks = () => {
           </div>
         </div>
 
-        {/* CTA strip */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="max-w-4xl mx-auto rounded-3xl bg-gradient-to-br from-primary/10 via-secondary to-primary/5 border border-primary/20 p-8 md:p-12 text-center mb-24"
-        >
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            pronto pra encontrar seu match?
-          </h2>
-          <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-            Centenas de pets esperando uma família. O próximo swipe pode mudar tudo.
-          </p>
-          <Button
-            size="lg"
-            className="rounded-full px-8 py-6 text-base shadow-lg shadow-primary/30 hover:scale-[1.02] transition-all"
-            onClick={() => navigate('/browse')}
-          >
-            encontrar meu match
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-        </motion.div>
-
         {/* FAQ */}
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
