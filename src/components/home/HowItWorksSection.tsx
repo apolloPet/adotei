@@ -131,7 +131,7 @@ const HowItWorksSection = ({ isVisible }: HowItWorksSectionProps) => {
                           {c.step}
                         </span>
 
-                        {/* Icon frame with geometric texture */}
+                        {/* Icon frame */}
                         <div
                           className={`relative h-24 w-24 mb-6 flex items-center justify-center overflow-hidden ${
                             c.iconShape === 'circle' ? 'rounded-full' : 'rounded-2xl'
@@ -141,14 +141,6 @@ const HowItWorksSection = ({ isVisible }: HowItWorksSectionProps) => {
                             border: `1.5px solid ${NAVY}`,
                           }}
                         >
-                          <div
-                            aria-hidden
-                            className="absolute inset-0 opacity-60"
-                            style={{
-                              backgroundImage: `url("${geoPattern}")`,
-                              backgroundSize: '60px 60px',
-                            }}
-                          />
                           <Icon
                             className="relative h-10 w-10"
                             style={{ color: PURPLE }}
