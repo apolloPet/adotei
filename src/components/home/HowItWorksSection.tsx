@@ -11,32 +11,6 @@ const PURPLE = '#3F3D91';
 const NAVY = '#281F56';
 const MINT = '#00EA7C';
 
-// Subtle geometric texture pattern (triangles + lines) using navy outlines
-const geoPattern = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'>
-    <g fill='none' stroke='${NAVY}' stroke-width='1.2' opacity='0.18'>
-      <path d='M10 60 L25 35 L40 60 Z'/>
-      <path d='M45 20 L65 20 L55 40 Z'/>
-      <path d='M55 65 L70 55 L70 75 Z'/>
-      <path d='M5 15 L20 5'/>
-      <path d='M60 5 L75 12'/>
-    </g>
-  </svg>`
-)}`;
-
-// Bolder geometric pattern for the bottom mint strip
-const stripPattern = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90'>
-    <g fill='none' stroke='${NAVY}' stroke-width='2'>
-      <path d='M5 75 L25 40 L45 75 Z'/>
-      <path d='M50 70 L70 45 L85 75 Z'/>
-      <path d='M30 25 L50 10 L55 35 Z'/>
-      <path d='M0 50 L20 50'/>
-      <path d='M65 18 L85 18'/>
-    </g>
-  </svg>`
-)}`;
-
 const HowItWorksSection = ({ isVisible }: HowItWorksSectionProps) => {
   const cards = [
     {
