@@ -11,32 +11,6 @@ const PURPLE = '#3F3D91';
 const NAVY = '#281F56';
 const MINT = '#00EA7C';
 
-// Subtle geometric texture pattern (triangles + lines) using navy outlines
-const geoPattern = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'>
-    <g fill='none' stroke='${NAVY}' stroke-width='1.2' opacity='0.18'>
-      <path d='M10 60 L25 35 L40 60 Z'/>
-      <path d='M45 20 L65 20 L55 40 Z'/>
-      <path d='M55 65 L70 55 L70 75 Z'/>
-      <path d='M5 15 L20 5'/>
-      <path d='M60 5 L75 12'/>
-    </g>
-  </svg>`
-)}`;
-
-// Bolder geometric pattern for the bottom mint strip
-const stripPattern = `data:image/svg+xml;utf8,${encodeURIComponent(
-  `<svg xmlns='http://www.w3.org/2000/svg' width='90' height='90' viewBox='0 0 90 90'>
-    <g fill='none' stroke='${NAVY}' stroke-width='2'>
-      <path d='M5 75 L25 40 L45 75 Z'/>
-      <path d='M50 70 L70 45 L85 75 Z'/>
-      <path d='M30 25 L50 10 L55 35 Z'/>
-      <path d='M0 50 L20 50'/>
-      <path d='M65 18 L85 18'/>
-    </g>
-  </svg>`
-)}`;
-
 const HowItWorksSection = ({ isVisible }: HowItWorksSectionProps) => {
   const cards = [
     {
@@ -60,7 +34,7 @@ const HowItWorksSection = ({ isVisible }: HowItWorksSectionProps) => {
   ];
 
   return (
-    <section id="howItWorks" className="py-24 bg-secondary">
+    <section id="howItWorks" className="py-24 bg-background">
       <div className="container mx-auto px-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -69,15 +43,7 @@ const HowItWorksSection = ({ isVisible }: HowItWorksSectionProps) => {
           className="relative max-w-6xl mx-auto rounded-[2rem] overflow-hidden border"
           style={{ backgroundColor: CREAM, borderColor: `${NAVY}20` }}
         >
-          {/* Subtle geometric texture across the panel */}
-          <div
-            aria-hidden
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              backgroundImage: `url("${geoPattern}")`,
-              backgroundRepeat: 'repeat',
-            }}
-          />
+
 
           <div className="relative px-6 md:px-14 pt-16 pb-28 md:pb-36">
             {/* Header */}
@@ -139,7 +105,7 @@ const HowItWorksSection = ({ isVisible }: HowItWorksSectionProps) => {
                           {c.step}
                         </span>
 
-                        {/* Icon frame with geometric texture */}
+                        {/* Icon frame */}
                         <div
                           className={`relative h-24 w-24 mb-6 flex items-center justify-center overflow-hidden ${
                             c.iconShape === 'circle' ? 'rounded-full' : 'rounded-2xl'
@@ -149,14 +115,6 @@ const HowItWorksSection = ({ isVisible }: HowItWorksSectionProps) => {
                             border: `1.5px solid ${NAVY}`,
                           }}
                         >
-                          <div
-                            aria-hidden
-                            className="absolute inset-0 opacity-60"
-                            style={{
-                              backgroundImage: `url("${geoPattern}")`,
-                              backgroundSize: '60px 60px',
-                            }}
-                          />
                           <Icon
                             className="relative h-10 w-10"
                             style={{ color: PURPLE }}
@@ -199,21 +157,11 @@ const HowItWorksSection = ({ isVisible }: HowItWorksSectionProps) => {
             </div>
           </div>
 
-          {/* Bottom geometric mint strip */}
+          {/* Bottom mint strip */}
           <div
             className="absolute bottom-0 left-0 right-0 h-16 md:h-20"
             style={{ backgroundColor: MINT }}
-          >
-            <div
-              aria-hidden
-              className="absolute inset-0"
-              style={{
-                backgroundImage: `url("${stripPattern}")`,
-                backgroundRepeat: 'repeat',
-                backgroundSize: '90px 90px',
-              }}
-            />
-          </div>
+          />
         </motion.div>
       </div>
     </section>
