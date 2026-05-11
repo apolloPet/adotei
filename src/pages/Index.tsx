@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import HeroSection from "@/components/home/HeroSection";
 import HowItWorksSection from "@/components/home/HowItWorksSection";
 import BenefitsSection from "@/components/home/BenefitsSection";
-import PartnershipSection from "@/components/home/PartnershipSection";
+/*import PartnershipSection from "@/components/home/PartnershipSection";*/
 import CallToActionSection from "@/components/home/CallToActionSection";
 import Footer from "@/components/home/Footer";
 
@@ -53,7 +53,7 @@ const Index = () => {
       <HeroSection />
       <HowItWorksSection isVisible={isVisible.howItWorks} />
       <BenefitsSection isVisible={isVisible.benefits} />
-      <PartnershipSection isVisible={isVisible.partnership} />
+      {/* <PartnershipSection isVisible={isVisible.partnership} /> */}
       <CallToActionSection isVisible={isVisible.callToAction} />
       <Footer />
     </div>

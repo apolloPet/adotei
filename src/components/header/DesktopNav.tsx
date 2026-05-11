@@ -34,7 +34,7 @@ const DesktopNav = ({ isAdmin, isLoggedIn }: DesktopNavProps) => {
         className={`font-medium hover:text-primary transition-colors flex items-center gap-1 ${isActive('/petmatch') ? 'text-primary' : ''}`}
       >
         <Building2 className="h-4 w-4" />
-        PetMatch
+        Techanimal
       </Link>
       <Link 
         to="/institution" 
@@ -43,13 +43,13 @@ const DesktopNav = ({ isAdmin, isLoggedIn }: DesktopNavProps) => {
         <User className="h-4 w-4" />
         ONG Parceira
       </Link>
-      <Link 
+      {/* <Link 
         to="/contact" 
         className={`font-medium hover:text-primary transition-colors flex items-center gap-1 ${isActive('/contact') ? 'text-primary' : ''}`}
       >
         <Mail className="h-4 w-4" />
         Contato
-      </Link>
+      </Link> */}
       {isAdmin && (
         <Link 
           to="/admin" 

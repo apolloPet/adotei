@@ -147,7 +147,7 @@ const HowItWorksSection = ({ isVisible }: HowItWorksSectionProps) => {
                           className="mt-5 inline-flex items-center gap-1 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity"
                           style={{ color: PURPLE }}
                         >
-                          ver fluxo completo <ArrowRight className="h-3 w-3" />
+                          {/* ver fluxo completo <ArrowRight className="h-3 w-3" /> */}
                         </span>
                       </motion.div>
                     </Link>
