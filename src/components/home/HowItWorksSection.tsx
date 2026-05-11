@@ -157,11 +157,6 @@ const HowItWorksSection = ({ isVisible }: HowItWorksSectionProps) => {
             </div>
           </div>
 
-          {/* Bottom mint strip */}
-          <div
-            className="absolute bottom-0 left-0 right-0 h-16 md:h-20"
-            style={{ backgroundColor: MINT }}
-          />
         </motion.div>
       </div>
     </section>
