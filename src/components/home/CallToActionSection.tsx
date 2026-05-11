@@ -33,8 +33,8 @@ const CallToActionSection = ({ isVisible }: CallToActionSectionProps) => {
   return (
     <section
       id="callToAction"
-      className="relative py-24 bg-primary overflow-hidden"
-      style={{ backgroundImage: `url("${pawPattern}")`, backgroundRepeat: 'repeat' }}
+      className="relative py-24 overflow-hidden"
+      style={{ backgroundColor: '#3F3D91', backgroundImage: `url("${pawPattern}")`, backgroundRepeat: 'repeat' }}
     >
       {/* Swipe card decoration */}
       <div className="hidden md:block absolute top-1/2 -translate-y-1/2 right-8 lg:right-16 pointer-events-none">
