@@ -183,21 +183,11 @@ const HowItWorksSection = ({ isVisible }: HowItWorksSectionProps) => {
             </div>
           </div>
 
-          {/* Bottom geometric mint strip */}
+          {/* Bottom mint strip */}
           <div
             className="absolute bottom-0 left-0 right-0 h-16 md:h-20"
             style={{ backgroundColor: MINT }}
-          >
-            <div
-              aria-hidden
-              className="absolute inset-0"
-              style={{
-                backgroundImage: `url("${stripPattern}")`,
-                backgroundRepeat: 'repeat',
-                backgroundSize: '90px 90px',
-              }}
-            />
-          </div>
+          />
         </motion.div>
       </div>
     </section>
