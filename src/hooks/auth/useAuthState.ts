@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { UserProfile } from '@/types/user';
 import { supabase } from '@/lib/supabase';
@@ -14,8 +14,7 @@ export function useAuthState() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [lastCheck, setLastCheck] = useState(0);
-  const [sessionCheckInterval, setSessionCheckInterval] = useState<number | null>(null);
+  const lastCheckRef = useRef(0);
 
   // Função para verificar se uma sessão está expirada
   const isSessionExpired = (session: Session | null): boolean => {
@@ -35,12 +34,11 @@ export function useAuthState() {
   const fetchUserData = useCallback(async () => {
     // Evitar chamadas em rápida sucessão (debounce)
     const now = Date.now();
-    if (now - lastCheck < 1000) {
+    if (now - lastCheckRef.current < 1000) {
       console.log('Ignorando chamada rápida para fetchUserData');
       return;
     }
-    
-    setLastCheck(now);
+    lastCheckRef.current = now;
     
     try {
       setIsLoading(true);
@@ -227,33 +225,24 @@ export function useAuthState() {
       setIsLoading(false);
       console.log('Verificação de autenticação concluída');
     }
-  }, [lastCheck]);
+  }, []);
 
   // Verificar sessão periodicamente para evitar logout automático
   useEffect(() => {
-    // Inicializar autenticação na montagem
     fetchUserData();
 
-    // Configurar verificação periódica
-    if (!sessionCheckInterval) {
-      const interval = window.setInterval(() => {
-        // Verificar token apenas se o usuário estiver autenticado
-        if (isAuthenticated || localStorage.getItem("isLoggedIn") === "true") {
-          console.log('Verificação periódica de sessão');
-          fetchUserData();
-        }
-      }, 15000); // Verificar a cada 15 segundos (reduzido para maior frequência)
-      
-      setSessionCheckInterval(interval);
-    }
-    
-    // Limpar intervalo na desmontagem
-    return () => {
-      if (sessionCheckInterval) {
-        window.clearInterval(sessionCheckInterval);
+    const interval = window.setInterval(() => {
+      if (localStorage.getItem("isLoggedIn") === "true") {
+        console.log('Verificação periódica de sessão');
+        fetchUserData();
       }
+    }, 60000);
+
+    return () => {
+      window.clearInterval(interval);
     };
-  }, [fetchUserData, isAuthenticated, sessionCheckInterval]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return {
     user,

@@ -14,7 +14,7 @@ interface AdminProtectedRouteProps {
 const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ 
   children 
 }) => {
-  const { user, isAdmin, isLoading, isAuthenticated, fetchUserData } = useAuth();
+  const { user, isAdmin, isLoading, isAuthenticated } = useAuth();
   const [isVerifying, setIsVerifying] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
@@ -28,11 +28,6 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
     const verifyAdmin = async () => {
       try {
         console.log('AdminProtectedRoute: Iniciando verificação de admin');
-        
-        // Se a função fetchUserData existe, chame-a para atualizar o estado global
-        if (fetchUserData) {
-          await fetchUserData();
-        }
         
         // Verificar localStorage primeiro (maior prioridade)
         const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
@@ -180,35 +175,16 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
       }
     }, 3000); // Tempo máximo de 3 segundos para verificar
     
-    // Configurar verificação periódica do status de autenticação
-    const intervalId = setInterval(() => {
-      const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
-      const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-      
-      // Se já foi verificado que é admin, não precisamos continuar verificando
-      if (isVerified) return;
-      
-      // Verificar continuamente a sessão do usuário
-      if (localStorageAdmin && localStorageLoggedIn && isMounted) {
-        console.log('AdminProtectedRoute: Verificação periódica confirmou acesso admin');
-        setIsVerified(true);
-        setIsVerifying(false);
-      } else if (isMounted && !isVerifying) {
-        // Se não está verificando e não é admin, iniciar nova verificação
-        verifyAdmin();
-      }
-    }, 5000); // Verificar a cada 5 segundos
-    
     // Cleanup para evitar operações em componente desmontado
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
-      clearInterval(intervalId);
       if (verificationTimeout) {
         clearTimeout(verificationTimeout);
       }
     };
-  }, [isLoading, user, isAdmin, isAuthenticated, navigate, fetchUserData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   // Se está verificado, renderizar filhos
   if (isVerified) {
