@@ -69,15 +69,7 @@ const HowItWorksSection = ({ isVisible }: HowItWorksSectionProps) => {
           className="relative max-w-6xl mx-auto rounded-[2rem] overflow-hidden border"
           style={{ backgroundColor: CREAM, borderColor: `${NAVY}20` }}
         >
-          {/* Subtle geometric texture across the panel */}
-          <div
-            aria-hidden
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              backgroundImage: `url("${geoPattern}")`,
-              backgroundRepeat: 'repeat',
-            }}
-          />
+
 
           <div className="relative px-6 md:px-14 pt-16 pb-28 md:pb-36">
             {/* Header */}
