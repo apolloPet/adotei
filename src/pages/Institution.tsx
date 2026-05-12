@@ -1,286 +1,234 @@
-
 import React from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Header from "@/components/Header";
 import Footer from "@/components/home/Footer";
-import { Building2, HandHeart, Users, Facebook, Instagram, Twitter, Youtube, Link as LinkIcon } from 'lucide-react';
-import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import {
+  Calendar,
+  PawPrint,
+  ShieldCheck,
+  Target,
+  Home,
+  Network,
+  Users,
+  CheckSquare,
+  Heart,
+  HandHeart,
+  Facebook,
+  Instagram,
+  Twitter,
+  Linkedin,
+  PartyPopper,
+} from 'lucide-react';
+
+const StatCard = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
+  <div className="rounded-2xl border border-pet-primary/30 bg-white p-4 text-center shadow-sm">
+    <Icon className="mx-auto mb-2 h-6 w-6 text-pet-secondary-light" strokeWidth={1.75} />
+    <div className="text-sm font-semibold text-pet-secondary">{label}</div>
+    <div className="mt-1 text-base font-bold text-pet-primary-dark">{value}</div>
+  </div>
+);
+
+const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+  <h2 className="mb-5 text-center text-2xl font-extrabold text-pet-primary-dark">{children}</h2>
+);
+
+const ColumnCard = ({ children }: { children: React.ReactNode }) => (
+  <div className="rounded-3xl bg-white p-6 shadow-md ring-1 ring-pet-secondary/5">{children}</div>
+);
 
 const Institution = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-pet-neutral">
       <Header />
-      
-      <main className="container mx-auto px-4 pt-32 pb-16">
-        <Card className="max-w-4xl mx-auto">
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold">Nossa Instituição</CardTitle>
-            <CardDescription>Conheça mais sobre a ONG e nossos parceiros</CardDescription>
-          </CardHeader>
-          
-          <CardContent>
-            <Tabs defaultValue="about" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="about" className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  <span>A ONG</span>
-                </TabsTrigger>
-                <TabsTrigger value="mission" className="flex items-center gap-2">
-                  <HandHeart className="h-4 w-4" />
-                  <span>Nossa Missão</span>
-                </TabsTrigger>
-                <TabsTrigger value="partners" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  <span>Parceiros</span>
-                </TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="about" className="mt-6 space-y-6">
-                <section>
-                  <h2 className="text-2xl font-bold text-primary mb-3">Quem Somos</h2>
-                  <p className="text-muted-foreground leading-relaxed mb-4">
-                    Somos uma organização não governamental dedicada ao resgate e reabilitação 
-                    de animais abandonados. Fundada em 2015, nossa instituição já ajudou mais 
-                    de 2.000 animais a encontrarem novos lares através de adoção responsável.
-                  </p>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                    <div className="rounded-lg overflow-hidden h-64 bg-muted">
-                      <img 
-                        src="https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=800&auto=format&fit=crop&q=60" 
-                        alt="Voluntários da ONG" 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="rounded-lg overflow-hidden h-64 bg-muted">
-                      <img 
-                        src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&auto=format&fit=crop&q=60" 
-                        alt="Animais resgatados" 
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
+
+      <main className="container mx-auto px-4 pt-28 pb-16">
+        {/* Top banner */}
+        <div className="mx-auto mb-6 max-w-6xl rounded-3xl bg-white p-5 text-center shadow-md ring-1 ring-pet-secondary/5">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-pet-primary-dark">
+            Parceiro: Abrigo Esperança
+          </h1>
+        </div>
+
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* COLUMN 1 — Profile & Impact */}
+          <ColumnCard>
+            <SectionTitle>Perfil e Impacto</SectionTitle>
+
+            {/* Logo placeholder */}
+            <div className="mb-4 flex h-32 items-center justify-center rounded-2xl bg-pet-neutral">
+              <div className="flex flex-col items-center text-pet-secondary/60">
+                <PawPrint className="h-10 w-10" strokeWidth={1.5} />
+                <span className="mt-1 text-xs font-medium">Logo da ONG</span>
+              </div>
+            </div>
+
+            {/* Founder */}
+            <div className="mb-6 flex items-center gap-3">
+              <img
+                src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=60"
+                alt="Fundadora Ana Silva"
+                className="h-14 w-14 rounded-full object-cover ring-2 ring-pet-primary/40"
+              />
+              <div>
+                <div className="text-xs text-pet-secondary/70">Fundadora</div>
+                <div className="font-bold text-pet-secondary">Ana Silva</div>
+              </div>
+            </div>
+
+            <h3 className="mb-3 text-center text-lg font-extrabold text-pet-secondary">
+              Impact Highlights
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <StatCard icon={Calendar} label="Fundada em:" value="2015" />
+              <StatCard icon={PawPrint} label="Resgates:" value="+2.000 Vidas" />
+              <StatCard icon={ShieldCheck} label="Fundação:" value="Sede Própria" />
+              <StatCard icon={Target} label="Foco:" value="Adoção Responsável" />
+            </div>
+
+            <h3 className="mt-6 mb-3 text-center text-lg font-extrabold text-pet-secondary">
+              Quem Somos
+            </h3>
+            <p className="text-center text-sm leading-relaxed text-pet-secondary/80">
+              Somos uma ONG dedicada ao resgate e reabilitação de animais abandonados. Fundada em
+              2015, já ajudamos mais de 2.000 animais a encontrarem um novo lar através da adoção
+              responsável — transformando uma ação pontual em uma missão de vida.
+            </p>
+          </ColumnCard>
+
+          {/* COLUMN 2 — History & Structure */}
+          <ColumnCard>
+            <SectionTitle>Nossa História & Estrutura</SectionTitle>
+
+            <h3 className="mb-4 text-center text-lg font-extrabold text-pet-secondary">
+              Nossa História
+            </h3>
+
+            {/* Timeline */}
+            <div className="relative pl-6">
+              <div className="absolute left-2 top-2 bottom-2 w-px bg-pet-primary/40" />
+              <div className="relative">
+                <span className="absolute -left-[18px] top-1.5 h-3 w-3 rounded-full bg-pet-primary ring-4 ring-pet-primary/20" />
+                <div className="rounded-2xl bg-pet-neutral p-4">
+                  <div className="mb-1 flex items-center justify-between">
+                    <h4 className="font-bold text-pet-secondary">2015: Fundação</h4>
+                    <PartyPopper className="h-4 w-4 text-pet-primary-dark" />
                   </div>
-                </section>
-                
-                <section>
-                  <h2 className="text-2xl font-bold text-primary mb-3">Nossa História</h2>
-                  <p className="text-muted-foreground leading-relaxed">
-                    Tudo começou quando nossa fundadora, Ana Silva, resgatou um grupo de filhotes 
-                    abandonados em um terreno baldio. Sem ter para onde levá-los, ela mobilizou 
-                    amigos e familiares para cuidar dos animais enquanto buscavam adotantes. 
-                    O que era para ser uma ação pontual se transformou em uma missão de vida, 
-                    e assim nasceu nossa ONG.
+                  <p className="text-sm leading-relaxed text-pet-secondary/80">
+                    Tudo começou quando Ana Silva resgatou um grupo de filhotes abandonados.
+                    Mobilizou amigos e familiares para cuidar dos animais enquanto buscava
+                    adotantes. O que era uma ação pontual virou uma missão de vida — e nasceu
+                    nossa ONG.
                   </p>
-                </section>
-                
-                <section>
-                  <h2 className="text-2xl font-bold text-primary mb-3">Nossa Estrutura</h2>
-                  <p className="text-muted-foreground leading-relaxed">
-                    Hoje contamos com um abrigo próprio com capacidade para acolher até 100 animais, 
-                    uma rede de mais de 50 lares temporários e uma equipe de 15 funcionários e 
-                    mais de 80 voluntários. Realizamos feiras de adoção mensais e trabalhamos 
-                    constantemente em campanhas de castração e vacinação em comunidades carentes.
-                  </p>
-                </section>
-                
-                <section>
-                  <h2 className="text-2xl font-bold text-primary mb-3">Redes Sociais</h2>
-                  <p className="text-muted-foreground leading-relaxed mb-4">
-                    Siga-nos nas redes sociais para acompanhar nosso trabalho, conhecer os animais disponíveis
-                    para adoção e ficar por dentro das nossas ações e eventos.
-                  </p>
-                  
-                  <div className="flex flex-wrap gap-3">
-                    <Button variant="outline" className="gap-2" asChild>
-                      <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">
-                        <Facebook className="h-4 w-4" />
-                        <span>Facebook</span>
-                      </a>
-                    </Button>
-                    
-                    <Button variant="outline" className="gap-2" asChild>
-                      <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
-                        <Instagram className="h-4 w-4" />
-                        <span>Instagram</span>
-                      </a>
-                    </Button>
-                    
-                    <Button variant="outline" className="gap-2" asChild>
-                      <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
-                        <Twitter className="h-4 w-4" />
-                        <span>Twitter</span>
-                      </a>
-                    </Button>
-                    
-                    <Button variant="outline" className="gap-2" asChild>
-                      <a href="https://youtube.com" target="_blank" rel="noopener noreferrer">
-                        <Youtube className="h-4 w-4" />
-                        <span>YouTube</span>
-                      </a>
-                    </Button>
-                    
-                    <Button variant="outline" className="gap-2" asChild>
-                      <a href="https://techanimal.org" target="_blank" rel="noopener noreferrer">
-                        <LinkIcon className="h-4 w-4" />
-                        <span>Site Oficial</span>
-                      </a>
-                    </Button>
-                  </div>
-                </section>
-              </TabsContent>
-              
-              <TabsContent value="mission" className="mt-6 space-y-6">
-                <section>
-                  <h2 className="text-2xl font-bold text-primary mb-3">O Que Fazemos</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Resgate</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                          Atuamos no resgate de animais em situação de abandono, maus-tratos 
-                          ou risco, oferecendo atendimento veterinário imediato e reabilitação.
-                        </p>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Reabilitação</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                          Oferecemos tratamento veterinário, alimentação adequada e socialização 
-                          para preparar os animais para adoção.
-                        </p>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-lg">Adoção Responsável</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-sm text-muted-foreground">
-                          Promovemos a adoção consciente, com acompanhamento pós-adoção 
-                          para garantir o bem-estar dos animais em seus novos lares.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </section>
-                
-                <section>
-                  <h2 className="text-2xl font-bold text-primary mb-3">Programas Especiais</h2>
-                  <ul className="list-disc pl-6 text-muted-foreground space-y-2">
-                    <li><span className="font-semibold">Castração Solidária</span>: Oferecemos castração a preço social para famílias de baixa renda.</li>
-                    <li><span className="font-semibold">Educação nas Escolas</span>: Visitamos escolas para ensinar sobre guarda responsável e bem-estar animal.</li>
-                    <li><span className="font-semibold">Adote um Idoso</span>: Programa especial para incentivar a adoção de animais seniores.</li>
-                    <li><span className="font-semibold">Apadrinhamento</span>: Possibilidade de ajudar um animal específico enquanto ele aguarda adoção.</li>
-                  </ul>
-                </section>
-                
-                <section>
-                  <h2 className="text-2xl font-bold text-primary mb-3">Impacto Social</h2>
-                  <p className="text-muted-foreground leading-relaxed">
-                    Além do impacto direto na vida dos animais, nosso trabalho gera transformação 
-                    social nas comunidades onde atuamos. Através da educação e conscientização, 
-                    buscamos criar uma cultura de respeito e responsabilidade para com os animais, 
-                    reduzindo abandono e maus-tratos.
-                  </p>
-                </section>
-              </TabsContent>
-              
-              <TabsContent value="partners" className="mt-6 space-y-6">
-                <section>
-                  <h2 className="text-2xl font-bold text-primary mb-3">Nossos Parceiros</h2>
-                  <p className="text-muted-foreground leading-relaxed mb-6">
-                    Nosso trabalho só é possível graças aos parceiros que acreditam em nossa causa 
-                    e nos apoiam de diferentes formas. Conheça alguns deles:
-                  </p>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <div className="flex flex-col items-center">
-                      <div className="w-32 h-32 bg-muted rounded-lg flex items-center justify-center mb-4">
-                        <span className="text-primary font-bold">Pet Clinic</span>
-                      </div>
-                      <h3 className="font-medium">Clínica Veterinária Pet Clinic</h3>
-                      <p className="text-sm text-muted-foreground text-center mt-1">
-                        Oferece desconto em consultas e cirurgias para nossos animais.
-                      </p>
-                    </div>
-                    
-                    <div className="flex flex-col items-center">
-                      <div className="w-32 h-32 bg-muted rounded-lg flex items-center justify-center mb-4">
-                        <span className="text-primary font-bold">PetFood</span>
-                      </div>
-                      <h3 className="font-medium">PetFood Brasil</h3>
-                      <p className="text-sm text-muted-foreground text-center mt-1">
-                        Doação mensal de ração para nosso abrigo.
-                      </p>
-                    </div>
-                    
-                    <div className="flex flex-col items-center">
-                      <div className="w-32 h-32 bg-muted rounded-lg flex items-center justify-center mb-4">
-                        <span className="text-primary font-bold">UniVet</span>
-                      </div>
-                      <h3 className="font-medium">Universidade UniVet</h3>
-                      <p className="text-sm text-muted-foreground text-center mt-1">
-                        Estudantes de veterinária realizam estágio voluntário em nosso abrigo.
-                      </p>
-                    </div>
-                    
-                    <div className="flex flex-col items-center">
-                      <div className="w-32 h-32 bg-muted rounded-lg flex items-center justify-center mb-4">
-                        <span className="text-primary font-bold">Pet Shop</span>
-                      </div>
-                      <h3 className="font-medium">Rede de Pet Shops Amigo Fiel</h3>
-                      <p className="text-sm text-muted-foreground text-center mt-1">
-                        Espaço para divulgação dos nossos animais e ponto de coleta de doações.
-                      </p>
-                    </div>
-                    
-                    <div className="flex flex-col items-center">
-                      <div className="w-32 h-32 bg-muted rounded-lg flex items-center justify-center mb-4">
-                        <span className="text-primary font-bold">Transportes</span>
-                      </div>
-                      <h3 className="font-medium">Transportadora Expressa</h3>
-                      <p className="text-sm text-muted-foreground text-center mt-1">
-                        Transporte gratuito de doações e animais entre cidades.
-                      </p>
-                    </div>
-                    
-                    <div className="flex flex-col items-center">
-                      <div className="w-32 h-32 bg-muted rounded-lg flex items-center justify-center mb-4">
-                        <span className="text-primary font-bold">Seu Logo</span>
-                      </div>
-                      <h3 className="font-medium">Torne-se um Parceiro</h3>
-                      <p className="text-sm text-muted-foreground text-center mt-1">
-                        Entre em contato para conhecer nossas oportunidades de parceria.
-                      </p>
-                    </div>
-                  </div>
-                </section>
-                
-                <section>
-                  <h2 className="text-2xl font-bold text-primary mb-3">Como se Tornar um Parceiro</h2>
-                  <p className="text-muted-foreground leading-relaxed">
-                    Há diversas formas de apoiar nosso trabalho como empresa parceira. Você pode 
-                    oferecer produtos ou serviços, disponibilizar espaço para divulgação, 
-                    patrocinar eventos ou até mesmo adotar o apadrinhamento de um animal específico. 
-                    Entre em contato conosco para conversarmos sobre a melhor forma de parceria 
-                    para sua empresa.
-                  </p>
-                </section>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+                </div>
+              </div>
+            </div>
+
+            <h3 className="mt-6 mb-4 text-center text-lg font-extrabold text-pet-secondary">
+              Nossa Estrutura
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <StatCard icon={Home} label="Sede:" value="Abrigo Próprio (+100)" />
+              <StatCard icon={Network} label="Rede:" value="+50 Lares Temp." />
+              <StatCard icon={Users} label="Equipe:" value="15 Func. + 80 Vol." />
+              <StatCard icon={CheckSquare} label="Atividades:" value="Feiras & Castração" />
+            </div>
+          </ColumnCard>
+
+          {/* COLUMN 3 — Gallery & Connection */}
+          <ColumnCard>
+            <SectionTitle>Galeria e Conexão</SectionTitle>
+
+            <figure className="mb-3">
+              <img
+                src="https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=600&auto=format&fit=crop&q=60"
+                alt="Olhar de Gratidão"
+                className="h-40 w-full rounded-2xl object-cover"
+              />
+              <figcaption className="mt-1 text-center text-xs font-medium text-pet-secondary/80">
+                Olhar de Gratidão
+              </figcaption>
+            </figure>
+
+            <figure className="mb-3">
+              <img
+                src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=600&auto=format&fit=crop&q=60"
+                alt="Novos Amigos em Liberdade"
+                className="h-32 w-full rounded-2xl object-cover"
+              />
+              <figcaption className="mt-1 text-center text-xs font-medium text-pet-secondary/80">
+                Novos Amigos em Liberdade
+              </figcaption>
+            </figure>
+
+            <div className="mb-4 grid grid-cols-2 gap-3">
+              <figure>
+                <img
+                  src="https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=400&auto=format&fit=crop&q=60"
+                  alt="Amor e Cuidado"
+                  className="h-24 w-full rounded-2xl object-cover"
+                />
+                <figcaption className="mt-1 text-center text-xs font-medium text-pet-secondary/80">
+                  Amor e Cuidado
+                </figcaption>
+              </figure>
+              <figure>
+                <img
+                  src="https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&auto=format&fit=crop&q=60"
+                  alt="Um Lar para Sempre"
+                  className="h-24 w-full rounded-2xl object-cover"
+                />
+                <figcaption className="mt-1 text-center text-xs font-medium text-pet-secondary/80">
+                  Um Lar para Sempre
+                </figcaption>
+              </figure>
+            </div>
+
+            {/* Social */}
+            <h3 className="mb-1 text-center text-lg font-extrabold text-pet-secondary">
+              Redes Sociais
+            </h3>
+            <p className="mb-3 text-center text-sm text-pet-secondary/70">
+              Conecte-se: <span className="font-semibold">@AbrigoEsperanca</span>
+            </p>
+            <div className="mb-6 flex justify-center gap-3">
+              {[
+                { Icon: Instagram, href: 'https://instagram.com', label: 'Instagram' },
+                { Icon: Facebook, href: 'https://facebook.com', label: 'Facebook' },
+                { Icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
+                { Icon: Linkedin, href: 'https://linkedin.com', label: 'LinkedIn' },
+              ].map(({ Icon, href, label }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={label}
+                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-pet-secondary text-white transition hover:bg-pet-secondary-light"
+                >
+                  <Icon className="h-5 w-5" />
+                </a>
+              ))}
+            </div>
+
+            {/* CTAs */}
+            <h3 className="mb-3 text-center text-lg font-extrabold text-pet-secondary">
+              Botão de Ação
+            </h3>
+            <Button
+              className="mb-2 h-12 w-full rounded-full bg-pet-primary text-pet-secondary font-bold text-base shadow-md hover:bg-pet-primary-dark hover:text-white"
+            >
+              <Heart className="mr-2 h-5 w-5" /> Apadrinhe um Animal
+            </Button>
+            <Button
+              variant="outline"
+              className="h-10 w-full rounded-full border-pet-secondary/30 text-pet-secondary hover:bg-pet-neutral"
+            >
+              <HandHeart className="mr-2 h-4 w-4" /> Faça uma Doação
+            </Button>
+          </ColumnCard>
+        </div>
       </main>
-      
+
       <Footer />
     </div>
   );
