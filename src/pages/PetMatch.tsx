@@ -14,7 +14,7 @@ const PetMatch = () => {
                 <Building2 className="h-12 w-12 text-primary" />
               </div>
             </div>
-            <CardTitle className="text-3xl font-bold">PetMatch</CardTitle>
+            <CardTitle className="text-3xl font-bold">Adotei</CardTitle>
             <CardDescription>Conectando corações e patinhas desde 2023</CardDescription>
           </CardHeader>
           
@@ -22,7 +22,7 @@ const PetMatch = () => {
             <section>
               <h2 className="text-2xl font-bold text-primary mb-3">Nossa Empresa</h2>
               <p className="text-muted-foreground leading-relaxed">
-                A PetMatch é uma startup inovadora focada em criar soluções tecnológicas para 
+                A Adotei é uma startup inovadora focada em criar soluções tecnológicas para 
                 facilitar a adoção de animais em todo o Brasil. Fundada em 2023, nossa empresa 
                 surgiu da paixão de um grupo de desenvolvedores e amantes de animais que 
                 acreditam no poder da tecnologia para resolver problemas sociais.
@@ -84,15 +84,15 @@ const PetMatch = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="flex items-center space-x-3">
                   <Mail className="h-5 w-5 text-primary" />
-                  <span className="text-muted-foreground">contato@petmatch.com.br</span>
+                  <span className="text-muted-foreground">contato@adotei.com.br</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Instagram className="h-5 w-5 text-primary" />
-                  <span className="text-muted-foreground">@petmatch_brasil</span>
+                  <span className="text-muted-foreground">@adotei_brasil</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Globe className="h-5 w-5 text-primary" />
-                  <span className="text-muted-foreground">www.petmatch.com.br</span>
+                  <span className="text-muted-foreground">www.adotei.com.br</span>
                 </div>
               </div>
             </section>

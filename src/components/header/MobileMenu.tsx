@@ -93,7 +93,7 @@ const MobileMenu = ({
               onClick={handleLinkClick}
             >
               <Building2 className="h-4 w-4 mr-2" />
-              PetMatch
+              Adotei
             </Link>
             <Link 
               to="/institution" 

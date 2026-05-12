@@ -109,7 +109,7 @@ const PartnersSection = ({ isVisible }: PartnersSectionProps) => {
               ))}
             </svg>
 
-            {/* Center: PetMatch hub */}
+            {/* Center: Adotei hub */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               whileInView={{ opacity: 1, scale: 1 }}
@@ -132,7 +132,7 @@ const PartnersSection = ({ isVisible }: PartnersSectionProps) => {
                   <div className="text-center">
                     <div className="text-2xl md:text-3xl font-bold leading-none">🐾</div>
                     <div className="text-[10px] md:text-xs font-semibold tracking-wider mt-1">
-                      PETMATCH
+                      ADOTEI
                     </div>
                   </div>
                 </div>

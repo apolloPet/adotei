@@ -42,7 +42,7 @@ const Institution = () => {
         {/* Top banner */}
         <div className="mx-auto mb-6 max-w-6xl rounded-3xl bg-white p-5 text-center shadow-md ring-1 ring-pet-secondary/5">
           <h1 className="text-2xl md:text-3xl font-extrabold text-pet-primary-dark">
-            Parceiro: Abrigo Esperança
+            Ong Clube amigo dos animais
           </h1>
         </div>
 
@@ -73,7 +73,7 @@ const Institution = () => {
             </div>
 
             <h3 className="mb-3 text-center text-lg font-extrabold text-pet-secondary">
-              Impact Highlights
+              Melhores momentos
             </h3>
             <div className="grid grid-cols-2 gap-3">
               <StatCard icon={Calendar} label="Fundada em:" value="2015" />

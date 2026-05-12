@@ -8,16 +8,16 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-4">
-            <h3 className="font-bold text-xl">PetMatch</h3>
+            <h3 className="font-bold text-xl">Adotei</h3>
             <p className="text-muted-foreground text-sm">Conectando corações e patinhas desde 2023.</p>
             <div className="flex items-center space-x-4">
-              <a href="https://instagram.com/petmatch" className="text-muted-foreground hover:text-primary transition-colors">
+              <a href="https://instagram.com/adotei_brasil" className="text-muted-foreground hover:text-primary transition-colors">
                 <Instagram className="h-5 w-5" />
               </a>
-              <a href="mailto:contato@petmatch.com.br" className="text-muted-foreground hover:text-primary transition-colors">
+              <a href="mailto:contato@adotei.com.br" className="text-muted-foreground hover:text-primary transition-colors">
                 <Mail className="h-5 w-5" />
               </a>
-              <a href="https://www.petmatch.com.br" className="text-muted-foreground hover:text-primary transition-colors">
+              <a href="https://www.adotei.com.br" className="text-muted-foreground hover:text-primary transition-colors">
                 <Globe className="h-5 w-5" />
               </a>
             </div>
@@ -74,15 +74,15 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-center text-muted-foreground">
                 <Mail className="h-4 w-4 mr-2 text-primary" />
-                contato@petmatch.com.br
+                contato@adotei.com.br
               </li>
               <li className="flex items-center text-muted-foreground">
                 <Instagram className="h-4 w-4 mr-2 text-primary" />
-                @petmatch_brasil
+                @adotei_brasil
               </li>
               <li className="flex items-center text-muted-foreground">
                 <Globe className="h-4 w-4 mr-2 text-primary" />
-                www.petmatch.com.br
+                www.adotei.com.br
               </li>
               <li className="flex items-center text-muted-foreground">
                 <Phone className="h-4 w-4 mr-2 text-primary" />
@@ -93,7 +93,7 @@ const Footer = () => {
         </div>
         
         <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground text-sm">
-          <p>© {new Date().getFullYear()} PetMatch. Todos os direitos reservados.</p>
+          <p>© {new Date().getFullYear()} Adotei. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>

@@ -46,7 +46,7 @@ const HowItWorks = () => {
 
   const faqs = [
     {
-      question: 'Há algum custo para adotar pelo PetMatch?',
+      question: 'Há algum custo para adotar pelo Adotei?',
       answer: 'A plataforma é 100% gratuita para adotantes. Algumas ONGs cobram uma taxa simbólica para cobrir vacinas e castração.',
     },
     {
