@@ -1,6 +1,5 @@
 import { MapPin, Sparkles, Clock, Syringe, Scissors, Heart, Star } from 'lucide-react';
-import { Badge } from "@/components/ui/badge";
-import { Pet, PetInfo, getPetColors } from '@/types/pets';
+import { Pet, PetInfo } from '@/types/pets';
 
 interface PetInfoOverlayProps {
   pet: Pet | PetInfo;
@@ -17,7 +16,7 @@ const hash = (s: string) => {
 const PetInfoOverlay = ({ pet }: PetInfoOverlayProps) => {
   const isPet = 'species' in pet;
   const petSpecies = isPet ? (pet as Pet).species : (pet as PetInfo).type === 'dog' ? 'dog' : 'cat';
-  const petColors = getPetColors(petSpecies as 'dog' | 'cat');
+  
 
   const seed = hash(pet.id || pet.name);
   const compatibility = 70 + (seed % 30); // 70-99
