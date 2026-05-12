@@ -1,5 +1,4 @@
 import React from 'react';
-import Header from "@/components/Header";
 import Footer from "@/components/home/Footer";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,8 +38,6 @@ const ColumnCard = ({ children }: { children: React.ReactNode }) => (
 const Institution = () => {
   return (
     <div className="min-h-screen bg-pet-neutral">
-      <Header />
-
       <main className="container mx-auto px-4 pt-28 pb-16">
         {/* Top banner */}
         <div className="mx-auto mb-6 max-w-6xl rounded-3xl bg-white p-5 text-center shadow-md ring-1 ring-pet-secondary/5">
