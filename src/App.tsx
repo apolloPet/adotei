@@ -6,6 +6,7 @@ import Contact from './pages/Contact'
 import NotFound from './pages/NotFound'
 import HowItWorks from './pages/HowItWorks'
 import Register from './pages/Register'
+import Login from './pages/Login'
 import Browse from './pages/Browse'
 import PetDetails from './pages/PetDetails'
 import './App.css'
@@ -52,6 +53,7 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/how-it-works" element={<HowItWorks />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/browse" element={<Browse />} />
         <Route path="/pets/:id" element={<PetDetails />} />
         <Route path="/match" element={<PetMatch />} />
