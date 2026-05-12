@@ -60,9 +60,9 @@ const HeroSection = () => {
               </Button>
               
               <Button 
-                variant="ghost" 
+                variant="outline" 
                 size="lg" 
-                className="rounded-full px-8 py-6 text-base hover:bg-secondary/5"
+                className="rounded-full px-8 py-6 text-base font-semibold border-2 border-pet-secondary text-pet-secondary bg-white/80 backdrop-blur-sm hover:bg-pet-secondary hover:text-white hover:border-pet-secondary hover:scale-[1.02] hover:shadow-lg hover:shadow-pet-secondary/30 transition-all"
                 onClick={() => handleButtonClick('/browse')}
               >
                 explorar pets
