@@ -1,4 +1,4 @@
-import { Heart, X, Info, Bookmark } from 'lucide-react';
+import { PawPrint, X, Info, Bookmark } from 'lucide-react';
 
 interface ActionButtonsProps {
   onLike: () => void;
@@ -10,9 +10,9 @@ interface ActionButtonsProps {
 
 const ActionButtons = ({ onLike, onDislike, onInfo, onSave, isDetailsOpen = false }: ActionButtonsProps) => {
   if (isDetailsOpen) return null;
-  
+
   return (
-    <div className="absolute bottom-4 left-0 right-0 flex justify-center items-center space-x-3 z-20">
+    <div className="absolute -bottom-8 left-0 right-0 flex justify-center items-center gap-3 z-20">
       <button
         className="w-12 h-12 rounded-full bg-white text-red-500 shadow-lg flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95"
         onClick={onDislike}
@@ -32,11 +32,11 @@ const ActionButtons = ({ onLike, onDislike, onInfo, onSave, isDetailsOpen = fals
       )}
 
       <button
-        className="w-14 h-14 rounded-full bg-white text-green-500 shadow-lg flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95"
+        className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-xl shadow-primary/40 ring-4 ring-primary/20 flex items-center justify-center transform transition-all hover:scale-110 active:scale-95"
         onClick={onLike}
         aria-label="Curtir"
       >
-        <Heart className="h-7 w-7 fill-green-500" />
+        <PawPrint className="h-8 w-8 fill-current" />
       </button>
 
       <button
