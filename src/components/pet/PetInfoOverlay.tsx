@@ -68,9 +68,11 @@ const PetInfoOverlay = ({ pet }: PetInfoOverlayProps) => {
         <span className="bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-1 font-medium">
           {pet.size === 'small' ? 'P' : pet.size === 'medium' ? 'M' : 'G'}
         </span>
-        <span className="bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-1 font-medium">
-          {personality}
-        </span>
+        {personality && (
+          <span className="bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-1 font-medium">
+            {personality}
+          </span>
+        )}
         {isVaccinated && (
           <span className="inline-flex items-center gap-1 bg-primary/30 border border-primary/40 rounded-full px-2 py-1" title="Vacinado">
             <Syringe className="h-4 w-4" />
