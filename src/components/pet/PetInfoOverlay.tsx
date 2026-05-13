@@ -16,16 +16,20 @@ const hash = (s: string) => {
 const PetInfoOverlay = ({ pet }: PetInfoOverlayProps) => {
   const isPet = 'species' in pet;
   const petSpecies = isPet ? (pet as Pet).species : (pet as PetInfo).type === 'dog' ? 'dog' : 'cat';
-  
 
   const seed = hash(pet.id || pet.name);
+  // Compatibility is computed (no source of truth yet) — falls back to deterministic seed
   const compatibility = 70 + (seed % 30); // 70-99
-  const waitingDays = 30 + (seed % 300);
-  const traits = (pet as Pet).traits || [];
-  const personality = traits[0] || (seed % 2 === 0 ? 'Dócil' : 'Brincalhão');
-  const isVaccinated = true;
-  const isNeutered = seed % 3 !== 0;
-  const isSpecial = (pet as Pet).specialNeeds || (pet as Pet).healthIssues;
+
+  const petAsPet = pet as Pet;
+  const waitingDays = typeof petAsPet.daysWaiting === 'number'
+    ? petAsPet.daysWaiting
+    : 30 + (seed % 300);
+  const traits = petAsPet.traits || (pet as PetInfo).personality || [];
+  const personality = traits[0];
+  const isVaccinated = petAsPet.vaccinated ?? true;
+  const isNeutered = petAsPet.neutered ?? (seed % 3 !== 0);
+  const isSpecial = petAsPet.specialNeeds || petAsPet.healthIssues;
 
   return (
     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-4 pt-16 pb-16 text-white z-10">
@@ -64,9 +68,11 @@ const PetInfoOverlay = ({ pet }: PetInfoOverlayProps) => {
         <span className="bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-1 font-medium">
           {pet.size === 'small' ? 'P' : pet.size === 'medium' ? 'M' : 'G'}
         </span>
-        <span className="bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-1 font-medium">
-          {personality}
-        </span>
+        {personality && (
+          <span className="bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-1 font-medium">
+            {personality}
+          </span>
+        )}
         {isVaccinated && (
           <span className="inline-flex items-center gap-1 bg-primary/30 border border-primary/40 rounded-full px-2 py-1" title="Vacinado">
             <Syringe className="h-4 w-4" />

@@ -27,4 +27,7 @@ export interface Pet extends Omit<BasePetInfo, 'type'> {
   healthIssues?: boolean;
   shelter: string;
   traits: string[];
+  vaccinated?: boolean;
+  neutered?: boolean;
+  daysWaiting?: number;
 }
