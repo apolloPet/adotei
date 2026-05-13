@@ -1,144 +1,60 @@
-## Visão geral
+# Auditoria: cadastros vs. cartão do animal vs. exigências do adotante
 
-Implementar três grandes mudanças:
+Fiz um cruzamento entre os 3 pontos do fluxo:
+1. **Cadastro do animal** (`AnimalRegistrationForm` + abas)
+2. **Cartão do animal** (`PetInfoOverlay` em `/browse`)
+3. **Cadastro do adotante** (`RegisterForm`, passos 3 e 4)
 
-1. **Página `/browse`**: adicionar ação "Salvar" (acompanhar) além de curtir/passar.
-2. **Página `/profile`**: expandir cadastro com perfil de moradia, experiência, finanças, intenção, comprovação (upload de foto/vídeo) e validação.
-3. **Match inteligente + alertas para admins** baseados no perfil.
+## O que está OK
 
----
+- O **adotante** já informa moradia, área útil, acesso externo, controle de fugas, crianças, alergias, outros pets, horas sozinho, viagens, rotina e compromissos financeiros.
+- O **cadastro do animal** já tem a aba "Perfil ideal do adotante" com requisitos espelhados (moradia, quintal, telas, experiência, horas sozinho, custo mensal, reserva de emergência) — então o match cobre o que o adotante declara.
+- Características, vacinação, castração, necessidades especiais e condições de saúde estão presentes no formulário do animal.
 
-## 1. `/browse` — botão Salvar
+## Lacunas que precisam ser corrigidas
 
-- Adicionar 4º botão "Salvar" (ícone `Bookmark`) em `src/components/pet/ActionButtons.tsx`.
-- Estender `onSwipe` em `PetCard.tsx` e `PetBrowser.tsx` para aceitar uma terceira ação `'saved'` (além de `'left'`/`'right'`).
-- Em `Browse.tsx`, novo handler chama `recordPetMatch(id, userId, 'saved')`.
-- Atualizar `recordPetMatch` em `src/services/adoptionService.ts` para suportar status `'saved'` no localStorage mock.
-- Toast: "Animal salvo para acompanhar 🔖".
+### 1. Cartão do animal mostra dados falsos (hash do id)
+Hoje `PetInfoOverlay` deriva por hash do id:
+- `personality` (Dócil/Brincalhão fixos)
+- `isVaccinated = true` sempre
+- `isNeutered` aleatório
+- `isSpecial` lê campos que nunca chegam no Pet
 
-## 2. `/profile` — cadastro expandido
+**Causa**: `src/utils/animalAdapter.ts` ignora `characteristics`, `vaccinationStatus`, `sterilized`, `specialNeeds`, `healthConditions`. Só repassa `castrado` como trait.
 
-Expandir `UserProfile` (`src/types/user.ts`) com novos campos agrupados:
-
-```text
-housing: {
-  type: 'house' | 'apartment' | 'farm'
-  ownership: 'owned' | 'rented'
-  rentAllowsPets?: boolean
-  hasYard: boolean
-  yardWalled?: boolean
-  hasWindowScreens?: boolean
-  numResidents: number
-  hasChildren: boolean
-  childrenAges?: string
-}
-experience: {
-  hadPetsBefore: boolean
-  currentlyHasPets: boolean
-  currentPetsCount?: number
-  currentPetsTypes?: string
-  returnedAnimal: boolean
-  petsVaccinated?: boolean
-  petsNeutered?: boolean
-}
-financial: {
-  awareOfCosts: boolean
-  monthlyBudget: '100-300' | '300-600' | '600+'
-  willCoverVaccines: boolean
-  willCoverNeutering: boolean
-  willCoverEmergencies: boolean
-}
-intention: {
-  reasonToAdopt: string  // min 1000 chars
-  hoursAloneDaily: number
-  ifDestroyed: string
-  ifSick: string
-  willAdapt: boolean
-}
-proof: {
-  environmentPhotoUrl?: string
-  environmentVideoUrl?: string
-}
-hasAllergies: boolean
+### 2. `Animal`/`AnimalCreateData` (camada de dados) descarta campos
+No `AnimalRegistrationForm` (linha 212), o save monta:
 ```
-
-Refatorar `src/pages/Profile.tsx` em formulário multi-step com Tabs (Moradia / Experiência / Finanças / Intenção / Comprovação) usando `react-hook-form` + `zod` para validação:
-
-- `reasonToAdopt`: mínimo 1000 caracteres.
-- `rentAllowsPets`: obrigatório se `ownership === 'rented'`.
-- Campos required por seção.
-
-Persistência: salvar em `localStorage` via mock supabase (`profiles` table do offline client) e em `user_profile_extended` key.
-
-Uploads: como estamos em modo offline (sem storage), aceitar arquivo e converter para base64/data URL salva no localStorage (com aviso de tamanho máx 2MB para foto, 10MB para vídeo).
-
-## 3. Match inteligente
-
-Criar `src/utils/petMatchFilter.ts`:
-
-```ts
-filterPetsForUser(pets: Pet[], profile: UserProfile): Pet[]
+castrado, vacinas: [vaccinationStatus], descricao, fotos…
 ```
+e **perde**: `characteristics`, `specialNeeds`, `specialNeedsDescription`, `healthConditions`, `veterinaryInfo`, `adoptionRequirements`, e **toda a aba "Perfil ideal do adotante"** (suitableHousing, requiresYard, suitableForChildren, maxHoursAloneDaily, estimatedMonthlyCost, requiresEmergencyBudget, etc).
 
-Regras:
-- `housing.type === 'apartment'` → remover pets `size === 'large'`.
-- `!housing.hasWindowScreens` + pet `species === 'cat'` → marcar pet com `requirementWarning` ("requer tela em janelas").
-- `!experience.hadPetsBefore` → priorizar pets com traits dóceis (ordenar por personalidade dócil).
-- `housing.ownership === 'rented' && !housing.rentAllowsPets` → não mostrar nenhum pet, exibir mensagem de bloqueio.
+Sem esses campos persistidos, o match inteligente entre adotante e animal não funciona — apenas exibe a UI.
 
-Aplicar no `loadPets` de `Browse.tsx` após gerar mocks.
+### 3. "Tempo de espera" no cartão é falso
+`waitingDays` vem do hash do id. Deveria vir de `data_cadastro`.
 
-Exibir banner em `Browse.tsx` quando o pet exige requisito que o usuário não atende.
+## Mudanças propostas
 
-## 4. Alertas para admins
+**A. Frontend (cartão + adapter)** — escopo seguro, sem tocar no banco:
+1. Estender o tipo `Pet` (`src/types/pets/interfaces.ts`) com `vaccinated`, `neutered`, `daysWaiting` opcionais.
+2. Atualizar `animalAdapter.ts` para mapear:
+   - `characteristics` → `traits`
+   - `sterilized` → `neutered`
+   - `vaccinationStatus in ['complete','partial']` → `vaccinated`
+   - `specialNeeds` → `specialNeeds`
+   - `healthConditions.length > 0` → `healthIssues`
+   - `data_cadastro` → `daysWaiting`
+3. Atualizar `PetInfoOverlay` para usar esses campos em vez do hash (mantendo fallback para mock data).
+4. Atualizar `mockPets.ts` para gerar valores coerentes com os novos campos.
 
-Criar `src/utils/profileAlerts.ts`:
+**B. Persistência** — para o match funcionar de verdade:
+1. Estender `AnimalCreateData`/`Animal` (`animalService.ts`) com os campos que hoje são descartados.
+2. Atualizar o `INSERT` da tabela `animais` para gravá-los (provavelmente como JSON em uma coluna `perfil_match` para evitar uma migração extensa de schema).
+3. Atualizar `AnimalRegistrationForm` para enviar esses campos.
 
-```ts
-getProfileAlerts(profile: UserProfile): Alert[]
-```
+**C. Não vou mexer em**: schema do banco propriamente dito. Como o memory indica que o BD da Lovable Cloud está vazio, qualquer migração precisa de decisão sua antes.
 
-Alertas:
-- 🔴 Mora em aluguel e não permite pets
-- 🟠 Já devolveu animal
-- 🟠 Não aceita custos veterinários (qualquer um dos 3 false)
-- 🟡 Possui alergia
+## Pergunta
 
-Exibir esses alertas no card do candidato em `src/components/admin/adoption/MatchCard.tsx` (badge colorido + lista no modal de detalhes).
-
----
-
-## Detalhes técnicos
-
-- **Validação**: `zod` schemas em `src/lib/schemas/profile.ts`, um por seção, combinados em schema final.
-- **Persistência offline**: estendemos `offlineSupabase` para a tabela `profiles` aceitar o JSON estendido em uma coluna `extended_profile` (jsonb simulado).
-- **Tipos**: atualizar `UserProfile` em `src/types/user.ts` mantendo backward compat (campos antigos ficam como aliases dos novos).
-- **Upload offline**: helper `fileToDataUrl(file): Promise<string>` em `src/utils/fileUpload.ts` com validação de tamanho/tipo.
-
-## Arquivos a criar
-
-- `src/lib/schemas/profile.ts`
-- `src/utils/petMatchFilter.ts`
-- `src/utils/profileAlerts.ts`
-- `src/utils/fileUpload.ts`
-- `src/components/profile/HousingForm.tsx`
-- `src/components/profile/ExperienceForm.tsx`
-- `src/components/profile/FinancialForm.tsx`
-- `src/components/profile/IntentionForm.tsx`
-- `src/components/profile/ProofForm.tsx`
-
-## Arquivos a editar
-
-- `src/components/pet/ActionButtons.tsx` (botão Salvar)
-- `src/components/PetCard.tsx` (handler save)
-- `src/components/browse/PetBrowser.tsx` (propagar save)
-- `src/pages/Browse.tsx` (recordPetMatch 'saved' + filtro inteligente + bloqueio aluguel)
-- `src/services/adoptionService.ts` (status 'saved')
-- `src/pages/Profile.tsx` (form multi-tab)
-- `src/types/user.ts` (nova estrutura)
-- `src/components/admin/adoption/MatchCard.tsx` (alertas)
-
-## Fora do escopo (a confirmar depois)
-
-- Notificação real à ONG quando alguém curte (continua só toast local).
-- Backend real para uploads — vamos usar data URL no localStorage por enquanto (modo offline).
+Quer que eu execute **A** (corrigir o cartão para refletir o cadastro — visual imediato), **A + B sem migração** (gravando o perfil de match como JSON em uma coluna existente ou nova via migração leve), ou **A + B + migração completa** com colunas tipadas?
