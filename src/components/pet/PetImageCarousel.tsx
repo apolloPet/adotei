@@ -67,22 +67,32 @@ const PetImageCarousel = ({ images, petName }: PetImageCarouselProps) => {
             type="button"
             onClick={(e) => { e.stopPropagation(); prevImage(); }}
             aria-label="Foto anterior"
-            className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/70 hover:bg-white text-foreground backdrop-blur-sm shadow-md flex items-center justify-center transition-all opacity-80 hover:opacity-100 z-10"
+            className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/80 hover:bg-white text-foreground backdrop-blur-sm shadow-md items-center justify-center transition-all opacity-90 hover:opacity-100 z-20"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-6 w-6" />
           </button>
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); nextImage(); }}
             aria-label="Próxima foto"
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/70 hover:bg-white text-foreground backdrop-blur-sm shadow-md flex items-center justify-center transition-all opacity-80 hover:opacity-100 z-10"
+            className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/80 hover:bg-white text-foreground backdrop-blur-sm shadow-md items-center justify-center transition-all opacity-90 hover:opacity-100 z-20"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-6 w-6" />
           </button>
 
-          {/* Tap zones for mobile (behind buttons) */}
-          <div className="absolute inset-y-0 left-0 w-1/3" onClick={(e) => { e.stopPropagation(); prevImage(); }} />
-          <div className="absolute inset-y-0 right-0 w-1/3" onClick={(e) => { e.stopPropagation(); nextImage(); }} />
+          {/* Tap zones for mobile — larger areas, only top 70% to avoid info overlay */}
+          <button
+            type="button"
+            aria-label="Foto anterior"
+            onClick={(e) => { e.stopPropagation(); prevImage(); }}
+            className="absolute top-0 left-0 h-[70%] w-2/5 z-10 bg-transparent"
+          />
+          <button
+            type="button"
+            aria-label="Próxima foto"
+            onClick={(e) => { e.stopPropagation(); nextImage(); }}
+            className="absolute top-0 right-0 h-[70%] w-2/5 z-10 bg-transparent"
+          />
         </>
       )}
     </div>
