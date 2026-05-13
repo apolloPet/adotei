@@ -60,6 +60,8 @@ const buildPetFromMatch = (match: AdoptionMatch): Pet => {
     primaryImage: match.petImage,
     shelter: '—',
     traits: [],
+    description: '',
+    location: '—',
   };
 };
 
