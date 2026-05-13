@@ -18,6 +18,7 @@ import { AdoptionStage } from "@/components/adoption/AdoptionStages";
 import { AdoptionMatch } from './types';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AdoptionDetailsPanel from './AdoptionDetailsPanel';
 
 interface AdoptionManagementProps {
   // Define any props here
