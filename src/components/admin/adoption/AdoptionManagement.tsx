@@ -18,6 +18,7 @@ import { AdoptionStage } from "@/components/adoption/AdoptionStages";
 import { AdoptionMatch } from './types';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import AdoptionDetailsPanel from './AdoptionDetailsPanel';
 
 interface AdoptionManagementProps {
   // Define any props here
@@ -376,17 +377,19 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
       </Dialog>
       
       <Dialog open={showStageDialog} onOpenChange={setShowStageDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Atualizar Estágio de Adoção</DialogTitle>
+            <DialogTitle>Análise da Solicitação de Adoção</DialogTitle>
             <DialogDescription>
               {selectedAdoption && (
                 <>Adoção: {selectedAdoption.petName} por {selectedAdoption.userName}</>
               )}
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4 py-4">
+            {selectedAdoption && <AdoptionDetailsPanel match={selectedAdoption} />}
+
             <div className="space-y-2">
               <h4 className="font-medium">Estágio Atual</h4>
               <Badge variant={selectedAdoption ? getStageColor(selectedAdoption.currentStage) : "secondary"}>

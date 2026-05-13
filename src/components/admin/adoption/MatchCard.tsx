@@ -22,6 +22,7 @@ import MatchCompatibilityDialog from './MatchCompatibilityDialog';
 import SchedulingDialog from './SchedulingDialog';
 import { getProfileAlerts } from '@/utils/profileAlerts';
 import { UserProfile } from '@/types/user';
+import AdoptionDetailsPanel from './AdoptionDetailsPanel';
 
 const loadExtendedFor = (userId: string) => {
   try {
@@ -221,47 +222,13 @@ const MatchCard = ({
           )}
 
           {expanded && (
-            <div className="mt-4 pt-4 border-t">
-              <div className="mb-4">
+            <div className="mt-4 pt-4 border-t space-y-4">
+              <div>
                 <h4 className="text-sm font-medium mb-2">Estágios da Adoção</h4>
                 <AdoptionTimeline currentStage={match.currentStage} />
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Dados do Adotante</h4>
-                  <ul className="text-sm space-y-1">
-                    <li><span className="text-muted-foreground">Nome:</span> {match.userName}</li>
-                    <li><span className="text-muted-foreground">Email:</span> {match.userEmail}</li>
-                    <li><span className="text-muted-foreground">Telefone:</span> {match.userPhone}</li>
-                  </ul>
-                </div>
-                
-                <div>
-                  <h4 className="text-sm font-medium mb-2">Informações da Adoção</h4>
-                  <ul className="text-sm space-y-1">
-                    <li>
-                      <span className="text-muted-foreground">Interesse inicial:</span> {formatDate(match.matchDate || match.createdAt)}
-                      {isMatchInterest && (
-                        <span className="text-rose-500 ml-1">
-                          <Heart className="h-3 w-3 inline fill-rose-500" /> via Match
-                        </span>
-                      )}
-                    </li>
-                    <li><span className="text-muted-foreground">Última atualização:</span> {formatDate(match.updatedAt)}</li>
-                    <li><span className="text-muted-foreground">Responsável:</span> {match.responsibleName || "Não atribuído"}</li>
-                    
-                    {match.animal_id && (
-                      <li><span className="text-muted-foreground">ID Animal Importado:</span> {match.animal_id}</li>
-                    )}
-                  </ul>
-                </div>
-              </div>
-              
-              <div className="mt-4">
-                <h4 className="text-sm font-medium mb-2">Observações</h4>
-                <p className="text-sm text-muted-foreground whitespace-pre-line">{match.notes || "Nenhuma observação registrada."}</p>
-              </div>
+
+              <AdoptionDetailsPanel match={match} />
             </div>
           )}
         </div>
