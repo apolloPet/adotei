@@ -103,14 +103,6 @@ const MobileMenu = ({
               <User className="h-4 w-4 mr-2" />
               ONG Parceira
             </Link>
-            <Link 
-              to="/contact" 
-              className="flex items-center font-medium text-lg hover:text-primary transition-colors"
-              onClick={handleLinkClick}
-            >
-              <Mail className="h-4 w-4 mr-2" />
-              Contato
-            </Link>
             {isAdmin && (
               <Link 
                 to="/admin" 
