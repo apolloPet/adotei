@@ -30,13 +30,13 @@ const PetInfoOverlay = ({ pet }: PetInfoOverlayProps) => {
   return (
     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-4 pt-16 pb-16 text-white z-10">
       {/* Top row: compact compatibility + waiting */}
-      <div className="flex items-center gap-2 mb-2 text-[11px]">
-        <span className="inline-flex items-center gap-1 bg-primary/90 backdrop-blur-sm rounded-full px-2 py-0.5 font-semibold">
-          <Sparkles className="h-3 w-3" />
+      <div className="flex items-center gap-2 mb-2 text-sm">
+        <span className="inline-flex items-center gap-1.5 bg-primary/90 backdrop-blur-sm rounded-full px-2.5 py-1 font-semibold">
+          <Sparkles className="h-4 w-4" />
           {compatibility}%
         </span>
-        <span className="inline-flex items-center gap-1 text-white/75">
-          <Clock className="h-3 w-3" />
+        <span className="inline-flex items-center gap-1.5 text-white/85">
+          <Clock className="h-4 w-4" />
           {waitingDays}d
         </span>
       </div>
@@ -54,32 +54,32 @@ const PetInfoOverlay = ({ pet }: PetInfoOverlayProps) => {
       </div>
 
       {/* Single compact info row */}
-      <div className="flex flex-wrap items-center gap-1.5 mt-2 text-[11px]">
-        <span className="bg-white/15 backdrop-blur-sm rounded-full px-2 py-0.5">
+      <div className="flex flex-wrap items-center gap-2 mt-2.5 text-sm">
+        <span className="bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-1 font-medium">
           {isPet ? (pet as Pet).age : `${(pet as PetInfo).age}a`}
         </span>
-        <span className="bg-white/15 backdrop-blur-sm rounded-full px-2 py-0.5">
+        <span className="bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-1 font-medium">
           {pet.gender === 'male' ? '♂' : '♀'}
         </span>
-        <span className="bg-white/15 backdrop-blur-sm rounded-full px-2 py-0.5">
+        <span className="bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-1 font-medium">
           {pet.size === 'small' ? 'P' : pet.size === 'medium' ? 'M' : 'G'}
         </span>
-        <span className="bg-white/15 backdrop-blur-sm rounded-full px-2 py-0.5">
+        <span className="bg-white/15 backdrop-blur-sm rounded-full px-2.5 py-1 font-medium">
           {personality}
         </span>
         {isVaccinated && (
-          <span className="inline-flex items-center gap-0.5 bg-primary/30 border border-primary/40 rounded-full px-1.5 py-0.5" title="Vacinado">
-            <Syringe className="h-3 w-3" />
+          <span className="inline-flex items-center gap-1 bg-primary/30 border border-primary/40 rounded-full px-2 py-1" title="Vacinado">
+            <Syringe className="h-4 w-4" />
           </span>
         )}
         {isNeutered && (
-          <span className="inline-flex items-center gap-0.5 bg-white/15 border border-white/20 rounded-full px-1.5 py-0.5" title="Castrado">
-            <Scissors className="h-3 w-3" />
+          <span className="inline-flex items-center gap-1 bg-white/15 border border-white/20 rounded-full px-2 py-1" title="Castrado">
+            <Scissors className="h-4 w-4" />
           </span>
         )}
         {isSpecial && (
-          <span className="inline-flex items-center gap-0.5 bg-accent/30 border border-accent/40 rounded-full px-1.5 py-0.5" title="Especial">
-            <Star className="h-3 w-3" />
+          <span className="inline-flex items-center gap-1 bg-accent/30 border border-accent/40 rounded-full px-2 py-1" title="Especial">
+            <Star className="h-4 w-4" />
           </span>
         )}
       </div>
