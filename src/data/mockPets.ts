@@ -46,6 +46,8 @@ export const generateMockPets = (count = 12): Pet[] => {
       ? pickMany(catImages, 3)
       : pickMany([...dogImages, ...catImages], 3);
     const name = isDog ? pick(dogNames) : isCat ? pick(catNames) : pick([...dogNames, ...catNames]);
+    const specialNeeds = Math.random() > 0.85;
+    const healthIssues = Math.random() > 0.9;
     return {
       id: `mock-${i}-${Math.random().toString(36).slice(2, 8)}`,
       name,
@@ -62,10 +64,13 @@ export const generateMockPets = (count = 12): Pet[] => {
       location: pick(cities),
       images,
       primaryImage: images[0],
-      specialNeeds: Math.random() > 0.85,
-      healthIssues: Math.random() > 0.9,
+      specialNeeds,
+      healthIssues,
       shelter: pick(shelters),
       traits: pickMany(traitsPool, 3),
+      vaccinated: Math.random() > 0.15,
+      neutered: Math.random() > 0.35,
+      daysWaiting: 7 + Math.floor(Math.random() * 365),
     };
   });
 };
