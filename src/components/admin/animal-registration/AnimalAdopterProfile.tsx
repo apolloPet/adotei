@@ -151,6 +151,9 @@ const AnimalAdopterProfile = ({ formData, onFormChange }: AnimalAdopterProfilePr
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="maxHoursAloneDaily">Máx. horas sozinho por dia</Label>
+          <p className="text-xs text-muted-foreground">
+            Cães muito sociais sofrem com longos períodos sozinhos — ajuda a evitar ansiedade de separação.
+          </p>
           <Input
             id="maxHoursAloneDaily"
             type="number"
@@ -163,6 +166,9 @@ const AnimalAdopterProfile = ({ formData, onFormChange }: AnimalAdopterProfilePr
 
         <div className="space-y-2">
           <Label>Custo mensal estimado</Label>
+          <p className="text-xs text-muted-foreground">
+            Garante que o adotante tenha condições financeiras compatíveis com o porte e necessidades do animal.
+          </p>
           <RadioGroup
             value={formData.estimatedMonthlyCost}
             onValueChange={(v) => onFormChange({ estimatedMonthlyCost: v as AnimalFormData['estimatedMonthlyCost'] })}
