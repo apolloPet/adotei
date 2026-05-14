@@ -184,7 +184,7 @@ const AnimalRegistrationForm = () => {
     
     if (formData.previewImages.length === 0) {
       toast.error("É necessário adicionar pelo menos uma foto do animal");
-      setCurrentStep(4);
+      setCurrentStep(1);
       return false;
     }
     
