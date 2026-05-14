@@ -108,47 +108,39 @@ const AnimalRegistrationForm = () => {
   
   const validateCurrentStep = (): boolean => {
     switch (currentStep) {
-      case 1: // Basic Info
+      case 1: // Identificação + Fotos
         if (!formData.name.trim()) {
-          setStepErrors({...stepErrors, 1: "Nome do animal é obrigatório"});
+          setStepErrors({ ...stepErrors, 1: "Nome do animal é obrigatório" });
           toast.error("Nome do animal é obrigatório");
           return false;
         }
-        
         if (!formData.breed.trim()) {
-          setStepErrors({...stepErrors, 1: "Raça do animal é obrigatória"});
+          setStepErrors({ ...stepErrors, 1: "Raça do animal é obrigatória" });
           toast.error("Raça do animal é obrigatória");
           return false;
         }
-        
         if (!formData.age.trim()) {
-          setStepErrors({...stepErrors, 1: "Idade do animal é obrigatória"});
+          setStepErrors({ ...stepErrors, 1: "Idade do animal é obrigatória" });
           toast.error("Idade do animal é obrigatória");
           return false;
         }
-        
         if (!formData.description.trim()) {
-          setStepErrors({...stepErrors, 1: "Descrição do animal é obrigatória"});
+          setStepErrors({ ...stepErrors, 1: "Descrição do animal é obrigatória" });
           toast.error("Descrição do animal é obrigatória");
           return false;
         }
-        
         if (formData.description.trim().length < 20) {
-          setStepErrors({...stepErrors, 1: "A descrição deve ter pelo menos 20 caracteres"});
+          setStepErrors({ ...stepErrors, 1: "A descrição deve ter pelo menos 20 caracteres" });
           toast.error("A descrição deve ter pelo menos 20 caracteres");
           return false;
         }
-        break;
-        
-      case 4: // Images
         if (formData.previewImages.length === 0) {
-          setStepErrors({...stepErrors, 4: "É necessário adicionar pelo menos uma foto do animal"});
+          setStepErrors({ ...stepErrors, 1: "É necessário adicionar pelo menos uma foto do animal" });
           toast.error("É necessário adicionar pelo menos uma foto do animal");
           return false;
         }
         break;
     }
-    
     return true;
   };
   
