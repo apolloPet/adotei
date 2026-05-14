@@ -364,57 +364,69 @@ const AnimalRegistrationForm = () => {
                   </Alert>
                 )}
                 
-                <div className="space-y-4">
+                <div className="mb-4">
+                  <h3 className="text-base font-semibold">
+                    Passo {currentStep} de {totalSteps}: {stepTitles[currentStep - 1]}
+                  </h3>
+                </div>
+
+                <div className="space-y-8">
                   {currentStep === 1 && (
-                    <AnimalBasicInfo 
-                      formData={formData}
-                      onFormChange={handleChangeMultiple}
-                    />
-                  )}
-                  
-                  {currentStep === 2 && (
-                    <AnimalCharacteristics 
-                      formData={formData}
-                      onFormChange={handleChangeMultiple}
-                    />
-                  )}
-                  
-                  {currentStep === 3 && (
-                    <AnimalHealthInfo 
-                      formData={formData}
-                      onFormChange={handleChangeMultiple}
-                    />
-                  )}
-                  
-                  {currentStep === 4 && (
-                    <AnimalImages 
-                      images={formData.images}
-                      previewImages={formData.previewImages}
-                      onChange={(images, previews) => {
-                        handleChangeMultiple({
-                          images,
-                          previewImages: previews
-                        });
-                      }}
-                    />
-                  )}
-                  
-                  {currentStep === 5 && (
-                    <AnimalLocationStaff 
-                      formData={formData}
-                      onFormChange={handleChangeMultiple}
-                    />
-                  )}
-                  
-                  {currentStep === 6 && (
-                    <AnimalAdopterProfile
-                      formData={formData}
-                      onFormChange={handleChangeMultiple}
-                    />
+                    <>
+                      <AnimalBasicInfo
+                        formData={formData}
+                        onFormChange={handleChangeMultiple}
+                      />
+                      <div className="pt-6 border-t">
+                        <h4 className="text-sm font-semibold mb-3">Fotos do animal</h4>
+                        <AnimalImages
+                          images={formData.images}
+                          previewImages={formData.previewImages}
+                          onChange={(images, previews) => {
+                            handleChangeMultiple({
+                              images,
+                              previewImages: previews,
+                            });
+                          }}
+                        />
+                      </div>
+                    </>
                   )}
 
-                  {currentStep === 7 && (
-                    <AnimalRequirements
+                  {currentStep === 2 && (
+                    <>
+                      <AnimalHealthInfo
+                        formData={formData}
+                        onFormChange={handleChangeMultiple}
+                      />
+                      <div className="pt-6 border-t">
+                        <h4 className="text-sm font-semibold mb-3">Personalidade & temperamento</h4>
+                        <AnimalCharacteristics
+                          formData={formData}
+                          onFormChange={handleChangeMultiple}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {currentStep === 3 && (
+                    <>
+                      <AnimalLocationStaff
+                        formData={formData}
+                        onFormChange={handleChangeMultiple}
+                      />
+                      <div className="pt-6 border-t">
+                        <h4 className="text-sm font-semibold mb-3">Requisitos para adoção</h4>
+                        <AnimalRequirements
+                          formData={formData}
+                          onFormChange={handleChangeMultiple}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {currentStep === 4 && (
+                    <AnimalAdopterProfile
                       formData={formData}
                       onFormChange={handleChangeMultiple}
                     />
