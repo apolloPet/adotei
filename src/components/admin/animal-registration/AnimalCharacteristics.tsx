@@ -66,16 +66,27 @@ const AnimalCharacteristics = ({ formData, onFormChange }: AnimalCharacteristics
     <div className="space-y-4">
       <Label>Características</Label>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-        {commonCharacteristics.map((char) => (
-          <div key={char} className="flex items-center space-x-2">
-            <Checkbox 
-              id={`char-${char}`} 
-              checked={formData.characteristics.includes(char)}
-              onCheckedChange={() => handleCharacteristicToggle(char)}
-            />
-            <Label htmlFor={`char-${char}`}>{char}</Label>
-          </div>
-        ))}
+        {commonCharacteristics.map((char) => {
+          const Icon = characteristicIcons[char] ?? PawPrint;
+          const checked = formData.characteristics.includes(char);
+          return (
+            <label
+              key={char}
+              htmlFor={`char-${char}`}
+              className={`flex items-center space-x-2 rounded-md border p-2 cursor-pointer transition-colors ${
+                checked ? 'bg-primary/10 border-primary' : 'hover:bg-muted/40'
+              }`}
+            >
+              <Checkbox
+                id={`char-${char}`}
+                checked={checked}
+                onCheckedChange={() => handleCharacteristicToggle(char)}
+              />
+              <Icon className={`h-4 w-4 ${checked ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className="text-sm">{char}</span>
+            </label>
+          );
+        })}
       </div>
       
       <div className="flex space-x-2">
