@@ -268,17 +268,29 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Animal info */}
         <Section icon={<PawPrint className="h-4 w-4" />} title="Dados do Animal">
-          <div className="flex items-center gap-3 mb-3">
-            <img
-              src={match.petImage}
-              alt={match.petName}
-              className="w-16 h-16 rounded-md object-cover"
-            />
-            <div>
+          <div className="mb-3">
+            <div className="flex items-center gap-2 mb-2">
               <p className="font-semibold">{match.petName}</p>
-              <p className="text-xs text-muted-foreground capitalize">
-                {pet.species === 'cat' ? 'Gato' : pet.species === 'dog' ? 'Cão' : 'Outro'}
-              </p>
+              <span className="text-xs text-muted-foreground capitalize">
+                · {pet.species === 'cat' ? 'Gato' : pet.species === 'dog' ? 'Cão' : 'Outro'}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {(() => {
+                const photos = (pet.images || []).filter(Boolean).slice(0, 3);
+                while (photos.length < 3) photos.push(match.petImage);
+                return photos.slice(0, 3).map((src, i) => (
+                  <img
+                    key={i}
+                    src={src}
+                    alt={`${match.petName} foto ${i + 1}`}
+                    className="w-full h-20 rounded-md object-cover border"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
+                    }}
+                  />
+                ));
+              })()}
             </div>
           </div>
           <Row label="ID" value={match.petId} />
