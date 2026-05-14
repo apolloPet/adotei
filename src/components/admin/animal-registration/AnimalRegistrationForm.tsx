@@ -313,26 +313,32 @@ const AnimalRegistrationForm = () => {
     fotos?: string[];
   }
 
-  // Render helper for step indicators
   const renderStepIndicator = () => {
     return (
-      <div className="flex justify-between mb-6">
-        {Array.from({length: totalSteps}).map((_, idx) => (
-          <div key={idx} className="flex flex-col items-center">
-            <div 
-              className={`w-8 h-8 rounded-full flex items-center justify-center 
-                ${currentStep > idx + 1 ? 'bg-green-500 text-white' : 
-                  currentStep === idx + 1 ? 'bg-primary text-primary-foreground' : 
-                  'bg-muted text-muted-foreground'}`}
-            >
-              {currentStep > idx + 1 ? '✓' : idx + 1}
+      <div className="flex items-start justify-between mb-6 gap-2">
+        {Array.from({ length: totalSteps }).map((_, idx) => {
+          const isDone = currentStep > idx + 1;
+          const isActive = currentStep === idx + 1;
+          return (
+            <div key={idx} className="flex-1 flex flex-col items-center text-center">
+              <div className="flex items-center w-full">
+                <div className={`flex-1 h-px ${idx === 0 ? 'invisible' : isDone || isActive ? 'bg-primary' : 'bg-muted'}`} />
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0
+                    ${isDone ? 'bg-green-500 text-white' :
+                      isActive ? 'bg-primary text-primary-foreground' :
+                      'bg-muted text-muted-foreground'}`}
+                >
+                  {isDone ? '✓' : idx + 1}
+                </div>
+                <div className={`flex-1 h-px ${idx === totalSteps - 1 ? 'invisible' : isDone ? 'bg-primary' : 'bg-muted'}`} />
+              </div>
+              <span className={`text-[11px] mt-2 leading-tight ${isActive ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                {stepTitles[idx]}
+              </span>
             </div>
-            {idx < totalSteps - 1 && (
-              <div className={`h-px w-16 -mx-3 mt-4 
-                ${currentStep > idx + 1 ? 'bg-green-500' : 'bg-muted'}`} />
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
