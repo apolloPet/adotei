@@ -4,8 +4,26 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X } from "lucide-react";
+import {
+  X, Sparkles, Cloud, Heart, Search, Compass, Users,
+  Shield, EyeOff, Zap, BedDouble, Repeat, Flag, PawPrint,
+} from "lucide-react";
 import { AnimalFormData, commonCharacteristics } from "./types";
+
+const characteristicIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  "Brincalhão": Sparkles,
+  "Calmo": Cloud,
+  "Carinhoso": Heart,
+  "Curioso": Search,
+  "Independente": Compass,
+  "Sociável": Users,
+  "Protetor": Shield,
+  "Tímido": EyeOff,
+  "Ativo": Zap,
+  "Dorminhoco": BedDouble,
+  "Adaptável": Repeat,
+  "Territorial": Flag,
+};
 
 export interface AnimalCharacteristicsProps {
   formData: AnimalFormData;
