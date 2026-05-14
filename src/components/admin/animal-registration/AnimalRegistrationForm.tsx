@@ -66,7 +66,13 @@ const AnimalRegistrationForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stepErrors, setStepErrors] = useState<{[key: number]: string}>({});
   
-  const totalSteps = 7;
+  const totalSteps = 4;
+  const stepTitles = [
+    'Identificação & Fotos',
+    'Saúde & Personalidade',
+    'Origem & Requisitos',
+    'Perfil ideal do adotante',
+  ];
   
   const handleNextStep = () => {
     if (!validateCurrentStep()) return;
@@ -102,47 +108,39 @@ const AnimalRegistrationForm = () => {
   
   const validateCurrentStep = (): boolean => {
     switch (currentStep) {
-      case 1: // Basic Info
+      case 1: // Identificação + Fotos
         if (!formData.name.trim()) {
-          setStepErrors({...stepErrors, 1: "Nome do animal é obrigatório"});
+          setStepErrors({ ...stepErrors, 1: "Nome do animal é obrigatório" });
           toast.error("Nome do animal é obrigatório");
           return false;
         }
-        
         if (!formData.breed.trim()) {
-          setStepErrors({...stepErrors, 1: "Raça do animal é obrigatória"});
+          setStepErrors({ ...stepErrors, 1: "Raça do animal é obrigatória" });
           toast.error("Raça do animal é obrigatória");
           return false;
         }
-        
         if (!formData.age.trim()) {
-          setStepErrors({...stepErrors, 1: "Idade do animal é obrigatória"});
+          setStepErrors({ ...stepErrors, 1: "Idade do animal é obrigatória" });
           toast.error("Idade do animal é obrigatória");
           return false;
         }
-        
         if (!formData.description.trim()) {
-          setStepErrors({...stepErrors, 1: "Descrição do animal é obrigatória"});
+          setStepErrors({ ...stepErrors, 1: "Descrição do animal é obrigatória" });
           toast.error("Descrição do animal é obrigatória");
           return false;
         }
-        
         if (formData.description.trim().length < 20) {
-          setStepErrors({...stepErrors, 1: "A descrição deve ter pelo menos 20 caracteres"});
+          setStepErrors({ ...stepErrors, 1: "A descrição deve ter pelo menos 20 caracteres" });
           toast.error("A descrição deve ter pelo menos 20 caracteres");
           return false;
         }
-        break;
-        
-      case 4: // Images
         if (formData.previewImages.length === 0) {
-          setStepErrors({...stepErrors, 4: "É necessário adicionar pelo menos uma foto do animal"});
+          setStepErrors({ ...stepErrors, 1: "É necessário adicionar pelo menos uma foto do animal" });
           toast.error("É necessário adicionar pelo menos uma foto do animal");
           return false;
         }
         break;
     }
-    
     return true;
   };
   
@@ -186,7 +184,7 @@ const AnimalRegistrationForm = () => {
     
     if (formData.previewImages.length === 0) {
       toast.error("É necessário adicionar pelo menos uma foto do animal");
-      setCurrentStep(4);
+      setCurrentStep(1);
       return false;
     }
     
@@ -315,26 +313,32 @@ const AnimalRegistrationForm = () => {
     fotos?: string[];
   }
 
-  // Render helper for step indicators
   const renderStepIndicator = () => {
     return (
-      <div className="flex justify-between mb-6">
-        {Array.from({length: totalSteps}).map((_, idx) => (
-          <div key={idx} className="flex flex-col items-center">
-            <div 
-              className={`w-8 h-8 rounded-full flex items-center justify-center 
-                ${currentStep > idx + 1 ? 'bg-green-500 text-white' : 
-                  currentStep === idx + 1 ? 'bg-primary text-primary-foreground' : 
-                  'bg-muted text-muted-foreground'}`}
-            >
-              {currentStep > idx + 1 ? '✓' : idx + 1}
+      <div className="flex items-start justify-between mb-6 gap-2">
+        {Array.from({ length: totalSteps }).map((_, idx) => {
+          const isDone = currentStep > idx + 1;
+          const isActive = currentStep === idx + 1;
+          return (
+            <div key={idx} className="flex-1 flex flex-col items-center text-center">
+              <div className="flex items-center w-full">
+                <div className={`flex-1 h-px ${idx === 0 ? 'invisible' : isDone || isActive ? 'bg-primary' : 'bg-muted'}`} />
+                <div
+                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0
+                    ${isDone ? 'bg-green-500 text-white' :
+                      isActive ? 'bg-primary text-primary-foreground' :
+                      'bg-muted text-muted-foreground'}`}
+                >
+                  {isDone ? '✓' : idx + 1}
+                </div>
+                <div className={`flex-1 h-px ${idx === totalSteps - 1 ? 'invisible' : isDone ? 'bg-primary' : 'bg-muted'}`} />
+              </div>
+              <span className={`text-[11px] mt-2 leading-tight ${isActive ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                {stepTitles[idx]}
+              </span>
             </div>
-            {idx < totalSteps - 1 && (
-              <div className={`h-px w-16 -mx-3 mt-4 
-                ${currentStep > idx + 1 ? 'bg-green-500' : 'bg-muted'}`} />
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -366,57 +370,69 @@ const AnimalRegistrationForm = () => {
                   </Alert>
                 )}
                 
-                <div className="space-y-4">
+                <div className="mb-4">
+                  <h3 className="text-base font-semibold">
+                    Passo {currentStep} de {totalSteps}: {stepTitles[currentStep - 1]}
+                  </h3>
+                </div>
+
+                <div className="space-y-8">
                   {currentStep === 1 && (
-                    <AnimalBasicInfo 
-                      formData={formData}
-                      onFormChange={handleChangeMultiple}
-                    />
-                  )}
-                  
-                  {currentStep === 2 && (
-                    <AnimalCharacteristics 
-                      formData={formData}
-                      onFormChange={handleChangeMultiple}
-                    />
-                  )}
-                  
-                  {currentStep === 3 && (
-                    <AnimalHealthInfo 
-                      formData={formData}
-                      onFormChange={handleChangeMultiple}
-                    />
-                  )}
-                  
-                  {currentStep === 4 && (
-                    <AnimalImages 
-                      images={formData.images}
-                      previewImages={formData.previewImages}
-                      onChange={(images, previews) => {
-                        handleChangeMultiple({
-                          images,
-                          previewImages: previews
-                        });
-                      }}
-                    />
-                  )}
-                  
-                  {currentStep === 5 && (
-                    <AnimalLocationStaff 
-                      formData={formData}
-                      onFormChange={handleChangeMultiple}
-                    />
-                  )}
-                  
-                  {currentStep === 6 && (
-                    <AnimalAdopterProfile
-                      formData={formData}
-                      onFormChange={handleChangeMultiple}
-                    />
+                    <>
+                      <AnimalBasicInfo
+                        formData={formData}
+                        onFormChange={handleChangeMultiple}
+                      />
+                      <div className="pt-6 border-t">
+                        <h4 className="text-sm font-semibold mb-3">Fotos do animal</h4>
+                        <AnimalImages
+                          images={formData.images}
+                          previewImages={formData.previewImages}
+                          onChange={(images, previews) => {
+                            handleChangeMultiple({
+                              images,
+                              previewImages: previews,
+                            });
+                          }}
+                        />
+                      </div>
+                    </>
                   )}
 
-                  {currentStep === 7 && (
-                    <AnimalRequirements
+                  {currentStep === 2 && (
+                    <>
+                      <AnimalHealthInfo
+                        formData={formData}
+                        onFormChange={handleChangeMultiple}
+                      />
+                      <div className="pt-6 border-t">
+                        <h4 className="text-sm font-semibold mb-3">Personalidade & temperamento</h4>
+                        <AnimalCharacteristics
+                          formData={formData}
+                          onFormChange={handleChangeMultiple}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {currentStep === 3 && (
+                    <>
+                      <AnimalLocationStaff
+                        formData={formData}
+                        onFormChange={handleChangeMultiple}
+                      />
+                      <div className="pt-6 border-t">
+                        <h4 className="text-sm font-semibold mb-3">Requisitos para adoção</h4>
+                        <AnimalRequirements
+                          formData={formData}
+                          onFormChange={handleChangeMultiple}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {currentStep === 4 && (
+                    <AnimalAdopterProfile
                       formData={formData}
                       onFormChange={handleChangeMultiple}
                     />
