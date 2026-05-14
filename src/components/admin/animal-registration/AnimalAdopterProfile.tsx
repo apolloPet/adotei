@@ -125,6 +125,9 @@ const AnimalAdopterProfile = ({ formData, onFormChange }: AnimalAdopterProfilePr
 
       <div className="space-y-2">
         <Label>Experiência mínima recomendada</Label>
+        <p className="text-xs text-muted-foreground">
+          Animais com traumas ou comportamentos específicos exigem tutores que saibam lidar com a situação.
+        </p>
         <RadioGroup
           value={formData.minResidentExperience}
           onValueChange={(v) => onFormChange({ minResidentExperience: v as AnimalFormData['minResidentExperience'] })}
