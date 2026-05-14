@@ -37,6 +37,9 @@ const AnimalAdopterProfile = ({ formData, onFormChange }: AnimalAdopterProfilePr
 
       <div className="space-y-2">
         <Label>Tipos de moradia adequados</Label>
+        <p className="text-xs text-muted-foreground">
+          Define quais perfis de lar combinam com o animal — evita encaminhar para ambientes incompatíveis.
+        </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {housingOptions.map((opt) => (
             <div key={opt.value} className="flex items-center space-x-2">
@@ -52,48 +55,66 @@ const AnimalAdopterProfile = ({ formData, onFormChange }: AnimalAdopterProfilePr
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="flex items-center justify-between rounded-md border p-3">
-          <Label htmlFor="requiresYard">Exige quintal</Label>
+        <div className="flex items-start justify-between rounded-md border p-3 gap-3">
+          <div>
+            <Label htmlFor="requiresYard">Exige quintal</Label>
+            <p className="text-xs text-muted-foreground">Animais ativos ou de grande porte precisam de espaço para gastar energia.</p>
+          </div>
           <Switch
             id="requiresYard"
             checked={formData.requiresYard}
             onCheckedChange={(c) => onFormChange({ requiresYard: c })}
           />
         </div>
-        <div className="flex items-center justify-between rounded-md border p-3">
-          <Label htmlFor="requiresWalledYard">Exige quintal murado</Label>
+        <div className="flex items-start justify-between rounded-md border p-3 gap-3">
+          <div>
+            <Label htmlFor="requiresWalledYard">Exige quintal murado</Label>
+            <p className="text-xs text-muted-foreground">Previne fugas e atropelamentos — fundamental para cães escapistas.</p>
+          </div>
           <Switch
             id="requiresWalledYard"
             checked={formData.requiresWalledYard}
             onCheckedChange={(c) => onFormChange({ requiresWalledYard: c })}
           />
         </div>
-        <div className="flex items-center justify-between rounded-md border p-3">
-          <Label htmlFor="requiresWindowScreens">Exige telas em janelas</Label>
+        <div className="flex items-start justify-between rounded-md border p-3 gap-3">
+          <div>
+            <Label htmlFor="requiresWindowScreens">Exige telas em janelas</Label>
+            <p className="text-xs text-muted-foreground">Obrigatório para gatos em apartamentos — evita o "síndrome do gato paraquedista".</p>
+          </div>
           <Switch
             id="requiresWindowScreens"
             checked={formData.requiresWindowScreens}
             onCheckedChange={(c) => onFormChange({ requiresWindowScreens: c })}
           />
         </div>
-        <div className="flex items-center justify-between rounded-md border p-3">
-          <Label htmlFor="allowsRented">Aceita imóvel alugado (com permissão)</Label>
+        <div className="flex items-start justify-between rounded-md border p-3 gap-3">
+          <div>
+            <Label htmlFor="allowsRented">Aceita imóvel alugado (com permissão)</Label>
+            <p className="text-xs text-muted-foreground">Reduz o risco de devolução por mudança ou exigência do proprietário.</p>
+          </div>
           <Switch
             id="allowsRented"
             checked={formData.allowsRented}
             onCheckedChange={(c) => onFormChange({ allowsRented: c })}
           />
         </div>
-        <div className="flex items-center justify-between rounded-md border p-3">
-          <Label htmlFor="suitableForChildren">Adequado para lares com crianças</Label>
+        <div className="flex items-start justify-between rounded-md border p-3 gap-3">
+          <div>
+            <Label htmlFor="suitableForChildren">Adequado para lares com crianças</Label>
+            <p className="text-xs text-muted-foreground">Evita acidentes com animais que não toleram manuseio infantil.</p>
+          </div>
           <Switch
             id="suitableForChildren"
             checked={formData.suitableForChildren}
             onCheckedChange={(c) => onFormChange({ suitableForChildren: c })}
           />
         </div>
-        <div className="flex items-center justify-between rounded-md border p-3">
-          <Label htmlFor="suitableForFirstTimers">Adequado para iniciantes</Label>
+        <div className="flex items-start justify-between rounded-md border p-3 gap-3">
+          <div>
+            <Label htmlFor="suitableForFirstTimers">Adequado para iniciantes</Label>
+            <p className="text-xs text-muted-foreground">Sinaliza se o animal exige tutor experiente — evita devoluções por inexperiência.</p>
+          </div>
           <Switch
             id="suitableForFirstTimers"
             checked={formData.suitableForFirstTimers}
