@@ -66,7 +66,13 @@ const AnimalRegistrationForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [stepErrors, setStepErrors] = useState<{[key: number]: string}>({});
   
-  const totalSteps = 7;
+  const totalSteps = 4;
+  const stepTitles = [
+    'Identificação & Fotos',
+    'Saúde & Personalidade',
+    'Origem & Requisitos',
+    'Perfil ideal do adotante',
+  ];
   
   const handleNextStep = () => {
     if (!validateCurrentStep()) return;
