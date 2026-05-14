@@ -99,7 +99,6 @@ const PetMatch = () => {
           </CardContent>
         </Card>
       </main>
-      
       <Footer />
     </div>
   );
