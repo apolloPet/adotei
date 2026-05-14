@@ -177,30 +177,49 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
         <Progress value={compat.score} className={`h-2 ${scoreColor(compat.score)}`} />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
-          <div>
-            <p className="text-xs font-semibold text-green-700 mb-1">Pontos positivos</p>
+          <div
+            className="rounded-md border-l-4 p-2"
+            style={{ borderLeftColor: '#00EA7C', backgroundColor: 'rgba(0, 234, 124, 0.08)' }}
+          >
+            <p className="text-xs font-semibold mb-1" style={{ color: '#00A856' }}>
+              ✓ Match perfeito
+            </p>
             <ul className="space-y-1 text-xs">
               {compat.reasons.positive.length === 0 && <li className="text-muted-foreground">—</li>}
               {compat.reasons.positive.map((p) => (
-                <li key={p}>✓ {p}</li>
+                <li key={p} className="flex gap-1">
+                  <span style={{ color: '#00A856' }}>✓</span>
+                  <span>{p}</span>
+                </li>
               ))}
             </ul>
           </div>
-          <div>
-            <p className="text-xs font-semibold text-amber-700 mb-1">Atenção</p>
+          <div
+            className="rounded-md border-l-4 p-2"
+            style={{ borderLeftColor: '#3F3D91', backgroundColor: 'rgba(63, 61, 145, 0.08)' }}
+          >
+            <p className="text-xs font-semibold mb-1" style={{ color: '#3F3D91' }}>
+              ⚠ Divergência
+            </p>
             <ul className="space-y-1 text-xs">
               {compat.reasons.negative.length === 0 && <li className="text-muted-foreground">—</li>}
               {compat.reasons.negative.map((n) => (
-                <li key={n}>! {n}</li>
+                <li key={n} className="flex gap-1">
+                  <span style={{ color: '#3F3D91' }}>!</span>
+                  <span>{n}</span>
+                </li>
               ))}
             </ul>
           </div>
-          <div>
-            <p className="text-xs font-semibold text-destructive mb-1">Bloqueios</p>
+          <div className="rounded-md border-l-4 border-destructive bg-destructive/5 p-2">
+            <p className="text-xs font-semibold text-destructive mb-1">✕ Bloqueios</p>
             <ul className="space-y-1 text-xs">
               {compat.reasons.blockers.length === 0 && <li className="text-muted-foreground">—</li>}
               {compat.reasons.blockers.map((b) => (
-                <li key={b}>✕ {b}</li>
+                <li key={b} className="flex gap-1 text-destructive">
+                  <span>✕</span>
+                  <span>{b}</span>
+                </li>
               ))}
             </ul>
           </div>
