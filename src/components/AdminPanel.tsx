@@ -180,7 +180,10 @@ const AdminPanel = ({ onLogout }) => {
                     <Users className="h-4 w-4" />
                     <span>Usuários</span>
                   </TabsTrigger>
-                  <TabsTrigger value="payment-settings" className="text-xs sm:text-sm py-2">Pagamentos</TabsTrigger>
+                  <TabsTrigger value="payment-settings" className="flex flex-col sm:flex-row items-center gap-1 py-2 text-xs sm:text-sm">
+                    <Settings className="h-4 w-4" />
+                    <span>Pagamentos</span>
+                  </TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="administrators">
