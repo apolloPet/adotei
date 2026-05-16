@@ -426,7 +426,7 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
       </Dialog>
       
       <Dialog open={showStageDialog} onOpenChange={setShowStageDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full p-3 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-base sm:text-lg">Análise da Solicitação</DialogTitle>
             <DialogDescription className="text-xs sm:text-sm">

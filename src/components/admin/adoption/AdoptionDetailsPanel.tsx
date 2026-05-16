@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import {
   PawPrint,
   User,
@@ -65,11 +64,15 @@ const buildPetFromMatch = (match: AdoptionMatch): Pet => {
   };
 };
 
-const scoreColor = (s: number) =>
-  s >= 75 ? 'bg-green-500' : s >= 50 ? 'bg-amber-500' : 'bg-destructive';
+const scoreBadgeClass = (s: number) =>
+  s >= 75
+    ? 'bg-green-500/15 text-green-700 border-green-500/30'
+    : s >= 50
+    ? 'bg-amber-500/15 text-amber-700 border-amber-500/30'
+    : 'bg-red-500/15 text-red-700 border-red-500/30';
 
 const scoreText = (s: number) =>
-  s >= 75 ? 'Alta compatibilidade' : s >= 50 ? 'Compatibilidade média' : 'Baixa compatibilidade';
+  s >= 75 ? 'Alta compatibilidade' : s >= 50 ? 'Média compatibilidade' : 'Baixa compatibilidade';
 
 const housingLabel = (t?: string) =>
   t === 'apartment' ? 'Apartamento' : t === 'farm' ? 'Sítio/Chácara' : t === 'house' ? 'Casa' : '—';
@@ -87,7 +90,7 @@ const Section = ({
   title: string;
   children: React.ReactNode;
 }) => (
-  <div className="rounded-lg border bg-card p-4">
+  <div className="rounded-lg border bg-card p-3 sm:p-4">
     <div className="flex items-center gap-2 mb-3">
       <div className="text-primary">{icon}</div>
       <h4 className="text-sm font-semibold">{title}</h4>
@@ -97,9 +100,9 @@ const Section = ({
 );
 
 const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
-  <div className="flex justify-between gap-3 text-sm py-1 border-b border-border/40 last:border-0">
-    <span className="text-muted-foreground">{label}</span>
-    <span className="font-medium text-right">{value ?? '—'}</span>
+  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-3 text-sm py-1.5 border-b border-border/40 last:border-0">
+    <span className="text-muted-foreground text-xs sm:text-sm">{label}</span>
+    <span className="font-medium sm:text-right break-words">{value ?? '—'}</span>
   </div>
 );
 
@@ -145,38 +148,22 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
   return (
     <div className="space-y-4">
       {/* Compatibility summary */}
-      <div className="rounded-lg border bg-muted/30 p-4">
-        <div className="flex items-center justify-between gap-3 mb-2">
-          <div className="flex items-center gap-2">
-            <Heart className="h-5 w-5 text-primary" />
-            <h4 className="font-semibold text-sm">Compatibilidade</h4>
-            {compat.reasons.blockers.length > 0 ? (
-              <Badge variant="destructive" className="gap-1">
-                <ShieldAlert className="h-3 w-3" /> Bloqueado
-              </Badge>
-            ) : (
-              <Badge
-                variant="outline"
-                className={
-                  compat.score >= 75
-                    ? 'bg-green-500/15 text-green-700 border-green-500/30'
-                    : compat.score >= 50
-                    ? 'bg-amber-500/15 text-amber-700 border-amber-500/30'
-                    : 'bg-red-500/15 text-red-700 border-red-500/30'
-                }
-              >
-                {scoreText(compat.score)}
-              </Badge>
-            )}
-          </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold leading-none">{compat.score}</p>
-            <p className="text-[10px] text-muted-foreground uppercase">pontos</p>
-          </div>
+      <div className="rounded-lg border bg-muted/30 p-3 sm:p-4">
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <Heart className="h-5 w-5 text-primary" />
+          <h4 className="font-semibold text-sm">Compatibilidade</h4>
+          {compat.reasons.blockers.length > 0 ? (
+            <Badge variant="destructive" className="gap-1">
+              <ShieldAlert className="h-3 w-3" /> Bloqueado
+            </Badge>
+          ) : (
+            <Badge variant="outline" className={scoreBadgeClass(compat.score)}>
+              {scoreText(compat.score)}
+            </Badge>
+          )}
         </div>
-        <Progress value={compat.score} className={`h-2 ${scoreColor(compat.score)}`} />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3">
           <div
             className="rounded-md border-l-4 p-2"
             style={{ borderLeftColor: '#00EA7C', backgroundColor: 'rgba(0, 234, 124, 0.08)' }}
@@ -189,7 +176,7 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
               {compat.reasons.positive.map((p) => (
                 <li key={p} className="flex gap-1">
                   <span style={{ color: '#00A856' }}>✓</span>
-                  <span>{p}</span>
+                  <span className="break-words">{p}</span>
                 </li>
               ))}
             </ul>
@@ -206,7 +193,7 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
               {compat.reasons.negative.map((n) => (
                 <li key={n} className="flex gap-1">
                   <span style={{ color: '#3F3D91' }}>!</span>
-                  <span>{n}</span>
+                  <span className="break-words">{n}</span>
                 </li>
               ))}
             </ul>
@@ -218,7 +205,7 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
               {compat.reasons.blockers.map((b) => (
                 <li key={b} className="flex gap-1 text-destructive">
                   <span>✕</span>
-                  <span>{b}</span>
+                  <span className="break-words">{b}</span>
                 </li>
               ))}
             </ul>
@@ -284,7 +271,7 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
                     key={i}
                     src={src}
                     alt={`${match.petName} foto ${i + 1}`}
-                    className="w-full h-20 rounded-md object-cover border"
+                    className="w-full h-16 sm:h-20 rounded-md object-cover border"
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
                     }}

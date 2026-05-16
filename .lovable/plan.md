@@ -1,60 +1,35 @@
-# Auditoria: cadastros vs. cartão do animal vs. exigências do adotante
+## 1. Diferenciar ícones das abas "Adoções" e "Animais"
 
-Fiz um cruzamento entre os 3 pontos do fluxo:
-1. **Cadastro do animal** (`AnimalRegistrationForm` + abas)
-2. **Cartão do animal** (`PetInfoOverlay` em `/browse`)
-3. **Cadastro do adotante** (`RegisterForm`, passos 3 e 4)
+Em `src/components/AdminPanel.tsx`, ambas as abas usam o mesmo ícone `PawPrint`. Trocar:
+- **Adoções** → `ClipboardList` (representa solicitações/processos de adoção)
+- **Animais** → `PawPrint` (mantém, representa o cadastro de animais)
 
-## O que está OK
+Atualizar o import do `lucide-react` adicionando `ClipboardList`.
 
-- O **adotante** já informa moradia, área útil, acesso externo, controle de fugas, crianças, alergias, outros pets, horas sozinho, viagens, rotina e compromissos financeiros.
-- O **cadastro do animal** já tem a aba "Perfil ideal do adotante" com requisitos espelhados (moradia, quintal, telas, experiência, horas sozinho, custo mensal, reserva de emergência) — então o match cobre o que o adotante declara.
-- Características, vacinação, castração, necessidades especiais e condições de saúde estão presentes no formulário do animal.
+## 2. Responsividade da "Análise da Solicitação" (mobile)
 
-## Lacunas que precisam ser corrigidas
+Arquivo: `src/components/admin/adoption/AdoptionDetailsPanel.tsx` (renderizado dentro do Dialog em `AdoptionManagement.tsx`, linha 429).
 
-### 1. Cartão do animal mostra dados falsos (hash do id)
-Hoje `PetInfoOverlay` deriva por hash do id:
-- `personality` (Dócil/Brincalhão fixos)
-- `isVaccinated = true` sempre
-- `isNeutered` aleatório
-- `isSpecial` lê campos que nunca chegam no Pet
+### Ajustes de layout
+- Reduzir paddings internos no mobile: `p-4` → `p-3 sm:p-4` nos cards/Sections e no bloco de compatibilidade.
+- O grid das 3 fotos do animal (`grid-cols-3` com `h-20`) reduz para `h-16 sm:h-20` para não estourar a largura.
+- Nas `Row`, usar `flex-col sm:flex-row` para que rótulo e valor empilhem em telas estreitas, com `text-left` no valor quando empilhado (evita texto cortado em emails/endereços longos).
+- Garantir `break-words` / `truncate` adequado em email, endereço e IDs.
+- O `DialogContent` (em `AdoptionManagement.tsx`) já é `w-[95vw]`; ajustar `px` interno para `px-3 sm:px-6` para ganhar largura útil.
 
-**Causa**: `src/utils/animalAdapter.ts` ignora `characteristics`, `vaccinationStatus`, `sterilized`, `specialNeeds`, `healthConditions`. Só repassa `castrado` como trait.
+### Remoção do sistema de pontos
+No bloco "Compatibilidade":
+- Remover o número grande (`{compat.score}` + "pontos") e a barra `<Progress>`.
+- Manter apenas o `Badge` textual: **Alta compatibilidade** (verde #00EA7C), **Média compatibilidade** (âmbar) ou **Baixa compatibilidade** (vermelho). Quando houver bloqueio, manter o badge "Bloqueado".
+- Manter as 3 colunas de razões (Match perfeito / Divergência / Bloqueios), mas no mobile virar `grid-cols-1` (já é) e reduzir paddings.
+- Remover também a seção "Pontos registrados pela equipe" que usa `matchPoints` numéricos (high/medium/low) OU convertê-la apenas em badges textuais sem número. Para manter informação útil, converter para badges textuais (sem número/score).
 
-### 2. `Animal`/`AnimalCreateData` (camada de dados) descarta campos
-No `AnimalRegistrationForm` (linha 212), o save monta:
-```
-castrado, vacinas: [vaccinationStatus], descricao, fotos…
-```
-e **perde**: `characteristics`, `specialNeeds`, `specialNeedsDescription`, `healthConditions`, `veterinaryInfo`, `adoptionRequirements`, e **toda a aba "Perfil ideal do adotante"** (suitableHousing, requiresYard, suitableForChildren, maxHoursAloneDaily, estimatedMonthlyCost, requiresEmergencyBudget, etc).
+### Resultado esperado mobile (390px)
+- Dialog sem scroll horizontal.
+- Linhas legíveis empilhadas, sem corte de texto.
+- Compatibilidade comunicada por cor + texto, sem números/barras.
 
-Sem esses campos persistidos, o match inteligente entre adotante e animal não funciona — apenas exibe a UI.
-
-### 3. "Tempo de espera" no cartão é falso
-`waitingDays` vem do hash do id. Deveria vir de `data_cadastro`.
-
-## Mudanças propostas
-
-**A. Frontend (cartão + adapter)** — escopo seguro, sem tocar no banco:
-1. Estender o tipo `Pet` (`src/types/pets/interfaces.ts`) com `vaccinated`, `neutered`, `daysWaiting` opcionais.
-2. Atualizar `animalAdapter.ts` para mapear:
-   - `characteristics` → `traits`
-   - `sterilized` → `neutered`
-   - `vaccinationStatus in ['complete','partial']` → `vaccinated`
-   - `specialNeeds` → `specialNeeds`
-   - `healthConditions.length > 0` → `healthIssues`
-   - `data_cadastro` → `daysWaiting`
-3. Atualizar `PetInfoOverlay` para usar esses campos em vez do hash (mantendo fallback para mock data).
-4. Atualizar `mockPets.ts` para gerar valores coerentes com os novos campos.
-
-**B. Persistência** — para o match funcionar de verdade:
-1. Estender `AnimalCreateData`/`Animal` (`animalService.ts`) com os campos que hoje são descartados.
-2. Atualizar o `INSERT` da tabela `animais` para gravá-los (provavelmente como JSON em uma coluna `perfil_match` para evitar uma migração extensa de schema).
-3. Atualizar `AnimalRegistrationForm` para enviar esses campos.
-
-**C. Não vou mexer em**: schema do banco propriamente dito. Como o memory indica que o BD da Lovable Cloud está vazio, qualquer migração precisa de decisão sua antes.
-
-## Pergunta
-
-Quer que eu execute **A** (corrigir o cartão para refletir o cadastro — visual imediato), **A + B sem migração** (gravando o perfil de match como JSON em uma coluna existente ou nova via migração leve), ou **A + B + migração completa** com colunas tipadas?
+## Arquivos a editar
+- `src/components/AdminPanel.tsx` — troca de ícone da aba Adoções.
+- `src/components/admin/adoption/AdoptionDetailsPanel.tsx` — remoção do score numérico/Progress, ajustes responsivos de paddings, grid de fotos e Rows.
+- `src/components/admin/adoption/AdoptionManagement.tsx` — pequeno ajuste de padding no `DialogContent` da Análise da Solicitação (se necessário).
