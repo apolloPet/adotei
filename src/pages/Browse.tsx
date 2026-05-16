@@ -111,8 +111,7 @@ const Browse = () => {
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 pt-32 pb-24">
         <div className="max-w-md mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold leading-tight">conheça seu novo amigo<br/><span className="text-muted-foreground font-semibold">com o Adotei</span></h1>
+          <div className="flex justify-end items-center mb-6">
             <FilterPanel
               filters={filters}
               isLoading={isLoading}
