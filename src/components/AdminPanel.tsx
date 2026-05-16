@@ -13,7 +13,8 @@ import {
   Settings, 
   Users, 
   ShieldCheck,
-  Heart
+  Heart,
+  ClipboardList
 } from 'lucide-react';
 import { UsersList } from './admin/users';
 import AdminUserManagement from './admin/AdminUserManagement';
