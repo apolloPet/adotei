@@ -109,9 +109,9 @@ const Browse = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 pt-32 pb-24">
+      <main className="container mx-auto px-4 pt-16 sm:pt-24 pb-4 sm:pb-12">
         <div className="max-w-md mx-auto">
-          <div className="flex justify-end items-center mb-6">
+          <div className="flex justify-end items-center mb-2 sm:mb-4">
             <FilterPanel
               filters={filters}
               isLoading={isLoading}
