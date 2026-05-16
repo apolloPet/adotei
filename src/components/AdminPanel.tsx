@@ -170,16 +170,16 @@ const AdminPanel = ({ onLogout }) => {
             
             <TabsContent value="settings">
               <Tabs defaultValue="administrators" className="w-full">
-                <TabsList className="w-full mb-4 overflow-x-auto flex flex-nowrap whitespace-nowrap">
-                  <TabsTrigger value="administrators" className="flex items-center gap-1">
+                <TabsList className="w-full mb-4 grid grid-cols-3 h-auto">
+                  <TabsTrigger value="administrators" className="flex flex-col sm:flex-row items-center gap-1 py-2 text-xs sm:text-sm">
                     <ShieldCheck className="h-4 w-4" />
-                    <span className="hidden sm:inline">Administradores</span>
+                    <span>Admins</span>
                   </TabsTrigger>
-                  <TabsTrigger value="users" className="flex items-center gap-1">
+                  <TabsTrigger value="users" className="flex flex-col sm:flex-row items-center gap-1 py-2 text-xs sm:text-sm">
                     <Users className="h-4 w-4" />
-                    <span className="hidden sm:inline">Usuários</span>
+                    <span>Usuários</span>
                   </TabsTrigger>
-                  <TabsTrigger value="payment-settings">Configurações de Pagamento</TabsTrigger>
+                  <TabsTrigger value="payment-settings" className="text-xs sm:text-sm py-2">Pagamentos</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="administrators">
