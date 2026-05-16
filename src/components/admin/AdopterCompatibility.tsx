@@ -42,8 +42,26 @@ const buildCandidates = (): AdopterCandidate[] => {
   return fromMock;
 };
 
-const scoreColor = (s: number) =>
-  s >= 75 ? 'bg-green-500' : s >= 50 ? 'bg-amber-500' : 'bg-destructive';
+const compatBadge = (score: number, blocked: boolean) => {
+  if (blocked) {
+    return (
+      <Badge variant="destructive" className="gap-1">
+        <ShieldAlert className="h-3 w-3" /> Bloqueado
+      </Badge>
+    );
+  }
+  if (score >= 75) {
+    return <Badge className="bg-green-500/15 text-green-700 hover:bg-green-500/20 border border-green-500/30">Alta compatibilidade</Badge>;
+  }
+  if (score >= 50) {
+    return <Badge variant="outline" className="bg-amber-500/15 text-amber-700 border-amber-500/30">Média compatibilidade</Badge>;
+  }
+  return (
+    <Badge variant="outline" className="gap-1 bg-red-500/10 text-red-700 border-red-500/30">
+      <AlertTriangle className="h-3 w-3" /> Baixa compatibilidade
+    </Badge>
+  );
+};
 
 const AdopterCompatibility = () => {
   const pets = useMemo(() => generateMockPets(8), []);
@@ -62,13 +80,13 @@ const AdopterCompatibility = () => {
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-xl">
             <Heart className="h-5 w-5 text-primary" />
             Compatibilidade de adotantes
           </CardTitle>
-          <CardDescription>
-            Selecione um animal para ver os adotantes mais compatíveis, com pontuação e motivos.
+          <CardDescription className="text-xs sm:text-sm">
+            Selecione um animal para ver os adotantes mais compatíveis.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
