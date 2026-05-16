@@ -143,51 +143,60 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
     }
   };
 
+  // Mapeia o estágio detalhado para um status simplificado exibido ao admin
+  type SimpleStatus = 'new' | 'in_review' | 'approved' | 'rejected';
+  const getSimpleStatus = (stage: AdoptionStage): SimpleStatus => {
+    switch (stage) {
+      case 'interested': return 'new';
+      case 'pending_approval':
+      case 'visit_scheduled':
+      case 'home_inspection': return 'in_review';
+      case 'approved':
+      case 'completed': return 'approved';
+      case 'rejected': return 'rejected';
+      default: return 'in_review';
+    }
+  };
+
+  const getSimpleStatusLabel = (s: SimpleStatus): string => ({
+    new: 'Novo Interesse',
+    in_review: 'Em Análise',
+    approved: 'Aprovado',
+    rejected: 'Rejeitado',
+  }[s]);
+
+  const getSimpleStatusClasses = (s: SimpleStatus): string => ({
+    new: 'bg-pink-100 text-pink-800 border-pink-200',
+    in_review: 'bg-amber-100 text-amber-800 border-amber-200',
+    approved: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    rejected: 'bg-red-100 text-red-800 border-red-200',
+  }[s]);
+
   const getStageColor = (stage: AdoptionStage): "default" | "secondary" | "destructive" | "outline" => {
     switch (stage) {
-      case 'pending_approval':
-        return "secondary";
-      case 'approved':
-        return "default";
-      case 'rejected':
-        return "destructive";
+      case 'rejected': return "destructive";
       case 'completed':
-        return "outline";
-      case 'interested':
-        return "secondary";
-      case 'visit_scheduled':
-        return "secondary";
-      case 'home_inspection':
-        return "secondary";
-      default:
-        return "secondary";
+      case 'approved': return "default";
+      default: return "secondary";
     }
   };
 
   const getStageLabel = (stage: AdoptionStage): string => {
     switch (stage) {
-      case 'interested':
-        return 'Interesse Demonstrado';
-      case 'pending_approval':
-        return 'Em Análise';
-      case 'approved':
-        return 'Aprovado';
-      case 'visit_scheduled':
-        return 'Visita Agendada';
-      case 'home_inspection':
-        return 'Inspeção Domiciliar';
-      case 'completed':
-        return 'Concluído';
-      case 'rejected':
-        return 'Rejeitado';
-      default:
-        return 'Desconhecido';
+      case 'interested': return 'Interesse Demonstrado';
+      case 'pending_approval': return 'Em Análise';
+      case 'approved': return 'Aprovado';
+      case 'visit_scheduled': return 'Visita Agendada';
+      case 'home_inspection': return 'Inspeção Domiciliar';
+      case 'completed': return 'Concluído';
+      case 'rejected': return 'Rejeitado';
+      default: return 'Desconhecido';
     }
   };
 
-  const filteredMatches = activeTab === 'all' 
-    ? matches 
-    : matches.filter(match => match.currentStage === activeTab);
+  const filteredMatches = activeTab === 'all'
+    ? matches
+    : matches.filter(match => getSimpleStatus(match.currentStage) === (activeTab as unknown as SimpleStatus));
 
   const nextAvailableStages = (currentStage: AdoptionStage): AdoptionStage[] => {
     switch(currentStage) {
