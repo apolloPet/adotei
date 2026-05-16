@@ -64,11 +64,15 @@ const buildPetFromMatch = (match: AdoptionMatch): Pet => {
   };
 };
 
-const scoreColor = (s: number) =>
-  s >= 75 ? 'bg-green-500' : s >= 50 ? 'bg-amber-500' : 'bg-destructive';
+const scoreBadgeClass = (s: number) =>
+  s >= 75
+    ? 'bg-green-500/15 text-green-700 border-green-500/30'
+    : s >= 50
+    ? 'bg-amber-500/15 text-amber-700 border-amber-500/30'
+    : 'bg-red-500/15 text-red-700 border-red-500/30';
 
 const scoreText = (s: number) =>
-  s >= 75 ? 'Alta compatibilidade' : s >= 50 ? 'Compatibilidade média' : 'Baixa compatibilidade';
+  s >= 75 ? 'Alta compatibilidade' : s >= 50 ? 'Média compatibilidade' : 'Baixa compatibilidade';
 
 const housingLabel = (t?: string) =>
   t === 'apartment' ? 'Apartamento' : t === 'farm' ? 'Sítio/Chácara' : t === 'house' ? 'Casa' : '—';
