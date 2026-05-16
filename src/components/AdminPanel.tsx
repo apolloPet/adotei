@@ -140,7 +140,7 @@ const AdminPanel = ({ onLogout }) => {
           <Tabs defaultValue="adoption" className="w-full">
             <TabsList className="w-full mb-4 sm:mb-6 grid grid-cols-4 h-auto">
               <TabsTrigger value="adoption" className="flex flex-col sm:flex-row items-center gap-1 py-2 text-xs sm:text-sm">
-                <PawPrint className="h-4 w-4" />
+                <ClipboardList className="h-4 w-4" />
                 <span>Adoções</span>
               </TabsTrigger>
               <TabsTrigger value="animals" className="flex flex-col sm:flex-row items-center gap-1 py-2 text-xs sm:text-sm">
