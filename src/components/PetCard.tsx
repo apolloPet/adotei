@@ -36,7 +36,7 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
     <div className="w-full h-full relative">
       <motion.div
         ref={cardRef}
-        className="absolute inset-0 bg-white dark:bg-card rounded-3xl overflow-hidden shadow-2xl ring-1 ring-border/50 will-change-transform"
+        className="absolute inset-0 bg-white dark:bg-card rounded-none sm:rounded-3xl overflow-hidden shadow-2xl ring-1 ring-border/50 will-change-transform"
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}

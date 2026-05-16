@@ -109,8 +109,8 @@ const Browse = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="w-full h-[100svh] pt-14 sm:pt-16">
-        <div className="relative max-w-md mx-auto h-full px-2 sm:px-4 pb-2">
+      <main className="w-full h-[100svh] pt-14 sm:pt-16 pb-[env(safe-area-inset-bottom)]">
+        <div className="relative max-w-md mx-auto h-full px-0 sm:px-2 pb-[max(env(safe-area-inset-bottom),1rem)]">
           <div className="absolute top-2 right-4 sm:right-6 z-30">
             <FilterPanel
               filters={filters}
