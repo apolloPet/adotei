@@ -1,4 +1,4 @@
-import { MapPin, Sparkles, Clock, Syringe, Scissors, Heart, Star } from 'lucide-react';
+import { Home, Sparkles, Clock, Syringe, Scissors, Heart, Star } from 'lucide-react';
 import { Pet, PetInfo } from '@/types/pets';
 
 interface PetInfoOverlayProps {
