@@ -140,12 +140,12 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="flex items-center gap-2">
+        <Button className="flex items-center gap-2 w-full sm:w-auto">
           <PlusCircle className="h-4 w-4" />
-          Novo Administrador
+          <span className="sm:inline">Novo Administrador</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md w-[95vw] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
           <DialogTitle>Adicionar Novo Administrador</DialogTitle>
           <DialogDescription>
