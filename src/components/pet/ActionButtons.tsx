@@ -12,7 +12,7 @@ const ActionButtons = ({ onLike, onDislike, onInfo, onSave, isDetailsOpen = fals
   if (isDetailsOpen) return null;
 
   return (
-    <div className="absolute -bottom-6 sm:-bottom-8 left-0 right-0 flex justify-center items-center gap-2 sm:gap-3 z-20 px-2">
+    <div className="absolute bottom-3 sm:bottom-4 left-0 right-0 flex justify-center items-center gap-2 sm:gap-3 z-20 px-2">
       {onSave && (
         <button
           className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-white text-amber-500 shadow-lg flex items-center justify-center transform transition-transform hover:scale-110 active:scale-95"

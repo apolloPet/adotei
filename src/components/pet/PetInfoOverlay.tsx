@@ -32,7 +32,7 @@ const PetInfoOverlay = ({ pet }: PetInfoOverlayProps) => {
   const isSpecial = petAsPet.specialNeeds || petAsPet.healthIssues;
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent px-4 pt-20 pb-4 text-white z-10">
+    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 pt-20 pb-20 sm:pb-24 text-white z-10">
       {/* Top row: compact compatibility + waiting */}
       <div className="flex items-center gap-2 mb-2 text-sm">
         <span className="inline-flex items-center gap-1.5 bg-primary/90 backdrop-blur-sm rounded-full px-2.5 py-1 font-semibold">
