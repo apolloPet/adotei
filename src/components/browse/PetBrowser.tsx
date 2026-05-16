@@ -58,6 +58,7 @@ const PetBrowser = ({ pets, onSwipe, onReset }: PetBrowserProps) => {
     <AnimatePresence mode="wait">
       <motion.div
         key={currentPet.id}
+        className="h-full w-full"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
