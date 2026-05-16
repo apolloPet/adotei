@@ -315,52 +315,70 @@ const AnimalRegistrationForm = () => {
 
   const renderStepIndicator = () => {
     return (
-      <div className="flex items-start justify-between mb-6 gap-2">
-        {Array.from({ length: totalSteps }).map((_, idx) => {
-          const isDone = currentStep > idx + 1;
-          const isActive = currentStep === idx + 1;
-          return (
-            <div key={idx} className="flex-1 flex flex-col items-center text-center">
-              <div className="flex items-center w-full">
-                <div className={`flex-1 h-px ${idx === 0 ? 'invisible' : isDone || isActive ? 'bg-primary' : 'bg-muted'}`} />
-                <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0
-                    ${isDone ? 'bg-green-500 text-white' :
-                      isActive ? 'bg-primary text-primary-foreground' :
-                      'bg-muted text-muted-foreground'}`}
-                >
-                  {isDone ? '✓' : idx + 1}
+      <div className="mb-6">
+        {/* Mobile: compact dots */}
+        <div className="flex sm:hidden items-center justify-center gap-2 mb-2">
+          {Array.from({ length: totalSteps }).map((_, idx) => {
+            const isDone = currentStep > idx + 1;
+            const isActive = currentStep === idx + 1;
+            return (
+              <div
+                key={idx}
+                className={`h-2.5 rounded-full transition-all ${
+                  isActive ? 'w-8 bg-primary' : isDone ? 'w-2.5 bg-green-500' : 'w-2.5 bg-muted'
+                }`}
+              />
+            );
+          })}
+        </div>
+        {/* Desktop: full step indicator */}
+        <div className="hidden sm:flex items-start justify-between gap-2">
+          {Array.from({ length: totalSteps }).map((_, idx) => {
+            const isDone = currentStep > idx + 1;
+            const isActive = currentStep === idx + 1;
+            return (
+              <div key={idx} className="flex-1 flex flex-col items-center text-center">
+                <div className="flex items-center w-full">
+                  <div className={`flex-1 h-px ${idx === 0 ? 'invisible' : isDone || isActive ? 'bg-primary' : 'bg-muted'}`} />
+                  <div
+                    className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0
+                      ${isDone ? 'bg-green-500 text-white' :
+                        isActive ? 'bg-primary text-primary-foreground' :
+                        'bg-muted text-muted-foreground'}`}
+                  >
+                    {isDone ? '✓' : idx + 1}
+                  </div>
+                  <div className={`flex-1 h-px ${idx === totalSteps - 1 ? 'invisible' : isDone ? 'bg-primary' : 'bg-muted'}`} />
                 </div>
-                <div className={`flex-1 h-px ${idx === totalSteps - 1 ? 'invisible' : isDone ? 'bg-primary' : 'bg-muted'}`} />
+                <span className={`text-[11px] mt-2 leading-tight ${isActive ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                  {stepTitles[idx]}
+                </span>
               </div>
-              <span className={`text-[11px] mt-2 leading-tight ${isActive ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
-                {stepTitles[idx]}
-              </span>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
     );
   };
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Registro de Animais</CardTitle>
-        <CardDescription>
+      <CardHeader className="p-4 sm:p-6">
+        <CardTitle className="text-lg sm:text-2xl">Registro de Animais</CardTitle>
+        <CardDescription className="text-xs sm:text-sm">
           Gerencie o cadastro de animais para adoção
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-2 sm:p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4">
-            <TabsTrigger value="register">Cadastrar Animal</TabsTrigger>
-            <TabsTrigger value="list">Listar Animais</TabsTrigger>
+          <TabsList className="mb-4 w-full grid grid-cols-2">
+            <TabsTrigger value="register" className="text-xs sm:text-sm">Cadastrar Animal</TabsTrigger>
+            <TabsTrigger value="list" className="text-xs sm:text-sm">Listar Animais</TabsTrigger>
           </TabsList>
           
           <TabsContent value="register">
             <Card>
-              <CardContent className="pt-6">
+              <CardContent className="pt-4 sm:pt-6 p-3 sm:p-6">
                 {renderStepIndicator()}
                 
                 {stepErrors[currentStep] && (
@@ -371,12 +389,12 @@ const AnimalRegistrationForm = () => {
                 )}
                 
                 <div className="mb-4">
-                  <h3 className="text-base font-semibold">
+                  <h3 className="text-sm sm:text-base font-semibold">
                     Passo {currentStep} de {totalSteps}: {stepTitles[currentStep - 1]}
                   </h3>
                 </div>
 
-                <div className="space-y-8">
+                <div className="space-y-6 sm:space-y-8">
                   {currentStep === 1 && (
                     <>
                       <AnimalBasicInfo
@@ -438,21 +456,22 @@ const AnimalRegistrationForm = () => {
                     />
                   )}
                   
-                  <div className="flex justify-between mt-8">
+                  <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-2 mt-8">
                     <Button 
                       variant="outline" 
                       onClick={handlePreviousStep}
                       disabled={currentStep === 1 || isSubmitting}
+                      className="w-full sm:w-auto"
                     >
                       Anterior
                     </Button>
                     
                     {currentStep < totalSteps ? (
-                      <Button onClick={handleNextStep} disabled={isSubmitting}>
+                      <Button onClick={handleNextStep} disabled={isSubmitting} className="w-full sm:w-auto">
                         Próximo
                       </Button>
                     ) : (
-                      <Button onClick={handleSubmit} disabled={isSubmitting}>
+                      <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full sm:w-auto">
                         {isSubmitting ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

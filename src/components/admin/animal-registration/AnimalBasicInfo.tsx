@@ -78,7 +78,7 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
           <RadioGroup 
             value={formData.type} 
             onValueChange={(value) => handleRadioChange('type', value)}
-            className="flex space-x-4"
+            className="flex flex-wrap gap-x-4 gap-y-2"
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="cachorro" id="dog" />
@@ -145,7 +145,7 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
           <RadioGroup 
             value={formData.gender} 
             onValueChange={(value) => handleRadioChange('gender', value)}
-            className="flex space-x-4"
+            className="flex flex-wrap gap-x-4 gap-y-2"
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="macho" id="male" />
@@ -163,7 +163,7 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
           <RadioGroup 
             value={formData.size} 
             onValueChange={(value) => handleRadioChange('size', value)}
-            className="flex space-x-4"
+            className="flex flex-wrap gap-x-4 gap-y-2"
           >
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="pequeno" id="small" />
