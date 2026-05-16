@@ -52,8 +52,8 @@ const PetInfoOverlay = ({ pet }: PetInfoOverlayProps) => {
           <span className="text-base">{petSpecies === 'dog' ? '🐶' : petSpecies === 'cat' ? '🐱' : '🐾'}</span>
         </h2>
         <div className="flex items-center gap-1 mt-0.5 text-xs text-white/80">
-          <MapPin className="h-3 w-3" />
-          <span>{pet.location}</span>
+          <Home className="h-3 w-3" />
+          <span>{(pet as Pet).shelter || pet.location}</span>
         </div>
       </div>
 
