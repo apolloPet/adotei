@@ -252,7 +252,7 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
       </CardHeader>
       
       <CardContent className="px-2 sm:px-6">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as AdoptionStage | 'all')} className="mb-4 sm:mb-6">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'all' | 'new' | 'in_review' | 'approved' | 'rejected')} className="mb-4 sm:mb-6">
           <TabsList className="w-full grid grid-cols-5 h-auto">
             <TabsTrigger value="all" className="text-xs sm:text-sm py-2">Todos</TabsTrigger>
             <TabsTrigger value="new" className="text-xs sm:text-sm py-2">Novo</TabsTrigger>
