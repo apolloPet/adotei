@@ -109,9 +109,9 @@ const Browse = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto pt-16 sm:pt-24 pb-4 sm:pb-12 px-[16px]">
-        <div className="max-w-md mx-auto">
-          <div className="flex justify-end items-center mb-2 sm:mb-4">
+      <main className="w-full h-[100svh] pt-14 sm:pt-16">
+        <div className="relative max-w-md mx-auto h-full px-2 sm:px-4 pb-2">
+          <div className="absolute top-2 right-4 sm:right-6 z-30">
             <FilterPanel
               filters={filters}
               isLoading={isLoading}
@@ -134,7 +134,7 @@ const Browse = () => {
           ) : (
             <>
               {pets[0] && warningMap.has(pets[0].id) && (
-                <div className="mb-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-900 dark:text-amber-200 flex gap-2">
+                <div className="absolute top-2 left-4 right-20 z-20 rounded-md border border-amber-300 bg-amber-50/95 dark:bg-amber-950/80 p-2 text-xs text-amber-900 dark:text-amber-200 flex gap-2">
                   <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                   <span>{warningMap.get(pets[0].id)}</span>
                 </div>
