@@ -66,9 +66,9 @@ export const UserListHeader = ({
   }, 0);
 
   return (
-    <div className="px-6">
-      <div className="flex flex-col space-y-4 md:flex-row md:justify-between md:space-y-0">
-        <div className="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+    <div className="px-3 sm:px-6">
+      <div className="flex flex-col gap-3 md:flex-row md:justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <UserViewToggle 
             viewMode={viewMode} 
             setViewMode={setViewMode}

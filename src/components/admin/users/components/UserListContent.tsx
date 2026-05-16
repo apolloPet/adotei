@@ -55,7 +55,7 @@ export const UserListContent = ({
   }
 
   return (
-    <CardContent>
+    <CardContent className="p-3 sm:p-6">
       {viewMode === 'simple' ? (
         <UserSimpleView users={paginatedUsers} formatDate={formatDate} />
       ) : (
