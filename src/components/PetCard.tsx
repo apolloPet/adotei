@@ -33,7 +33,7 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
   const handleSave = () => onSwipe('save', pet.id);
 
   return (
-    <div className="w-full max-w-md mx-auto h-[calc(100svh-8rem)] sm:h-[40rem] max-h-[44rem] min-h-[28rem] relative">
+    <div className="w-full h-full relative">
       <motion.div
         ref={cardRef}
         className="absolute inset-0 bg-white dark:bg-card rounded-3xl overflow-hidden shadow-2xl ring-1 ring-border/50 will-change-transform"
