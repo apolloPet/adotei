@@ -319,7 +319,7 @@ const AnimalList = () => {
       {/* View Animal Details Dialog */}
       {viewAnimal.animal && (
         <Dialog open={viewAnimal.open} onOpenChange={(open) => setViewAnimal({ ...viewAnimal, open })}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full p-3 sm:p-6">
             <DialogHeader>
               <DialogTitle>Detalhes do Animal</DialogTitle>
             </DialogHeader>
@@ -334,7 +334,7 @@ const AnimalList = () => {
       {/* Edit Animal Dialog */}
       {editAnimal.animal && (
         <Dialog open={editAnimal.open} onOpenChange={(open) => setEditAnimal({ ...editAnimal, open })}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full p-3 sm:p-6">
             <DialogHeader>
               <DialogTitle>Editar Animal</DialogTitle>
             </DialogHeader>
