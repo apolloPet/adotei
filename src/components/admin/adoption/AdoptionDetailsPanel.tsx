@@ -90,7 +90,7 @@ const Section = ({
   title: string;
   children: React.ReactNode;
 }) => (
-  <div className="rounded-lg border bg-card p-4">
+  <div className="rounded-lg border bg-card p-3 sm:p-4">
     <div className="flex items-center gap-2 mb-3">
       <div className="text-primary">{icon}</div>
       <h4 className="text-sm font-semibold">{title}</h4>
@@ -100,9 +100,9 @@ const Section = ({
 );
 
 const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
-  <div className="flex justify-between gap-3 text-sm py-1 border-b border-border/40 last:border-0">
-    <span className="text-muted-foreground">{label}</span>
-    <span className="font-medium text-right">{value ?? '—'}</span>
+  <div className="flex flex-col sm:flex-row sm:justify-between gap-0.5 sm:gap-3 text-sm py-1.5 border-b border-border/40 last:border-0">
+    <span className="text-muted-foreground text-xs sm:text-sm">{label}</span>
+    <span className="font-medium sm:text-right break-words">{value ?? '—'}</span>
   </div>
 );
 
