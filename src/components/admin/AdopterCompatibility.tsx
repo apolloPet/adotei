@@ -89,17 +89,17 @@ const AdopterCompatibility = () => {
             Selecione um animal para ver os adotantes mais compatíveis.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-            <div className="flex items-center gap-3">
+        <CardContent className="space-y-4 p-3 sm:p-6 pt-0 sm:pt-0">
+          <div className="flex flex-col md:flex-row gap-3 md:items-center">
+            <div className="flex items-center gap-3 min-w-0">
               <img
                 src={selectedPet.primaryImage}
                 alt={selectedPet.name}
-                className="h-16 w-16 rounded-md object-cover"
+                className="h-14 w-14 sm:h-16 sm:w-16 rounded-md object-cover shrink-0"
               />
-              <div>
-                <p className="font-semibold">{selectedPet.name}</p>
-                <p className="text-xs text-muted-foreground">
+              <div className="min-w-0">
+                <p className="font-semibold truncate">{selectedPet.name}</p>
+                <p className="text-xs text-muted-foreground truncate">
                   {selectedPet.breed} · {selectedPet.size} · {selectedPet.species}
                 </p>
               </div>
@@ -123,12 +123,12 @@ const AdopterCompatibility = () => {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-sm sm:text-base">
             {ranked.length} candidatos avaliados
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-3 p-3 sm:p-6 pt-0 sm:pt-0">
           {ranked.length === 0 && (
             <p className="text-sm text-muted-foreground">Nenhum candidato disponível.</p>
           )}
@@ -138,52 +138,34 @@ const AdopterCompatibility = () => {
             return (
               <div
                 key={r.candidate.id}
-                className="border rounded-lg p-4 space-y-2 hover:border-primary/50 transition"
+                className="border rounded-lg p-3 sm:p-4 space-y-2 hover:border-primary/50 transition"
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-sm font-bold">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-muted text-xs sm:text-sm font-bold shrink-0">
                     #{i + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold truncate">{r.candidate.name}</p>
-                      {blocked && (
-                        <Badge variant="destructive" className="gap-1">
-                          <ShieldAlert className="h-3 w-3" /> Bloqueado
-                        </Badge>
-                      )}
-                      {!blocked && r.score >= 75 && (
-                        <Badge className="bg-green-500/15 text-green-700 hover:bg-green-500/20">
-                          Alta compatibilidade
-                        </Badge>
-                      )}
-                      {!blocked && r.score < 50 && (
-                        <Badge variant="outline" className="gap-1">
-                          <AlertTriangle className="h-3 w-3" /> Baixa compatibilidade
-                        </Badge>
-                      )}
-                    </div>
+                    <p className="font-semibold truncate text-sm sm:text-base">{r.candidate.name}</p>
                     <p className="text-xs text-muted-foreground truncate">
                       {r.candidate.email}
                       {r.candidate.city ? ` · ${r.candidate.city}` : ''}
                     </p>
-                  </div>
-                  <div className="w-32 text-right">
-                    <p className="text-2xl font-bold">{r.score}</p>
-                    <p className="text-xs text-muted-foreground">pontos</p>
+                    <div className="mt-1.5">
+                      {compatBadge(r.score, blocked)}
+                    </div>
                   </div>
                   <Button
                     size="icon"
                     variant="ghost"
+                    className="shrink-0 h-8 w-8"
                     onClick={() => setExpandedId(expanded ? null : r.candidate.id)}
                   >
                     {expanded ? <ChevronUp /> : <ChevronDown />}
                   </Button>
                 </div>
-                <Progress value={r.score} className={`h-2 ${scoreColor(r.score)}`} />
 
                 {/* Top reasons (collapsed) */}
-                {!expanded && (
+                {!expanded && (r.reasons.positive.length > 0 || r.reasons.negative.length > 0) && (
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {r.reasons.positive.slice(0, 2).map((p) => (
                       <Badge key={p} variant="secondary" className="text-xs">+ {p}</Badge>
@@ -203,7 +185,7 @@ const AdopterCompatibility = () => {
                           <li className="text-muted-foreground">—</li>
                         )}
                         {r.reasons.positive.map((p) => (
-                          <li key={p}>✓ {p}</li>
+                          <li key={p} className="break-words">✓ {p}</li>
                         ))}
                       </ul>
                     </div>
@@ -214,7 +196,7 @@ const AdopterCompatibility = () => {
                           <li className="text-muted-foreground">—</li>
                         )}
                         {r.reasons.negative.map((n) => (
-                          <li key={n}>! {n}</li>
+                          <li key={n} className="break-words">! {n}</li>
                         ))}
                       </ul>
                     </div>
@@ -225,7 +207,7 @@ const AdopterCompatibility = () => {
                           <li className="text-muted-foreground">—</li>
                         )}
                         {r.reasons.blockers.map((b) => (
-                          <li key={b}>✕ {b}</li>
+                          <li key={b} className="break-words">✕ {b}</li>
                         ))}
                       </ul>
                     </div>
