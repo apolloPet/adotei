@@ -33,7 +33,7 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
   const [selectedAdoption, setSelectedAdoption] = useState<AdoptionMatch | null>(null);
   const [showStageDialog, setShowStageDialog] = useState(false);
   const [notes, setNotes] = useState('');
-  const [activeTab, setActiveTab] = useState<AdoptionStage | 'all'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'new' | 'in_review' | 'approved' | 'rejected'>('all');
   const [rejectionReason, setRejectionReason] = useState('');
   
   useEffect(() => {
