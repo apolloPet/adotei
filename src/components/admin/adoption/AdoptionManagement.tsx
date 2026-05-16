@@ -426,12 +426,12 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
       </Dialog>
       
       <Dialog open={showStageDialog} onOpenChange={setShowStageDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
           <DialogHeader>
-            <DialogTitle>Análise da Solicitação de Adoção</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">Análise da Solicitação</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               {selectedAdoption && (
-                <>Adoção: {selectedAdoption.petName} por {selectedAdoption.userName}</>
+                <>{selectedAdoption.petName} · {selectedAdoption.userName}</>
               )}
             </DialogDescription>
           </DialogHeader>
@@ -440,10 +440,15 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
             {selectedAdoption && <AdoptionDetailsPanel match={selectedAdoption} />}
 
             <div className="space-y-2">
-              <h4 className="font-medium">Estágio Atual</h4>
-              <Badge variant={selectedAdoption ? getStageColor(selectedAdoption.currentStage) : "secondary"}>
-                {selectedAdoption ? getStageLabel(selectedAdoption.currentStage) : ''}
-              </Badge>
+              <h4 className="font-medium text-sm">Status Atual</h4>
+              {selectedAdoption && (() => {
+                const s = getSimpleStatus(selectedAdoption.currentStage);
+                return (
+                  <Badge variant="outline" className={getSimpleStatusClasses(s)}>
+                    {getSimpleStatusLabel(s)} · {getStageLabel(selectedAdoption.currentStage)}
+                  </Badge>
+                );
+              })()}
             </div>
             
             <div className="space-y-2">
