@@ -13,14 +13,12 @@ import {
   Settings, 
   Users, 
   ShieldCheck,
-  Globe,
   Heart
 } from 'lucide-react';
 import { UsersList } from './admin/users';
 import AdminUserManagement from './admin/AdminUserManagement';
 import PaymentSettings from './admin/PaymentSettings';
 import AnimalRegistrationForm from './admin/animal-registration';
-import WebsiteContentManager from './admin/WebsiteContentManager';
 import AdopterCompatibility from './admin/AdopterCompatibility';
 import { signOut } from '@/services/auth'; 
 import { useAuth } from '@/hooks/auth';
@@ -119,45 +117,42 @@ const AdminPanel = ({ onLogout }) => {
   }
 
   return (
-    <div className="container py-8 max-w-7xl mx-auto px-4 mt-16">
+    <div className="container py-4 sm:py-8 max-w-7xl mx-auto px-2 sm:px-4 mt-16">
       <Card className="w-full">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-2xl">Painel Administrativo</CardTitle>
-            <CardDescription>Gerencie solicitações de adoção, usuários e administradores</CardDescription>
+        <CardHeader className="flex flex-row items-start sm:items-center justify-between gap-2 p-4 sm:p-6">
+          <div className="min-w-0">
+            <CardTitle className="text-lg sm:text-2xl">Painel Administrativo</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Gerencie adoções, animais e usuários</CardDescription>
           </div>
           <Button 
             variant="outline" 
-            className="flex items-center gap-1"
+            size="sm"
+            className="flex items-center gap-1 shrink-0"
             onClick={handleLogout}
           >
             <LogOut className="h-4 w-4" />
-            Logout
+            <span className="hidden sm:inline">Logout</span>
           </Button>
         </CardHeader>
         
-        <CardContent className="pt-6">
+        <CardContent className="pt-2 sm:pt-6 px-2 sm:px-6">
           <Tabs defaultValue="adoption" className="w-full">
-            <TabsList className="w-full mb-6 overflow-x-auto flex flex-nowrap whitespace-nowrap">
-              <TabsTrigger value="adoption" className="flex items-center gap-1">
+            <TabsList className="w-full mb-4 sm:mb-6 grid grid-cols-4 h-auto">
+              <TabsTrigger value="adoption" className="flex flex-col sm:flex-row items-center gap-1 py-2 text-xs sm:text-sm">
                 <PawPrint className="h-4 w-4" />
-                <span className="hidden sm:inline">Adoção</span>
+                <span>Adoções</span>
               </TabsTrigger>
-              <TabsTrigger value="animals" className="flex items-center gap-1">
+              <TabsTrigger value="animals" className="flex flex-col sm:flex-row items-center gap-1 py-2 text-xs sm:text-sm">
                 <PawPrint className="h-4 w-4" />
-                <span className="hidden sm:inline">Animais</span>
+                <span>Animais</span>
               </TabsTrigger>
-              <TabsTrigger value="compatibility" className="flex items-center gap-1">
+              <TabsTrigger value="compatibility" className="flex flex-col sm:flex-row items-center gap-1 py-2 text-xs sm:text-sm">
                 <Heart className="h-4 w-4" />
-                <span className="hidden sm:inline">Compatibilidade</span>
+                <span>Match</span>
               </TabsTrigger>
-              <TabsTrigger value="website" className="flex items-center gap-1">
-                <Globe className="h-4 w-4" />
-                <span className="hidden sm:inline">Conteúdo do Site</span>
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-1">
+              <TabsTrigger value="settings" className="flex flex-col sm:flex-row items-center gap-1 py-2 text-xs sm:text-sm">
                 <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">Configurações</span>
+                <span>Config</span>
               </TabsTrigger>
             </TabsList>
             
@@ -173,22 +168,18 @@ const AdminPanel = ({ onLogout }) => {
               <AdopterCompatibility />
             </TabsContent>
             
-            <TabsContent value="website">
-              <WebsiteContentManager />
-            </TabsContent>
-            
             <TabsContent value="settings">
               <Tabs defaultValue="administrators" className="w-full">
-                <TabsList className="w-full mb-4 overflow-x-auto flex flex-nowrap whitespace-nowrap">
-                  <TabsTrigger value="administrators" className="flex items-center gap-1">
+                <TabsList className="w-full mb-4 grid grid-cols-3 h-auto">
+                  <TabsTrigger value="administrators" className="flex flex-col sm:flex-row items-center gap-1 py-2 text-xs sm:text-sm">
                     <ShieldCheck className="h-4 w-4" />
-                    <span className="hidden sm:inline">Administradores</span>
+                    <span>Admins</span>
                   </TabsTrigger>
-                  <TabsTrigger value="users" className="flex items-center gap-1">
+                  <TabsTrigger value="users" className="flex flex-col sm:flex-row items-center gap-1 py-2 text-xs sm:text-sm">
                     <Users className="h-4 w-4" />
-                    <span className="hidden sm:inline">Usuários</span>
+                    <span>Usuários</span>
                   </TabsTrigger>
-                  <TabsTrigger value="payment-settings">Configurações de Pagamento</TabsTrigger>
+                  <TabsTrigger value="payment-settings" className="text-xs sm:text-sm py-2">Pagamentos</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="administrators">

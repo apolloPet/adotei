@@ -33,7 +33,7 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
   const [selectedAdoption, setSelectedAdoption] = useState<AdoptionMatch | null>(null);
   const [showStageDialog, setShowStageDialog] = useState(false);
   const [notes, setNotes] = useState('');
-  const [activeTab, setActiveTab] = useState<AdoptionStage | 'all'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'new' | 'in_review' | 'approved' | 'rejected'>('all');
   const [rejectionReason, setRejectionReason] = useState('');
   
   useEffect(() => {
@@ -143,51 +143,60 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
     }
   };
 
+  // Mapeia o estágio detalhado para um status simplificado exibido ao admin
+  type SimpleStatus = 'new' | 'in_review' | 'approved' | 'rejected';
+  const getSimpleStatus = (stage: AdoptionStage): SimpleStatus => {
+    switch (stage) {
+      case 'interested': return 'new';
+      case 'pending_approval':
+      case 'visit_scheduled':
+      case 'home_inspection': return 'in_review';
+      case 'approved':
+      case 'completed': return 'approved';
+      case 'rejected': return 'rejected';
+      default: return 'in_review';
+    }
+  };
+
+  const getSimpleStatusLabel = (s: SimpleStatus): string => ({
+    new: 'Novo Interesse',
+    in_review: 'Em Análise',
+    approved: 'Aprovado',
+    rejected: 'Rejeitado',
+  }[s]);
+
+  const getSimpleStatusClasses = (s: SimpleStatus): string => ({
+    new: 'bg-pink-100 text-pink-800 border-pink-200',
+    in_review: 'bg-amber-100 text-amber-800 border-amber-200',
+    approved: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    rejected: 'bg-red-100 text-red-800 border-red-200',
+  }[s]);
+
   const getStageColor = (stage: AdoptionStage): "default" | "secondary" | "destructive" | "outline" => {
     switch (stage) {
-      case 'pending_approval':
-        return "secondary";
-      case 'approved':
-        return "default";
-      case 'rejected':
-        return "destructive";
+      case 'rejected': return "destructive";
       case 'completed':
-        return "outline";
-      case 'interested':
-        return "secondary";
-      case 'visit_scheduled':
-        return "secondary";
-      case 'home_inspection':
-        return "secondary";
-      default:
-        return "secondary";
+      case 'approved': return "default";
+      default: return "secondary";
     }
   };
 
   const getStageLabel = (stage: AdoptionStage): string => {
     switch (stage) {
-      case 'interested':
-        return 'Interesse Demonstrado';
-      case 'pending_approval':
-        return 'Em Análise';
-      case 'approved':
-        return 'Aprovado';
-      case 'visit_scheduled':
-        return 'Visita Agendada';
-      case 'home_inspection':
-        return 'Inspeção Domiciliar';
-      case 'completed':
-        return 'Concluído';
-      case 'rejected':
-        return 'Rejeitado';
-      default:
-        return 'Desconhecido';
+      case 'interested': return 'Interesse Demonstrado';
+      case 'pending_approval': return 'Em Análise';
+      case 'approved': return 'Aprovado';
+      case 'visit_scheduled': return 'Visita Agendada';
+      case 'home_inspection': return 'Inspeção Domiciliar';
+      case 'completed': return 'Concluído';
+      case 'rejected': return 'Rejeitado';
+      default: return 'Desconhecido';
     }
   };
 
-  const filteredMatches = activeTab === 'all' 
-    ? matches 
-    : matches.filter(match => match.currentStage === activeTab);
+  const filteredMatches = activeTab === 'all'
+    ? matches
+    : matches.filter(match => getSimpleStatus(match.currentStage) === (activeTab as unknown as SimpleStatus));
 
   const nextAvailableStages = (currentStage: AdoptionStage): AdoptionStage[] => {
     switch(currentStage) {
@@ -216,45 +225,40 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 sm:p-6">
         <div>
-          <CardTitle className="text-xl">Gerenciamento de Adoções</CardTitle>
-          <CardDescription>Acompanhe e gerencie as solicitações de adoção</CardDescription>
+          <CardTitle className="text-base sm:text-xl">Gerenciamento de Adoções</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">Acompanhe e atualize o status das solicitações</CardDescription>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"
             onClick={handleRefresh}
             disabled={isLoading}
           >
-            {isLoading ? 'Carregando...' : 'Atualizar'}
+            {isLoading ? '...' : 'Atualizar'}
           </Button>
           <Button
             variant="outline"
             size="sm"
             className="flex items-center gap-1"
-            onClick={() => {
-              setShowPendingFollowUps(true);
-            }}
+            onClick={() => setShowPendingFollowUps(true)}
           >
             <Bell className="h-4 w-4" />
-            {pendingFollowUps.length > 0 ? pendingFollowUps.length.toString() : "0"} acompanhamentos
+            <span className="text-xs sm:text-sm">{pendingFollowUps.length} acompanhamentos</span>
           </Button>
         </div>
       </CardHeader>
       
-      <CardContent>
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as AdoptionStage | 'all')} className="mb-6">
-          <TabsList className="w-full mb-4 overflow-x-auto flex flex-nowrap whitespace-nowrap">
-            <TabsTrigger value="all">Todos</TabsTrigger>
-            <TabsTrigger value="interested">Interesse</TabsTrigger>
-            <TabsTrigger value="pending_approval">Em Análise</TabsTrigger>
-            <TabsTrigger value="approved">Aprovados</TabsTrigger>
-            <TabsTrigger value="visit_scheduled">Visita Agendada</TabsTrigger>
-            <TabsTrigger value="home_inspection">Inspeção</TabsTrigger>
-            <TabsTrigger value="completed">Concluídos</TabsTrigger>
-            <TabsTrigger value="rejected">Rejeitados</TabsTrigger>
+      <CardContent className="px-2 sm:px-6">
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'all' | 'new' | 'in_review' | 'approved' | 'rejected')} className="mb-4 sm:mb-6">
+          <TabsList className="w-full grid grid-cols-5 h-auto">
+            <TabsTrigger value="all" className="text-xs sm:text-sm py-2">Todos</TabsTrigger>
+            <TabsTrigger value="new" className="text-xs sm:text-sm py-2">Novo</TabsTrigger>
+            <TabsTrigger value="in_review" className="text-xs sm:text-sm py-2">Análise</TabsTrigger>
+            <TabsTrigger value="approved" className="text-xs sm:text-sm py-2">Aprovado</TabsTrigger>
+            <TabsTrigger value="rejected" className="text-xs sm:text-sm py-2">Rejeitado</TabsTrigger>
           </TabsList>
         </Tabs>
         
@@ -275,55 +279,100 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
             </Button>
           </div>
         ) : filteredMatches.length > 0 ? (
-          <div className="border rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Usuário</TableHead>
-                  <TableHead>Animal</TableHead>
-                  <TableHead>Contato</TableHead>
-                  <TableHead>Data da Solicitação</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredMatches.map((match) => (
-                  <TableRow key={match.id}>
-                    <TableCell className="font-medium">{match.userName}</TableCell>
-                    <TableCell>{match.petName}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="text-sm">{match.userPhone}</span>
-                        <span className="text-sm text-muted-foreground">{match.userEmail}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatDate(match.createdAt)}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStageColor(match.currentStage) as "default" | "secondary" | "destructive" | "outline"}>
-                        {getStageLabel(match.currentStage)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        onClick={() => handleOpenStageDialog(match)}
-                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                        disabled={match.currentStage === 'completed' || isLoading}
-                      >
-                        Atualizar
-                      </Button>
-                    </TableCell>
+          <>
+            {/* Desktop table */}
+            <div className="border rounded-md hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Usuário</TableHead>
+                    <TableHead>Animal</TableHead>
+                    <TableHead>Contato</TableHead>
+                    <TableHead>Solicitação</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredMatches.map((match) => {
+                    const simple = getSimpleStatus(match.currentStage);
+                    return (
+                      <TableRow key={match.id}>
+                        <TableCell className="font-medium">{match.userName}</TableCell>
+                        <TableCell>{match.petName}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="text-sm">{match.userPhone}</span>
+                            <span className="text-sm text-muted-foreground">{match.userEmail}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{formatDate(match.createdAt)}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={getSimpleStatusClasses(simple)}>
+                            {getSimpleStatusLabel(simple)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleOpenStageDialog(match)}
+                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                            disabled={match.currentStage === 'completed' || isLoading}
+                          >
+                            Atualizar
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden space-y-3">
+              {filteredMatches.map((match) => {
+                const simple = getSimpleStatus(match.currentStage);
+                return (
+                  <div key={match.id} className="border rounded-lg p-3 bg-card">
+                    <div className="flex items-start gap-3">
+                      <img
+                        src={match.petImage}
+                        alt={match.petName}
+                        className="w-14 h-14 rounded-full object-cover shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h4 className="font-medium truncate">{match.petName}</h4>
+                            <p className="text-xs text-muted-foreground truncate">{match.userName}</p>
+                          </div>
+                          <Badge variant="outline" className={`${getSimpleStatusClasses(simple)} text-[10px] shrink-0`}>
+                            {getSimpleStatusLabel(simple)}
+                          </Badge>
+                        </div>
+                        <p className="text-[11px] text-muted-foreground mt-1 truncate">{match.userPhone} · {formatDate(match.createdAt)}</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-3"
+                      onClick={() => handleOpenStageDialog(match)}
+                      disabled={match.currentStage === 'completed' || isLoading}
+                    >
+                      Atualizar status
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </>
         ) : (
           <div className="text-center py-8 text-muted-foreground flex flex-col items-center">
             <Info className="h-8 w-8 mb-2 text-amber-500" />
-            <p>Nenhuma solicitação de adoção encontrada neste estágio.</p>
+            <p>Nenhuma solicitação encontrada neste status.</p>
             {activeTab !== 'all' && (
               <Button
                 variant="outline"
@@ -377,12 +426,12 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
       </Dialog>
       
       <Dialog open={showStageDialog} onOpenChange={setShowStageDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full">
           <DialogHeader>
-            <DialogTitle>Análise da Solicitação de Adoção</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">Análise da Solicitação</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               {selectedAdoption && (
-                <>Adoção: {selectedAdoption.petName} por {selectedAdoption.userName}</>
+                <>{selectedAdoption.petName} · {selectedAdoption.userName}</>
               )}
             </DialogDescription>
           </DialogHeader>
@@ -391,10 +440,15 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
             {selectedAdoption && <AdoptionDetailsPanel match={selectedAdoption} />}
 
             <div className="space-y-2">
-              <h4 className="font-medium">Estágio Atual</h4>
-              <Badge variant={selectedAdoption ? getStageColor(selectedAdoption.currentStage) : "secondary"}>
-                {selectedAdoption ? getStageLabel(selectedAdoption.currentStage) : ''}
-              </Badge>
+              <h4 className="font-medium text-sm">Status Atual</h4>
+              {selectedAdoption && (() => {
+                const s = getSimpleStatus(selectedAdoption.currentStage);
+                return (
+                  <Badge variant="outline" className={getSimpleStatusClasses(s)}>
+                    {getSimpleStatusLabel(s)} · {getStageLabel(selectedAdoption.currentStage)}
+                  </Badge>
+                );
+              })()}
             </div>
             
             <div className="space-y-2">
