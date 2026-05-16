@@ -271,7 +271,7 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
                     key={i}
                     src={src}
                     alt={`${match.petName} foto ${i + 1}`}
-                    className="w-full h-20 rounded-md object-cover border"
+                    className="w-full h-16 sm:h-20 rounded-md object-cover border"
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src = '/placeholder.svg';
                     }}
