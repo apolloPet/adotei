@@ -85,9 +85,9 @@ const UsersList = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">Lista de Usuários Cadastrados</CardTitle>
-        <CardDescription>Gerencie e visualize os usuários cadastrados no sistema</CardDescription>
+      <CardHeader className="p-4 sm:p-6">
+        <CardTitle className="text-base sm:text-xl">Lista de Usuários Cadastrados</CardTitle>
+        <CardDescription className="text-xs sm:text-sm">Gerencie e visualize os usuários cadastrados no sistema</CardDescription>
       </CardHeader>
       <UserListHeader 
         viewMode={viewMode}

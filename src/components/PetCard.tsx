@@ -33,20 +33,20 @@ const PetCard = ({ pet, onSwipe }: PetCardProps) => {
   const handleSave = () => onSwipe('save', pet.id);
 
   return (
-    <div className="w-full max-w-md mx-auto h-[34rem] sm:h-[36rem] relative">
+    <div className="w-full h-full relative">
       <motion.div
         ref={cardRef}
-        className="absolute inset-0 bg-white dark:bg-card rounded-3xl overflow-hidden shadow-xl will-change-transform"
+        className="absolute inset-0 bg-white dark:bg-card rounded-none sm:rounded-3xl overflow-hidden shadow-2xl ring-1 ring-border/50 will-change-transform"
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
         transition={{ duration: 0.3 }}
-        drag={!showDetails}
+        drag={!showDetails ? "x" : false}
         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
-        dragElastic={0.7}
+        dragElastic={0.35}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        whileDrag={{ scale: 1.02 }}
+        whileDrag={{ scale: 1.01 }}
       >
         <PetImageCarousel 
           images={pet.images} 

@@ -131,11 +131,11 @@ const AnimalList = () => {
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader>
-          <CardTitle>Filtros</CardTitle>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">Filtros</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
+        <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <div className="flex gap-2">
               <Input
                 placeholder="Buscar por nome"
@@ -180,7 +180,7 @@ const AnimalList = () => {
       </Card>
       
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="p-3 sm:p-6 pt-4 sm:pt-6">
           {loading ? (
             <div className="flex justify-center p-4">Carregando animais...</div>
           ) : animals.length === 0 ? (
@@ -193,67 +193,102 @@ const AnimalList = () => {
               </p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Idade</TableHead>
-                  <TableHead>Porte</TableHead>
-                  <TableHead>Sexo</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile: card list */}
+              <div className="md:hidden space-y-3">
                 {animals.map((animal) => (
-                  <TableRow key={animal.id}>
-                    <TableCell className="font-medium">{animal.nome}</TableCell>
-                    <TableCell>
-                      {animal.tipo === 'cachorro' ? 'Cachorro' : 
-                       animal.tipo === 'gato' ? 'Gato' : 'Outro'}
-                    </TableCell>
-                    <TableCell>{animal.descricao || '-'}</TableCell>
-                    <TableCell>{animal.idade} {animal.idade === 1 ? 'ano' : 'anos'}</TableCell>
-                    <TableCell>
-                      {animal.porte === 'pequeno' ? 'Pequeno' : 
-                       animal.porte === 'medio' ? 'Médio' : 'Grande'}
-                    </TableCell>
-                    <TableCell>
-                      {animal.sexo === 'macho' ? 'Macho' : 'Fêmea'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
-                          title="Ver detalhes"
-                          onClick={() => handleViewAnimal(animal.id)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="icon" 
-                          title="Editar"
-                          onClick={() => handleEditAnimal(animal.id)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="icon" 
-                          title="Excluir"
-                          onClick={() => setConfirmDelete({ open: true, id: animal.id })}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                  <div key={animal.id} className="border rounded-lg p-3 bg-card">
+                    <div className="flex gap-3">
+                      {animal.fotoPrincipal && (
+                        <img
+                          src={animal.fotoPrincipal}
+                          alt={animal.nome}
+                          className="w-16 h-16 rounded-md object-cover border shrink-0"
+                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/placeholder.svg'; }}
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold truncate">{animal.nome}</p>
+                        <p className="text-xs text-muted-foreground capitalize">
+                          {animal.tipo === 'cachorro' ? 'Cachorro' : animal.tipo === 'gato' ? 'Gato' : 'Outro'}
+                          {' · '}
+                          {animal.porte === 'pequeno' ? 'Pequeno' : animal.porte === 'medio' ? 'Médio' : 'Grande'}
+                          {' · '}
+                          {animal.sexo === 'macho' ? 'Macho' : 'Fêmea'}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {animal.idade} {animal.idade === 1 ? 'ano' : 'anos'}
+                        </p>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                    {animal.descricao && (
+                      <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{animal.descricao}</p>
+                    )}
+                    <div className="flex gap-2 mt-3">
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => handleViewAnimal(animal.id)}>
+                        <Eye className="h-4 w-4 mr-1" /> Ver
+                      </Button>
+                      <Button variant="outline" size="sm" className="flex-1" onClick={() => handleEditAnimal(animal.id)}>
+                        <Edit className="h-4 w-4 mr-1" /> Editar
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => setConfirmDelete({ open: true, id: animal.id })}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+
+              {/* Desktop: table */}
+              <div className="hidden md:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Idade</TableHead>
+                      <TableHead>Porte</TableHead>
+                      <TableHead>Sexo</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {animals.map((animal) => (
+                      <TableRow key={animal.id}>
+                        <TableCell className="font-medium">{animal.nome}</TableCell>
+                        <TableCell>
+                          {animal.tipo === 'cachorro' ? 'Cachorro' : 
+                           animal.tipo === 'gato' ? 'Gato' : 'Outro'}
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">{animal.descricao || '-'}</TableCell>
+                        <TableCell>{animal.idade} {animal.idade === 1 ? 'ano' : 'anos'}</TableCell>
+                        <TableCell>
+                          {animal.porte === 'pequeno' ? 'Pequeno' : 
+                           animal.porte === 'medio' ? 'Médio' : 'Grande'}
+                        </TableCell>
+                        <TableCell>
+                          {animal.sexo === 'macho' ? 'Macho' : 'Fêmea'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="icon" title="Ver detalhes" onClick={() => handleViewAnimal(animal.id)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="outline" size="icon" title="Editar" onClick={() => handleEditAnimal(animal.id)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="destructive" size="icon" title="Excluir" onClick={() => setConfirmDelete({ open: true, id: animal.id })}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -284,7 +319,7 @@ const AnimalList = () => {
       {/* View Animal Details Dialog */}
       {viewAnimal.animal && (
         <Dialog open={viewAnimal.open} onOpenChange={(open) => setViewAnimal({ ...viewAnimal, open })}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full p-3 sm:p-6">
             <DialogHeader>
               <DialogTitle>Detalhes do Animal</DialogTitle>
             </DialogHeader>
@@ -299,7 +334,7 @@ const AnimalList = () => {
       {/* Edit Animal Dialog */}
       {editAnimal.animal && (
         <Dialog open={editAnimal.open} onOpenChange={(open) => setEditAnimal({ ...editAnimal, open })}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full p-3 sm:p-6">
             <DialogHeader>
               <DialogTitle>Editar Animal</DialogTitle>
             </DialogHeader>

@@ -26,6 +26,7 @@ import PaymentHistory from './pages/PaymentHistory'
 import Suppliers from './pages/Suppliers'
 import AdminPanel from './components/AdminPanel'
 import AdminLogin from './components/AdminLogin'
+import OnboardingTour from './components/onboarding/OnboardingTour'
 import { signOut } from '@/services/auth'
 import { toast } from './hooks/use-sonner'
 import { useNavigate } from 'react-router-dom'
@@ -81,6 +82,7 @@ function App() {
       </Routes>
       <Toaster />
       <SonnerToaster />
+      <OnboardingTour />
     </>
   )
 }

@@ -93,10 +93,10 @@ export const AdminUserManagement = () => {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <div>
-          <CardTitle className="text-xl">Gerenciamento de Administradores</CardTitle>
-          <CardDescription>
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 sm:p-6">
+        <div className="min-w-0">
+          <CardTitle className="text-base sm:text-xl">Gerenciamento de Administradores</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
             Adicione e gerencie usuários com acesso administrativo
           </CardDescription>
         </div>
@@ -106,7 +106,7 @@ export const AdminUserManagement = () => {
           onSuccess={fetchAdmins}
         />
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-3 sm:p-6 pt-0 sm:pt-0">
         <AdminTable
           admins={admins}
           isLoading={isLoading}

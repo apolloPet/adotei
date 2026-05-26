@@ -119,10 +119,9 @@ const Browse = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 pt-32 pb-24">
-        <div className="max-w-md mx-auto">
-          <div className="flex justify-between items-center mb-8">
-            <h1 className="text-2xl font-bold leading-tight">conheça seu novo amigo<br/><span className="text-muted-foreground font-semibold">com o Adotei</span></h1>
+      <main className="w-full h-[100svh] pt-14 sm:pt-16 pb-[env(safe-area-inset-bottom)]">
+        <div className="relative max-w-md mx-auto h-full px-0 sm:px-2 pb-[max(env(safe-area-inset-bottom),1rem)]">
+          <div className="absolute top-2 right-4 sm:right-6 z-30">
             <FilterPanel
               filters={filters}
               isLoading={isLoading}
@@ -145,7 +144,7 @@ const Browse = () => {
           ) : (
             <>
               {pets[0] && warningMap.has(pets[0].id) && (
-                <div className="mb-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-900 dark:text-amber-200 flex gap-2">
+                <div className="absolute top-2 left-4 right-20 z-20 rounded-md border border-amber-300 bg-amber-50/95 dark:bg-amber-950/80 p-2 text-xs text-amber-900 dark:text-amber-200 flex gap-2">
                   <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                   <span>{warningMap.get(pets[0].id)}</span>
                 </div>

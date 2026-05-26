@@ -41,10 +41,10 @@ const EMPTY_FORM: AnimalFormData = {
 interface AnimalCreateData {
   nome: string;
   idade: number;
-  tipo: "cachorro" | "gato";
+  tipo: 'cachorro' | 'gato';
   raca: string;
-  porte: "pequeno" | "medio" | "grande";
-  sexo: "macho" | "femea";
+  porte: 'pequeno' | 'medio' | 'grande';
+  sexo: 'macho' | 'femea';
   castrado: boolean;
   descricao: string;
   vaccineIds: string[];
@@ -189,7 +189,9 @@ const AnimalRegistrationForm = () => {
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Cadastrando...
                       </>
-                    ) : "Cadastrar Animal"}
+                    ) : (
+                      'Cadastrar Animal'
+                    )}
                   </Button>
                 </div>
               </CardContent>

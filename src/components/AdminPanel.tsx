@@ -1,17 +1,15 @@
-
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-sonner";
-import { formatDate } from './admin/MockData';
 import AdoptionManagement from './admin/AdoptionManagement';
 import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
-import { 
-  LogOut, 
-  PawPrint, 
-  Settings, 
-  Users, 
+import {
+  LogOut,
+  PawPrint,
+  Settings,
+  Users,
   ShieldCheck,
   Building2,
   Heart
@@ -22,67 +20,45 @@ import PaymentSettings from './admin/PaymentSettings';
 import AnimalRegistrationForm from './admin/animal-registration';
 import AdopterCompatibility from './admin/AdopterCompatibility';
 import OrganizationManagement from './admin/organization-management/OrganizationManagement';
-import { signOut } from '@/services/auth'; 
+import { signOut } from '@/services/auth';
 import { useAuth } from '@/hooks/auth';
 
 const AdminPanel = ({ onLogout }) => {
   const navigate = useNavigate();
   const { isAdmin, isVolunteer, isAuthenticated, fetchUserData } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Verificar status de autenticação quando o componente é montado
+
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
-        console.log('AdminPanel: Verificando status de autenticação inicial');
-        
-        // Se temos uma função para buscar dados do usuário, 
-        // garantir que ela seja chamada para sincronizar o estado
         if (fetchUserData) {
           await fetchUserData();
         }
-        
-        // Verificar também via localStorage para caso de usuário de demo
-        const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
-        const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-        
-        console.log('AdminPanel: Estado de autenticação', {
-          isAdmin,
-          isAuthenticated,
-          localStorageAdmin,
-          localStorageLoggedIn
-        });
       } catch (error) {
         console.error('Erro ao verificar status de autenticação:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     checkAuthStatus();
-    
-    // Monitorar eventos de alteração de autenticação
+
     const handleAuthChange = () => {
-      console.log('AdminPanel: Evento de mudança de autenticação detectado');
       checkAuthStatus();
     };
-    
+
     window.addEventListener('authStateChanged', handleAuthChange);
     window.addEventListener('storage', handleAuthChange);
-    
+
     return () => {
       window.removeEventListener('authStateChanged', handleAuthChange);
       window.removeEventListener('storage', handleAuthChange);
     };
   }, [fetchUserData]);
-  
+
   const handleLogout = async () => {
     try {
-      console.log('AdminPanel: Iniciando processo de logout');
-      // Usar a função signOut do serviço de autenticação para garantir logout correto
       await signOut();
-      
-      // Verificar se callback de logout foi fornecido
       if (onLogout) {
         onLogout();
       } else {
@@ -95,7 +71,6 @@ const AdminPanel = ({ onLogout }) => {
     }
   };
 
-  // Verificar status de autenticação
   const localStorageVolunteer = (() => {
     try {
       const authUser = localStorage.getItem("authUser");
@@ -114,12 +89,10 @@ const AdminPanel = ({ onLogout }) => {
 
   useEffect(() => {
     if (!isLoading && !isAuthorized) {
-      console.log('AdminPanel: Usuário não autorizado, redirecionando');
       navigate("/admin-login", { replace: true });
     }
   }, [isLoading, isAuthorized, navigate]);
 
-  // Exibir tela de carregamento enquanto verifica autenticação
   if (isLoading) {
     return (
       <div className="container py-8 max-w-7xl mx-auto px-4 mt-16">
@@ -137,26 +110,29 @@ const AdminPanel = ({ onLogout }) => {
   }
 
   return (
-    <div className="container py-8 max-w-7xl mx-auto px-4 mt-16">
+    <div className="container py-4 sm:py-8 max-w-7xl mx-auto px-2 sm:px-4 mt-16">
       <Card className="w-full">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-2xl">Painel Administrativo</CardTitle>
-            <CardDescription>Gerencie adoções, animais, ONGs, voluntários e administração da plataforma</CardDescription>
+        <CardHeader className="flex flex-row items-start sm:items-center justify-between gap-2 p-4 sm:p-6">
+          <div className="min-w-0">
+            <CardTitle className="text-lg sm:text-2xl">Painel Administrativo</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
+              Gerencie adoções, animais, ONGs, voluntários e administração da plataforma
+            </CardDescription>
           </div>
-          <Button 
-            variant="outline" 
-            className="flex items-center gap-1"
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1 shrink-0"
             onClick={handleLogout}
           >
             <LogOut className="h-4 w-4" />
-            Logout
+            <span className="hidden sm:inline">Logout</span>
           </Button>
         </CardHeader>
-        
-        <CardContent className="pt-6">
+
+        <CardContent className="pt-2 sm:pt-6 px-2 sm:px-6">
           <Tabs defaultValue={isVolunteer && !isAdmin ? "animals" : "adoption"} className="w-full">
-            <TabsList className="w-full mb-6 overflow-x-auto flex flex-nowrap whitespace-nowrap">
+            <TabsList className="w-full mb-4 sm:mb-6 overflow-x-auto flex flex-nowrap whitespace-nowrap">
               {!isVolunteer && (
                 <TabsTrigger value="adoption" className="flex items-center gap-1">
                   <PawPrint className="h-4 w-4" />
@@ -180,17 +156,17 @@ const AdminPanel = ({ onLogout }) => {
                 </>
               )}
             </TabsList>
-            
+
             {!isVolunteer && (
               <TabsContent value="adoption">
                 <AdoptionManagement />
               </TabsContent>
             )}
-            
+
             <TabsContent value="animals">
               <AnimalRegistrationForm />
             </TabsContent>
-            
+
             {!isVolunteer && (
               <>
                 <TabsContent value="compatibility">
@@ -214,11 +190,11 @@ const AdminPanel = ({ onLogout }) => {
                       </TabsTrigger>
                       <TabsTrigger value="payment-settings">Configurações de Pagamento</TabsTrigger>
                     </TabsList>
-                    
+
                     <TabsContent value="administrators">
                       <AdminUserManagement />
                     </TabsContent>
-                    
+
                     <TabsContent value="users">
                       <UsersList />
                     </TabsContent>
@@ -226,7 +202,7 @@ const AdminPanel = ({ onLogout }) => {
                     <TabsContent value="organizations">
                       <OrganizationManagement />
                     </TabsContent>
-                    
+
                     <TabsContent value="payment-settings">
                       <PaymentSettings />
                     </TabsContent>
