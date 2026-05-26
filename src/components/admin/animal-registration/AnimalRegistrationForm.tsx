@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-sonner";
@@ -9,338 +9,140 @@ import AnimalCharacteristics from './AnimalCharacteristics';
 import AnimalHealthInfo from './AnimalHealthInfo';
 import AnimalImages from './AnimalImages';
 import AnimalLocationStaff from './AnimalLocationStaff';
-import AnimalAdopterProfile from './AnimalAdopterProfile';
-import AnimalRequirements from './AnimalRequirements';
 import { AnimalFormData } from './types';
 import AnimalList from './AnimalList';
 import { createAnimal } from '@/services/animalService';
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { apiRequest } from '@/lib/apiClient';
+import VaccineManagement from './VaccineManagement';
+
+const EMPTY_FORM: AnimalFormData = {
+  name: '',
+  type: 'cachorro',
+  breed: '',
+  age: '',
+  gender: 'macho',
+  size: 'medio',
+  description: '',
+  vaccineIds: [],
+  specialNeeds: false,
+  specialNeedsDescription: '',
+  sterilized: false,
+  additionalInfo: '',
+  tutorName: '',
+  tutorContact: '',
+  personalityTemperament: '',
+  goodWithChildren: false,
+  goodWithOtherAnimals: false,
+  goodWithSeniors: false,
+  images: [],
+  previewImages: [],
+};
+
+interface AnimalCreateData {
+  nome: string;
+  idade: number;
+  tipo: "cachorro" | "gato";
+  raca: string;
+  porte: "pequeno" | "medio" | "grande";
+  sexo: "macho" | "femea";
+  castrado: boolean;
+  descricao: string;
+  vaccineIds: string[];
+  specialNeeds: boolean;
+  specialNeedsDescription?: string;
+  tutorName: string;
+  tutorContact: string;
+  additionalInfo?: string;
+  personalityTemperament?: string;
+  goodWithChildren: boolean;
+  goodWithOtherAnimals: boolean;
+  goodWithSeniors: boolean;
+  imageFiles: File[];
+  organizationId?: string;
+  createdByUserId?: string;
+}
+
+interface BackendUserContext {
+  id: string;
+  authSubject: string;
+  email: string;
+  userType: string;
+  organizationId?: string;
+  roles: string[];
+}
 
 const AnimalRegistrationForm = () => {
-  const [currentStep, setCurrentStep] = useState(1);
   const [activeTab, setActiveTab] = useState('register');
-  const [formData, setFormData] = useState<AnimalFormData>({
-    name: '',
-    type: 'cachorro',
-    breed: '',
-    age: '',
-    gender: 'macho',
-    size: 'medio',
-    description: '',
-    vaccinationStatus: '',
-    veterinaryInfo: '',
-    healthConditions: '',
-    specialNeeds: false,
-    specialNeedsDescription: '',
-    sterilized: false,
-    tutorName: '',
-    tutorContact: '',
-    goodWithChildren: false,
-    goodWithOtherAnimals: false,
-    goodWithSeniors: false,
-    goodWith: [],
-    energyLevel: 'medium',
-    trainability: 'moderate',
-    temperament: [],
-    characteristics: [],
-    images: [],
-    previewImages: [],
-    location: '',
-    responsible: '',
-    responsibleContact: '',
-    adoptionRequirements: [],
-    requirements: [],
-    suitableHousing: ['house', 'apartment', 'farm'],
-    requiresYard: false,
-    requiresWalledYard: false,
-    requiresWindowScreens: false,
-    allowsRented: true,
-    minResidentExperience: 'none',
-    suitableForChildren: true,
-    suitableForFirstTimers: true,
-    maxHoursAloneDaily: 8,
-    estimatedMonthlyCost: '300-600',
-    requiresEmergencyBudget: true,
-  });
-  
+  const [formData, setFormData] = useState<AnimalFormData>(EMPTY_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [stepErrors, setStepErrors] = useState<{[key: number]: string}>({});
-  
-  const totalSteps = 4;
-  const stepTitles = [
-    'Identificação & Fotos',
-    'Saúde & Personalidade',
-    'Origem & Requisitos',
-    'Perfil ideal do adotante',
-  ];
-  
-  const handleNextStep = () => {
-    if (!validateCurrentStep()) return;
-    
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-      // Clear any previous errors for this step
-      const updatedErrors = {...stepErrors};
-      delete updatedErrors[currentStep];
-      setStepErrors(updatedErrors);
-    }
-  };
-  
-  const handlePreviousStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-  
-  const handleChange = (field: keyof AnimalFormData, value: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-  
+
   const handleChangeMultiple = (updates: Partial<AnimalFormData>) => {
-    setFormData((prev) => ({
-      ...prev,
-      ...updates
-    }));
+    setFormData((prev) => ({ ...prev, ...updates }));
   };
-  
-  const validateCurrentStep = (): boolean => {
-    switch (currentStep) {
-      case 1: // Identificação + Fotos
-        if (!formData.name.trim()) {
-          setStepErrors({ ...stepErrors, 1: "Nome do animal é obrigatório" });
-          toast.error("Nome do animal é obrigatório");
-          return false;
-        }
-        if (!formData.breed.trim()) {
-          setStepErrors({ ...stepErrors, 1: "Raça do animal é obrigatória" });
-          toast.error("Raça do animal é obrigatória");
-          return false;
-        }
-        if (!formData.age.trim()) {
-          setStepErrors({ ...stepErrors, 1: "Idade do animal é obrigatória" });
-          toast.error("Idade do animal é obrigatória");
-          return false;
-        }
-        if (!formData.description.trim()) {
-          setStepErrors({ ...stepErrors, 1: "Descrição do animal é obrigatória" });
-          toast.error("Descrição do animal é obrigatória");
-          return false;
-        }
-        if (formData.description.trim().length < 20) {
-          setStepErrors({ ...stepErrors, 1: "A descrição deve ter pelo menos 20 caracteres" });
-          toast.error("A descrição deve ter pelo menos 20 caracteres");
-          return false;
-        }
-        if (formData.previewImages.length === 0) {
-          setStepErrors({ ...stepErrors, 1: "É necessário adicionar pelo menos uma foto do animal" });
-          toast.error("É necessário adicionar pelo menos uma foto do animal");
-          return false;
-        }
-        break;
-    }
-    return true;
-  };
-  
+
   const validateForm = () => {
-    // Required fields validation
-    if (!formData.name.trim()) {
-      toast.error("Nome do animal é obrigatório");
-      setCurrentStep(1);
-      return false;
-    }
-    
-    if (!formData.type) {
-      toast.error("Tipo de animal é obrigatório");
-      setCurrentStep(1);
-      return false;
-    }
-    
-    if (!formData.age.trim()) {
-      toast.error("Idade do animal é obrigatória");
-      setCurrentStep(1);
-      return false;
-    }
-    
-    if (!formData.gender) {
-      toast.error("Sexo do animal é obrigatório");
-      setCurrentStep(1);
-      return false;
-    }
-    
-    if (!formData.size) {
-      toast.error("Porte do animal é obrigatório");
-      setCurrentStep(1);
-      return false;
-    }
-    
-    if (!formData.description.trim()) {
-      toast.error("Descrição do animal é obrigatória");
-      setCurrentStep(1);
-      return false;
-    }
-    
-    if (formData.previewImages.length === 0) {
-      toast.error("É necessário adicionar pelo menos uma foto do animal");
-      setCurrentStep(1);
-      return false;
-    }
-    
-    // Additional validations as needed
-    
+    if (!formData.name.trim()) return toast.error("Nome do animal é obrigatório"), false;
+    if (!formData.breed.trim()) return toast.error("Raça do animal é obrigatória"), false;
+    if (!formData.age.trim()) return toast.error("Idade do animal é obrigatória"), false;
+    if (!formData.description.trim()) return toast.error("Descrição do animal é obrigatória"), false;
+    if (!formData.tutorName.trim()) return toast.error("Nome do tutor é obrigatório"), false;
+    if (!formData.tutorContact.trim()) return toast.error("Contato do tutor é obrigatório"), false;
+    if (formData.images.length === 0) return toast.error("Adicione pelo menos uma foto"), false;
+    if (formData.images.length > 2) return toast.error("O cadastro aceita no máximo 2 fotos"), false;
     return true;
   };
-  
-  const mapFormDataToAnimal = (): AnimalCreateData => {
-    // Determine goodWith array based on checkboxes
-    const goodWith = [];
-    if (formData.goodWithChildren) goodWith.push("children");
-    if (formData.goodWithOtherAnimals) goodWith.push("animals");
-    if (formData.goodWithSeniors) goodWith.push("seniors");
-    
-    // Create an actual animal object from form data
-    return {
-      nome: formData.name.trim(),
-      idade: parseInt(formData.age) || 0,
-      tipo: formData.type as "cachorro" | "gato" | "outro",
-      porte: formData.size as "pequeno" | "medio" | "grande",
-      sexo: formData.gender as "macho" | "femea",
-      castrado: formData.sterilized,
-      vacinas: formData.vaccinationStatus ? [formData.vaccinationStatus] : [],
-      descricao: formData.description.trim(),
-      fotoPrincipal: formData.previewImages[0] || undefined,
-      fotos: formData.previewImages
-    };
-  };
-  
+
+  const mapFormDataToAnimal = (): AnimalCreateData => ({
+    nome: formData.name.trim(),
+    idade: parseInt(formData.age, 10) || 0,
+    tipo: formData.type as "cachorro" | "gato",
+    raca: formData.breed.trim(),
+    porte: formData.size as "pequeno" | "medio" | "grande",
+    sexo: formData.gender as "macho" | "femea",
+    castrado: formData.sterilized,
+    descricao: formData.description.trim(),
+    vaccineIds: formData.vaccineIds,
+    specialNeeds: formData.specialNeeds,
+    specialNeedsDescription: formData.specialNeedsDescription?.trim() || undefined,
+    tutorName: formData.tutorName.trim(),
+    tutorContact: formData.tutorContact.trim(),
+    additionalInfo: formData.additionalInfo?.trim() || undefined,
+    personalityTemperament: formData.personalityTemperament?.trim() || undefined,
+    goodWithChildren: formData.goodWithChildren,
+    goodWithOtherAnimals: formData.goodWithOtherAnimals,
+    goodWithSeniors: formData.goodWithSeniors,
+    imageFiles: formData.images,
+  });
+
   const handleSubmit = async () => {
     if (!validateForm()) return;
-    
     try {
       setIsSubmitting(true);
-      
-      // Map form data to animal data
       const animalData = mapFormDataToAnimal();
-      
-      console.log("Submitting animal data:", animalData);
-      
-      // Create the animal using the service function
-      const createdAnimal = await createAnimal(animalData);
-      
-      if (!createdAnimal) {
-        throw new Error("Falha ao criar animal");
+      const currentEmail = localStorage.getItem('userEmail');
+      if (currentEmail) {
+        const users = await apiRequest<BackendUserContext[]>('/api/users');
+        const currentUser = users.find((user) => user.email === currentEmail || user.authSubject === currentEmail);
+        if (currentUser) {
+          animalData.createdByUserId = currentUser.id;
+          if (currentUser.userType === 'VOLUNTARIO') {
+            if (!currentUser.organizationId) {
+              toast.error('Voluntário sem ONG vinculada. Vincule o voluntário a uma ONG antes de cadastrar animais.');
+              return;
+            }
+            animalData.organizationId = currentUser.organizationId;
+          }
+        }
       }
-      
-      console.log("Animal created successfully:", createdAnimal);
-      
-      // Reset form after successful submission
-      setFormData({
-        name: '',
-        type: 'cachorro',
-        breed: '',
-        age: '',
-        gender: 'macho',
-        size: 'medio',
-        description: '',
-        vaccinationStatus: '',
-        veterinaryInfo: '',
-        healthConditions: '',
-        specialNeeds: false,
-        specialNeedsDescription: '',
-        sterilized: false,
-        tutorName: '',
-        tutorContact: '',
-        goodWithChildren: false,
-        goodWithOtherAnimals: false,
-        goodWithSeniors: false,
-        goodWith: [],
-        energyLevel: 'medium',
-        trainability: 'moderate',
-        temperament: [],
-        characteristics: [],
-        images: [],
-        previewImages: [],
-        location: '',
-        responsible: '',
-        responsibleContact: '',
-        adoptionRequirements: [],
-        requirements: [],
-        suitableHousing: ['house', 'apartment', 'farm'],
-        requiresYard: false,
-        requiresWalledYard: false,
-        requiresWindowScreens: false,
-        allowsRented: true,
-        minResidentExperience: 'none',
-        suitableForChildren: true,
-        suitableForFirstTimers: true,
-        maxHoursAloneDaily: 8,
-        estimatedMonthlyCost: '300-600',
-        requiresEmergencyBudget: true,
-      });
-      
-      // Reset to first step
-      setCurrentStep(1);
-      setStepErrors({});
-      
-      // Switch to the list tab
+
+      await createAnimal(animalData);
+      setFormData(EMPTY_FORM);
       setActiveTab('list');
     } catch (error) {
       console.error("Error submitting animal:", error);
-      
-      let errorMessage = "Erro ao cadastrar animal";
-      if (error instanceof Error) {
-        errorMessage = `Erro ao cadastrar animal: ${error.message}`;
-      }
     } finally {
       setIsSubmitting(false);
     }
-  };
-  
-  // TypeScript interface for createAnimal's expected data format
-  interface AnimalCreateData {
-    nome: string;
-    idade: number;
-    tipo: "cachorro" | "gato" | "outro";
-    porte: "pequeno" | "medio" | "grande";
-    sexo: "macho" | "femea";
-    castrado: boolean;
-    vacinas?: string[];
-    responsavel_id?: string;
-    descricao?: string;
-    fotoPrincipal?: string;
-    fotos?: string[];
-  }
-
-  const renderStepIndicator = () => {
-    return (
-      <div className="flex items-start justify-between mb-6 gap-2">
-        {Array.from({ length: totalSteps }).map((_, idx) => {
-          const isDone = currentStep > idx + 1;
-          const isActive = currentStep === idx + 1;
-          return (
-            <div key={idx} className="flex-1 flex flex-col items-center text-center">
-              <div className="flex items-center w-full">
-                <div className={`flex-1 h-px ${idx === 0 ? 'invisible' : isDone || isActive ? 'bg-primary' : 'bg-muted'}`} />
-                <div
-                  className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0
-                    ${isDone ? 'bg-green-500 text-white' :
-                      isActive ? 'bg-primary text-primary-foreground' :
-                      'bg-muted text-muted-foreground'}`}
-                >
-                  {isDone ? '✓' : idx + 1}
-                </div>
-                <div className={`flex-1 h-px ${idx === totalSteps - 1 ? 'invisible' : isDone ? 'bg-primary' : 'bg-muted'}`} />
-              </div>
-              <span className={`text-[11px] mt-2 leading-tight ${isActive ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
-                {stepTitles[idx]}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    );
   };
 
   return (
@@ -348,7 +150,7 @@ const AnimalRegistrationForm = () => {
       <CardHeader>
         <CardTitle>Registro de Animais</CardTitle>
         <CardDescription>
-          Gerencie o cadastro de animais para adoção
+          Cadastro com fotos no S3 via backend e dados completos do animal
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -356,119 +158,50 @@ const AnimalRegistrationForm = () => {
           <TabsList className="mb-4">
             <TabsTrigger value="register">Cadastrar Animal</TabsTrigger>
             <TabsTrigger value="list">Listar Animais</TabsTrigger>
+            <TabsTrigger value="vaccines">Cadastrar Vacinas</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="register">
             <Card>
-              <CardContent className="pt-6">
-                {renderStepIndicator()}
-                
-                {stepErrors[currentStep] && (
-                  <Alert variant="destructive" className="mb-4">
-                    <AlertTitle>Erro de validação</AlertTitle>
-                    <AlertDescription>{stepErrors[currentStep]}</AlertDescription>
-                  </Alert>
-                )}
-                
-                <div className="mb-4">
-                  <h3 className="text-base font-semibold">
-                    Passo {currentStep} de {totalSteps}: {stepTitles[currentStep - 1]}
-                  </h3>
+              <CardContent className="pt-6 space-y-8">
+                <AnimalBasicInfo formData={formData} onFormChange={handleChangeMultiple} />
+                <div className="pt-6 border-t">
+                  <h4 className="text-sm font-semibold mb-3">Fotos do animal</h4>
+                  <AnimalImages
+                    images={formData.images}
+                    previewImages={formData.previewImages}
+                    onChange={(images, previews) => handleChangeMultiple({ images, previewImages: previews })}
+                  />
                 </div>
-
-                <div className="space-y-8">
-                  {currentStep === 1 && (
-                    <>
-                      <AnimalBasicInfo
-                        formData={formData}
-                        onFormChange={handleChangeMultiple}
-                      />
-                      <div className="pt-6 border-t">
-                        <h4 className="text-sm font-semibold mb-3">Fotos do animal</h4>
-                        <AnimalImages
-                          images={formData.images}
-                          previewImages={formData.previewImages}
-                          onChange={(images, previews) => {
-                            handleChangeMultiple({
-                              images,
-                              previewImages: previews,
-                            });
-                          }}
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {currentStep === 2 && (
-                    <>
-                      <AnimalHealthInfo
-                        formData={formData}
-                        onFormChange={handleChangeMultiple}
-                      />
-                      <div className="pt-6 border-t">
-                        <h4 className="text-sm font-semibold mb-3">Personalidade & temperamento</h4>
-                        <AnimalCharacteristics
-                          formData={formData}
-                          onFormChange={handleChangeMultiple}
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {currentStep === 3 && (
-                    <>
-                      <AnimalLocationStaff
-                        formData={formData}
-                        onFormChange={handleChangeMultiple}
-                      />
-                      <div className="pt-6 border-t">
-                        <h4 className="text-sm font-semibold mb-3">Requisitos para adoção</h4>
-                        <AnimalRequirements
-                          formData={formData}
-                          onFormChange={handleChangeMultiple}
-                        />
-                      </div>
-                    </>
-                  )}
-
-                  {currentStep === 4 && (
-                    <AnimalAdopterProfile
-                      formData={formData}
-                      onFormChange={handleChangeMultiple}
-                    />
-                  )}
-                  
-                  <div className="flex justify-between mt-8">
-                    <Button 
-                      variant="outline" 
-                      onClick={handlePreviousStep}
-                      disabled={currentStep === 1 || isSubmitting}
-                    >
-                      Anterior
-                    </Button>
-                    
-                    {currentStep < totalSteps ? (
-                      <Button onClick={handleNextStep} disabled={isSubmitting}>
-                        Próximo
-                      </Button>
-                    ) : (
-                      <Button onClick={handleSubmit} disabled={isSubmitting}>
-                        {isSubmitting ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Cadastrando...
-                          </>
-                        ) : "Cadastrar Animal"}
-                      </Button>
-                    )}
-                  </div>
+                <div className="pt-6 border-t">
+                  <AnimalHealthInfo formData={formData} onFormChange={handleChangeMultiple} />
+                </div>
+                <div className="pt-6 border-t">
+                  <AnimalLocationStaff formData={formData} onFormChange={handleChangeMultiple} />
+                </div>
+                <div className="pt-6 border-t">
+                  <AnimalCharacteristics formData={formData} onFormChange={handleChangeMultiple} />
+                </div>
+                <div className="flex justify-end mt-8">
+                  <Button onClick={handleSubmit} disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Cadastrando...
+                      </>
+                    ) : "Cadastrar Animal"}
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           <TabsContent value="list">
             <AnimalList />
+          </TabsContent>
+
+          <TabsContent value="vaccines">
+            <VaccineManagement />
           </TabsContent>
         </Tabs>
       </CardContent>

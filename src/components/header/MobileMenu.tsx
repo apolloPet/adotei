@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 
 interface MobileMenuProps {
   isAdmin: boolean;
+  isVolunteer: boolean;
   isLoggedIn: boolean;
   onLogin?: () => void;
   onLogout: () => void;
@@ -27,6 +28,7 @@ interface MobileMenuProps {
 
 const MobileMenu = ({ 
   isAdmin, 
+  isVolunteer,
   isLoggedIn, 
   onLogin, 
   onLogout,
@@ -69,15 +71,25 @@ const MobileMenu = ({
       <SheetContent side="right" className="flex flex-col justify-between">
         <div className="pt-6">
           <nav className="flex flex-col items-start space-y-4">
-            {isLoggedIn && (
-              <Link 
-                to="/browse" 
-                className="flex items-center font-medium text-lg hover:text-primary transition-colors"
-                onClick={handleLinkClick}
-              >
-                <Heart className="h-4 w-4 mr-2" />
-                Encontrar Pets
-              </Link>
+            {isLoggedIn && !isVolunteer && (
+              <>
+                <Link 
+                  to="/browse" 
+                  className="flex items-center font-medium text-lg hover:text-primary transition-colors"
+                  onClick={handleLinkClick}
+                >
+                  <Heart className="h-4 w-4 mr-2" />
+                  Encontrar Pets
+                </Link>
+                <Link 
+                  to="/profile" 
+                  className="flex items-center font-medium text-lg hover:text-primary transition-colors"
+                  onClick={handleLinkClick}
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Meu Perfil
+                </Link>
+              </>
             )}
             <Link 
               to="/how-it-works" 
@@ -103,14 +115,14 @@ const MobileMenu = ({
               <User className="h-4 w-4 mr-2" />
               ONG Parceira
             </Link>
-            {isAdmin && (
+            {(isAdmin || isVolunteer) && (
               <Link 
                 to="/admin" 
                 className="flex items-center font-medium text-lg text-primary transition-colors"
                 onClick={handleLinkClick}
               >
                 <ShieldAlert className="h-4 w-4 mr-2" />
-                Admin
+                {isVolunteer && !isAdmin ? 'Cadastro de Pets' : 'Admin'}
               </Link>
             )}
           </nav>

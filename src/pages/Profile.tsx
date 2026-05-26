@@ -25,6 +25,7 @@ import {
   IntentionForm,
 } from '@/lib/schemas/profile';
 import { AlertTriangle } from 'lucide-react';
+import { changeAdminPassword } from '@/services/auth';
 
 const EXTENDED_KEY = 'user_profile_extended';
 
@@ -44,11 +45,15 @@ const saveExtended = (userId: string, ext: ExtendedProfile) => {
 };
 
 export default function Profile() {
-  const { user, fetchUserData } = useAuth();
+  const { user, fetchUserData, isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [extended, setExtended] = useState<ExtendedProfile>({});
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // Forms
   const housingForm = useForm<HousingForm>({
@@ -168,6 +173,30 @@ export default function Profile() {
       persistExtended(next);
     } catch (e: any) {
       toast.error(e.message || 'Erro no upload');
+    }
+  };
+
+  const handleAdminPasswordChange = async () => {
+    if (newPassword !== confirmPassword) {
+      toast.error('As novas senhas não coincidem.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('A nova senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const success = await changeAdminPassword(currentPassword, newPassword);
+      if (success) {
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -488,6 +517,46 @@ export default function Profile() {
               </div>
             </TabsContent>
           </Tabs>
+
+          {isAdmin && (
+            <div className="mt-8 rounded-lg border p-4 space-y-4">
+              <h3 className="text-lg font-semibold">Segurança do Administrador</h3>
+              <p className="text-sm text-muted-foreground">
+                Altere sua senha de administrador diretamente em Meu Perfil.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <Label>Senha atual</Label>
+                  <Input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Nova senha</Label>
+                  <Input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Confirmar nova senha</Label>
+                  <Input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={handleAdminPasswordChange} disabled={changingPassword}>
+                  {changingPassword ? 'Salvando...' : 'Alterar senha'}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

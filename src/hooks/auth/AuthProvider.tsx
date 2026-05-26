@@ -11,6 +11,7 @@ const INITIAL_AUTH_STATE: AuthContextType = {
   profile: null,
   isLoading: true,
   isAdmin: false,
+  isVolunteer: false,
   isAuthenticated: false
 };
 
@@ -27,6 +28,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     isLoading,
     isAdmin,
     setIsAdmin,
+    isVolunteer,
+    setIsVolunteer,
     isAuthenticated,
     fetchUserData
   } = useAuthState();
@@ -36,7 +39,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser,
     setSession,
     setProfile,
-    setIsAdmin
+    setIsAdmin,
+    setIsVolunteer
   });
 
   // Performance: buscar dados do usuário apenas uma vez na montagem
@@ -79,9 +83,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     profile,
     isLoading,
     isAdmin,
+    isVolunteer,
     isAuthenticated,
     fetchUserData
-  }), [user, session, profile, isLoading, isAdmin, isAuthenticated, fetchUserData]);
+  }), [user, session, profile, isLoading, isAdmin, isVolunteer, isAuthenticated, fetchUserData]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

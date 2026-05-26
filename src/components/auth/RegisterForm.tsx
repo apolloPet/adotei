@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-sonner";
 import { signUp } from '@/services/auth/authCore';
 import { SignupData } from '@/services/auth/types';
+import { isValidCEP, isValidEmail, isValidPhoneBR, maskCEP, maskPhoneBR, normalizeEmail } from '@/utils/brMasks';
 
 const TOTAL_STEPS = 4;
 
@@ -63,12 +64,13 @@ const RegisterForm = () => {
   const validateStep1 = () => {
     const e: Record<string, string> = {};
     if (!email) e.email = 'O email é obrigatório';
-    else if (!/\S+@\S+\.\S+/.test(email)) e.email = 'Email inválido';
+    else if (!isValidEmail(email)) e.email = 'Email inválido';
     if (!password) e.password = 'A senha é obrigatória';
     else if (password.length < 6) e.password = 'A senha deve ter pelo menos 6 caracteres';
     if (password !== confirmPassword) e.confirmPassword = 'As senhas não coincidem';
     if (!name) e.name = 'O nome é obrigatório';
     if (!phone) e.phone = 'O telefone é obrigatório';
+    else if (!isValidPhoneBR(phone)) e.phone = 'Telefone inválido';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -80,7 +82,7 @@ const RegisterForm = () => {
     if (!neighborhood) e.neighborhood = 'O bairro é obrigatório';
     if (!city) e.city = 'A cidade é obrigatória';
     if (!cep) e.cep = 'O CEP é obrigatório';
-    else if (!/^\d{5}-?\d{3}$/.test(cep)) e.cep = 'CEP inválido. Use o formato 00000-000';
+    else if (!isValidCEP(cep)) e.cep = 'CEP inválido. Use o formato 00000-000';
     if (!state) e.state = 'O estado é obrigatório';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -117,8 +119,7 @@ const RegisterForm = () => {
 
   const prevStep = () => setStep((s) => Math.max(1, s - 1));
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (step < TOTAL_STEPS) {
       nextStep();
       return;
@@ -151,7 +152,7 @@ const RegisterForm = () => {
       ].filter(Boolean).join(' | ');
 
       const userData: SignupData = {
-        email,
+        email: normalizeEmail(email),
         password,
         name: fullName,
         firstName,
@@ -172,8 +173,14 @@ const RegisterForm = () => {
 
       const success = await signUp(userData);
       if (success) {
-        toast.success("Conta criada com sucesso! Verifique seu email para confirmar.", { duration: 5000 });
-        setStep(5);
+        toast.success("Conta criada com sucesso! Faça login para continuar.", { duration: 4000 });
+        navigate('/login', {
+          replace: true,
+          state: {
+            prefillEmail: normalizeEmail(email),
+            prefillPassword: password,
+          },
+        });
       }
     } catch (error) {
       console.error("Registration error:", error);
@@ -214,14 +221,14 @@ const RegisterForm = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
           {step === 1 && (
             <>
               <StepHeader n={1} title="Informações de Conta" />
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="seu.email@exemplo.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  <Input id="email" type="email" placeholder="seu.email@exemplo.com" value={email} onChange={(e) => setEmail(normalizeEmail(e.target.value))} required />
                   {errors.email && <p className="text-destructive text-sm">{errors.email}</p>}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -243,7 +250,7 @@ const RegisterForm = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Telefone</Label>
-                  <Input id="phone" type="tel" placeholder="(00) 00000-0000" value={phone} onChange={(e) => setPhone(e.target.value)} required />
+                  <Input id="phone" type="tel" placeholder="(00) 00000-0000" value={phone} onChange={(e) => setPhone(maskPhoneBR(e.target.value))} required />
                   {errors.phone && <p className="text-destructive text-sm">{errors.phone}</p>}
                 </div>
               </div>
@@ -286,7 +293,7 @@ const RegisterForm = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="cep">CEP</Label>
-                    <Input id="cep" placeholder="00000-000" value={cep} onChange={(e) => setCep(e.target.value)} required />
+                    <Input id="cep" placeholder="00000-000" value={cep} onChange={(e) => setCep(maskCEP(e.target.value))} required />
                     {errors.cep && <p className="text-destructive text-sm">{errors.cep}</p>}
                   </div>
                   <div className="space-y-2">
@@ -468,7 +475,7 @@ const RegisterForm = () => {
                   Próximo
                 </Button>
               ) : (
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="button" onClick={handleSubmit} className="w-full" disabled={isLoading}>
                   {isLoading ? 'Registrando...' : 'Cadastrar'}
                 </Button>
               )}

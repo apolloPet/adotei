@@ -8,6 +8,7 @@ export interface AuthContextType {
   profile: UserProfile | null;
   isLoading: boolean;
   isAdmin: boolean;
+  isVolunteer: boolean;
   isAuthenticated: boolean;
   fetchUserData?: () => Promise<void>; // Added missing fetchUserData method
 }

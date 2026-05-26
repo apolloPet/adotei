@@ -13,14 +13,14 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { createPartnership } from '@/services/partnershipService';
 import { useAuth } from '@/hooks/auth';
 import { Loader2 } from 'lucide-react';
+import { isValidPhoneBR, maskPhoneBR, normalizeEmail } from '@/utils/brMasks';
 
 // Schema de validação aprimorado com mensagens personalizadas
 const formSchema = z.object({
   company_name: z.string().min(2, { message: "Nome da empresa deve ter pelo menos 2 caracteres" }),
   contact_name: z.string().min(2, { message: "Nome do contato deve ter pelo menos 2 caracteres" }),
   email: z.string().email({ message: "Email inválido" }),
-  phone: z.string().min(10, { message: "Telefone deve ter pelo menos 10 dígitos" })
-    .regex(/^[0-9()+\-\s]*$/, { message: "Telefone deve conter apenas números, parênteses, traços e espaços" }),
+  phone: z.string().refine((value) => isValidPhoneBR(value), { message: "Telefone deve ter DDD e número válidos" }),
   company_size: z.string().optional(),
   company_website: z.string().url({ message: "URL inválida" }).optional().or(z.literal('')),
   partnership_type: z.string().min(1, { message: "Tipo de parceria é obrigatório" }),
@@ -71,7 +71,7 @@ const PartnershipForm = () => {
   // Efeito para preencher email se o usuário estiver autenticado
   useEffect(() => {
     if (isAuthenticated && user?.email) {
-      form.setValue('email', user.email);
+      form.setValue('email', normalizeEmail(user.email));
     }
   }, [isAuthenticated, user, form]);
 
@@ -90,7 +90,7 @@ const PartnershipForm = () => {
       await createPartnership({
         company_name: data.company_name,
         contact_name: data.contact_name,
-        email: data.email,
+        email: normalizeEmail(data.email),
         phone: data.phone,
         company_size: data.company_size,
         company_website: data.company_website,
@@ -178,7 +178,11 @@ const PartnershipForm = () => {
                   <FormItem>
                     <FormLabel>Email *</FormLabel>
                     <FormControl>
-                      <Input placeholder="contato@empresa.com" {...field} />
+                      <Input
+                        placeholder="contato@empresa.com"
+                        {...field}
+                        onChange={(event) => field.onChange(normalizeEmail(event.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -192,7 +196,11 @@ const PartnershipForm = () => {
                   <FormItem>
                     <FormLabel>Telefone *</FormLabel>
                     <FormControl>
-                      <Input placeholder="(11) 99999-9999" {...field} />
+                      <Input
+                        placeholder="(11) 99999-9999"
+                        {...field}
+                        onChange={(event) => field.onChange(maskPhoneBR(event.target.value))}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

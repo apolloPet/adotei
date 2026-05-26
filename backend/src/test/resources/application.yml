@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:adotei;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: http://localhost/.well-known/jwks.json
+
+app:
+  aws:
+    region: us-east-1
+    s3:
+      bucket: adotei-tests
+      endpoint: ""
+      access-key: test
+      secret-key: test
+      presign-expiration-minutes: 15

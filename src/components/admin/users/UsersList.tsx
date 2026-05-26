@@ -3,8 +3,6 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import { useAuth } from '@/hooks/auth';
-import { toast } from "@/hooks/use-sonner";
-import { supabase } from '@/lib/supabase';
 import { useUsersData } from './hooks/useUsersData';
 import { UserListHeader } from './components/UserListHeader';
 import { UserListContent } from './components/UserListContent';
@@ -48,23 +46,7 @@ const UsersList = () => {
           setIsVerifying(false);
           return;
         }
-
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .single();
-
-        if (roleData) {
-          const permissions = typeof roleData.permissions === 'string' 
-            ? JSON.parse(roleData.permissions) 
-            : roleData.permissions;
-
-          setHasPermission(permissions?.manageAdmins === true);
-        } else {
-          setHasPermission(false);
-        }
+        setHasPermission(localStorage.getItem('isAdmin') === 'true');
       } catch (err) {
         console.error('Error verifying permissions:', err);
         setHasPermission(false);

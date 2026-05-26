@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,13 +11,23 @@ import { toast } from "@/hooks/use-sonner";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
-const LoginForm = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+interface LoginFormProps {
+  initialEmail?: string;
+  initialPassword?: string;
+}
+
+const LoginForm = ({ initialEmail = '', initialPassword = '' }: LoginFormProps) => {
+  const [email, setEmail] = useState(initialEmail);
+  const [password, setPassword] = useState(initialPassword);
   const [isLoading, setIsLoading] = useState(false);
   const { fetchUserData } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    setEmail(initialEmail);
+    setPassword(initialPassword);
+  }, [initialEmail, initialPassword]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

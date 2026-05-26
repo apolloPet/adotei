@@ -50,18 +50,6 @@ export const signIn = async (email: string, password: string): Promise<boolean> 
       hasSession: !!data.session
     });
     
-    // Performance: atualizar o localStorage apenas após confirmar autenticação bem-sucedida
-    localStorage.setItem("isLoggedIn", "true");
-    if (email.includes('@admin') || email.includes('@ong')) {
-      localStorage.setItem("isAdmin", "true");
-    } else {
-      localStorage.setItem("isAdmin", "false");
-    }
-    localStorage.setItem("userEmail", email);
-    
-    // Dispara apenas um evento para atualizar a UI (reduzido de dois para um)
-    window.dispatchEvent(new Event('authStateChanged'));
-    
     return true;
   } catch (error) {
     console.error('Erro inesperado durante o login:', error);

@@ -29,18 +29,15 @@ const AdminLoginForm = ({ onAdminLogin }: AdminLoginFormProps) => {
     setIsLoading(true);
     
     try {
-      // Verificar se é o admin de demonstração
-      const isDemoAdmin = values.email === "admin@petmatch.com" && values.password === "admin123";
-      
-      console.log('Tentando login administrativo com:', { email: values.email, isDemoAdmin });
+      console.log('Tentando login de funcionário de entidade com:', { email: values.email });
       
       // Login via signInAdmin (serviço centralizado)
       const success = await signInAdmin(values.email, values.password);
       
       if (success) {
-        console.log('Login administrativo realizado com sucesso');
+        console.log('Login de funcionário de entidade realizado com sucesso');
         
-        toast.success("Login administrativo realizado com sucesso!");
+        toast.success("Login realizado com sucesso!");
         
         // Forçar um evento de alteração de autenticação para garantir que outros componentes sejam notificados
         window.dispatchEvent(new Event('authStateChanged'));
@@ -50,12 +47,12 @@ const AdminLoginForm = ({ onAdminLogin }: AdminLoginFormProps) => {
           onAdminLogin();
         }, 500);
       } else {
-        console.error('Falha no login administrativo');
-        toast.error("Credenciais inválidas ou usuário não tem permissão de administrador");
+        console.error('Falha no login de funcionário de entidade');
+        toast.error("Credenciais inválidas ou usuário sem permissão de entidade");
       }
     } catch (error) {
-      console.error("Erro ao fazer login administrativo:", error);
-      toast.error("Erro ao processar login administrativo");
+      console.error("Erro ao fazer login de entidade:", error);
+      toast.error("Erro ao processar login da entidade");
     } finally {
       setIsLoading(false);
     }
@@ -74,7 +71,7 @@ const AdminLoginForm = ({ onAdminLogin }: AdminLoginFormProps) => {
                 <Input 
                   id="admin-email" 
                   type="email" 
-                  placeholder="admin@exemplo.com" 
+                  placeholder="funcionario@entidade.com" 
                   {...field}
                   disabled={isLoading}
                 />
@@ -117,7 +114,7 @@ const AdminLoginForm = ({ onAdminLogin }: AdminLoginFormProps) => {
           ) : (
             <>
               <KeyRound className="h-4 w-4" />
-              Entrar como Administrador
+              Entrar como Entidade
             </>
           )}
         </Button>

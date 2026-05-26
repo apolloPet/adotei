@@ -11,6 +11,7 @@ import { signOut } from '@/services/auth';
 interface HeaderProps {
   isAuthenticated?: boolean;
   isAdmin?: boolean;
+  isVolunteer?: boolean;
   onLogin?: () => void;
   onLogout?: () => void;
 }
@@ -18,12 +19,14 @@ interface HeaderProps {
 const Header = ({ 
   isAuthenticated: propsIsAuthenticated,
   isAdmin: propsIsAdmin,
+  isVolunteer: propsIsVolunteer,
   onLogin: propsOnLogin,
   onLogout: propsOnLogout
 }: HeaderProps = {}) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(propsIsAdmin || false);
+  const [isVolunteer, setIsVolunteer] = useState(propsIsVolunteer || false);
   const [isLoggedIn, setIsLoggedIn] = useState(propsIsAuthenticated || false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -38,11 +41,22 @@ const Header = ({
     const checkLoginStatus = () => {
       const loginStatus = localStorage.getItem("isLoggedIn") === "true";
       const adminStatus = localStorage.getItem("isAdmin") === "true";
+      let volunteerStatus = false;
+      try {
+        const authUser = localStorage.getItem("authUser");
+        if (authUser) {
+          const parsed = JSON.parse(authUser) as { userType?: string; roles?: string[] };
+          volunteerStatus = parsed.userType === "VOLUNTARIO" || Boolean(parsed.roles?.includes("VOLUNTARIO"));
+        }
+      } catch {
+        volunteerStatus = false;
+      }
       
-      console.log("Header: Auth state updated:", { loginStatus, adminStatus });
+      console.log("Header: Auth state updated:", { loginStatus, adminStatus, volunteerStatus });
       
       setIsLoggedIn(loginStatus);
       setIsAdmin(adminStatus);
+      setIsVolunteer(volunteerStatus);
     };
     
     checkLoginStatus();
@@ -54,6 +68,9 @@ const Header = ({
     if (propsIsAdmin !== undefined) {
       setIsAdmin(propsIsAdmin);
     }
+    if (propsIsVolunteer !== undefined) {
+      setIsVolunteer(propsIsVolunteer);
+    }
 
     window.addEventListener('storage', checkLoginStatus);
     window.addEventListener('authStateChanged', checkLoginStatus);
@@ -62,7 +79,7 @@ const Header = ({
       window.removeEventListener('storage', checkLoginStatus);
       window.removeEventListener('authStateChanged', checkLoginStatus);
     };
-  }, [propsIsAuthenticated, propsIsAdmin, location.pathname]);
+  }, [propsIsAuthenticated, propsIsAdmin, propsIsVolunteer, location.pathname]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -141,9 +158,10 @@ const Header = ({
         <div className="flex items-center gap-4">
           <Logo />
         </div>
-        <DesktopNav isAdmin={isAdmin} isLoggedIn={isLoggedIn} />
+        <DesktopNav isAdmin={isAdmin} isVolunteer={isVolunteer} isLoggedIn={isLoggedIn} />
         <DesktopAuthMenu 
           isAdmin={isAdmin} 
+          isVolunteer={isVolunteer}
           isLoggedIn={isLoggedIn}
           onLogin={handleLogin}
           onLogout={handleLogout}
@@ -152,6 +170,7 @@ const Header = ({
           <MobileMenu 
             isOpen={isMobileMenuOpen} 
             isAdmin={isAdmin}
+            isVolunteer={isVolunteer}
             isLoggedIn={isLoggedIn} 
             onClose={closeMenu} 
             onLogin={handleLogin}

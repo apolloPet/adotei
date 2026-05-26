@@ -2,9 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/auth';
-import { toast } from '@/hooks/use-sonner';
 import { Loader2, ShieldAlert } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 
 interface AdminProtectedRouteProps {
@@ -14,7 +12,7 @@ interface AdminProtectedRouteProps {
 const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ 
   children 
 }) => {
-  const { user, isAdmin, isLoading, isAuthenticated } = useAuth();
+  const { user, isAdmin, isVolunteer, isLoading, isAuthenticated } = useAuth();
   const [isVerifying, setIsVerifying] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
   const [verificationError, setVerificationError] = useState<string | null>(null);
@@ -31,6 +29,16 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         
         // Verificar localStorage primeiro (maior prioridade)
         const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
+        const localStorageVolunteer = (() => {
+          try {
+            const raw = localStorage.getItem("authUser");
+            if (!raw) return false;
+            const parsed = JSON.parse(raw) as { userType?: string; roles?: string[] };
+            return parsed.userType === "VOLUNTARIO" || Boolean(parsed.roles?.includes("VOLUNTARIO"));
+          } catch {
+            return false;
+          }
+        })();
         const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
         
         // Log do estado atual para debug
@@ -38,11 +46,12 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
           isAdmin,
           isAuthenticated,
           localStorageAdmin,
+          localStorageVolunteer,
           localStorageLoggedIn,
           isLoading
         });
         
-        if (localStorageAdmin && localStorageLoggedIn) {
+        if ((localStorageAdmin || localStorageVolunteer) && localStorageLoggedIn) {
           console.log('AdminProtectedRoute: Acesso confirmado via localStorage');
           if (isMounted) {
             setIsVerified(true);
@@ -72,7 +81,7 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         }
         
         // Se já confirmado como admin via estado global
-        if (isAdmin || localStorageAdmin) {
+        if (isAdmin || isVolunteer || localStorageAdmin || localStorageVolunteer) {
           console.log('AdminProtectedRoute: Acesso confirmado via estado global ou localStorage');
           if (isMounted) {
             setIsVerified(true);
@@ -81,51 +90,27 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
           return;
         }
         
-        // Se chegamos aqui e o usuário existe, verificar via email ou banco de dados
+        // Se chegamos aqui e o usuário existe, verificar via email
         if (user) {
           console.log('AdminProtectedRoute: Verificando permissões por email ou banco de dados');
           
           // Verificação de email (para compatibilidade)
-          const adminEmails = ['admin@petmatch.com'];
-          const adminDomains = ['@admin', '@ong'];
+          const hasAdminOrVolunteerMetadata = Boolean(
+            user.app_metadata?.role === 'admin' ||
+            user.user_metadata?.isAdmin === true ||
+            user.user_metadata?.userType === 'VOLUNTARIO' ||
+            (user.user_metadata?.roles as string[] | undefined)?.includes('VOLUNTARIO')
+          );
           
-          const isAdminEmail = adminEmails.includes(user.email || '') || 
-                              adminDomains.some(domain => (user.email || '').includes(domain));
-          
-          if (isAdminEmail) {
-            console.log('AdminProtectedRoute: Email admin detectado');
+          if (hasAdminOrVolunteerMetadata) {
+            console.log('AdminProtectedRoute: Permissão detectada via metadados');
             localStorage.setItem("isLoggedIn", "true");
-            localStorage.setItem("isAdmin", "true");
+            localStorage.setItem("isAdmin", String(user.app_metadata?.role === 'admin' || user.user_metadata?.isAdmin === true));
             if (isMounted) {
               setIsVerified(true);
               setIsVerifying(false);
             }
             return;
-          }
-          
-          // Verificar a tabela user_roles
-          try {
-            console.log('AdminProtectedRoute: Verificando papel de admin na tabela user_roles');
-            
-            const { data: roleData, error: roleError } = await supabase
-              .from('user_roles')
-              .select('*')
-              .eq('user_id', user.id)
-              .eq('role', 'admin')
-              .maybeSingle();
-              
-            if (roleData) {
-              console.log('AdminProtectedRoute: Usuário encontrado na tabela user_roles');
-              localStorage.setItem("isLoggedIn", "true");
-              localStorage.setItem("isAdmin", "true");
-              if (isMounted) {
-                setIsVerified(true);
-                setIsVerifying(false);
-              }
-              return;
-            }
-          } catch (roleError) {
-            console.error('Erro ao verificar papel:', roleError);
           }
         }
         
@@ -163,9 +148,19 @@ const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
         
         // Se temos credenciais no localStorage, confiar nelas mesmo com timeout
         const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
+        const localStorageVolunteer = (() => {
+          try {
+            const raw = localStorage.getItem("authUser");
+            if (!raw) return false;
+            const parsed = JSON.parse(raw) as { userType?: string; roles?: string[] };
+            return parsed.userType === "VOLUNTARIO" || Boolean(parsed.roles?.includes("VOLUNTARIO"));
+          } catch {
+            return false;
+          }
+        })();
         const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
         
-        if (localStorageAdmin && localStorageLoggedIn) {
+        if ((localStorageAdmin || localStorageVolunteer) && localStorageLoggedIn) {
           console.log('AdminProtectedRoute: Usando credenciais do localStorage após timeout');
           setIsVerified(true);
         } else {

@@ -3,21 +3,27 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, UserPlus } from 'lucide-react';
+import { ShieldAlert } from 'lucide-react';
 import { useAuth } from '@/hooks/auth/useAuth';
-import { Dialog, DialogTrigger } from "@/components/ui/dialog";
 import AdminLoginForm from './AdminLoginForm';
-import NewAdminDialog from './NewAdminDialog';
-import DemoCredentialsInfo from './DemoCredentialsInfo';
 import { AdminLoginProps } from './types';
 
 const AdminLogin = ({ onLogin }: AdminLoginProps) => {
   const [redirectChecked, setRedirectChecked] = useState(false);
-  const [showNewAdminDialog, setShowNewAdminDialog] = useState(false);
   
   const navigate = useNavigate();
-  const { isAdmin, isAuthenticated, fetchUserData } = useAuth();
+  const { isVolunteer, isAuthenticated, fetchUserData } = useAuth();
   const hasRedirected = useRef(false);
+  const isVolunteerFromStorage = (() => {
+    try {
+      const authUserRaw = localStorage.getItem('authUser');
+      if (!authUserRaw) return false;
+      const authUser = JSON.parse(authUserRaw) as { userType?: string; roles?: string[] };
+      return authUser.userType === 'VOLUNTARIO' || Boolean(authUser.roles?.includes('VOLUNTARIO'));
+    } catch {
+      return false;
+    }
+  })();
   
   // Verificação única de status de admin na montagem
   useEffect(() => {
@@ -26,14 +32,14 @@ const AdminLogin = ({ onLogin }: AdminLoginProps) => {
     
     const checkAdminStatus = async () => {
       try {
-        console.log('AdminLogin: Verificando status inicial', { isAdmin, isAuthenticated });
+        console.log('AdminLogin: Verificando status inicial', { isVolunteer, isAuthenticated });
         
-        // Verificar localStorage primeiro (método mais rápido)
-        const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
+        // Verificar localStorage primeiro (método mais rápido).
+        // Esta tela é exclusiva para funcionários de entidade (VOLUNTARIO).
         const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
         
-        if ((isAdmin || localStorageAdmin) && (isAuthenticated || localStorageLoggedIn)) {
-          console.log('AdminLogin: Usuário já autenticado como admin, redirecionando para /admin');
+        if ((isVolunteer || isVolunteerFromStorage) && (isAuthenticated || localStorageLoggedIn)) {
+          console.log('AdminLogin: Funcionário de entidade já autenticado, redirecionando para /admin');
           hasRedirected.current = true;
           navigate('/admin', { replace: true });
         }
@@ -45,7 +51,7 @@ const AdminLogin = ({ onLogin }: AdminLoginProps) => {
     };
     
     checkAdminStatus();
-  }, [isAdmin, isAuthenticated, navigate, redirectChecked]);
+  }, [isVolunteer, isAuthenticated, navigate, redirectChecked, isVolunteerFromStorage]);
 
   const handleAdminLogin = async () => {
     // Atualizar estado global - obrigatório
@@ -67,8 +73,8 @@ const AdminLogin = ({ onLogin }: AdminLoginProps) => {
     }, 500);
   };
   
-  // Não renderizar se já foi confirmado como admin
-  if ((isAdmin || localStorage.getItem("isAdmin") === "true") && 
+  // Não renderizar se já foi confirmado como funcionário de entidade
+  if ((isVolunteer || isVolunteerFromStorage) && 
       (isAuthenticated || localStorage.getItem("isLoggedIn") === "true") && 
       redirectChecked) {
     return null;
@@ -82,32 +88,14 @@ const AdminLogin = ({ onLogin }: AdminLoginProps) => {
             <div className="flex items-center justify-center mb-4">
               <ShieldAlert className="h-12 w-12 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-bold text-center">Acesso Administrativo</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">Acesso da Entidade</CardTitle>
             <CardDescription className="text-center">
-              Entre com suas credenciais de administrador
+              Entre com suas credenciais de funcionário da entidade
             </CardDescription>
           </CardHeader>
           
           <CardContent>
             <AdminLoginForm onAdminLogin={handleAdminLogin} />
-            
-            <div className="mt-6">
-              <Dialog open={showNewAdminDialog} onOpenChange={setShowNewAdminDialog}>
-                <NewAdminDialog />
-                
-                <DialogTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                  >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Criar Novo Administrador
-                  </Button>
-                </DialogTrigger>
-              </Dialog>
-            </div>
-            
-            <DemoCredentialsInfo />
           </CardContent>
           
           <CardFooter className="flex justify-center">

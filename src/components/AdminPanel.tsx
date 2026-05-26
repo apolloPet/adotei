@@ -13,21 +13,21 @@ import {
   Settings, 
   Users, 
   ShieldCheck,
-  Globe,
+  Building2,
   Heart
 } from 'lucide-react';
 import { UsersList } from './admin/users';
 import AdminUserManagement from './admin/AdminUserManagement';
 import PaymentSettings from './admin/PaymentSettings';
 import AnimalRegistrationForm from './admin/animal-registration';
-import WebsiteContentManager from './admin/WebsiteContentManager';
 import AdopterCompatibility from './admin/AdopterCompatibility';
+import OrganizationManagement from './admin/organization-management/OrganizationManagement';
 import { signOut } from '@/services/auth'; 
 import { useAuth } from '@/hooks/auth';
 
 const AdminPanel = ({ onLogout }) => {
   const navigate = useNavigate();
-  const { isAdmin, isAuthenticated, fetchUserData } = useAuth();
+  const { isAdmin, isVolunteer, isAuthenticated, fetchUserData } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   
   // Verificar status de autenticação quando o componente é montado
@@ -74,7 +74,7 @@ const AdminPanel = ({ onLogout }) => {
       window.removeEventListener('authStateChanged', handleAuthChange);
       window.removeEventListener('storage', handleAuthChange);
     };
-  }, [isAdmin, isAuthenticated, fetchUserData]);
+  }, [fetchUserData]);
   
   const handleLogout = async () => {
     try {
@@ -94,7 +94,31 @@ const AdminPanel = ({ onLogout }) => {
       toast.error("Erro ao fazer logout");
     }
   };
-  
+
+  // Verificar status de autenticação
+  const localStorageVolunteer = (() => {
+    try {
+      const authUser = localStorage.getItem("authUser");
+      if (!authUser) return false;
+      const parsed = JSON.parse(authUser) as { userType?: string; roles?: string[] };
+      return parsed.userType === 'VOLUNTARIO' || Boolean(parsed.roles?.includes('VOLUNTARIO'));
+    } catch {
+      return false;
+    }
+  })();
+  const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
+  const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const isAuthorized =
+    (isAuthenticated && (isAdmin || isVolunteer)) ||
+    (localStorageLoggedIn && (localStorageAdmin || localStorageVolunteer));
+
+  useEffect(() => {
+    if (!isLoading && !isAuthorized) {
+      console.log('AdminPanel: Usuário não autorizado, redirecionando');
+      navigate("/admin-login", { replace: true });
+    }
+  }, [isLoading, isAuthorized, navigate]);
+
   // Exibir tela de carregamento enquanto verifica autenticação
   if (isLoading) {
     return (
@@ -107,14 +131,8 @@ const AdminPanel = ({ onLogout }) => {
       </div>
     );
   }
-  
-  // Verificar status de autenticação
-  const isAuthorized = isAuthenticated && (isAdmin || localStorage.getItem("isAdmin") === "true");
-  
+
   if (!isAuthorized) {
-    console.log('AdminPanel: Usuário não autorizado, redirecionando');
-    // Redirecionar para login administrativo após pequeno delay
-    setTimeout(() => navigate("/admin-login"), 100);
     return null;
   }
 
@@ -124,7 +142,7 @@ const AdminPanel = ({ onLogout }) => {
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="text-2xl">Painel Administrativo</CardTitle>
-            <CardDescription>Gerencie solicitações de adoção, usuários e administradores</CardDescription>
+            <CardDescription>Gerencie adoções, animais, ONGs, voluntários e administração da plataforma</CardDescription>
           </div>
           <Button 
             variant="outline" 
@@ -137,73 +155,85 @@ const AdminPanel = ({ onLogout }) => {
         </CardHeader>
         
         <CardContent className="pt-6">
-          <Tabs defaultValue="adoption" className="w-full">
+          <Tabs defaultValue={isVolunteer && !isAdmin ? "animals" : "adoption"} className="w-full">
             <TabsList className="w-full mb-6 overflow-x-auto flex flex-nowrap whitespace-nowrap">
-              <TabsTrigger value="adoption" className="flex items-center gap-1">
-                <PawPrint className="h-4 w-4" />
-                <span className="hidden sm:inline">Adoção</span>
-              </TabsTrigger>
+              {!isVolunteer && (
+                <TabsTrigger value="adoption" className="flex items-center gap-1">
+                  <PawPrint className="h-4 w-4" />
+                  <span className="hidden sm:inline">Adoção</span>
+                </TabsTrigger>
+              )}
               <TabsTrigger value="animals" className="flex items-center gap-1">
                 <PawPrint className="h-4 w-4" />
                 <span className="hidden sm:inline">Animais</span>
               </TabsTrigger>
-              <TabsTrigger value="compatibility" className="flex items-center gap-1">
-                <Heart className="h-4 w-4" />
-                <span className="hidden sm:inline">Compatibilidade</span>
-              </TabsTrigger>
-              <TabsTrigger value="website" className="flex items-center gap-1">
-                <Globe className="h-4 w-4" />
-                <span className="hidden sm:inline">Conteúdo do Site</span>
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="flex items-center gap-1">
-                <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">Configurações</span>
-              </TabsTrigger>
+              {!isVolunteer && (
+                <>
+                  <TabsTrigger value="compatibility" className="flex items-center gap-1">
+                    <Heart className="h-4 w-4" />
+                    <span className="hidden sm:inline">Compatibilidade</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="settings" className="flex items-center gap-1">
+                    <Settings className="h-4 w-4" />
+                    <span className="hidden sm:inline">Configurações</span>
+                  </TabsTrigger>
+                </>
+              )}
             </TabsList>
             
-            <TabsContent value="adoption">
-              <AdoptionManagement />
-            </TabsContent>
+            {!isVolunteer && (
+              <TabsContent value="adoption">
+                <AdoptionManagement />
+              </TabsContent>
+            )}
             
             <TabsContent value="animals">
               <AnimalRegistrationForm />
             </TabsContent>
             
-            <TabsContent value="compatibility">
-              <AdopterCompatibility />
-            </TabsContent>
-            
-            <TabsContent value="website">
-              <WebsiteContentManager />
-            </TabsContent>
-            
-            <TabsContent value="settings">
-              <Tabs defaultValue="administrators" className="w-full">
-                <TabsList className="w-full mb-4 overflow-x-auto flex flex-nowrap whitespace-nowrap">
-                  <TabsTrigger value="administrators" className="flex items-center gap-1">
-                    <ShieldCheck className="h-4 w-4" />
-                    <span className="hidden sm:inline">Administradores</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="users" className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    <span className="hidden sm:inline">Usuários</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="payment-settings">Configurações de Pagamento</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="administrators">
-                  <AdminUserManagement />
+            {!isVolunteer && (
+              <>
+                <TabsContent value="compatibility">
+                  <AdopterCompatibility />
                 </TabsContent>
-                
-                <TabsContent value="users">
-                  <UsersList />
+
+                <TabsContent value="settings">
+                  <Tabs defaultValue="administrators" className="w-full">
+                    <TabsList className="w-full mb-4 overflow-x-auto flex flex-nowrap whitespace-nowrap">
+                      <TabsTrigger value="administrators" className="flex items-center gap-1">
+                        <ShieldCheck className="h-4 w-4" />
+                        <span className="hidden sm:inline">Administradores</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="users" className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        <span className="hidden sm:inline">Usuários</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="organizations" className="flex items-center gap-1">
+                        <Building2 className="h-4 w-4" />
+                        <span className="hidden sm:inline">ONGs</span>
+                      </TabsTrigger>
+                      <TabsTrigger value="payment-settings">Configurações de Pagamento</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="administrators">
+                      <AdminUserManagement />
+                    </TabsContent>
+                    
+                    <TabsContent value="users">
+                      <UsersList />
+                    </TabsContent>
+
+                    <TabsContent value="organizations">
+                      <OrganizationManagement />
+                    </TabsContent>
+                    
+                    <TabsContent value="payment-settings">
+                      <PaymentSettings />
+                    </TabsContent>
+                  </Tabs>
                 </TabsContent>
-                
-                <TabsContent value="payment-settings">
-                  <PaymentSettings />
-                </TabsContent>
-              </Tabs>
-            </TabsContent>
+              </>
+            )}
           </Tabs>
         </CardContent>
       </Card>

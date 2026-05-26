@@ -1,18 +1,16 @@
 
-import { supabase } from '@/lib/supabase';
-import { toast } from '@/hooks/use-sonner';
+import { apiRequest } from '@/lib/apiClient';
 import { AdminUser } from './types';
+import { isValidEmail, normalizeEmail } from '@/utils/brMasks';
 
 export const createAdminUser = async (
-  email: string, 
+  email: string,
   password: string, 
   name: string,
   permissions: AdminUser['permissions']
 ): Promise<{success: boolean; message: string; data?: AdminUser}> => {
   try {
-    console.log('Creating admin user with data:', { email, name, permissions });
-    
-    // Verify all required fields
+    const normalizedEmail = normalizeEmail(email);
     if (!email || !name || !password) {
       return {
         success: false,
@@ -21,14 +19,13 @@ export const createAdminUser = async (
     }
     
     // Validate email format
-    if (!/\S+@\S+\.\S+/.test(email)) {
+    if (!isValidEmail(normalizedEmail)) {
       return {
         success: false,
         message: 'Formato de email inválido.'
       };
     }
     
-    // Validate password
     if (password.length < 6) {
       return {
         success: false,
@@ -36,104 +33,38 @@ export const createAdminUser = async (
       };
     }
     
-    // Create the payload
-    const adminData = {
-      email,
-      password,
-      name,
-      permissions
-    };
-    
-    console.log('Request payload for admin creation:', adminData);
-    
-    // Serialize request body
-    const requestBody = JSON.stringify(adminData);
-    console.log('Serialized request body:', requestBody);
-    
-    // Check if JSON is valid
-    if (!requestBody || requestBody === '{}') {
-      console.error('Request body is empty after serialization');
-      return {
-        success: false,
-        message: 'Erro na preparação dos dados para envio.'
-      };
-    }
-    
-    // Prepare headers
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
-    };
-    
-    // Check if it's the main admin via localStorage or has a session
-    const isMainAdmin = localStorage.getItem('userEmail') === 'admin@petmatch.com';
-    
-    if (isMainAdmin) {
-      console.log('Using admin override for admin@petmatch.com');
-      headers['X-Admin-Override'] = 'true';
-      headers['X-Admin-Email'] = 'admin@petmatch.com';
-    } else {
-      // For normal users, get session token
-      const { data: sessionData } = await supabase.auth.getSession();
-      
-      if (sessionData?.session?.access_token) {
-        console.log('Using access token authentication');
-        headers['Authorization'] = `Bearer ${sessionData.session.access_token}`;
-      } else {
-        console.error('No authentication method available');
-        return {
-          success: false,
-          message: 'Erro de autenticação. Por favor, faça login novamente.'
-        };
-      }
-    }
-    
-    console.log('Sending request to admin-management function with headers:', Object.keys(headers));
-    
-    // Call the edge function
-    const { data, error } = await supabase.functions.invoke('admin-management', {
+    const data = await apiRequest<{
+      id: string;
+      email: string;
+      roles: string[];
+    }>('/api/users', {
       method: 'POST',
-      body: requestBody,
-      headers
+      body: {
+        authSubject: normalizedEmail,
+        fullName: name,
+        email: normalizedEmail,
+        phone: null,
+        userType: 'ADMIN',
+        addressLine: null,
+        addressNumber: null,
+        neighborhood: null,
+        city: null,
+        state: null,
+        zipCode: null,
+        organizationId: null,
+        roles: ['ADMIN'],
+      },
     });
-    
-    console.log('Response from admin-management:', data, error);
-    
-    if (error) {
-      console.error('Error from edge function:', error);
-      
-      // Handle specific known error cases
-      if (error.message?.includes('duplicate')) {
-        return {
-          success: false,
-          message: 'Este email já está em uso por outro usuário.'
-        };
-      }
-      
-      // Improve error messages for user feedback
-      const userFriendlyMessage = getUserFriendlyErrorMessage(error.message);
-      
-      return {
-        success: false,
-        message: userFriendlyMessage || 'Erro ao criar administrador'
-      };
-    }
-    
-    if (!data || !data.success) {
-      console.error('Error response from edge function:', data);
-      
-      // Provide more specific error message from the response if available
-      const errorMessage = data?.message ? getDetailedErrorMessage(data.message) : 'Erro ao criar administrador';
-      
-      return {
-        success: false,
-        message: errorMessage
-      };
-    }
-    
+
     return {
       success: true,
-      message: data.message || 'Administrador criado com sucesso',
-      data: data.data
+      message: 'Administrador criado com sucesso',
+      data: {
+        id: data.id,
+        email: data.email,
+        role: 'admin',
+        permissions,
+      },
     };
   } catch (error) {
     console.error('Error in createAdminUser:', error);
@@ -147,9 +78,8 @@ export const createAdminUser = async (
       message: 'Erro ao criar administrador: ' + userFriendlyMessage
     };
   }
-};
+}
 
-// Helper function to provide user-friendly error messages
 function getUserFriendlyErrorMessage(errorMessage: string): string {
   if (errorMessage.includes('network') || errorMessage.includes('connection')) {
     return 'Problema de conexão com o servidor. Verifique sua internet e tente novamente.';
@@ -173,20 +103,4 @@ function getUserFriendlyErrorMessage(errorMessage: string): string {
   
   // Return a default user-friendly message or the original error if nothing matches
   return errorMessage;
-}
-
-// Helper function to provide detailed error messages from edge function responses
-function getDetailedErrorMessage(message: string): string {
-  // Handle specific JSON parsing errors
-  if (message.includes('JSON')) {
-    return 'Erro na formatação dos dados. Por favor, verifique as informações e tente novamente.';
-  }
-  
-  // Handle missing fields errors
-  if (message.includes('missing') || message.includes('required')) {
-    return 'Campos obrigatórios não preenchidos. Verifique o formulário e tente novamente.';
-  }
-  
-  // Return original message if no specific handling
-  return message;
 }

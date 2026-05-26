@@ -1,29 +1,8 @@
 
-import { useState } from 'react';
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  X, Sparkles, Cloud, Heart, Search, Compass, Users,
-  Shield, EyeOff, Zap, BedDouble, Repeat, Flag, PawPrint,
-} from "lucide-react";
-import { AnimalFormData, commonCharacteristics } from "./types";
-
-const characteristicIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  "Brincalhão": Sparkles,
-  "Calmo": Cloud,
-  "Carinhoso": Heart,
-  "Curioso": Search,
-  "Independente": Compass,
-  "Sociável": Users,
-  "Protetor": Shield,
-  "Tímido": EyeOff,
-  "Ativo": Zap,
-  "Dorminhoco": BedDouble,
-  "Adaptável": Repeat,
-  "Territorial": Flag,
-};
+import { Textarea } from "@/components/ui/textarea";
+import { AnimalFormData } from "./types";
 
 export interface AnimalCharacteristicsProps {
   formData: AnimalFormData;
@@ -31,23 +10,6 @@ export interface AnimalCharacteristicsProps {
 }
 
 const AnimalCharacteristics = ({ formData, onFormChange }: AnimalCharacteristicsProps) => {
-  const [customCharacteristic, setCustomCharacteristic] = useState("");
-
-  const handleCharacteristicToggle = (characteristic: string) => {
-    const updatedCharacteristics = formData.characteristics.includes(characteristic)
-      ? formData.characteristics.filter(char => char !== characteristic)
-      : [...formData.characteristics, characteristic];
-    
-    onFormChange({ characteristics: updatedCharacteristics });
-  };
-
-  const addCustomCharacteristic = () => {
-    if (customCharacteristic.trim() && !formData.characteristics.includes(customCharacteristic.trim())) {
-      onFormChange({ characteristics: [...formData.characteristics, customCharacteristic.trim()] });
-      setCustomCharacteristic("");
-    }
-  };
-
   const handleGoodWithChange = (type: 'children' | 'animals' | 'seniors', checked: boolean) => {
     if (type === 'children') {
       onFormChange({ goodWithChildren: checked });
@@ -64,65 +26,17 @@ const AnimalCharacteristics = ({ formData, onFormChange }: AnimalCharacteristics
 
   return (
     <div className="space-y-4">
-      <Label>Características</Label>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-        {commonCharacteristics.map((char) => {
-          const Icon = characteristicIcons[char] ?? PawPrint;
-          const checked = formData.characteristics.includes(char);
-          return (
-            <label
-              key={char}
-              htmlFor={`char-${char}`}
-              className={`flex items-center space-x-2 rounded-md border p-2 cursor-pointer transition-colors ${
-                checked ? 'bg-primary/10 border-primary' : 'hover:bg-muted/40'
-              }`}
-            >
-              <Checkbox
-                id={`char-${char}`}
-                checked={checked}
-                onCheckedChange={() => handleCharacteristicToggle(char)}
-              />
-              <Icon className={`h-4 w-4 ${checked ? 'text-primary' : 'text-muted-foreground'}`} />
-              <span className="text-sm">{char}</span>
-            </label>
-          );
-        })}
-      </div>
-      
-      <div className="flex space-x-2">
-        <Input
-          value={customCharacteristic}
-          onChange={(e) => setCustomCharacteristic(e.target.value)}
-          placeholder="Adicionar outra característica"
+      <div className="space-y-2">
+        <Label htmlFor="personalityTemperament">Personalidade & temperamento</Label>
+        <Textarea
+          id="personalityTemperament"
+          name="personalityTemperament"
+          value={formData.personalityTemperament}
+          onChange={(e) => onFormChange({ personalityTemperament: e.target.value })}
+          placeholder="Ex: brincalhão, dócil, sociável..."
+          rows={4}
         />
-        <Button 
-          type="button" 
-          onClick={addCustomCharacteristic}
-          variant="outline"
-        >
-          Adicionar
-        </Button>
       </div>
-      
-      {formData.characteristics.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {formData.characteristics.map((char) => (
-            <div 
-              key={char} 
-              className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm flex items-center gap-1"
-            >
-              {char}
-              <button 
-                type="button" 
-                onClick={() => handleCharacteristicToggle(char)}
-                className="text-secondary-foreground/70 hover:text-secondary-foreground"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
 
       <div className="pt-4 border-t">
         <h3 className="text-lg font-medium mb-4">Bom com</h3>

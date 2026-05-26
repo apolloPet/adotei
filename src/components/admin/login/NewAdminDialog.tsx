@@ -1,10 +1,11 @@
 
 import React, { useState } from 'react';
-import { supabase } from '@/lib/supabase';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-sonner";
+import { createAdminUser } from '@/services/adminUser';
+import { isValidEmail, normalizeEmail } from '@/utils/brMasks';
 import {
   DialogContent,
   DialogDescription,
@@ -28,53 +29,31 @@ const NewAdminDialog = () => {
       toast.error("Preencha todos os campos para criar o administrador");
       return;
     }
+    if (!isValidEmail(newAdmin.email)) {
+      toast.error("Email inválido");
+      return;
+    }
     
     setIsLoading(true);
     
     try {
-      // Registrar novo usuário
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newAdmin.email,
-        password: newAdmin.password,
-        options: {
-          data: {
-            name: newAdmin.name,
-            isAdmin: true
-          }
-        }
-      });
-      
-      if (authError) {
-        console.error('Erro ao criar usuário:', authError);
-        toast.error(`Erro ao criar usuário: ${authError.message}`);
-        return;
-      }
-      
-      if (!authData.user) {
-        toast.error("Erro ao criar usuário");
-        return;
-      }
-      
-      // Atribuir papel de admin
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: authData.user.id,
-          role: 'admin',
-          permissions: {
-            manageAnimals: true,
-            approveAdoptions: true,
-            manageSettings: true,
-            manageAdmins: true
-          }
-        });
-      
-      if (roleError) {
-        console.error('Erro ao atribuir papel de admin:', roleError);
-        toast.error(`Erro ao atribuir papel de administrador: ${roleError.message}`);
+      const result = await createAdminUser(
+        normalizeEmail(newAdmin.email),
+        newAdmin.password,
+        newAdmin.name,
+        {
+          manageAnimals: true,
+          approveAdoptions: true,
+          manageSettings: true,
+          manageAdmins: true,
+        },
+      );
+
+      if (!result.success) {
+        toast.error(result.message);
       } else {
         toast.success("Administrador criado com sucesso!");
-        toast.info(`Email: ${newAdmin.email}, Senha: ${newAdmin.password}`);
+        toast.info(`Email: ${newAdmin.email}`);
         
         setNewAdmin({
           email: '',
@@ -118,7 +97,7 @@ const NewAdminDialog = () => {
             type="email" 
             placeholder="novo.admin@exemplo.com" 
             value={newAdmin.email}
-            onChange={(e) => setNewAdmin({...newAdmin, email: e.target.value})}
+            onChange={(e) => setNewAdmin({...newAdmin, email: normalizeEmail(e.target.value)})}
             required
           />
         </div>

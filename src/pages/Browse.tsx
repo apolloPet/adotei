@@ -2,7 +2,7 @@ import FilterPanel from "@/components/browse/FilterPanel";
 import PetBrowser from "@/components/browse/PetBrowser";
 import { usePetBrowse } from "@/hooks/use-pet-browse";
 import { useEffect, useMemo, useState } from "react";
-import { generateMockPets } from "@/data/mockPets";
+import { fetchPets } from "@/services/petService";
 import { recordPetMatch } from "@/services/adoptionService";
 import { toast } from "@/hooks/use-sonner";
 import { useAuth } from "@/hooks/auth";
@@ -11,6 +11,7 @@ import { UserProfile } from "@/types/user";
 import { filterPetsForUser } from "@/utils/petMatchFilter";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Browse = () => {
   const {
@@ -25,11 +26,19 @@ const Browse = () => {
     setIsLoading,
   } = usePetBrowse();
 
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isVolunteer } = useAuth();
+  const navigate = useNavigate();
   const userId = user?.id || (isAdmin ? "admin@petmatch.com" : null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [blocked, setBlocked] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<{ petId: string; message: string }[]>([]);
+
+  useEffect(() => {
+    if (isVolunteer) {
+      toast.error("Voluntários de ONG não podem acessar Encontrar Pets.");
+      navigate("/admin", { replace: true });
+    }
+  }, [isVolunteer, navigate]);
 
   useEffect(() => {
     (async () => {
@@ -46,10 +55,11 @@ const Browse = () => {
     const loadPets = async () => {
       setIsLoading(true);
       try {
-        let petsData = generateMockPets(12);
-        if (filters.species !== "all") petsData = petsData.filter((p) => p.species === filters.species);
-        if (filters.size !== "all") petsData = petsData.filter((p) => p.size === filters.size);
-        if (filters.gender !== "all") petsData = petsData.filter((p) => p.gender === filters.gender);
+        let petsData = await fetchPets({
+          species: filters.species,
+          size: filters.size,
+          gender: filters.gender,
+        });
         petsData = petsData.filter((p) => {
           const age = parseInt(p.age) || 0;
           return age >= filters.ageRange[0] && age <= filters.ageRange[1];

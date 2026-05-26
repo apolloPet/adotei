@@ -1,7 +1,6 @@
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { createAnimal, deleteAnimal, getAnimalById, getAnimals, updateAnimal } from '@/services/animalService';
 import { Pet } from '@/types/pets';
-import { toast } from '@/hooks/use-sonner';
-import { dbPetToPet, DbPet, DbPetImage } from '@/utils/dbConverters';
+import { animalToPet } from '@/utils/animalAdapter';
 
 export interface PetFilters {
   species?: 'dog' | 'cat' | 'other' | 'all';
@@ -15,64 +14,27 @@ export interface PetFilters {
 
 export const fetchPets = async (filters?: PetFilters): Promise<Pet[]> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return [];
+    const animals = await getAnimals();
+    let pets = animals.map(animalToPet);
+
+    if (filters?.species && filters.species !== 'all') {
+      pets = pets.filter((pet) => pet.species === filters.species);
+    }
+    if (filters?.gender && filters.gender !== 'all') {
+      pets = pets.filter((pet) => pet.gender === filters.gender);
+    }
+    if (filters?.size && filters.size !== 'all') {
+      pets = pets.filter((pet) => pet.size === filters.size);
+    }
+    if (filters?.searchTerm) {
+      const term = filters.searchTerm.toLowerCase();
+      pets = pets.filter((pet) =>
+        pet.name.toLowerCase().includes(term) ||
+        pet.breed.toLowerCase().includes(term) ||
+        pet.description.toLowerCase().includes(term),
+      );
     }
 
-    let query = supabase.from('pets').select('*');
-    
-    if (filters) {
-      if (filters.species && filters.species !== 'all') {
-        query = query.eq('species', filters.species);
-      }
-      
-      if (filters.gender && filters.gender !== 'all') {
-        query = query.eq('gender', filters.gender);
-      }
-      
-      if (filters.size && filters.size !== 'all') {
-        query = query.eq('size', filters.size);
-      }
-      
-      if (filters.ageRange && Array.isArray(filters.ageRange) && filters.ageRange.length === 2) {
-        query = query
-          .gte('age', filters.ageRange[0])
-          .lte('age', filters.ageRange[1])
-          .eq('age_unit', 'years');
-      }
-
-      if (filters.hasSpecialNeeds) {
-        query = query.eq('special_needs', true);
-      }
-
-      if (filters.hasHealthIssues) {
-        query = query.eq('health_issues', true);
-      }
-
-      if (filters.searchTerm) {
-        query = query.or(`name.ilike.%${filters.searchTerm}%,breed.ilike.%${filters.searchTerm}%,description.ilike.%${filters.searchTerm}%`);
-      }
-    }
-    
-    const { data: petsData, error: petsError } = await query;
-    
-    if (petsError) throw petsError;
-    if (!petsData) return [];
-    
-    const pets = await Promise.all(
-      petsData.map(async (pet) => {
-        const { data: imagesData, error: imagesError } = await supabase
-          .from('pet_images')
-          .select('*')
-          .eq('pet_id', pet.id);
-        
-        if (imagesError) throw imagesError;
-        
-        return dbPetToPet(pet as DbPet, imagesData || []);
-      })
-    );
-    
     return pets;
   } catch (error) {
     console.error('Error fetching pets:', error);
@@ -82,28 +44,8 @@ export const fetchPets = async (filters?: PetFilters): Promise<Pet[]> => {
 
 export const fetchPetById = async (id: string): Promise<Pet | null> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return null;
-    }
-
-    const { data: pet, error: petError } = await supabase
-      .from('pets')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (petError) throw petError;
-    if (!pet) return null;
-    
-    const { data: images, error: imagesError } = await supabase
-      .from('pet_images')
-      .select('*')
-      .eq('pet_id', id);
-    
-    if (imagesError) throw imagesError;
-    
-    return dbPetToPet(pet as DbPet, images || []);
+    const animal = await getAnimalById(id);
+    return animal ? animalToPet(animal) : null;
   } catch (error) {
     console.error('Error fetching pet by ID:', error);
     return null;
@@ -112,33 +54,8 @@ export const fetchPetById = async (id: string): Promise<Pet | null> => {
 
 export const getFeaturedPets = async (limit: number = 6): Promise<Pet[]> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return [];
-    }
-
-    const { data: petsData, error: petsError } = await supabase
-      .from('pets')
-      .select('*')
-      .limit(limit);
-    
-    if (petsError) throw petsError;
-    if (!petsData) return [];
-    
-    const pets = await Promise.all(
-      petsData.map(async (pet) => {
-        const { data: imagesData, error: imagesError } = await supabase
-          .from('pet_images')
-          .select('*')
-          .eq('pet_id', pet.id);
-        
-        if (imagesError) throw imagesError;
-        
-        return dbPetToPet(pet as DbPet, imagesData || []);
-      })
-    );
-    
-    return pets;
+    const pets = await fetchPets();
+    return pets.slice(0, limit);
   } catch (error) {
     console.error('Error fetching featured pets:', error);
     return [];
@@ -147,69 +64,20 @@ export const getFeaturedPets = async (limit: number = 6): Promise<Pet[]> => {
 
 export const createPet = async (pet: Omit<Pet, 'id'>, images: File[]): Promise<Pet | null> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return null;
-    }
+    const created = await createAnimal({
+      nome: pet.name,
+      idade: parseInt(pet.age, 10) || 0,
+      tipo: pet.species === 'cat' ? 'gato' : 'cachorro',
+      porte: pet.size === 'small' ? 'pequeno' : pet.size === 'medium' ? 'medio' : 'grande',
+      sexo: pet.gender === 'male' ? 'macho' : 'femea',
+      castrado: !!pet.neutered,
+      vacinas: pet.vaccinated ? ['complete'] : ['none'],
+      descricao: pet.description,
+      fotos: images.length ? [URL.createObjectURL(images[0])] : pet.images,
+      fotoPrincipal: pet.primaryImage,
+    });
 
-    const dbPet = {
-      name: pet.name,
-      species: pet.species,
-      breed: pet.breed,
-      age: parseInt(pet.age.split(' ')[0]),
-      age_unit: pet.age.includes('ano') ? 'years' : 
-                pet.age.includes('mês') || pet.age.includes('mese') ? 'months' : 'days',
-      gender: pet.gender,
-      size: pet.size,
-      weight: pet.weight,
-      description: pet.description,
-      location: pet.location,
-      shelter_id: '',
-      shelter_time: pet.shelterTime,
-      traits: pet.traits,
-      special_needs: pet.specialNeeds || false,
-      health_issues: pet.healthIssues || false,
-    };
-    
-    const { data: newPet, error: petError } = await supabase
-      .from('pets')
-      .insert(dbPet)
-      .select()
-      .single();
-    
-    if (petError) throw petError;
-    if (!newPet) throw new Error('Failed to create pet');
-    
-    const uploadedImages = await Promise.all(
-      images.map(async (file, index) => {
-        const filePath = `pets/${newPet.id}/${Date.now()}-${file.name}`;
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('pet-images')
-          .upload(filePath, file);
-        
-        if (uploadError) throw uploadError;
-        
-        const { data: urlData } = supabase.storage
-          .from('pet-images')
-          .getPublicUrl(filePath);
-        
-        const { data: imageData, error: imageError } = await supabase
-          .from('pet_images')
-          .insert({
-            pet_id: newPet.id,
-            url: urlData.publicUrl,
-            is_primary: index === 0,
-          })
-          .select()
-          .single();
-        
-        if (imageError) throw imageError;
-        
-        return imageData;
-      })
-    );
-    
-    return dbPetToPet(newPet as DbPet, uploadedImages);
+    return created ? animalToPet(created) : null;
   } catch (error) {
     console.error('Error creating pet:', error);
     return null;
@@ -218,84 +86,18 @@ export const createPet = async (pet: Omit<Pet, 'id'>, images: File[]): Promise<P
 
 export const updatePet = async (id: string, updates: Partial<Pet>, newImages?: File[]): Promise<Pet | null> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return null;
-    }
-
-    const dbUpdates: any = {};
-    
-    if (updates.name) dbUpdates.name = updates.name;
-    if (updates.species) dbUpdates.species = updates.species;
-    if (updates.breed) dbUpdates.breed = updates.breed;
-    if (updates.age) {
-      const ageParts = updates.age.split(' ');
-      dbUpdates.age = parseInt(ageParts[0]);
-      dbUpdates.age_unit = ageParts[1].includes('ano') ? 'years' : 
-                          ageParts[1].includes('mês') || ageParts[1].includes('mese') ? 'months' : 'days';
-    }
-    if (updates.gender) dbUpdates.gender = updates.gender;
-    if (updates.size) dbUpdates.size = updates.size;
-    if (updates.weight) dbUpdates.weight = updates.weight;
-    if (updates.description) dbUpdates.description = updates.description;
-    if (updates.location) dbUpdates.location = updates.location;
-    if (updates.shelterTime) dbUpdates.shelter_time = updates.shelterTime;
-    if (updates.traits) dbUpdates.traits = updates.traits;
-    if (updates.specialNeeds !== undefined) dbUpdates.special_needs = updates.specialNeeds;
-    if (updates.healthIssues !== undefined) dbUpdates.health_issues = updates.healthIssues;
-    
-    const { data: updatedPet, error: updateError } = await supabase
-      .from('pets')
-      .update(dbUpdates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (updateError) throw updateError;
-    if (!updatedPet) throw new Error('Failed to update pet');
-    
-    let images = [];
-    if (newImages && newImages.length > 0) {
-      const uploadedImages = await Promise.all(
-        newImages.map(async (file, index) => {
-          const filePath = `pets/${id}/${Date.now()}-${file.name}`;
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('pet-images')
-            .upload(filePath, file);
-          
-          if (uploadError) throw uploadError;
-          
-          const { data: urlData } = supabase.storage
-            .from('pet-images')
-            .getPublicUrl(filePath);
-          
-          const { data: imageData, error: imageError } = await supabase
-            .from('pet_images')
-            .insert({
-              pet_id: id,
-              url: urlData.publicUrl,
-              is_primary: false,
-            })
-            .select()
-            .single();
-          
-          if (imageError) throw imageError;
-          
-          return imageData;
-        })
-      );
-      
-      images = uploadedImages;
-    }
-    
-    const { data: existingImages, error: imagesError } = await supabase
-      .from('pet_images')
-      .select('*')
-      .eq('pet_id', id);
-    
-    if (imagesError) throw imagesError;
-    
-    return dbPetToPet(updatedPet as DbPet, [...(existingImages || []), ...images]);
+    const updated = await updateAnimal(id, {
+      nome: updates.name,
+      idade: updates.age ? parseInt(updates.age, 10) : undefined,
+      tipo: updates.species ? (updates.species === 'cat' ? 'gato' : 'cachorro') : undefined,
+      porte: updates.size ? (updates.size === 'small' ? 'pequeno' : updates.size === 'medium' ? 'medio' : 'grande') : undefined,
+      sexo: updates.gender ? (updates.gender === 'male' ? 'macho' : 'femea') : undefined,
+      descricao: updates.description,
+      castrado: updates.neutered,
+      vacinas: updates.vaccinated === undefined ? undefined : updates.vaccinated ? ['complete'] : ['none'],
+      fotoPrincipal: newImages?.[0] ? URL.createObjectURL(newImages[0]) : updates.primaryImage,
+    });
+    return updated ? animalToPet(updated) : null;
   } catch (error) {
     console.error('Error updating pet:', error);
     return null;
@@ -304,26 +106,7 @@ export const updatePet = async (id: string, updates: Partial<Pet>, newImages?: F
 
 export const deletePet = async (id: string): Promise<boolean> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return false;
-    }
-
-    const { error: deleteImagesError } = await supabase
-      .from('pet_images')
-      .delete()
-      .eq('pet_id', id);
-    
-    if (deleteImagesError) throw deleteImagesError;
-    
-    const { error: deletePetError } = await supabase
-      .from('pets')
-      .delete()
-      .eq('id', id);
-    
-    if (deletePetError) throw deletePetError;
-    
-    return true;
+    return deleteAnimal(id);
   } catch (error) {
     console.error('Error deleting pet:', error);
     return false;

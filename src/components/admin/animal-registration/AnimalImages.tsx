@@ -21,7 +21,7 @@ const AnimalImages = ({
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
-      const maxSelection = 5 - images.length;
+      const maxSelection = 2 - images.length;
       
       // Validate file size and type
       const validFiles = selectedFiles.filter(file => {
@@ -101,7 +101,7 @@ const AnimalImages = ({
         </Alert>
       )}
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {previewImages.map((url, index) => (
           <div key={index} className="relative aspect-square bg-muted rounded-md overflow-hidden group">
             <img 
@@ -140,7 +140,7 @@ const AnimalImages = ({
           </div>
         ))}
         
-        {previewImages.length < 5 && (
+        {previewImages.length < 2 && (
           <label className={`aspect-square border-2 border-dashed rounded-md border-input flex flex-col items-center justify-center ${isUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-muted/50'}`}>
             {isUploading ? (
               <div className="flex flex-col items-center">
@@ -176,7 +176,7 @@ const AnimalImages = ({
       
       <div className="space-y-1">
         <p className="text-sm text-muted-foreground">
-          Adicione até 5 fotos. A primeira será a foto principal.
+          Adicione no maximo 2 fotos. A primeira será a foto principal.
         </p>
         <p className="text-xs text-muted-foreground">
           Formatos aceitos: JPG, PNG, GIF. Tamanho máximo: 5MB por arquivo.
