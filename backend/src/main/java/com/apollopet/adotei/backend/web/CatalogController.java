@@ -69,20 +69,20 @@ public class CatalogController {
     }
 
     @PostMapping("/organizations")
-    @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
     public OrganizationResponse createOrganization(@Valid @RequestBody OrganizationRequest request) {
         return catalogService.createOrganization(request);
     }
 
     @PutMapping("/organizations/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
+    @PreAuthorize("hasRole('ADMIN')")
     public OrganizationResponse updateOrganization(@PathVariable UUID id, @Valid @RequestBody OrganizationRequest request) {
         return catalogService.updateOrganization(id, request);
     }
 
     @DeleteMapping("/organizations/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteOrganization(@PathVariable UUID id) {
         catalogService.deleteOrganization(id);

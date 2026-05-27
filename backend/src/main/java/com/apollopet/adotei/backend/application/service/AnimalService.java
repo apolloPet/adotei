@@ -23,6 +23,7 @@ import com.apollopet.adotei.backend.domain.repository.TutorRepository;
 import com.apollopet.adotei.backend.domain.repository.VaccineRepository;
 import com.apollopet.adotei.backend.infrastructure.config.AwsProperties;
 import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalAdopterProfileRequest;
+import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalAdopterProfileResponse;
 import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalImageResponse;
 import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalRequest;
 import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalResponse;
@@ -34,8 +35,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Arrays;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -102,9 +105,11 @@ public class AnimalService {
     }
 
     @Transactional(readOnly = true)
-    public ImageBinary getImageBinary(UUID imageId) {
+    public ImageBinary getImageBinary(UUID imageId, String requesterAuthSubject) {
+        AppUser requester = loadRequester(requesterAuthSubject);
         AnimalImage image = imageRepository.findById(Objects.requireNonNull(imageId))
             .orElseThrow(() -> new NotFoundException("Imagem nao encontrada"));
+        assertVolunteerCanManageAnimal(requester, image.getAnimal());
 
         if (image.getS3Key() != null && image.getS3Key().startsWith("local-inline/")) {
             String fileUrl = image.getFileUrl();
@@ -129,32 +134,39 @@ public class AnimalService {
     }
 
     @Transactional
-    public AnimalResponse create(AnimalRequest request) {
+    public AnimalResponse create(AnimalRequest request, String requesterAuthSubject) {
+        AppUser requester = loadRequester(requesterAuthSubject);
         Animal animal = new Animal();
-        apply(animal, request);
+        apply(animal, request, requester);
         animal = Objects.requireNonNull(animalRepository.save(animal));
         upsertAdopterProfile(animal, request.adopterProfile());
         return toResponse(animal);
     }
 
     @Transactional
-    public AnimalResponse update(UUID id, AnimalRequest request) {
+    public AnimalResponse update(UUID id, AnimalRequest request, String requesterAuthSubject) {
+        AppUser requester = loadRequester(requesterAuthSubject);
         Animal animal = load(id);
-        apply(animal, request);
+        assertVolunteerCanManageAnimal(requester, animal);
+        apply(animal, request, requester);
         animal = Objects.requireNonNull(animalRepository.save(Objects.requireNonNull(animal)));
         upsertAdopterProfile(animal, request.adopterProfile());
         return toResponse(animal);
     }
 
     @Transactional
-    public void delete(UUID id) {
+    public void delete(UUID id, String requesterAuthSubject) {
+        AppUser requester = loadRequester(requesterAuthSubject);
         Animal animal = load(id);
+        assertVolunteerCanManageAnimal(requester, animal);
         animalRepository.delete(Objects.requireNonNull(animal));
     }
 
     @Transactional
-    public AnimalImageResponse uploadImage(UUID animalId, MultipartFile file, Integer displayOrder) {
+    public AnimalImageResponse uploadImage(UUID animalId, String requesterAuthSubject, MultipartFile file, Integer displayOrder) {
+        AppUser requester = loadRequester(requesterAuthSubject);
         Animal animal = load(animalId);
+        assertVolunteerCanManageAnimal(requester, animal);
         long existing = imageRepository.countByAnimalId(animalId);
         if (existing >= MAX_IMAGES_PER_ANIMAL) {
             throw new BadRequestException("Animal ja possui o numero maximo de imagens");
@@ -249,7 +261,7 @@ public class AnimalService {
             .orElseThrow(() -> new NotFoundException("Animal nao encontrado"));
     }
 
-    private void apply(Animal animal, AnimalRequest request) {
+    private void apply(Animal animal, AnimalRequest request, AppUser requester) {
         validateCatalogValues(request);
         animal.setName(request.name());
         animal.setAnimalType(request.animalType());
@@ -279,14 +291,14 @@ public class AnimalService {
 
         Organization organization = resolveOrganization(request.organizationId());
         animal.setTutor(resolveTutor(request.tutorId()));
-        AppUser createdBy = resolveUser(request.createdByUserId());
-        if (createdBy != null && createdBy.getUserType() == UserType.VOLUNTARIO) {
-            if (createdBy.getOrganization() == null) {
+        AppUser createdBy = requester;
+        if (requester != null && requester.getUserType() == UserType.VOLUNTARIO) {
+            if (requester.getOrganization() == null) {
                 throw new BadRequestException("Voluntario precisa estar vinculado a uma ONG para cadastrar animal.");
             }
             if (organization == null) {
-                organization = createdBy.getOrganization();
-            } else if (!organization.getId().equals(createdBy.getOrganization().getId())) {
+                organization = requester.getOrganization();
+            } else if (!organization.getId().equals(requester.getOrganization().getId())) {
                 throw new BadRequestException("Voluntario so pode cadastrar animais para sua propria ONG.");
             }
         }
@@ -352,6 +364,26 @@ public class AnimalService {
         return appUserRepository.findById(id).orElseThrow(() -> new NotFoundException("Usuario criador nao encontrado"));
     }
 
+    private AppUser loadRequester(String authSubject) {
+        return appUserRepository.findByAuthSubject(authSubject)
+            .orElseThrow(() -> new NotFoundException("Usuario autenticado nao encontrado"));
+    }
+
+    private void assertVolunteerCanManageAnimal(AppUser requester, Animal animal) {
+        if (requester.getUserType() != UserType.VOLUNTARIO) {
+            return;
+        }
+        if (requester.getOrganization() == null) {
+            throw new AccessDeniedException("Voluntario sem ONG vinculada.");
+        }
+        if (animal.getOrganization() == null) {
+            throw new AccessDeniedException("Animal sem ONG vinculada.");
+        }
+        if (!requester.getOrganization().getId().equals(animal.getOrganization().getId())) {
+            throw new AccessDeniedException("Voluntario so pode gerenciar animais da propria ONG.");
+        }
+    }
+
     private Set<Vaccine> resolveVaccines(List<UUID> ids) {
         if (ids == null || ids.isEmpty()) {
             return Set.of();
@@ -377,6 +409,9 @@ public class AnimalService {
         List<AnimalImageResponse> imageResponses = imageRepository.findByAnimalIdOrderByDisplayOrderAsc(animal.getId()).stream()
             .map(image -> new AnimalImageResponse(image.getId(), image.getFileUrl(), image.getContentType(), image.getDisplayOrder()))
             .toList();
+        AnimalAdopterProfileResponse adopterProfileResponse = adopterProfileRepository.findByAnimalId(animal.getId())
+            .map(this::toAdopterProfileResponse)
+            .orElse(null);
 
         return new AnimalResponse(
             animal.getId(),
@@ -410,7 +445,32 @@ public class AnimalService {
             animal.getVaccines().stream().map(Vaccine::getId).toList(),
             animal.getTemperamentTraits().stream().map(TemperamentTrait::getId).toList(),
             animal.getRequirements().stream().map(AdoptionRequirement::getId).toList(),
-            imageResponses
+            adopterProfileResponse,
+            imageResponses,
+            animal.getCreatedAt()
+        );
+    }
+
+    private AnimalAdopterProfileResponse toAdopterProfileResponse(AnimalAdopterProfile profile) {
+        List<String> suitableHousing = profile.getSuitableHousing() == null || profile.getSuitableHousing().isBlank()
+            ? List.of()
+            : Arrays.stream(profile.getSuitableHousing().split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .toList();
+
+        return new AnimalAdopterProfileResponse(
+            suitableHousing,
+            profile.isRequiresYard(),
+            profile.isRequiresWalledYard(),
+            profile.isRequiresWindowScreens(),
+            profile.isAllowsRented(),
+            profile.getMinResidentExperience(),
+            profile.isSuitableForChildren(),
+            profile.isSuitableForFirstTimers(),
+            profile.getMaxHoursAloneDaily(),
+            profile.getEstimatedMonthlyCost(),
+            profile.isRequiresEmergencyBudget()
         );
     }
 }

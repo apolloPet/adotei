@@ -60,9 +60,8 @@ export function useAuthSubscription({
           expiraEm: newSession.expires_at ? new Date(newSession.expires_at * 1000).toISOString() : 'desconhecido'
         });
         
-        // Performance: set user and session immediately
         setSession(newSession);
-        setUser(newSession.user);
+        setUser((current) => (current?.id === newSession.user.id ? current : newSession.user));
         
         const isAdminUser = Boolean(
           newSession.user.app_metadata?.role === 'admin' ||
@@ -81,27 +80,25 @@ export function useAuthSubscription({
           localStorage.setItem("userEmail", newSession.user.email);
         }
         
-        // Adicionar evento personalizado para informar todos os componentes
-        window.dispatchEvent(new Event('authStateChanged'));
-        
-        // Performance: fetch user profile in background
-        setTimeout(async () => {
-          try {
-            const userProfile = await getProfile();
-            if (userProfile) {
-              console.log('Profile fetched in background:', userProfile);
-              setProfile(userProfile);
-            } else {
-              console.log('No profile found in background fetch');
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+          window.dispatchEvent(new Event('authStateChanged'));
+        }
+
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+          setTimeout(async () => {
+            try {
+              const userProfile = await getProfile();
+              if (userProfile) {
+                console.log('Profile fetched in background:', userProfile);
+                setProfile(userProfile);
+              }
+            } catch (error) {
+              console.error('Error fetching profile in background:', error);
             }
-          } catch (error) {
-            console.error('Error fetching profile in background:', error);
-          }
-        }, 100);
+          }, 100);
+        }
       } else if (event !== 'INITIAL_SESSION') {
-        // Para eventos sem sessão (exceto verificação inicial), notificar mudança
         console.log('Evento de autenticação sem sessão:', event);
-        window.dispatchEvent(new Event('authStateChanged'));
       }
     });
     

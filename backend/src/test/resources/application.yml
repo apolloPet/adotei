@@ -1,3 +1,15 @@
+app:
+  security:
+    jwt:
+      secret: test-jwt-secret-key-with-at-least-32-chars
+  aws:
+    region: us-east-1
+    s3:
+      bucket: adotei-tests
+      endpoint: ""
+      access-key: test
+      secret-key: test
+      presign-expiration-minutes: 15
 spring:
   datasource:
     url: jdbc:h2:mem:adotei;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
@@ -13,13 +25,3 @@ spring:
       resourceserver:
         jwt:
           jwk-set-uri: http://localhost/.well-known/jwks.json
-
-app:
-  aws:
-    region: us-east-1
-    s3:
-      bucket: adotei-tests
-      endpoint: ""
-      access-key: test
-      secret-key: test
-      presign-expiration-minutes: 15

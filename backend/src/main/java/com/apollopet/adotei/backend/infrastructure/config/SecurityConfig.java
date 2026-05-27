@@ -1,5 +1,6 @@
 package com.apollopet.adotei.backend.infrastructure.config;
 
+import com.apollopet.adotei.backend.infrastructure.security.CookieBearerTokenResolver;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -15,6 +16,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -29,15 +31,22 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/actuator/health", "/swagger/**", "/v3/api-docs/**").permitAll()
-                .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
-                .requestMatchers("/api/animals/images/**").permitAll()
+                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/logout").permitAll()
+                .requestMatchers("/api/organizations/public", "/api/organizations/*/public").permitAll()
                 .anyRequest().authenticated()
             )
-            .oauth2ResourceServer(oauth -> oauth.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
-            .httpBasic(Customizer.withDefaults());
+            .oauth2ResourceServer(oauth -> oauth
+                .bearerTokenResolver(bearerTokenResolver())
+                .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+            );
 
         return http.build();
+    }
+
+    @Bean
+    BearerTokenResolver bearerTokenResolver() {
+        return new CookieBearerTokenResolver();
     }
 
     private Converter<Jwt, Collection<GrantedAuthority>> jwtGrantedAuthoritiesConverter() {

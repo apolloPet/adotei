@@ -1,6 +1,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
+import { apiRequest } from '@/lib/apiClient';
 
 /**
  * Tenta fazer login com credenciais de funcionário de entidade
@@ -16,16 +17,11 @@ export const signInAdmin = async (email: string, password: string): Promise<bool
       throw error;
     }
 
-    const authUserRaw = localStorage.getItem('authUser');
-    const isEntityStaff = (() => {
-      if (!authUserRaw) return false;
-      try {
-        const authUser = JSON.parse(authUserRaw) as { userType?: string; roles?: string[] };
-        return authUser.userType === 'VOLUNTARIO' || Boolean(authUser.roles?.includes('VOLUNTARIO'));
-      } catch {
-        return false;
-      }
-    })();
+    const me = await apiRequest<{ userType: string; roles: string[] }>('/api/auth/me', { skipAuth: true });
+    const isEntityStaff =
+      me.userType === 'VOLUNTARIO' ||
+      me.roles.includes('VOLUNTARIO') ||
+      me.roles.includes('ADMIN');
 
     if (!isEntityStaff) {
       await supabase.auth.signOut();

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
   PawPrint,
@@ -16,6 +16,8 @@ import { ExtendedProfile, UserProfile } from '@/types/user';
 import { Pet, PetSpecies } from '@/types/pets';
 import { scoreCandidate, AdopterCandidate } from '@/utils/compatibilityScore';
 import { getProfileAlerts } from '@/utils/profileAlerts';
+import { apiRequest } from '@/lib/apiClient';
+import { BackendAdopterProfile, mapBackendProfileToExtended } from '@/services/compatibilityService';
 
 const EXTENDED_KEY = 'user_profile_extended';
 
@@ -96,7 +98,26 @@ const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
 );
 
 const AdoptionDetailsPanel = ({ match }: Props) => {
-  const extended = useMemo(() => loadExtendedFor(match.userId), [match.userId]);
+  const [extended, setExtended] = useState<ExtendedProfile | undefined>(() => loadExtendedFor(match.userId));
+
+  useEffect(() => {
+    let active = true;
+    const loadFromBackend = async () => {
+      try {
+        const backend = await apiRequest<BackendAdopterProfile>(`/api/users/${match.userId}/adopter-profile`);
+        if (!active) return;
+        const mapped = mapBackendProfileToExtended(backend);
+        setExtended(mapped);
+      } catch {
+        if (!active) return;
+        setExtended(loadExtendedFor(match.userId));
+      }
+    };
+    loadFromBackend();
+    return () => {
+      active = false;
+    };
+  }, [match.userId]);
   const pet = useMemo(() => buildPetFromMatch(match), [match]);
 
   const candidate: AdopterCandidate = {
@@ -352,10 +373,6 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
             />
           )}
           <Row label="Já devolveu animal" value={exp?.returnedAnimal ? 'Sim' : 'Não'} />
-          <Row
-            label="Possui alergia"
-            value="—"
-          />
           <Row label="Orçamento mensal" value={fin?.monthlyBudget ?? '—'} />
           <Row label="Cobre emergências" value={fin?.willCoverEmergencies ? 'Sim' : 'Não'} />
           <Row label="Cobre vacinas" value={fin?.willCoverVaccines ? 'Sim' : 'Não'} />
@@ -364,6 +381,18 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
             <Row label="Horas sozinho/dia" value={`${intent.hoursAloneDaily}h`} />
           )}
           {intent?.reasonToAdopt && <Row label="Motivo da adoção" value={intent.reasonToAdopt} />}
+          {intent?.ifDestroyed && <Row label="Se destruir algo" value={intent.ifDestroyed} />}
+          {intent?.ifSick && <Row label="Se ficar doente" value={intent.ifSick} />}
+          {extended?.proof?.environmentPhotoUrl && (
+            <Row
+              label="Foto do ambiente"
+              value={
+                <a href={extended.proof.environmentPhotoUrl} target="_blank" rel="noreferrer" className="text-primary underline">
+                  Visualizar foto
+                </a>
+              }
+            />
+          )}
         </Section>
       </div>
 

@@ -1,6 +1,19 @@
 
 import { BasePetInfo, PetSpecies } from './base';
 
+export interface PetAdopterProfile {
+  suitableHousing?: string[];
+  requiresYard?: boolean;
+  requiresWalledYard?: boolean;
+  requiresWindowScreens?: boolean;
+  allowsRented?: boolean;
+  suitableForChildren?: boolean;
+  suitableForFirstTimers?: boolean;
+  maxHoursAloneDaily?: number;
+  estimatedMonthlyCost?: string;
+  requiresEmergencyBudget?: boolean;
+}
+
 export interface PetInfo extends BasePetInfo {
   type: string;
   age: number;
@@ -13,6 +26,8 @@ export interface PetInfo extends BasePetInfo {
   species?: PetSpecies;
   shelter?: string;
   traits?: string[];
+  adopterProfile?: PetAdopterProfile;
+  compatibilityScore?: number;
 }
 
 export interface Pet extends Omit<BasePetInfo, 'type'> {
@@ -30,4 +45,6 @@ export interface Pet extends Omit<BasePetInfo, 'type'> {
   vaccinated?: boolean;
   neutered?: boolean;
   daysWaiting?: number;
+  adopterProfile?: PetAdopterProfile;
+  compatibilityScore?: number;
 }

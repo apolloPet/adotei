@@ -60,19 +60,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       }
     }, 60000); // Verificação a cada minuto
     
-    // Adicionar listener para evento personalizado de mudança de autenticação
+    const AUTH_STORAGE_KEYS = new Set(['authToken', 'authUser', 'isLoggedIn', 'isAdmin', 'userEmail']);
+
     const handleAuthChange = () => {
       console.log('Evento authStateChanged detectado, atualizando dados do usuário');
       fetchUserData();
     };
-    
+
+    const handleStorageChange = (event: StorageEvent) => {
+      if (!event.key || !AUTH_STORAGE_KEYS.has(event.key)) {
+        return;
+      }
+      handleAuthChange();
+    };
+
     window.addEventListener('authStateChanged', handleAuthChange);
-    window.addEventListener('storage', handleAuthChange);
+    window.addEventListener('storage', handleStorageChange);
     
     return () => {
       clearInterval(periodicCheck);
       window.removeEventListener('authStateChanged', handleAuthChange);
-      window.removeEventListener('storage', handleAuthChange);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, [fetchUserData]);
 

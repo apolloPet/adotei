@@ -14,16 +14,6 @@ const AdminLogin = ({ onLogin }: AdminLoginProps) => {
   const navigate = useNavigate();
   const { isVolunteer, isAuthenticated, fetchUserData } = useAuth();
   const hasRedirected = useRef(false);
-  const isVolunteerFromStorage = (() => {
-    try {
-      const authUserRaw = localStorage.getItem('authUser');
-      if (!authUserRaw) return false;
-      const authUser = JSON.parse(authUserRaw) as { userType?: string; roles?: string[] };
-      return authUser.userType === 'VOLUNTARIO' || Boolean(authUser.roles?.includes('VOLUNTARIO'));
-    } catch {
-      return false;
-    }
-  })();
   
   // Verificação única de status de admin na montagem
   useEffect(() => {
@@ -34,11 +24,7 @@ const AdminLogin = ({ onLogin }: AdminLoginProps) => {
       try {
         console.log('AdminLogin: Verificando status inicial', { isVolunteer, isAuthenticated });
         
-        // Verificar localStorage primeiro (método mais rápido).
-        // Esta tela é exclusiva para funcionários de entidade (VOLUNTARIO).
-        const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-        
-        if ((isVolunteer || isVolunteerFromStorage) && (isAuthenticated || localStorageLoggedIn)) {
+        if (isVolunteer && isAuthenticated) {
           console.log('AdminLogin: Funcionário de entidade já autenticado, redirecionando para /admin');
           hasRedirected.current = true;
           navigate('/admin', { replace: true });
@@ -51,7 +37,7 @@ const AdminLogin = ({ onLogin }: AdminLoginProps) => {
     };
     
     checkAdminStatus();
-  }, [isVolunteer, isAuthenticated, navigate, redirectChecked, isVolunteerFromStorage]);
+  }, [isVolunteer, isAuthenticated, navigate, redirectChecked]);
 
   const handleAdminLogin = async () => {
     // Atualizar estado global - obrigatório
@@ -74,9 +60,7 @@ const AdminLogin = ({ onLogin }: AdminLoginProps) => {
   };
   
   // Não renderizar se já foi confirmado como funcionário de entidade
-  if ((isVolunteer || isVolunteerFromStorage) && 
-      (isAuthenticated || localStorage.getItem("isLoggedIn") === "true") && 
-      redirectChecked) {
+  if (isVolunteer && isAuthenticated && redirectChecked) {
     return null;
   }
   

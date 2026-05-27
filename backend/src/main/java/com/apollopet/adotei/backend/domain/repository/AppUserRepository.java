@@ -24,5 +24,8 @@ public interface AppUserRepository extends JpaRepository<AppUser, UUID> {
     @EntityGraph(attributePaths = {"organization", "roles"})
     List<AppUser> findByOrganizationIdAndUserType(UUID organizationId, UserType userType);
 
+    @EntityGraph(attributePaths = {"organization", "roles"})
+    List<AppUser> findByOrganizationId(UUID organizationId);
+
     boolean existsByEmail(String email);
 }

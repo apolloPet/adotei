@@ -1,5 +1,5 @@
 
-import { apiRequest, getApiBaseUrl, getAuthToken } from '@/lib/apiClient';
+import { apiRequest, getApiBaseUrl, getAuthToken, handleUnauthorizedIfLoggedIn } from '@/lib/apiClient';
 import { toast } from '@/hooks/use-sonner';
 
 export interface Animal {
@@ -16,6 +16,18 @@ export interface Animal {
   descricao?: string;
   fotoPrincipal?: string;
   fotos?: string[];
+  adopterProfile?: {
+    suitableHousing: string[];
+    requiresYard: boolean;
+    requiresWalledYard: boolean;
+    requiresWindowScreens: boolean;
+    allowsRented: boolean;
+    suitableForChildren: boolean;
+    suitableForFirstTimers: boolean;
+    maxHoursAloneDaily?: number;
+    estimatedMonthlyCost?: string;
+    requiresEmergencyBudget: boolean;
+  };
 }
 
 export interface AnimalCreateData {
@@ -66,7 +78,23 @@ type BackendAnimal = {
   goodWithChildren?: boolean;
   goodWithOtherAnimals?: boolean;
   goodWithSeniors?: boolean;
+  location?: string;
+  personalityTemperament?: string;
+  adopterProfile?: {
+    suitableHousing?: string[];
+    requiresYard: boolean;
+    requiresWalledYard: boolean;
+    requiresWindowScreens: boolean;
+    allowsRented: boolean;
+    minResidentExperience?: string;
+    suitableForChildren: boolean;
+    suitableForFirstTimers: boolean;
+    maxHoursAloneDaily?: number;
+    estimatedMonthlyCost?: string;
+    requiresEmergencyBudget: boolean;
+  };
   images?: { id: string; fileUrl: string; displayOrder: number }[];
+  createdAt?: string;
 };
 
 const backendAnimalToAnimal = (animal: BackendAnimal): Animal => {
@@ -83,10 +111,28 @@ const backendAnimalToAnimal = (animal: BackendAnimal): Animal => {
     castrado: animal.sterilized,
     vacinas: animal.vaccineIds ?? [],
     responsavel_id: null,
-    data_cadastro: new Date().toISOString(),
+    data_cadastro: animal.createdAt || '',
     descricao: animal.description,
     fotoPrincipal: orderedImages[0],
     fotos: orderedImages,
+    ...(animal.location ? { location: animal.location } : {}),
+    ...(animal.personalityTemperament
+      ? { caracteristicas: [animal.personalityTemperament] }
+      : {}),
+    adopterProfile: animal.adopterProfile
+      ? {
+          suitableHousing: animal.adopterProfile.suitableHousing ?? [],
+          requiresYard: animal.adopterProfile.requiresYard,
+          requiresWalledYard: animal.adopterProfile.requiresWalledYard,
+          requiresWindowScreens: animal.adopterProfile.requiresWindowScreens,
+          allowsRented: animal.adopterProfile.allowsRented,
+          suitableForChildren: animal.adopterProfile.suitableForChildren,
+          suitableForFirstTimers: animal.adopterProfile.suitableForFirstTimers,
+          maxHoursAloneDaily: animal.adopterProfile.maxHoursAloneDaily,
+          estimatedMonthlyCost: animal.adopterProfile.estimatedMonthlyCost,
+          requiresEmergencyBudget: animal.adopterProfile.requiresEmergencyBudget,
+        }
+      : undefined,
   };
 };
 
@@ -117,10 +163,19 @@ const uploadAnimalImage = async (animalId: string, file: File, displayOrder: num
     } catch {
       // noop
     }
+    if (response.status === 401) {
+      handleUnauthorizedIfLoggedIn();
+    }
     throw new Error(message);
   }
 
   return response.json() as Promise<BackendAnimalImageResponse>;
+};
+
+const estimatedMonthlyCostBySize = (size: 'pequeno' | 'medio' | 'grande'): string => {
+  if (size === 'grande') return '600+';
+  if (size === 'medio') return '300-600';
+  return '100-300';
 };
 
 export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal | null> => {
@@ -189,6 +244,19 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
         goodWithChildren: animalData.goodWithChildren ?? false,
         goodWithOtherAnimals: animalData.goodWithOtherAnimals ?? false,
         goodWithSeniors: animalData.goodWithSeniors ?? false,
+        adopterProfile: {
+          suitableHousing: ['house', 'apartment', 'farm'],
+          requiresYard: animalData.porte === 'grande',
+          requiresWalledYard: false,
+          requiresWindowScreens: animalData.tipo === 'gato',
+          allowsRented: true,
+          minResidentExperience: 'none',
+          suitableForChildren: animalData.goodWithChildren ?? true,
+          suitableForFirstTimers: true,
+          maxHoursAloneDaily: animalData.tipo === 'gato' ? 10 : 8,
+          estimatedMonthlyCost: estimatedMonthlyCostBySize(animalData.porte),
+          requiresEmergencyBudget: animalData.specialNeeds ?? false,
+        },
         organizationId: animalData.organizationId,
         createdByUserId: animalData.createdByUserId,
       },
@@ -299,6 +367,19 @@ export const updateAnimal = async (id: string, animalData: Partial<Animal>): Pro
         goodWithChildren: animalData.goodWithChildren ?? current.goodWithChildren ?? false,
         goodWithOtherAnimals: animalData.goodWithOtherAnimals ?? current.goodWithOtherAnimals ?? false,
         goodWithSeniors: animalData.goodWithSeniors ?? current.goodWithSeniors ?? false,
+        adopterProfile: current.adopterProfile ?? {
+          suitableHousing: ['house', 'apartment', 'farm'],
+          requiresYard: (animalData.porte ?? current.size) === 'grande',
+          requiresWalledYard: false,
+          requiresWindowScreens: (animalData.tipo ?? current.animalType) === 'gato',
+          allowsRented: true,
+          minResidentExperience: 'none',
+          suitableForChildren: animalData.goodWithChildren ?? current.goodWithChildren ?? true,
+          suitableForFirstTimers: true,
+          maxHoursAloneDaily: (animalData.tipo ?? current.animalType) === 'gato' ? 10 : 8,
+          estimatedMonthlyCost: estimatedMonthlyCostBySize((animalData.porte ?? current.size) as 'pequeno' | 'medio' | 'grande'),
+          requiresEmergencyBudget: animalData.specialNeeds ?? current.specialNeeds ?? false,
+        },
       },
     });
 

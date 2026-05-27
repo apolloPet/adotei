@@ -37,14 +37,14 @@ const PetImageCarousel = ({ images, petName }: PetImageCarouselProps) => {
 
   return (
     <div
-      className="relative w-full h-full select-none"
+      className="absolute inset-0 flex items-center justify-center select-none"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
       <img
         src={currentImage}
         alt={petName}
-        className="w-full h-full object-cover"
+        className="max-w-full max-h-full w-auto h-auto object-contain object-center"
         onError={() => handleImageError(currentImageIndex)}
         draggable={false}
       />

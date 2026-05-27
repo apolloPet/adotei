@@ -1,4 +1,13 @@
 app:
+  security:
+    cookie:
+      secure: false
+    jwt:
+      secret: ${JWT_SECRET:adotei-local-dev-secret-change-me-2026-strong-key}
   bootstrap:
     admin:
       enabled: ${BOOTSTRAP_ADMIN_ENABLED:true}
+  seed:
+    test-data:
+      enabled: ${SEED_TEST_DATA:false}
+      default-password: ${SEED_TEST_DATA_PASSWORD:senha123}

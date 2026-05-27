@@ -142,6 +142,37 @@ export const updateAdoptionStage = async (
 
 export type PetMatchType = 'liked' | 'disliked' | 'saved';
 
+export type BackendInterestType = 'LIKED' | 'SAVED';
+
+export type BackendAdoptionInterest = {
+  id: string;
+  animalId: string;
+  userId: string;
+  userFullName: string;
+  userEmail: string;
+  userPhone?: string;
+  interestType: BackendInterestType;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const mapMatchTypeToInterestType = (matchType: PetMatchType): BackendInterestType | null => {
+  if (matchType === 'liked') return 'LIKED';
+  if (matchType === 'saved') return 'SAVED';
+  return null;
+};
+
+const interestTypeLabel = (interestType: BackendInterestType): string =>
+  interestType === 'LIKED' ? 'Interesse em adoção' : 'Salvo para acompanhar';
+
+export const fetchAnimalInterests = async (animalId: string): Promise<BackendAdoptionInterest[]> =>
+  apiRequest<BackendAdoptionInterest[]>(`/api/animals/${animalId}/interests`);
+
+export const fetchAnimalIdsWithInterests = async (): Promise<string[]> =>
+  apiRequest<string[]>('/api/animals/interests/animal-ids');
+
+export { interestTypeLabel };
+
 const readMatches = (): Array<{ petId: string; userId: string; matchType: PetMatchType; at: string }> => {
   try {
     return JSON.parse(localStorage.getItem(STAGE_HISTORY_KEY) || '[]');
@@ -158,40 +189,33 @@ export const recordPetMatch = async (
   userId: string,
   matchType: PetMatchType
 ): Promise<boolean> => {
+  const interestType = mapMatchTypeToInterestType(matchType);
+  if (!interestType) {
+    return true;
+  }
+
   try {
-    const authUser = localStorage.getItem('authUser');
-    if (authUser) {
-      const parsed = JSON.parse(authUser) as { userType?: string; roles?: string[] };
-      const isVolunteer = parsed.userType === 'VOLUNTARIO' || Boolean(parsed.roles?.includes('VOLUNTARIO'));
-      if (isVolunteer) {
-        toast.error('Voluntários de ONG não podem realizar ações de tutor/adotante.');
-        return false;
-      }
+    const me = await apiRequest<{ userType?: string; roles?: string[] }>('/api/users/me');
+    const isVolunteerUser =
+      me.userType === 'VOLUNTARIO' || Boolean(me.roles?.includes('VOLUNTARIO'));
+    if (isVolunteerUser) {
+      toast.error('Voluntários de ONG não podem realizar ações de tutor/adotante.');
+      return false;
     }
   } catch {
-    // noop: se não conseguir ler sessão, segue validação normal
+    toast.error('Você precisa estar autenticado para realizar esta ação.');
+    return false;
   }
+
+  await apiRequest<BackendAdoptionInterest>(`/api/animals/${petId}/interests`, {
+    method: 'POST',
+    body: { interestType },
+  });
 
   const at = new Date().toISOString();
   const all = readMatches();
   all.push({ petId, userId, matchType, at });
   localStorage.setItem(STAGE_HISTORY_KEY, JSON.stringify(all));
-
-  if (matchType === 'liked' || matchType === 'saved') {
-    const adoptions = readAdoptions();
-    const exists = adoptions.some((a) => a.petId === petId && a.userId === userId);
-    if (!exists) {
-      adoptions.push({
-        id: `adoption-${crypto.randomUUID?.() || `${petId}-${Date.now()}`}`,
-        petId,
-        userId,
-        currentStage: toStage(matchType),
-        createdAt: at,
-        updatedAt: at,
-      });
-      writeAdoptions(adoptions);
-    }
-  }
 
   if (matchType === 'saved') {
     toast.success('Animal salvo para acompanhar 🔖');

@@ -19,7 +19,10 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 public class LocalJwtConfig {
 
     @Bean
-    SecretKey jwtSecretKey(@Value("${app.security.jwt.secret:adotei-local-dev-secret-change-me-2026}") String secret) {
+    SecretKey jwtSecretKey(@Value("${app.security.jwt.secret}") String secret) {
+        if (secret == null || secret.isBlank() || secret.length() < 32) {
+            throw new IllegalStateException("JWT secret invalido. Configure app.security.jwt.secret com no minimo 32 caracteres.");
+        }
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         return new SecretKeySpec(keyBytes, "HmacSHA256");
     }

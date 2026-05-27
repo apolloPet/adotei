@@ -5,6 +5,8 @@ import static org.mockito.Mockito.when;
 
 import com.apollopet.adotei.backend.application.exception.BadRequestException;
 import com.apollopet.adotei.backend.domain.entity.Animal;
+import com.apollopet.adotei.backend.domain.entity.AppUser;
+import com.apollopet.adotei.backend.domain.entity.UserType;
 import com.apollopet.adotei.backend.domain.repository.AdoptionRequirementRepository;
 import com.apollopet.adotei.backend.domain.repository.AnimalAdopterProfileRepository;
 import com.apollopet.adotei.backend.domain.repository.AnimalImageRepository;
@@ -15,7 +17,6 @@ import com.apollopet.adotei.backend.domain.repository.TemperamentTraitRepository
 import com.apollopet.adotei.backend.domain.repository.TutorRepository;
 import com.apollopet.adotei.backend.domain.repository.VaccineRepository;
 import com.apollopet.adotei.backend.infrastructure.config.AwsProperties;
-import com.apollopet.adotei.backend.web.dto.AnimalDtos.GenerateImageUploadRequest;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import org.springframework.core.env.Environment;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @ExtendWith(MockitoExtension.class)
 class AnimalServiceTest {
@@ -37,7 +39,8 @@ class AnimalServiceTest {
     @Mock private AdoptionRequirementRepository requirementRepository;
     @Mock private AnimalAdopterProfileRepository adopterProfileRepository;
     @Mock private AnimalImageRepository imageRepository;
-    @Mock private S3Presigner s3Presigner;
+    @Mock private S3Client s3Client;
+    @Mock private Environment environment;
 
     private AnimalService animalService;
 
@@ -57,8 +60,9 @@ class AnimalServiceTest {
             requirementRepository,
             adopterProfileRepository,
             imageRepository,
-            s3Presigner,
-            awsProperties
+            s3Client,
+            awsProperties,
+            environment
         );
     }
 
@@ -66,12 +70,13 @@ class AnimalServiceTest {
     void deveFalharQuandoAnimalJaPossuiDuasImagens() {
         UUID animalId = UUID.randomUUID();
         Animal animal = new Animal();
+        AppUser requester = new AppUser();
+        requester.setUserType(UserType.ADMIN);
 
         when(animalRepository.findById(animalId)).thenReturn(Optional.of(animal));
+        when(appUserRepository.findByAuthSubject("admin-auth")).thenReturn(Optional.of(requester));
         when(imageRepository.countByAnimalId(animalId)).thenReturn(2L);
 
-        GenerateImageUploadRequest request = new GenerateImageUploadRequest("foto.jpg", "image/jpeg", 0);
-
-        assertThrows(BadRequestException.class, () -> animalService.generateUpload(animalId, request));
+        assertThrows(BadRequestException.class, () -> animalService.uploadImage(animalId, "admin-auth", null, 0));
     }
 }

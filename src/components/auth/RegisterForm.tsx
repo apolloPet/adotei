@@ -12,7 +12,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-sonner";
 import { signUp } from '@/services/auth/authCore';
 import { SignupData } from '@/services/auth/types';
+import { ExtendedProfile } from '@/types/user';
 import { isValidCEP, isValidEmail, isValidPhoneBR, maskCEP, maskPhoneBR, normalizeEmail } from '@/utils/brMasks';
+import { parseHoursAloneDaily, savePendingAdopterProfile } from '@/utils/adopterProfileStorage';
 
 const TOTAL_STEPS = 4;
 
@@ -159,6 +161,8 @@ const RegisterForm = () => {
         lastName,
         phone,
         address: street,
+        number,
+        neighborhood,
         city,
         state,
         zip: cep,
@@ -166,10 +170,50 @@ const RegisterForm = () => {
         hasChildren,
         childrenAges: hasChildren ? childrenAges : '',
         hadPetsBefore,
+        hasOtherPets,
+        otherPetsDescription: hasOtherPets ? otherPetsDescription : '',
+        hoursAlone,
+        commitFood,
+        commitVet,
+        commitEmergency,
         hasAllergies,
         allergiesDescription: hasAllergies ? allergiesDescription : '',
         workSchedule: lifestyleNotes,
       };
+
+      const pendingExtended: ExtendedProfile = {
+        housing: {
+          type: housingType === 'other' ? 'house' : housingType,
+          ownership: 'owned',
+          hasYard: externalAccess.toLowerCase().includes('quintal') || externalAccess.toLowerCase().includes('jardim'),
+          yardWalled: escapeControl.toLowerCase().includes('muro') || escapeControl.toLowerCase().includes('grade'),
+          hasWindowScreens: escapeControl.toLowerCase().includes('tela'),
+          numResidents: 1,
+          hasChildren,
+          childrenAges: hasChildren ? childrenAges : undefined,
+        },
+        experience: {
+          hadPetsBefore,
+          currentlyHasPets: hasOtherPets,
+          currentPetsTypes: hasOtherPets ? otherPetsDescription : undefined,
+          returnedAnimal: false,
+        },
+        financial: {
+          awareOfCosts: commitFood,
+          monthlyBudget: '300-600',
+          willCoverVaccines: commitVet,
+          willCoverNeutering: commitVet,
+          willCoverEmergencies: commitEmergency,
+        },
+        intention: {
+          reasonToAdopt: lifestyleNotes,
+          hoursAloneDaily: parseHoursAloneDaily(hoursAlone) ?? 4,
+          ifDestroyed: '',
+          ifSick: '',
+          willAdapt: true,
+        },
+      };
+      savePendingAdopterProfile(normalizeEmail(email), pendingExtended);
 
       const success = await signUp(userData);
       if (success) {

@@ -1,6 +1,6 @@
 
 import { toast } from '@/hooks/use-sonner';
-import { apiRequest, getAuthToken, setAuthToken } from './apiClient';
+import { apiRequest, clearAuthSession, handleUnauthorizedIfLoggedIn } from './apiClient';
 import { offlineSupabase } from './offlineSupabase';
 
 type Filter = {
@@ -19,7 +19,7 @@ type BackendUserSession = {
 };
 
 type BackendAuthResponse = {
-  accessToken: string;
+  accessToken?: string;
   expiresAt: string;
   user: BackendUserSession;
 };
@@ -32,7 +32,7 @@ const getStoredUser = () => {
   }
 
   const raw = localStorage.getItem(AUTH_USER_KEY);
-  if (!raw || localStorage.getItem('isLoggedIn') !== 'true') {
+  if (!raw) {
     return null;
   }
 
@@ -55,29 +55,15 @@ const getStoredUser = () => {
   }
 };
 
-const parseJwtExpiresAt = (token: string): number => {
-  try {
-    const payloadBase64 = token.split('.')[1];
-    if (!payloadBase64) {
-      return Math.floor(Date.now() / 1000) + 60 * 60;
-    }
-    const payload = JSON.parse(atob(payloadBase64)) as { exp?: number };
-    return payload.exp ?? Math.floor(Date.now() / 1000) + 60 * 60;
-  } catch {
-    return Math.floor(Date.now() / 1000) + 60 * 60;
-  }
-};
-
 const getStoredSession = () => {
   const user = getStoredUser();
-  const token = getAuthToken();
   if (!user) {
     return null;
   }
   return {
-    access_token: token || 'local-dev-token',
-    refresh_token: 'local-refresh-token',
-    expires_at: token ? parseJwtExpiresAt(token) : Math.floor(Date.now() / 1000) + 60 * 60,
+    access_token: 'http-only-cookie',
+    refresh_token: null,
+    expires_at: Math.floor(Date.now() / 1000) + 60 * 60,
     user,
   };
 };
@@ -242,45 +228,51 @@ const dispatchAuthChange = () => {
   window.dispatchEvent(new Event('storage'));
 };
 
-const persistAuth = (token: string, user: BackendUserSession) => {
-  const isAdmin = user.roles.includes('ADMIN');
-  localStorage.setItem('isLoggedIn', 'true');
-  localStorage.setItem('isAdmin', String(isAdmin));
-  localStorage.setItem('userEmail', user.email);
+const persistAuth = (user: BackendUserSession) => {
   localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-  setAuthToken(token);
   dispatchAuthChange();
+  if (user.userType === 'ADOTANTE') {
+    import('@/services/compatibilityService')
+      .then(({ syncPendingAdopterProfileAfterLogin }) => syncPendingAdopterProfileAfterLogin())
+      .catch((error) => console.warn('Falha ao sincronizar perfil de adotante apos login:', error));
+  }
 };
 
 export const supabase = {
   auth: {
     getSession: async () => {
-      const token = getAuthToken();
-      if (!token) {
-        return { data: { session: null }, error: null };
-      }
-
-      if (!localStorage.getItem(AUTH_USER_KEY)) {
-        try {
-          const me = await apiRequest<BackendUserSession>('/api/auth/me');
-          localStorage.setItem(AUTH_USER_KEY, JSON.stringify(me));
-          localStorage.setItem('isLoggedIn', 'true');
-          localStorage.setItem('isAdmin', String(me.roles.includes('ADMIN')));
-          localStorage.setItem('userEmail', me.email);
-        } catch {
-          setAuthToken(null);
-          localStorage.removeItem(AUTH_USER_KEY);
-          localStorage.removeItem('isLoggedIn');
-          localStorage.removeItem('isAdmin');
-          localStorage.removeItem('userEmail');
+      try {
+        const me = await apiRequest<BackendUserSession>('/api/auth/me', { skipAuth: true });
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(me));
+        return { data: { session: getStoredSession() }, error: null };
+      } catch {
+        localStorage.removeItem(AUTH_USER_KEY);
+        if (handleUnauthorizedIfLoggedIn()) {
           return { data: { session: null }, error: null };
         }
+        return { data: { session: null }, error: null };
       }
-
-      return { data: { session: getStoredSession() }, error: null };
     },
-    getUser: async () => ({ data: { user: getStoredUser() }, error: null }),
-    refreshSession: async () => ({ data: { session: getStoredSession() }, error: null }),
+    getUser: async () => {
+      try {
+        const me = await apiRequest<BackendUserSession>('/api/auth/me', { skipAuth: true });
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(me));
+        return { data: { user: getStoredUser() }, error: null };
+      } catch (error) {
+        localStorage.removeItem(AUTH_USER_KEY);
+        return { data: { user: null }, error };
+      }
+    },
+    refreshSession: async () => {
+      try {
+        const me = await apiRequest<BackendUserSession>('/api/auth/me', { skipAuth: true });
+        localStorage.setItem(AUTH_USER_KEY, JSON.stringify(me));
+        return { data: { session: getStoredSession() }, error: null };
+      } catch {
+        localStorage.removeItem(AUTH_USER_KEY);
+        return { data: { session: null }, error: null };
+      }
+    },
     signInWithPassword: async ({ email, password }: { email: string; password: string }) => {
       try {
         const response = await apiRequest<BackendAuthResponse>('/api/auth/login', {
@@ -288,7 +280,7 @@ export const supabase = {
           body: { email, password },
           skipAuth: true,
         });
-        persistAuth(response.accessToken, response.user);
+        persistAuth(response.user);
         return { data: { user: getStoredUser(), session: getStoredSession() }, error: null };
       } catch (error) {
         return { data: { user: null, session: null }, error };
@@ -323,12 +315,16 @@ export const supabase = {
       }
     },
     signOut: async (_options?: unknown) => {
-      localStorage.removeItem('isLoggedIn');
-      localStorage.removeItem('isAdmin');
-      localStorage.removeItem('userEmail');
+      try {
+        await apiRequest('/api/auth/logout', {
+          method: 'POST',
+          skipAuth: true,
+        });
+      } catch {
+        // noop
+      }
+      clearAuthSession();
       localStorage.removeItem(AUTH_USER_KEY);
-      setAuthToken(null);
-      dispatchAuthChange();
       return { error: null };
     },
     updateUser: async () => ({ data: { user: getStoredUser() }, error: new Error('Operacao nao suportada') }),
@@ -337,12 +333,10 @@ export const supabase = {
     verifyOtp: async () => ({ data: { user: getStoredUser(), session: getStoredSession() }, error: null }),
     onAuthStateChange: (callback: (event: string, session: any | null) => void) => {
       setTimeout(() => callback('INITIAL_SESSION', getStoredSession()), 0);
-      const handler = () => callback('TOKEN_REFRESHED', getStoredSession());
-      window.addEventListener('authStateChanged', handler);
       return {
         data: {
           subscription: {
-            unsubscribe: () => window.removeEventListener('authStateChanged', handler),
+            unsubscribe: () => undefined,
           },
         },
       };

@@ -8,6 +8,8 @@ export interface SignupData {
   
   // Address fields as separate properties
   address?: string;
+  number?: string;
+  neighborhood?: string;
   city?: string;
   state?: string;
   zip?: string;
@@ -16,6 +18,12 @@ export interface SignupData {
   hasChildren?: boolean;
   childrenAges?: string;
   hadPetsBefore?: boolean;
+  hasOtherPets?: boolean;
+  otherPetsDescription?: string;
+  hoursAlone?: string;
+  commitFood?: boolean;
+  commitVet?: boolean;
+  commitEmergency?: boolean;
   hasAllergies?: boolean;
   allergiesDescription?: string;
   workSchedule?: string;

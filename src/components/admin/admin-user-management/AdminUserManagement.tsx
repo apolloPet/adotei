@@ -7,7 +7,6 @@ import {
   getAdminUsers,
   updateAdminPermissions,
   removeAdminRole,
-  ensureMainAdminAccess,
 } from "@/services/adminUserService";
 import { NewAdminDialog } from "./NewAdminDialog";
 import { AdminTable } from "./AdminTable";
@@ -18,27 +17,7 @@ export const AdminUserManagement = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
-    const initializeAdmin = async () => {
-      try {
-        console.log('Admin User Management: Initializing admin status');
-        
-        if (localStorage.getItem("userEmail") === "admin@petmatch.com") {
-          localStorage.setItem("isAdmin", "true");
-          localStorage.setItem("isLoggedIn", "true");
-          
-          console.log('Admin User Management: Found main admin (admin@petmatch.com), ensuring access');
-          const accessEnsured = await ensureMainAdminAccess();
-          console.log('Admin User Management: Main admin access ensured:', accessEnsured);
-        } else {
-          console.log('Admin User Management: Not main admin, checking session');
-        }
-      } catch (error) {
-        console.error("Erro ao inicializar permissões do admin:", error);
-      } finally {
-        fetchAdmins();
-      }
-    };
-    initializeAdmin();
+    fetchAdmins();
   }, []);
 
   const fetchAdmins = async () => {

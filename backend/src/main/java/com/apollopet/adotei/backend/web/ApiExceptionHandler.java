@@ -42,7 +42,7 @@ public class ApiExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-            .body(payload(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage()));
+            .body(payload(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno do servidor"));
     }
 
     private Map<String, Object> payload(HttpStatus status, String message) {

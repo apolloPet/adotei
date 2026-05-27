@@ -16,6 +16,7 @@ import com.apollopet.adotei.backend.domain.repository.AdopterProfileRepository;
 import com.apollopet.adotei.backend.domain.repository.AppUserRepository;
 import com.apollopet.adotei.backend.domain.repository.OrganizationRepository;
 import com.apollopet.adotei.backend.domain.repository.RoleRepository;
+import com.apollopet.adotei.backend.domain.repository.UserCredentialRepository;
 import com.apollopet.adotei.backend.web.dto.UserDtos.UpsertAdopterProfileRequest;
 import com.apollopet.adotei.backend.web.dto.UserDtos.UpsertUserRequest;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -36,12 +38,21 @@ class UserServiceTest {
     @Mock private RoleRepository roleRepository;
     @Mock private AdopterProfileRepository adopterProfileRepository;
     @Mock private OrganizationRepository organizationRepository;
+    @Mock private UserCredentialRepository userCredentialRepository;
+    @Mock private PasswordEncoder passwordEncoder;
 
     private UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(appUserRepository, roleRepository, adopterProfileRepository, organizationRepository);
+        userService = new UserService(
+            appUserRepository,
+            roleRepository,
+            adopterProfileRepository,
+            organizationRepository,
+            userCredentialRepository,
+            passwordEncoder
+        );
     }
 
     private void mockSaveAndReload() {
@@ -99,7 +110,11 @@ class UserServiceTest {
         AppUser user = new AppUser();
         user.setUserType(UserType.VOLUNTARIO);
         user.setRoles(Set.of());
+        AppUser adminRequester = new AppUser();
+        adminRequester.setUserType(UserType.ADMIN);
+        adminRequester.setRoles(Set.of());
         when(appUserRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(appUserRepository.findByAuthSubject("admin-auth")).thenReturn(Optional.of(adminRequester));
 
         UpsertAdopterProfileRequest request = new UpsertAdopterProfileRequest(
             null, null, null, null, null, null, null, null, null, null,
@@ -107,7 +122,7 @@ class UserServiceTest {
             null, null, null, null, null, null, null, null
         );
 
-        assertThrows(BadRequestException.class, () -> userService.upsertAdopterProfile(userId, request));
+        assertThrows(BadRequestException.class, () -> userService.upsertAdopterProfile(userId, request, "admin-auth"));
         verifyNoInteractions(adopterProfileRepository);
     }
 
@@ -129,8 +144,11 @@ class UserServiceTest {
         UUID organizationId = UUID.randomUUID();
         Organization organization = new Organization();
         when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(organization));
+        when(passwordEncoder.encode("senha123")).thenReturn("encoded-hash");
 
-        var response = userService.create(request("VOLUNTARIO", List.of("VOLUNTARIO"), organizationId));
+        var response = userService.create(
+            request("VOLUNTARIO", List.of("VOLUNTARIO"), organizationId, "senha123")
+        );
 
         assertEquals("VOLUNTARIO", response.userType());
     }
@@ -140,6 +158,10 @@ class UserServiceTest {
     }
 
     private UpsertUserRequest request(String userType, List<String> roles, UUID organizationId) {
+        return request(userType, roles, organizationId, null);
+    }
+
+    private UpsertUserRequest request(String userType, List<String> roles, UUID organizationId, String password) {
         return new UpsertUserRequest(
             "auth-subject",
             "Pessoa Teste",
@@ -153,6 +175,8 @@ class UserServiceTest {
             null,
             null,
             organizationId,
+            false,
+            password,
             roles
         );
     }

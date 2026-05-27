@@ -42,7 +42,6 @@ export interface IntentionProfile {
 
 export interface ProofProfile {
   environmentPhotoUrl?: string;
-  environmentVideoUrl?: string;
 }
 
 export interface ExtendedProfile {

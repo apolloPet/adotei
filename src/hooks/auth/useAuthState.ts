@@ -16,6 +16,8 @@ export function useAuthState() {
   const [isVolunteer, setIsVolunteer] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const lastCheckRef = useRef(0);
+  const hasInitializedRef = useRef(false);
+  const lastUserIdRef = useRef<string | null>(null);
 
   // Função para verificar se uma sessão está expirada
   const isSessionExpired = (session: Session | null): boolean => {
@@ -42,7 +44,10 @@ export function useAuthState() {
     lastCheckRef.current = now;
     
     try {
-      setIsLoading(true);
+      const isBackgroundRefresh = hasInitializedRef.current;
+      if (!isBackgroundRefresh) {
+        setIsLoading(true);
+      }
       console.log('Verificando estado de autenticação atual...');
       
       // Performance: verificar diretamente a sessão do Supabase para evitar chamadas extras
@@ -81,7 +86,11 @@ export function useAuthState() {
           // Sessão atualizada com sucesso
           console.log('Sessão atualizada com sucesso');
           setSession(refreshData.session);
-          setUser(refreshData.session.user);
+          const refreshedUser = refreshData.session.user;
+          if (lastUserIdRef.current !== refreshedUser.id) {
+            setUser(refreshedUser);
+            lastUserIdRef.current = refreshedUser.id;
+          }
           setIsAuthenticated(true);
           
           const refreshAdminStatus = Boolean(
@@ -98,7 +107,10 @@ export function useAuthState() {
       } else if (currentSession) {
         // Usuário autenticado via Supabase com sessão válida
         const userData = currentSession.user;
-        setUser(userData);
+        if (lastUserIdRef.current !== userData.id) {
+          setUser(userData);
+          lastUserIdRef.current = userData.id;
+        }
         setIsAuthenticated(true);
         
         const isAdminByMetadata =
@@ -132,6 +144,7 @@ export function useAuthState() {
         setIsAdmin(false);
         setIsVolunteer(false);
         setIsAuthenticated(false);
+        lastUserIdRef.current = null;
         localStorage.removeItem("isLoggedIn");
         localStorage.removeItem("isAdmin");
         localStorage.removeItem("userEmail");
@@ -144,10 +157,12 @@ export function useAuthState() {
       setIsAdmin(false);
       setIsVolunteer(false);
       setIsAuthenticated(false);
+      lastUserIdRef.current = null;
       localStorage.removeItem("isLoggedIn");
       localStorage.removeItem("isAdmin");
       localStorage.removeItem("userEmail");
     } finally {
+      hasInitializedRef.current = true;
       setIsLoading(false);
       console.log('Verificação de autenticação concluída');
     }

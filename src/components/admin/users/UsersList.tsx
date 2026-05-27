@@ -11,7 +11,7 @@ import { NoPermissionView } from './components/NoPermissionView';
 const UsersList = () => {
   const [hasPermission, setHasPermission] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
-  const { user } = useAuth();
+  const { isAdmin } = useAuth();
   const { 
     users,
     isLoading,
@@ -28,35 +28,9 @@ const UsersList = () => {
   } = useUsersData();
 
   useEffect(() => {
-    const verifyPermissions = async () => {
-      try {
-        if (!user) {
-          setHasPermission(false);
-          setIsVerifying(false);
-          return;
-        }
-
-        const isMainAdmin = user.email === 'admin@petmatch.com';
-        const isAdminEmail = isMainAdmin || 
-                           (user.email || '').includes('@admin') || 
-                           (user.email || '').includes('@ong');
-
-        if (isAdminEmail) {
-          setHasPermission(true);
-          setIsVerifying(false);
-          return;
-        }
-        setHasPermission(localStorage.getItem('isAdmin') === 'true');
-      } catch (err) {
-        console.error('Error verifying permissions:', err);
-        setHasPermission(false);
-      } finally {
-        setIsVerifying(false);
-      }
-    };
-
-    verifyPermissions();
-  }, [user]);
+    setHasPermission(isAdmin);
+    setIsVerifying(false);
+  }, [isAdmin]);
 
   if (isVerifying) {
     return (

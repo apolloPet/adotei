@@ -2,6 +2,7 @@ package com.apollopet.adotei.backend.web;
 
 import com.apollopet.adotei.backend.application.service.UserService;
 import com.apollopet.adotei.backend.web.dto.UserDtos.UpsertAdopterProfileRequest;
+import com.apollopet.adotei.backend.web.dto.UserDtos.AdopterProfileResponse;
 import com.apollopet.adotei.backend.web.dto.UserDtos.UpdateOwnProfileRequest;
 import com.apollopet.adotei.backend.web.dto.UserDtos.UpsertUserRequest;
 import com.apollopet.adotei.backend.web.dto.UserDtos.UserResponse;
@@ -34,25 +35,26 @@ public class UserController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
-    public List<UserResponse> list() {
-        return userService.list();
+    public List<UserResponse> list(Authentication authentication) {
+        return userService.list(authentication.getName());
     }
 
     @GetMapping("/organization/{organizationId}/volunteers")
     @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
-    public List<UserResponse> listVolunteersByOrganization(@PathVariable UUID organizationId) {
-        return userService.listVolunteersByOrganization(organizationId);
+    public List<UserResponse> listVolunteersByOrganization(@PathVariable UUID organizationId, Authentication authentication) {
+        return userService.listVolunteersByOrganization(organizationId, authentication.getName());
     }
 
     @GetMapping("/types")
+    @PreAuthorize("hasRole('ADMIN')")
     public List<UserTypeResponse> listTypes() {
         return userService.listUserTypes();
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
-    public UserResponse get(@PathVariable UUID id) {
-        return userService.get(id);
+    public UserResponse get(@PathVariable UUID id, Authentication authentication) {
+        return userService.get(id, authentication.getName());
     }
 
     @GetMapping("/me")
@@ -61,10 +63,23 @@ public class UserController {
         return userService.getByAuthSubject(authentication.getName());
     }
 
+    @GetMapping("/me/adopter-profile")
+    @PreAuthorize("isAuthenticated()")
+    public AdopterProfileResponse myAdopterProfile(Authentication authentication) {
+        return userService.getAdopterProfileByAuthSubject(authentication.getName());
+    }
+
     @PutMapping("/me")
     @PreAuthorize("isAuthenticated()")
     public UserResponse updateMe(Authentication authentication, @Valid @RequestBody UpdateOwnProfileRequest request) {
         return userService.updateOwnProfile(authentication.getName(), request);
+    }
+
+    @PutMapping("/me/adopter-profile")
+    @PreAuthorize("hasRole('ADOTANTE')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void upsertMyAdopterProfile(Authentication authentication, @RequestBody UpsertAdopterProfileRequest request) {
+        userService.upsertOwnAdopterProfile(authentication.getName(), request);
     }
 
     @PostMapping
@@ -81,10 +96,20 @@ public class UserController {
     }
 
     @PutMapping("/{id}/adopter-profile")
-    @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO','ADOTANTE')")
+    @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void upsertAdopterProfile(@PathVariable UUID id, @RequestBody UpsertAdopterProfileRequest request) {
-        userService.upsertAdopterProfile(id, request);
+    public void upsertAdopterProfile(
+        @PathVariable UUID id,
+        Authentication authentication,
+        @RequestBody UpsertAdopterProfileRequest request
+    ) {
+        userService.upsertAdopterProfile(id, request, authentication.getName());
+    }
+
+    @GetMapping("/{id}/adopter-profile")
+    @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO','ADOTANTE')")
+    public AdopterProfileResponse getAdopterProfile(@PathVariable UUID id, Authentication authentication) {
+        return userService.getAdopterProfile(id, authentication.getName());
     }
 
     @DeleteMapping("/{id}")

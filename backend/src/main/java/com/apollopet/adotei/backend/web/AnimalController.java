@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -48,8 +49,9 @@ public class AnimalController {
     }
 
     @GetMapping("/images/{imageId}")
-    public ResponseEntity<byte[]> getImage(@PathVariable UUID imageId) {
-        ImageBinary image = animalService.getImageBinary(imageId);
+    @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO','ADOTANTE')")
+    public ResponseEntity<byte[]> getImage(@PathVariable UUID imageId, Authentication authentication) {
+        ImageBinary image = animalService.getImageBinary(imageId, authentication.getName());
         String contentType = image.contentType();
         MediaType mediaType = (contentType == null || contentType.isBlank())
             ? MediaType.APPLICATION_OCTET_STREAM
@@ -62,21 +64,21 @@ public class AnimalController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
     @ResponseStatus(HttpStatus.CREATED)
-    public AnimalResponse create(@Valid @RequestBody AnimalRequest request) {
-        return animalService.create(request);
+    public AnimalResponse create(@Valid @RequestBody AnimalRequest request, Authentication authentication) {
+        return animalService.create(request, authentication.getName());
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
-    public AnimalResponse update(@PathVariable UUID id, @Valid @RequestBody AnimalRequest request) {
-        return animalService.update(id, request);
+    public AnimalResponse update(@PathVariable UUID id, @Valid @RequestBody AnimalRequest request, Authentication authentication) {
+        return animalService.update(id, request, authentication.getName());
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id) {
-        animalService.delete(id);
+    public void delete(@PathVariable UUID id, Authentication authentication) {
+        animalService.delete(id, authentication.getName());
     }
 
     @PostMapping("/{id}/images")
@@ -84,9 +86,10 @@ public class AnimalController {
     @ResponseStatus(HttpStatus.CREATED)
     public AnimalImageResponse uploadImage(
         @PathVariable UUID id,
+        Authentication authentication,
         @RequestParam("file") MultipartFile file,
         @RequestParam(value = "displayOrder", required = false) Integer displayOrder
     ) {
-        return animalService.uploadImage(id, file, displayOrder);
+        return animalService.uploadImage(id, authentication.getName(), file, displayOrder);
     }
 }

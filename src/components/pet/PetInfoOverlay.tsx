@@ -6,43 +6,35 @@ interface PetInfoOverlayProps {
   setShowDetails: (show: boolean) => void;
 }
 
-// Deterministic pseudo-random from id so values stay stable per pet
-const hash = (s: string) => {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
-  return Math.abs(h);
-};
-
 const PetInfoOverlay = ({ pet }: PetInfoOverlayProps) => {
   const isPet = 'species' in pet;
   const petSpecies = isPet ? (pet as Pet).species : (pet as PetInfo).type === 'dog' ? 'dog' : 'cat';
 
-  const seed = hash(pet.id || pet.name);
-  // Compatibility is computed (no source of truth yet) — falls back to deterministic seed
-  const compatibility = 70 + (seed % 30); // 70-99
-
   const petAsPet = pet as Pet;
-  const waitingDays = typeof petAsPet.daysWaiting === 'number'
-    ? petAsPet.daysWaiting
-    : 30 + (seed % 300);
+  const compatibilityScore = (pet as Pet).compatibilityScore;
+  const waitingDays = petAsPet.daysWaiting;
   const traits = petAsPet.traits || (pet as PetInfo).personality || [];
   const personality = traits[0];
-  const isVaccinated = petAsPet.vaccinated ?? true;
-  const isNeutered = petAsPet.neutered ?? (seed % 3 !== 0);
+  const isVaccinated = petAsPet.vaccinated;
+  const isNeutered = petAsPet.neutered;
   const isSpecial = petAsPet.specialNeeds || petAsPet.healthIssues;
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 pt-20 pb-20 sm:pb-24 text-white z-10">
+    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 pt-12 pb-24 text-white z-10">
       {/* Top row: compact compatibility + waiting */}
       <div className="flex items-center gap-2 mb-2 text-sm">
-        <span className="inline-flex items-center gap-1.5 bg-primary/90 backdrop-blur-sm rounded-full px-2.5 py-1 font-semibold">
-          <Sparkles className="h-4 w-4" />
-          {compatibility}%
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-white/85">
-          <Clock className="h-4 w-4" />
-          {waitingDays}d
-        </span>
+        {typeof compatibilityScore === 'number' && (
+          <span className="inline-flex items-center gap-1.5 bg-primary/90 backdrop-blur-sm rounded-full px-2.5 py-1 font-semibold">
+            <Sparkles className="h-4 w-4" />
+            {compatibilityScore}%
+          </span>
+        )}
+        {typeof waitingDays === 'number' && (
+          <span className="inline-flex items-center gap-1.5 text-white/85">
+            <Clock className="h-4 w-4" />
+            {waitingDays}d
+          </span>
+        )}
       </div>
 
       {/* Name + location */}
@@ -73,12 +65,12 @@ const PetInfoOverlay = ({ pet }: PetInfoOverlayProps) => {
             {personality}
           </span>
         )}
-        {isVaccinated && (
+        {isVaccinated === true && (
           <span className="inline-flex items-center gap-1 bg-primary/30 border border-primary/40 rounded-full px-2 py-1" title="Vacinado">
             <Syringe className="h-4 w-4" />
           </span>
         )}
-        {isNeutered && (
+        {isNeutered === true && (
           <span className="inline-flex items-center gap-1 bg-white/15 border border-white/20 rounded-full px-2 py-1" title="Castrado">
             <Scissors className="h-4 w-4" />
           </span>

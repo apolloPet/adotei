@@ -2,10 +2,12 @@ package com.apollopet.adotei.backend.application.service;
 
 import com.apollopet.adotei.backend.application.exception.BadRequestException;
 import com.apollopet.adotei.backend.application.exception.NotFoundException;
+import com.apollopet.adotei.backend.domain.entity.AdopterProfile;
 import com.apollopet.adotei.backend.domain.entity.AppUser;
 import com.apollopet.adotei.backend.domain.entity.Role;
 import com.apollopet.adotei.backend.domain.entity.UserCredential;
 import com.apollopet.adotei.backend.domain.entity.UserType;
+import com.apollopet.adotei.backend.domain.repository.AdopterProfileRepository;
 import com.apollopet.adotei.backend.domain.repository.AppUserRepository;
 import com.apollopet.adotei.backend.domain.repository.RoleRepository;
 import com.apollopet.adotei.backend.domain.repository.UserCredentialRepository;
@@ -32,6 +34,7 @@ public class AuthService {
 
     private final AppUserRepository appUserRepository;
     private final RoleRepository roleRepository;
+    private final AdopterProfileRepository adopterProfileRepository;
     private final UserCredentialRepository userCredentialRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtEncoder jwtEncoder;
@@ -40,6 +43,7 @@ public class AuthService {
     public AuthService(
         AppUserRepository appUserRepository,
         RoleRepository roleRepository,
+        AdopterProfileRepository adopterProfileRepository,
         UserCredentialRepository userCredentialRepository,
         PasswordEncoder passwordEncoder,
         JwtEncoder jwtEncoder,
@@ -47,6 +51,7 @@ public class AuthService {
     ) {
         this.appUserRepository = appUserRepository;
         this.roleRepository = roleRepository;
+        this.adopterProfileRepository = adopterProfileRepository;
         this.userCredentialRepository = userCredentialRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtEncoder = jwtEncoder;
@@ -82,6 +87,20 @@ public class AuthService {
         credential.setUser(savedUser);
         credential.setPasswordHash(passwordEncoder.encode(request.password()));
         userCredentialRepository.save(credential);
+
+        AdopterProfile adopterProfile = new AdopterProfile();
+        adopterProfile.setUser(savedUser);
+        adopterProfile.setHousingType(request.housingType());
+        adopterProfile.setHasChildren(request.hasChildren());
+        adopterProfile.setChildrenAges(request.childrenAges());
+        adopterProfile.setHadPetsBefore(request.hadPetsBefore());
+        adopterProfile.setCurrentlyHasPets(request.currentlyHasPets());
+        adopterProfile.setCurrentPetsTypes(request.currentPetsTypes());
+        adopterProfile.setHoursAloneDaily(request.hoursAloneDaily());
+        adopterProfile.setWillCoverVaccines(request.willCoverVaccines());
+        adopterProfile.setWillCoverEmergencies(request.willCoverEmergencies());
+        adopterProfile.setAwareOfCosts(request.awareOfCosts());
+        adopterProfileRepository.save(adopterProfile);
     }
 
     @Transactional(readOnly = true)

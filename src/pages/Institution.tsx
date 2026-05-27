@@ -1,230 +1,422 @@
-import React from 'react';
-import Footer from "@/components/home/Footer";
-import { Button } from "@/components/ui/button";
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Footer from '@/components/home/Footer';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { toast } from '@/hooks/use-sonner';
+import { useAuth } from '@/hooks/auth';
+import { apiRequest } from '@/lib/apiClient';
 import {
+  fetchPublicOrganization,
+  fetchPublicOrganizations,
+  OrganizationPublicDetail,
+  OrganizationPublicSummary,
+} from '@/services/organizationProfileService';
+import OrganizationProfileEditDialog from '@/components/institution/OrganizationProfileEditDialog';
+import {
+  Building2,
   Calendar,
-  PawPrint,
-  ShieldCheck,
-  Target,
-  Home,
-  Network,
-  Users,
-  CheckSquare,
-  Heart,
-  HandHeart,
   Facebook,
+  Globe,
   Instagram,
-  Twitter,
-  Linkedin,
-  PartyPopper,
+  Mail,
+  MapPin,
+  PawPrint,
+  Pencil,
+  Phone,
+  Users,
 } from 'lucide-react';
 
-const StatCard = ({ icon: Icon, label, value }: { icon: any; label: string; value: string }) => (
-  <div className="rounded-2xl border border-pet-primary/30 bg-white p-4 text-center shadow-sm">
-    <Icon className="mx-auto mb-2 h-6 w-6 text-pet-secondary-light" strokeWidth={1.75} />
-    <div className="text-sm font-semibold text-pet-secondary">{label}</div>
-    <div className="mt-1 text-base font-bold text-pet-primary-dark">{value}</div>
-  </div>
-);
-
-const SectionTitle = ({ children }: { children: React.ReactNode }) => (
-  <h2 className="mb-5 text-center text-2xl font-extrabold text-pet-primary-dark">{children}</h2>
-);
-
-const ColumnCard = ({ children }: { children: React.ReactNode }) => (
-  <div className="rounded-3xl bg-white p-6 shadow-md ring-1 ring-pet-secondary/5">{children}</div>
-);
+type CurrentUser = {
+  id: string;
+  userType: string;
+  organizationId?: string;
+  organizationResponsible?: boolean;
+};
 
 const Institution = () => {
+  const { isAuthenticated, isAdmin } = useAuth();
+  const [organizations, setOrganizations] = useState<OrganizationPublicSummary[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<OrganizationPublicDetail | null>(null);
+  const [loadingList, setLoadingList] = useState(true);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const loadList = useCallback(async () => {
+    try {
+      setLoadingList(true);
+      const data = await fetchPublicOrganizations();
+      setOrganizations(data);
+      if (data.length > 0) {
+        setSelectedId((current) => current ?? data[0].id);
+      } else {
+        setSelectedId(null);
+        setDetail(null);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar ONGs:', error);
+      toast.error('Não foi possível carregar as ONGs parceiras.');
+    } finally {
+      setLoadingList(false);
+    }
+  }, []);
+
+  const loadDetail = useCallback(async (id: string) => {
+    try {
+      setLoadingDetail(true);
+      const data = await fetchPublicOrganization(id);
+      setDetail(data);
+    } catch (error) {
+      console.error('Erro ao carregar detalhes da ONG:', error);
+      toast.error('Não foi possível carregar os detalhes da ONG.');
+      setDetail(null);
+    } finally {
+      setLoadingDetail(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadList();
+  }, [loadList]);
+
+  useEffect(() => {
+    if (selectedId) {
+      void loadDetail(selectedId);
+    }
+  }, [selectedId, loadDetail]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setCurrentUser(null);
+      return;
+    }
+    (async () => {
+      try {
+        const me = await apiRequest<CurrentUser>('/api/users/me');
+        setCurrentUser(me);
+      } catch {
+        setCurrentUser(null);
+      }
+    })();
+  }, [isAuthenticated]);
+
+  const canEdit = useMemo(() => {
+    if (!detail || !isAuthenticated) return false;
+    if (isAdmin) return true;
+    return (
+      currentUser?.userType === 'VOLUNTARIO' &&
+      currentUser.organizationResponsible === true &&
+      currentUser.organizationId === detail.id
+    );
+  }, [detail, isAuthenticated, isAdmin, currentUser]);
+
+  const handleSaved = (saved: OrganizationPublicDetail) => {
+    setDetail(saved);
+    setOrganizations((prev) =>
+      prev
+        .map((org) =>
+          org.id === saved.id
+            ? {
+                ...org,
+                legalName: saved.legalName,
+                tradeName: saved.tradeName,
+                displayName: saved.displayName,
+                city: saved.city,
+                state: saved.state,
+                aboutText: saved.aboutText,
+                missionFocus: saved.missionFocus,
+                foundedYear: saved.foundedYear,
+                logoUrl: saved.logoUrl,
+                animalsCount: saved.animalsCount,
+              }
+            : org,
+        )
+        .filter((org) => saved.published || org.id !== saved.id),
+    );
+    if (!saved.published && selectedId === saved.id) {
+      void loadList();
+    }
+  };
+
+  const locationLabel = detail
+    ? [detail.city, detail.state].filter(Boolean).join(' — ')
+    : '';
+
   return (
     <div className="min-h-screen bg-pet-neutral">
       <main className="container mx-auto px-4 pt-28 pb-16">
-        {/* Top banner */}
-        <div className="mx-auto mb-6 max-w-6xl rounded-3xl bg-white p-5 text-center shadow-md ring-1 ring-pet-secondary/5">
-          <h1 className="text-2xl md:text-3xl font-extrabold text-pet-primary-dark">
-            Ong Clube amigo dos animais
-          </h1>
+        <div className="mx-auto mb-8 max-w-6xl text-center">
+          <h1 className="text-3xl font-extrabold text-pet-primary-dark md:text-4xl">ONGs Parceiras</h1>
+          <p className="mt-3 text-base text-pet-secondary/80 max-w-2xl mx-auto">
+            Conheça as organizações cadastradas na plataforma, sua história, equipe e formas de contato.
+          </p>
         </div>
 
-        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* COLUMN 1 — Profile & Impact */}
-          <ColumnCard>
-            <SectionTitle>Perfil e Impacto</SectionTitle>
+        {loadingList ? (
+          <div className="flex justify-center py-16 text-muted-foreground">Carregando ONGs parceiras...</div>
+        ) : organizations.length === 0 ? (
+          <Card className="mx-auto max-w-2xl">
+            <CardContent className="py-12 text-center text-muted-foreground">
+              Nenhuma ONG parceira publicada no momento.
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 lg:grid-cols-12">
+            <aside className="lg:col-span-4 space-y-3">
+              {organizations.map((org) => {
+                const active = org.id === selectedId;
+                return (
+                  <button
+                    key={org.id}
+                    type="button"
+                    onClick={() => setSelectedId(org.id)}
+                    className={`w-full rounded-2xl border p-4 text-left transition shadow-sm ${
+                      active
+                        ? 'border-pet-primary bg-white ring-2 ring-pet-primary/30'
+                        : 'border-pet-secondary/10 bg-white hover:border-pet-primary/40'
+                    }`}
+                  >
+                    <div className="flex gap-3">
+                      {org.logoUrl ? (
+                        <img
+                          src={org.logoUrl}
+                          alt={org.displayName}
+                          className="h-14 w-14 rounded-xl object-cover border shrink-0"
+                        />
+                      ) : (
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-pet-neutral">
+                          <Building2 className="h-7 w-7 text-pet-primary/70" />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-pet-primary-dark truncate">{org.displayName}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {[org.city, org.state].filter(Boolean).join(' · ')}
+                        </p>
+                        {org.missionFocus && (
+                          <p className="text-xs text-pet-secondary/80 mt-2 line-clamp-2">{org.missionFocus}</p>
+                        )}
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {org.foundedYear && (
+                            <Badge variant="secondary" className="text-xs">
+                              Desde {org.foundedYear}
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className="text-xs">
+                            <PawPrint className="h-3 w-3 mr-1" />
+                            {org.animalsCount} {org.animalsCount === 1 ? 'animal' : 'animais'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </aside>
 
-            {/* Logo placeholder */}
-            <div className="mb-4 flex h-32 items-center justify-center rounded-2xl bg-pet-neutral">
-              <div className="flex flex-col items-center text-pet-secondary/60">
-                <PawPrint className="h-10 w-10" strokeWidth={1.5} />
-                <span className="mt-1 text-xs font-medium">Logo da ONG</span>
-              </div>
-            </div>
+            <section className="lg:col-span-8">
+              {loadingDetail || !detail ? (
+                <Card>
+                  <CardContent className="py-16 text-center text-muted-foreground">
+                    {loadingDetail ? 'Carregando perfil da ONG...' : 'Selecione uma ONG para ver os detalhes.'}
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="space-y-6">
+                  <Card className="overflow-hidden">
+                    <CardContent className="p-6 sm:p-8">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex gap-4">
+                          {detail.logoUrl ? (
+                            <img
+                              src={detail.logoUrl}
+                              alt={detail.displayName}
+                              className="h-20 w-20 rounded-2xl object-cover border"
+                            />
+                          ) : (
+                            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-pet-neutral">
+                              <Building2 className="h-10 w-10 text-pet-primary/70" />
+                            </div>
+                          )}
+                          <div>
+                            <h2 className="text-2xl font-extrabold text-pet-primary-dark">{detail.displayName}</h2>
+                            {detail.tradeName && detail.tradeName !== detail.legalName && (
+                              <p className="text-sm text-muted-foreground mt-1">{detail.legalName}</p>
+                            )}
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {detail.foundedYear && (
+                                <Badge variant="secondary">
+                                  <Calendar className="h-3 w-3 mr-1" />
+                                  Fundada em {detail.foundedYear}
+                                </Badge>
+                              )}
+                              <Badge variant="outline">
+                                <PawPrint className="h-3 w-3 mr-1" />
+                                {detail.animalsCount} animais cadastrados
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                        {canEdit && (
+                          <Button variant="outline" className="shrink-0" onClick={() => setEditOpen(true)}>
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar perfil
+                          </Button>
+                        )}
+                      </div>
 
-            {/* Founder */}
-            <div className="mb-6 flex items-center gap-3">
-              <img
-                src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&auto=format&fit=crop&q=60"
-                alt="Fundadora Ana Silva"
-                className="h-14 w-14 rounded-full object-cover ring-2 ring-pet-primary/40"
-              />
-              <div>
-                <div className="text-xs text-pet-secondary/70">Fundadora</div>
-                <div className="font-bold text-pet-secondary">Ana Silva</div>
-              </div>
-            </div>
+                      {detail.aboutText && (
+                        <div className="mt-6">
+                          <h3 className="text-lg font-bold text-pet-secondary mb-2">Quem somos</h3>
+                          <p className="text-sm leading-relaxed text-pet-secondary/90 whitespace-pre-line">
+                            {detail.aboutText}
+                          </p>
+                        </div>
+                      )}
 
-            <h3 className="mb-3 text-center text-lg font-extrabold text-pet-secondary">
-              Melhores momentos
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <StatCard icon={Calendar} label="Fundada em:" value="2015" />
-              <StatCard icon={PawPrint} label="Resgates:" value="+2.000 Vidas" />
-              <StatCard icon={ShieldCheck} label="Fundação:" value="Sede Própria" />
-              <StatCard icon={Target} label="Foco:" value="Adoção Responsável" />
-            </div>
+                      {detail.storyText && (
+                        <div className="mt-6 rounded-2xl bg-pet-neutral p-5">
+                          <h3 className="text-lg font-bold text-pet-secondary mb-2">Nossa história</h3>
+                          <p className="text-sm leading-relaxed text-pet-secondary/90 whitespace-pre-line">
+                            {detail.storyText}
+                          </p>
+                        </div>
+                      )}
 
-            <h3 className="mt-6 mb-3 text-center text-lg font-extrabold text-pet-secondary">
-              Quem Somos
-            </h3>
-            <p className="text-center text-sm leading-relaxed text-pet-secondary/80">
-              Somos uma ONG dedicada ao resgate e reabilitação de animais abandonados. Fundada em
-              2015, já ajudamos mais de 2.000 animais a encontrarem um novo lar através da adoção
-              responsável — transformando uma ação pontual em uma missão de vida.
-            </p>
-          </ColumnCard>
+                      {detail.missionFocus && (
+                        <div className="mt-6">
+                          <h3 className="text-lg font-bold text-pet-secondary mb-2">Missão</h3>
+                          <p className="text-sm text-pet-secondary/90">{detail.missionFocus}</p>
+                        </div>
+                      )}
 
-          {/* COLUMN 2 — History & Structure */}
-          <ColumnCard>
-            <SectionTitle>Nossa História & Estrutura</SectionTitle>
+                      {detail.structureInfo && (
+                        <div className="mt-6">
+                          <h3 className="text-lg font-bold text-pet-secondary mb-2">Estrutura e atuação</h3>
+                          <p className="text-sm leading-relaxed text-pet-secondary/90 whitespace-pre-line">
+                            {detail.structureInfo}
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
 
-            <h3 className="mb-4 text-center text-lg font-extrabold text-pet-secondary">
-              Nossa História
-            </h3>
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <Card>
+                      <CardContent className="p-6 space-y-4">
+                        <h3 className="text-lg font-bold text-pet-secondary flex items-center gap-2">
+                          <Users className="h-5 w-5" />
+                          Equipe e responsáveis
+                        </h3>
+                        {detail.volunteers.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">Nenhum voluntário cadastrado.</p>
+                        ) : (
+                          <ul className="space-y-3">
+                            {detail.volunteers.map((volunteer) => (
+                              <li
+                                key={volunteer.id}
+                                className="flex items-start justify-between gap-3 rounded-xl border p-3"
+                              >
+                                <div>
+                                  <p className="font-semibold text-pet-primary-dark">{volunteer.fullName}</p>
+                                  {volunteer.phone && (
+                                    <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                                      <Phone className="h-3.5 w-3.5" />
+                                      {volunteer.phone}
+                                    </p>
+                                  )}
+                                </div>
+                                <Badge variant={volunteer.organizationResponsible ? 'default' : 'secondary'}>
+                                  {volunteer.organizationResponsible ? 'Responsável' : 'Voluntário'}
+                                </Badge>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          Contato institucional: {detail.primaryContactName}
+                          {detail.secondaryContactName ? ` · ${detail.secondaryContactName}` : ''}
+                        </p>
+                      </CardContent>
+                    </Card>
 
-            {/* Timeline */}
-            <div className="relative pl-6">
-              <div className="absolute left-2 top-2 bottom-2 w-px bg-pet-primary/40" />
-              <div className="relative">
-                <span className="absolute -left-[18px] top-1.5 h-3 w-3 rounded-full bg-pet-primary ring-4 ring-pet-primary/20" />
-                <div className="rounded-2xl bg-pet-neutral p-4">
-                  <div className="mb-1 flex items-center justify-between">
-                    <h4 className="font-bold text-pet-secondary">2015: Fundação</h4>
-                    <PartyPopper className="h-4 w-4 text-pet-primary-dark" />
+                    <Card>
+                      <CardContent className="p-6 space-y-4">
+                        <h3 className="text-lg font-bold text-pet-secondary">Contato</h3>
+                        <div className="space-y-3 text-sm">
+                          {locationLabel && (
+                            <p className="flex items-start gap-2 text-pet-secondary/90">
+                              <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
+                              <span>
+                                {detail.addressLine ? `${detail.addressLine} — ` : ''}
+                                {locationLabel}
+                              </span>
+                            </p>
+                          )}
+                          <p className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 shrink-0" />
+                            {detail.contactPhone1}
+                            {detail.contactPhone2 ? ` · ${detail.contactPhone2}` : ''}
+                          </p>
+                          {detail.contactEmail && (
+                            <p className="flex items-center gap-2">
+                              <Mail className="h-4 w-4 shrink-0" />
+                              <a href={`mailto:${detail.contactEmail}`} className="text-pet-primary hover:underline">
+                                {detail.contactEmail}
+                              </a>
+                            </p>
+                          )}
+                          {detail.cnpj && (
+                            <p className="text-muted-foreground">CNPJ: {detail.cnpj}</p>
+                          )}
+                        </div>
+
+                        {(detail.websiteUrl || detail.instagramUrl || detail.facebookUrl) && (
+                          <div className="pt-2">
+                            <h4 className="text-sm font-semibold text-pet-secondary mb-2">Redes e site</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {detail.websiteUrl && (
+                                <Button variant="outline" size="sm" asChild>
+                                  <a href={detail.websiteUrl} target="_blank" rel="noopener noreferrer">
+                                    <Globe className="h-4 w-4 mr-1" /> Site
+                                  </a>
+                                </Button>
+                              )}
+                              {detail.instagramUrl && (
+                                <Button variant="outline" size="sm" asChild>
+                                  <a href={detail.instagramUrl} target="_blank" rel="noopener noreferrer">
+                                    <Instagram className="h-4 w-4 mr-1" /> Instagram
+                                  </a>
+                                </Button>
+                              )}
+                              {detail.facebookUrl && (
+                                <Button variant="outline" size="sm" asChild>
+                                  <a href={detail.facebookUrl} target="_blank" rel="noopener noreferrer">
+                                    <Facebook className="h-4 w-4 mr-1" /> Facebook
+                                  </a>
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
                   </div>
-                  <p className="text-sm leading-relaxed text-pet-secondary/80">
-                    Tudo começou quando Ana Silva resgatou um grupo de filhotes abandonados.
-                    Mobilizou amigos e familiares para cuidar dos animais enquanto buscava
-                    adotantes. O que era uma ação pontual virou uma missão de vida — e nasceu
-                    nossa ONG.
-                  </p>
                 </div>
-              </div>
-            </div>
-
-            <h3 className="mt-6 mb-4 text-center text-lg font-extrabold text-pet-secondary">
-              Nossa Estrutura
-            </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <StatCard icon={Home} label="Sede:" value="Abrigo Próprio (+100)" />
-              <StatCard icon={Network} label="Rede:" value="+50 Lares Temp." />
-              <StatCard icon={Users} label="Equipe:" value="15 Func. + 80 Vol." />
-              <StatCard icon={CheckSquare} label="Atividades:" value="Feiras & Castração" />
-            </div>
-          </ColumnCard>
-
-          {/* COLUMN 3 — Gallery & Connection */}
-          <ColumnCard>
-            <SectionTitle>Galeria e Conexão</SectionTitle>
-
-            <figure className="mb-3">
-              <img
-                src="https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=600&auto=format&fit=crop&q=60"
-                alt="Olhar de Gratidão"
-                className="h-40 w-full rounded-2xl object-cover"
-              />
-              <figcaption className="mt-1 text-center text-xs font-medium text-pet-secondary/80">
-                Olhar de Gratidão
-              </figcaption>
-            </figure>
-
-            <figure className="mb-3">
-              <img
-                src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=600&auto=format&fit=crop&q=60"
-                alt="Novos Amigos em Liberdade"
-                className="h-32 w-full rounded-2xl object-cover"
-              />
-              <figcaption className="mt-1 text-center text-xs font-medium text-pet-secondary/80">
-                Novos Amigos em Liberdade
-              </figcaption>
-            </figure>
-
-            <div className="mb-4 grid grid-cols-2 gap-3">
-              <figure>
-                <img
-                  src="https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=400&auto=format&fit=crop&q=60"
-                  alt="Amor e Cuidado"
-                  className="h-24 w-full rounded-2xl object-cover"
-                />
-                <figcaption className="mt-1 text-center text-xs font-medium text-pet-secondary/80">
-                  Amor e Cuidado
-                </figcaption>
-              </figure>
-              <figure>
-                <img
-                  src="https://images.unsplash.com/photo-1552053831-71594a27632d?w=400&auto=format&fit=crop&q=60"
-                  alt="Um Lar para Sempre"
-                  className="h-24 w-full rounded-2xl object-cover"
-                />
-                <figcaption className="mt-1 text-center text-xs font-medium text-pet-secondary/80">
-                  Um Lar para Sempre
-                </figcaption>
-              </figure>
-            </div>
-
-            {/* Social */}
-            <h3 className="mb-1 text-center text-lg font-extrabold text-pet-secondary">
-              Redes Sociais
-            </h3>
-            <p className="mb-3 text-center text-sm text-pet-secondary/70">
-              Conecte-se: <span className="font-semibold">@AbrigoEsperanca</span>
-            </p>
-            <div className="mb-6 flex justify-center gap-3">
-              {[
-                { Icon: Instagram, href: 'https://instagram.com', label: 'Instagram' },
-                { Icon: Facebook, href: 'https://facebook.com', label: 'Facebook' },
-                { Icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
-                { Icon: Linkedin, href: 'https://linkedin.com', label: 'LinkedIn' },
-              ].map(({ Icon, href, label }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={label}
-                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-pet-secondary text-white transition hover:bg-pet-secondary-light"
-                >
-                  <Icon className="h-5 w-5" />
-                </a>
-              ))}
-            </div>
-
-            {/* CTAs */}
-            <h3 className="mb-3 text-center text-lg font-extrabold text-pet-secondary">
-              Botão de Ação
-            </h3>
-            <Button
-              className="mb-2 h-12 w-full rounded-full bg-pet-primary text-pet-secondary font-bold text-base shadow-md hover:bg-pet-primary-dark hover:text-white"
-            >
-              <Heart className="mr-2 h-5 w-5" /> Apadrinhe um Animal
-            </Button>
-            <Button
-              variant="outline"
-              className="h-10 w-full rounded-full border-pet-secondary/30 text-pet-secondary hover:bg-pet-neutral"
-            >
-              <HandHeart className="mr-2 h-4 w-4" /> Faça uma Doação
-            </Button>
-          </ColumnCard>
-        </div>
+              )}
+            </section>
+          </div>
+        )}
       </main>
+
+      <OrganizationProfileEditDialog
+        open={editOpen}
+        organization={detail}
+        onOpenChange={setEditOpen}
+        onSaved={handleSaved}
+      />
 
       <Footer />
     </div>

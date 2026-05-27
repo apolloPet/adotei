@@ -4,12 +4,27 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
 public class AnimalDtos {
 
     public record AnimalAdopterProfileRequest(
+        List<String> suitableHousing,
+        boolean requiresYard,
+        boolean requiresWalledYard,
+        boolean requiresWindowScreens,
+        boolean allowsRented,
+        String minResidentExperience,
+        boolean suitableForChildren,
+        boolean suitableForFirstTimers,
+        Integer maxHoursAloneDaily,
+        String estimatedMonthlyCost,
+        boolean requiresEmergencyBudget
+    ) {}
+
+    public record AnimalAdopterProfileResponse(
         List<String> suitableHousing,
         boolean requiresYard,
         boolean requiresWalledYard,
@@ -92,7 +107,9 @@ public class AnimalDtos {
         List<UUID> vaccineIds,
         List<UUID> temperamentTraitIds,
         List<UUID> requirementIds,
-        List<AnimalImageResponse> images
+        AnimalAdopterProfileResponse adopterProfile,
+        List<AnimalImageResponse> images,
+        OffsetDateTime createdAt
     ) {}
 
     public record GenerateImageUploadRequest(

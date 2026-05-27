@@ -33,7 +33,17 @@ public class AuthDtos {
             regexp = "(^$)|(^\\d{8}$)|(^\\d{5}-\\d{3}$)",
             message = "CEP invalido. Use 00000000 ou 00000-000"
         )
-        String zipCode
+        String zipCode,
+        String housingType,
+        Boolean hasChildren,
+        String childrenAges,
+        Boolean hadPetsBefore,
+        Boolean currentlyHasPets,
+        String currentPetsTypes,
+        Integer hoursAloneDaily,
+        Boolean willCoverVaccines,
+        Boolean willCoverEmergencies,
+        Boolean awareOfCosts
     ) {}
 
     public record ChangePasswordRequest(

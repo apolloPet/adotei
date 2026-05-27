@@ -13,6 +13,7 @@ import com.apollopet.adotei.backend.domain.repository.AppUserRepository;
 import com.apollopet.adotei.backend.domain.repository.OrganizationRepository;
 import com.apollopet.adotei.backend.domain.repository.RoleRepository;
 import com.apollopet.adotei.backend.domain.repository.UserCredentialRepository;
+import com.apollopet.adotei.backend.web.dto.UserDtos.AdopterProfileResponse;
 import com.apollopet.adotei.backend.web.dto.UserDtos.UpsertAdopterProfileRequest;
 import com.apollopet.adotei.backend.web.dto.UserDtos.UpdateOwnProfileRequest;
 import com.apollopet.adotei.backend.web.dto.UserDtos.UpsertUserRequest;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,13 +56,35 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserResponse> list() {
-        return appUserRepository.findAll().stream().map(this::toResponse).toList();
+    public List<UserResponse> list(String requesterAuthSubject) {
+        AppUser requester = loadRequester(requesterAuthSubject);
+        if (requester.getUserType() == UserType.ADMIN) {
+            return appUserRepository.findAll().stream().map(this::toResponse).toList();
+        }
+        if (requester.getUserType() == UserType.VOLUNTARIO && requester.getOrganization() != null) {
+            return appUserRepository.findByOrganizationId(requester.getOrganization().getId()).stream()
+                .map(this::toResponse)
+                .toList();
+        }
+        throw new AccessDeniedException("Sem permissao para listar usuarios.");
     }
 
     @Transactional(readOnly = true)
-    public UserResponse get(UUID id) {
-        return toResponse(loadUser(id));
+    public UserResponse get(UUID id, String requesterAuthSubject) {
+        AppUser requester = loadRequester(requesterAuthSubject);
+        AppUser requested = loadUser(id);
+        if (requester.getUserType() == UserType.ADMIN) {
+            return toResponse(requested);
+        }
+        if (
+            requester.getUserType() == UserType.VOLUNTARIO &&
+            requester.getOrganization() != null &&
+            requested.getOrganization() != null &&
+            requester.getOrganization().getId().equals(requested.getOrganization().getId())
+        ) {
+            return toResponse(requested);
+        }
+        throw new AccessDeniedException("Sem permissao para consultar este usuario.");
     }
 
     @Transactional(readOnly = true)
@@ -71,9 +95,48 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserResponse> listVolunteersByOrganization(UUID organizationId) {
+    public AdopterProfileResponse getAdopterProfile(UUID userId, String requesterAuthSubject) {
+        AppUser requester = appUserRepository.findByAuthSubject(requesterAuthSubject)
+            .orElseThrow(() -> new NotFoundException("Usuario autenticado nao encontrado"));
+        AppUser requestedUser = loadUser(userId);
+
+        if (
+            requester.getUserType() == UserType.ADOTANTE &&
+            !requester.getId().equals(requestedUser.getId())
+        ) {
+            throw new AccessDeniedException("Adotante pode consultar apenas seu proprio perfil.");
+        }
+        if (requester.getUserType() == UserType.VOLUNTARIO) {
+            throw new AccessDeniedException("Voluntario nao pode consultar perfil completo de adotante.");
+        }
+
+        AdopterProfile profile = adopterProfileRepository.findByUserId(userId)
+            .orElseThrow(() -> new NotFoundException("Perfil de adotante nao encontrado"));
+        return toAdopterProfileResponse(profile);
+    }
+
+    @Transactional(readOnly = true)
+    public AdopterProfileResponse getAdopterProfileByAuthSubject(String requesterAuthSubject) {
+        AppUser requester = appUserRepository.findByAuthSubject(requesterAuthSubject)
+            .orElseThrow(() -> new NotFoundException("Usuario autenticado nao encontrado"));
+        AdopterProfile profile = adopterProfileRepository.findByUserId(requester.getId())
+            .orElseThrow(() -> new NotFoundException("Perfil de adotante nao encontrado"));
+        return toAdopterProfileResponse(profile);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserResponse> listVolunteersByOrganization(UUID organizationId, String requesterAuthSubject) {
+        AppUser requester = loadRequester(requesterAuthSubject);
         organizationRepository.findById(organizationId)
             .orElseThrow(() -> new NotFoundException("Organizacao nao encontrada"));
+        if (requester.getUserType() == UserType.VOLUNTARIO) {
+            if (
+                requester.getOrganization() == null ||
+                !requester.getOrganization().getId().equals(organizationId)
+            ) {
+                throw new AccessDeniedException("Voluntario so pode listar voluntarios da propria ONG.");
+            }
+        }
 
         return appUserRepository.findByOrganizationIdAndUserType(organizationId, UserType.VOLUNTARIO).stream()
             .map(this::toResponse)
@@ -128,7 +191,11 @@ public class UserService {
     }
 
     @Transactional
-    public void upsertAdopterProfile(UUID userId, UpsertAdopterProfileRequest request) {
+    public void upsertAdopterProfile(UUID userId, UpsertAdopterProfileRequest request, String requesterAuthSubject) {
+        AppUser requester = loadRequester(requesterAuthSubject);
+        if (requester.getUserType() != UserType.ADMIN) {
+            throw new AccessDeniedException("Somente administradores podem alterar perfil de adotante de terceiros.");
+        }
         AppUser user = loadUser(userId);
         if (user.getUserType() != UserType.ADOTANTE) {
             throw new BadRequestException("Perfil de adotante so pode ser preenchido por usuarios do tipo ADOTANTE.");
@@ -164,6 +231,18 @@ public class UserService {
         profile.setEnvironmentPhotoUrl(request.environmentPhotoUrl());
         profile.setEnvironmentVideoUrl(request.environmentVideoUrl());
         adopterProfileRepository.save(profile);
+    }
+
+    @Transactional
+    public void upsertOwnAdopterProfile(String authSubject, UpsertAdopterProfileRequest request) {
+        AppUser user = appUserRepository.findByAuthSubject(authSubject)
+            .orElseThrow(() -> new NotFoundException("Usuario nao encontrado"));
+        upsertAdopterProfile(user.getId(), request, authSubject);
+    }
+
+    private AppUser loadRequester(String authSubject) {
+        return appUserRepository.findByAuthSubject(authSubject)
+            .orElseThrow(() -> new NotFoundException("Usuario autenticado nao encontrado"));
     }
 
     private AppUser loadUser(UUID id) {
@@ -279,6 +358,42 @@ public class UserService {
             organizationName,
             user.isOrganizationResponsible(),
             user.getRoles().stream().map(Role::getCode).sorted().toList()
+        );
+    }
+
+    private AdopterProfileResponse toAdopterProfileResponse(AdopterProfile profile) {
+        return new AdopterProfileResponse(
+            profile.getId(),
+            profile.getUser().getId(),
+            profile.getHousingType(),
+            profile.getOwnershipType(),
+            profile.getRentAllowsPets(),
+            profile.getHasYard(),
+            profile.getYardWalled(),
+            profile.getHasWindowScreens(),
+            profile.getResidentsCount(),
+            profile.getHasChildren(),
+            profile.getChildrenAges(),
+            profile.getHadPetsBefore(),
+            profile.getCurrentlyHasPets(),
+            profile.getCurrentPetsCount(),
+            profile.getCurrentPetsTypes(),
+            profile.getReturnedAnimal(),
+            profile.getPetsVaccinated(),
+            profile.getPetsNeutered(),
+            profile.getAwareOfCosts(),
+            profile.getMonthlyBudget(),
+            profile.getWillCoverVaccines(),
+            profile.getWillCoverNeutering(),
+            profile.getWillCoverEmergencies(),
+            profile.getReasonToAdopt(),
+            profile.getHoursAloneDaily(),
+            profile.getIfDestroyed(),
+            profile.getIfSick(),
+            profile.getWillAdapt(),
+            profile.getEnvironmentPhotoUrl(),
+            profile.getEnvironmentVideoUrl(),
+            profile.getUpdatedAt()
         );
     }
 }

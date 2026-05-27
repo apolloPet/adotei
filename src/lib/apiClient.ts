@@ -42,23 +42,73 @@ type RequestOptions = {
   skipAuth?: boolean;
 };
 
+let unauthorizedHandling = false;
+
+export const clearAuthSession = (): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  setAuthToken(null);
+  localStorage.removeItem('isLoggedIn');
+  localStorage.removeItem('isAdmin');
+  localStorage.removeItem('userEmail');
+  localStorage.removeItem('authUser');
+  localStorage.removeItem('supabase.auth.token');
+  window.dispatchEvent(new Event('storage'));
+  window.dispatchEvent(new Event('authStateChanged'));
+};
+
+const getLoginRedirectPath = (): string => {
+  if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+    return '/admin-login';
+  }
+  return '/login';
+};
+
+/** Desloga e redireciona ao login quando a sessão expirou (401). Retorna true se tratou. */
+export const handleUnauthorizedIfLoggedIn = (): boolean => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const wasLoggedIn =
+    Boolean(getAuthToken()) || Boolean(localStorage.getItem('authUser'));
+  if (!wasLoggedIn) {
+    return false;
+  }
+
+  if (unauthorizedHandling) {
+    return true;
+  }
+  unauthorizedHandling = true;
+
+  const loginPath = getLoginRedirectPath();
+  clearAuthSession();
+  toast.error('Sua sessão expirou. Faça login novamente.');
+
+  const currentPath = window.location.pathname;
+  if (currentPath !== loginPath && !currentPath.startsWith(`${loginPath}/`)) {
+    window.location.replace(loginPath);
+  } else {
+    unauthorizedHandling = false;
+  }
+
+  return true;
+};
+
 export const apiRequest = async <T>(path: string, options: RequestOptions = {}): Promise<T> => {
   const { method = 'GET', body, headers = {}, skipAuth = false } = options;
 
-  const token = getAuthToken();
   const requestHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
     ...headers,
   };
 
-  if (!skipAuth && token) {
-    requestHeaders.Authorization = `Bearer ${token}`;
-  }
-
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
     headers: requestHeaders,
     body: body === undefined ? undefined : JSON.stringify(body),
+    credentials: 'include',
   });
 
   if (!response.ok) {
@@ -71,6 +121,11 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}):
     } catch {
       // noop
     }
+
+    if (response.status === 401 && !skipAuth) {
+      handleUnauthorizedIfLoggedIn();
+    }
+
     throw new Error(message);
   }
 

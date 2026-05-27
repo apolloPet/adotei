@@ -12,6 +12,12 @@ import { filterPetsForUser } from "@/utils/petMatchFilter";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import {
+  buildExtendedFromLegacyProfile,
+  computeCompatibilityForPet,
+  loadCompatibilityProfileWithCache,
+} from "@/services/compatibilityService";
+import { loadExtendedProfile } from "@/utils/adopterProfileStorage";
 
 const Browse = () => {
   const {
@@ -39,6 +45,17 @@ const Browse = () => {
       navigate("/admin", { replace: true });
     }
   }, [isVolunteer, navigate]);
+
+  useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -70,8 +87,24 @@ const Browse = () => {
           setBlocked(result.blocked.reason);
           setPets([]);
         } else {
+          const authUserRaw = localStorage.getItem('authUser');
+          const authUserId = authUserRaw ? (JSON.parse(authUserRaw) as { id?: string }).id : undefined;
+          const localExtended = loadExtendedProfile(authUserId);
+          const compatibilityProfile = await loadCompatibilityProfileWithCache(
+            profile?.extended ?? localExtended ?? buildExtendedFromLegacyProfile(profile) ?? undefined,
+            profile,
+          );
+          const petsWithCompatibility = await Promise.all(
+            result.pets.map(async (pet) => {
+              const compatibility = await computeCompatibilityForPet(pet, compatibilityProfile);
+              return {
+                ...pet,
+                compatibilityScore: compatibility.scorePercent,
+              };
+            }),
+          );
           setBlocked(null);
-          setPets(result.pets);
+          setPets(petsWithCompatibility);
           setWarnings(result.warnings);
         }
       } catch (error) {
@@ -107,8 +140,6 @@ const Browse = () => {
         });
       } else if (direction === "save") {
         await recordPetMatch(id, userId, "saved");
-      } else if (direction === "left") {
-        await recordPetMatch(id, userId, "disliked");
       }
       handleSwipe(direction, id);
     } catch (error) {
@@ -118,10 +149,10 @@ const Browse = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="w-full h-[100svh] pt-14 sm:pt-16 pb-[env(safe-area-inset-bottom)]">
-        <div className="relative max-w-md mx-auto h-full px-0 sm:px-2 pb-[max(env(safe-area-inset-bottom),1rem)]">
-          <div className="absolute top-2 right-4 sm:right-6 z-30">
+    <div className="fixed inset-x-0 top-14 sm:top-16 bottom-0 overflow-hidden bg-background">
+      <main className="h-full w-full overflow-hidden">
+        <div className="relative h-full w-full overflow-hidden">
+          <div className="absolute top-2 right-2 z-30">
             <FilterPanel
               filters={filters}
               isLoading={isLoading}

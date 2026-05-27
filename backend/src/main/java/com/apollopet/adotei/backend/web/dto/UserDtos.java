@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.UUID;
+import java.time.OffsetDateTime;
 
 public class UserDtos {
 
@@ -71,6 +72,40 @@ public class UserDtos {
         Boolean willAdapt,
         String environmentPhotoUrl,
         String environmentVideoUrl
+    ) {}
+
+    public record AdopterProfileResponse(
+        UUID id,
+        UUID userId,
+        String housingType,
+        String ownershipType,
+        Boolean rentAllowsPets,
+        Boolean hasYard,
+        Boolean yardWalled,
+        Boolean hasWindowScreens,
+        Integer residentsCount,
+        Boolean hasChildren,
+        String childrenAges,
+        Boolean hadPetsBefore,
+        Boolean currentlyHasPets,
+        Integer currentPetsCount,
+        String currentPetsTypes,
+        Boolean returnedAnimal,
+        Boolean petsVaccinated,
+        Boolean petsNeutered,
+        Boolean awareOfCosts,
+        String monthlyBudget,
+        Boolean willCoverVaccines,
+        Boolean willCoverNeutering,
+        Boolean willCoverEmergencies,
+        String reasonToAdopt,
+        Integer hoursAloneDaily,
+        String ifDestroyed,
+        String ifSick,
+        Boolean willAdapt,
+        String environmentPhotoUrl,
+        String environmentVideoUrl,
+        OffsetDateTime updatedAt
     ) {}
 
     public record UpdateOwnProfileRequest(

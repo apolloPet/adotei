@@ -71,21 +71,7 @@ const AdminPanel = ({ onLogout }) => {
     }
   };
 
-  const localStorageVolunteer = (() => {
-    try {
-      const authUser = localStorage.getItem("authUser");
-      if (!authUser) return false;
-      const parsed = JSON.parse(authUser) as { userType?: string; roles?: string[] };
-      return parsed.userType === 'VOLUNTARIO' || Boolean(parsed.roles?.includes('VOLUNTARIO'));
-    } catch {
-      return false;
-    }
-  })();
-  const localStorageAdmin = localStorage.getItem("isAdmin") === "true";
-  const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
-  const isAuthorized =
-    (isAuthenticated && (isAdmin || isVolunteer)) ||
-    (localStorageLoggedIn && (localStorageAdmin || localStorageVolunteer));
+  const isAuthorized = isAuthenticated && (isAdmin || isVolunteer);
 
   useEffect(() => {
     if (!isLoading && !isAuthorized) {
