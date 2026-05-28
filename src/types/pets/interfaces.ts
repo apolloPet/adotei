@@ -28,6 +28,7 @@ export interface PetInfo extends BasePetInfo {
   traits?: string[];
   adopterProfile?: PetAdopterProfile;
   compatibilityScore?: number;
+  hasRegisteredInterest?: boolean;
 }
 
 export interface Pet extends Omit<BasePetInfo, 'type'> {
@@ -47,4 +48,5 @@ export interface Pet extends Omit<BasePetInfo, 'type'> {
   daysWaiting?: number;
   adopterProfile?: PetAdopterProfile;
   compatibilityScore?: number;
+  hasRegisteredInterest?: boolean;
 }

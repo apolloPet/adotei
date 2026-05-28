@@ -35,6 +35,12 @@ const PetInfoOverlay = ({ pet }: PetInfoOverlayProps) => {
             {waitingDays}d
           </span>
         )}
+        {petAsPet.hasRegisteredInterest && (
+          <span className="inline-flex items-center gap-1.5 bg-rose-500/90 backdrop-blur-sm rounded-full px-2.5 py-1 font-semibold text-white">
+            <Heart className="h-4 w-4 fill-current" />
+            Interesse já demonstrado
+          </span>
+        )}
       </div>
 
       {/* Name + location */}

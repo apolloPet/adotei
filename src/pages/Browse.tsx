@@ -3,7 +3,7 @@ import PetBrowser from "@/components/browse/PetBrowser";
 import { usePetBrowse } from "@/hooks/use-pet-browse";
 import { useEffect, useMemo, useState } from "react";
 import { fetchPets } from "@/services/petService";
-import { recordPetMatch } from "@/services/adoptionService";
+import { fetchMyAnimalIdsWithInterests, recordPetMatch } from "@/services/adoptionService";
 import { toast } from "@/hooks/use-sonner";
 import { useAuth } from "@/hooks/auth";
 import { getProfile } from "@/services/auth";
@@ -38,6 +38,7 @@ const Browse = () => {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [blocked, setBlocked] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<{ petId: string; message: string }[]>([]);
+  const [interestedPetIds, setInterestedPetIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (isVolunteer) {
@@ -67,6 +68,22 @@ const Browse = () => {
       }
     })();
   }, [user]);
+
+  useEffect(() => {
+    if (!user || isVolunteer) {
+      setInterestedPetIds(new Set());
+      return;
+    }
+
+    (async () => {
+      try {
+        const animalIds = await fetchMyAnimalIdsWithInterests();
+        setInterestedPetIds(new Set(animalIds));
+      } catch (error) {
+        console.error("Error fetching my interests:", error);
+      }
+    })();
+  }, [user, isVolunteer]);
 
   useEffect(() => {
     const loadPets = async () => {
@@ -124,6 +141,15 @@ const Browse = () => {
     return m;
   }, [warnings]);
 
+  const petsWithInterestStatus = useMemo(
+    () =>
+      pets.map((pet) => ({
+        ...pet,
+        hasRegisteredInterest: interestedPetIds.has(pet.id),
+      })),
+    [pets, interestedPetIds],
+  );
+
   const handlePetSwipe = async (direction: string, id: string) => {
     if (!userId) {
       toast.error("Você precisa estar logado para interagir com um animal");
@@ -132,14 +158,20 @@ const Browse = () => {
 
     try {
       if (direction === "right") {
+        if (interestedPetIds.has(id)) {
+          handleSwipe(direction, id);
+          return;
+        }
         toast.loading("Processando seu interesse...", { id: "match-processing" });
         await recordPetMatch(id, userId, "liked");
         toast.dismiss("match-processing");
+        setInterestedPetIds((prev) => new Set(prev).add(id));
         toast.success("Você demonstrou interesse em adotar! 💖", {
           description: "A ONG será notificada do seu interesse.",
         });
       } else if (direction === "save") {
         await recordPetMatch(id, userId, "saved");
+        setInterestedPetIds((prev) => new Set(prev).add(id));
       }
       handleSwipe(direction, id);
     } catch (error) {
@@ -174,13 +206,13 @@ const Browse = () => {
             </Card>
           ) : (
             <>
-              {pets[0] && warningMap.has(pets[0].id) && (
+              {petsWithInterestStatus[0] && warningMap.has(petsWithInterestStatus[0].id) && (
                 <div className="absolute top-2 left-4 right-20 z-20 rounded-md border border-amber-300 bg-amber-50/95 dark:bg-amber-950/80 p-2 text-xs text-amber-900 dark:text-amber-200 flex gap-2">
                   <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                  <span>{warningMap.get(pets[0].id)}</span>
+                  <span>{warningMap.get(petsWithInterestStatus[0].id)}</span>
                 </div>
               )}
-              <PetBrowser pets={pets} onSwipe={handlePetSwipe} onReset={resetFilters} />
+              <PetBrowser pets={petsWithInterestStatus} onSwipe={handlePetSwipe} onReset={resetFilters} />
             </>
           )}
         </div>

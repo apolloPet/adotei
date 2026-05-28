@@ -4,6 +4,9 @@ import com.apollopet.adotei.backend.application.exception.BadRequestException;
 import com.apollopet.adotei.backend.application.exception.NotFoundException;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -14,6 +17,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(NotFoundException ex) {
@@ -39,8 +44,16 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(payload(HttpStatus.FORBIDDEN, "Acesso negado"));
     }
 
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrity(DataIntegrityViolationException ex) {
+        log.warn("Violacao de integridade de dados", ex);
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(payload(HttpStatus.CONFLICT, "Operacao nao permitida: violacao de integridade"));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
+        log.error("Erro nao tratado", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(payload(HttpStatus.INTERNAL_SERVER_ERROR, "Erro interno do servidor"));
     }

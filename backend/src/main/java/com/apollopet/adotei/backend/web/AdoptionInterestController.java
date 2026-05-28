@@ -33,6 +33,12 @@ public class AdoptionInterestController {
         return adoptionInterestService.listAnimalIdsWithInterests(authentication.getName());
     }
 
+    @GetMapping("/interests/my-animal-ids")
+    @PreAuthorize("hasRole('ADOTANTE')")
+    public List<UUID> listMyAnimalIdsWithInterests(Authentication authentication) {
+        return adoptionInterestService.listMyAnimalIdsWithInterests(authentication.getName());
+    }
+
     @PostMapping("/{animalId}/interests")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADOTANTE')")

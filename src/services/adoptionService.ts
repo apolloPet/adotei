@@ -171,6 +171,9 @@ export const fetchAnimalInterests = async (animalId: string): Promise<BackendAdo
 export const fetchAnimalIdsWithInterests = async (): Promise<string[]> =>
   apiRequest<string[]>('/api/animals/interests/animal-ids');
 
+export const fetchMyAnimalIdsWithInterests = async (): Promise<string[]> =>
+  apiRequest<string[]>('/api/animals/interests/my-animal-ids');
+
 export { interestTypeLabel };
 
 const readMatches = (): Array<{ petId: string; userId: string; matchType: PetMatchType; at: string }> => {
@@ -180,6 +183,12 @@ const readMatches = (): Array<{ petId: string; userId: string; matchType: PetMat
     return [];
   }
 };
+
+const hasRecordedInterest = (
+  matches: Array<{ petId: string; userId: string; matchType: PetMatchType; at: string }>,
+  userId: string,
+  petId: string
+): boolean => matches.some((m) => m.userId === userId && m.petId === petId && (m.matchType === 'liked' || m.matchType === 'saved'));
 
 export const getSavedPetIds = (userId: string): string[] =>
   readMatches().filter((m) => m.userId === userId && m.matchType === 'saved').map((m) => m.petId);
@@ -191,6 +200,11 @@ export const recordPetMatch = async (
 ): Promise<boolean> => {
   const interestType = mapMatchTypeToInterestType(matchType);
   if (!interestType) {
+    return true;
+  }
+
+  const existingMatches = readMatches();
+  if (hasRecordedInterest(existingMatches, userId, petId)) {
     return true;
   }
 
@@ -213,9 +227,8 @@ export const recordPetMatch = async (
   });
 
   const at = new Date().toISOString();
-  const all = readMatches();
-  all.push({ petId, userId, matchType, at });
-  localStorage.setItem(STAGE_HISTORY_KEY, JSON.stringify(all));
+  existingMatches.push({ petId, userId, matchType, at });
+  localStorage.setItem(STAGE_HISTORY_KEY, JSON.stringify(existingMatches));
 
   if (matchType === 'saved') {
     toast.success('Animal salvo para acompanhar 🔖');

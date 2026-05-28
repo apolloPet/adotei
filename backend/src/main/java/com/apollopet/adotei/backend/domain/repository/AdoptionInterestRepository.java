@@ -23,4 +23,7 @@ public interface AdoptionInterestRepository extends JpaRepository<AdoptionIntere
         "SELECT DISTINCT ai.animal.id FROM AdoptionInterest ai WHERE ai.animal.organization.id = :organizationId"
     )
     List<UUID> findDistinctAnimalIdsWithInterestsByOrganizationId(@Param("organizationId") UUID organizationId);
+
+    @Query("SELECT DISTINCT ai.animal.id FROM AdoptionInterest ai WHERE ai.user.id = :userId")
+    List<UUID> findDistinctAnimalIdsWithInterestsByUserId(@Param("userId") UUID userId);
 }

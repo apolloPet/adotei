@@ -8,7 +8,8 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Search, Edit, Trash2, Eye, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { getAnimals, deleteAnimal, getAnimalById, updateAnimal, Animal } from '@/services/animalService';
+import { Badge } from '@/components/ui/badge';
+import { getAnimals, deleteAnimal, getAnimalById, updateAnimal, updateAnimalStatus, Animal, AnimalStatus } from '@/services/animalService';
 import { fetchAnimalIdsWithInterests } from '@/services/adoptionService';
 import { toast } from '@/hooks/use-sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -19,6 +20,19 @@ import { useAuth } from '@/hooks/auth';
 import AnimalInterestedDialog from './AnimalInterestedDialog';
 
 type PageSizeOption = '10' | '20' | 'all';
+const FALLBACK_STATUS: AnimalStatus = 'DISPONIVEL';
+
+const statusLabel: Record<AnimalStatus, string> = {
+  DISPONIVEL: 'Disponível',
+  OCULTO: 'Oculto',
+  ADOTADO: 'Adotado',
+};
+
+const statusBadgeClass: Record<AnimalStatus, string> = {
+  DISPONIVEL: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+  OCULTO: 'bg-slate-100 text-slate-800 border-slate-200',
+  ADOTADO: 'bg-blue-100 text-blue-800 border-blue-200',
+};
 
 const AnimalList = () => {
   const { isVolunteer, isAdmin } = useAuth();
@@ -169,6 +183,18 @@ const AnimalList = () => {
     }
   };
 
+  const handleStatusChange = async (id: string, status: AnimalStatus) => {
+    try {
+      const updated = await updateAnimalStatus(id, status);
+      if (!updated) return;
+      setAnimals((current) => current.map((animal) => (animal.id === id ? updated : animal)));
+      toast.success(`Status atualizado para ${statusLabel[status].toLowerCase()}.`);
+    } catch (error) {
+      console.error('Erro ao atualizar status do animal:', error);
+      toast.error('Não foi possível atualizar o status.');
+    }
+  };
+
   const handleSearch = () => {
     fetchAnimals();
   };
@@ -284,6 +310,9 @@ const AnimalList = () => {
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold truncate">{animal.nome}</p>
+                        <Badge className={`mt-1 ${statusBadgeClass[(animal.status ?? FALLBACK_STATUS)]}`}>
+                          {statusLabel[(animal.status ?? FALLBACK_STATUS)]}
+                        </Badge>
                         <p className="text-xs text-muted-foreground capitalize">
                           {animal.tipo === 'cachorro' ? 'Cachorro' : animal.tipo === 'gato' ? 'Gato' : 'Outro'}
                           {' · '}
@@ -300,6 +329,19 @@ const AnimalList = () => {
                       <p className="text-xs text-muted-foreground mt-2 line-clamp-2">{animal.descricao}</p>
                     )}
                     <div className="flex flex-wrap gap-2 mt-3">
+                      <Select
+                        value={animal.status ?? FALLBACK_STATUS}
+                        onValueChange={(value) => void handleStatusChange(animal.id, value as AnimalStatus)}
+                      >
+                        <SelectTrigger className="h-9 min-w-[9rem]">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="DISPONIVEL">Disponível</SelectItem>
+                          <SelectItem value="OCULTO">Oculto</SelectItem>
+                          <SelectItem value="ADOTADO">Adotado</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <Button variant="outline" size="sm" className="flex-1 min-w-[5rem]" onClick={() => handleViewAnimal(animal.id)}>
                         <Eye className="h-4 w-4 mr-1" /> Ver
                       </Button>
@@ -335,6 +377,7 @@ const AnimalList = () => {
                       <TableHead>Idade</TableHead>
                       <TableHead>Porte</TableHead>
                       <TableHead>Sexo</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -354,6 +397,26 @@ const AnimalList = () => {
                         </TableCell>
                         <TableCell>
                           {animal.sexo === 'macho' ? 'Macho' : 'Fêmea'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Badge className={statusBadgeClass[(animal.status ?? FALLBACK_STATUS)]}>
+                              {statusLabel[(animal.status ?? FALLBACK_STATUS)]}
+                            </Badge>
+                            <Select
+                              value={animal.status ?? FALLBACK_STATUS}
+                              onValueChange={(value) => void handleStatusChange(animal.id, value as AnimalStatus)}
+                            >
+                              <SelectTrigger className="h-8 w-[9rem]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="DISPONIVEL">Disponível</SelectItem>
+                                <SelectItem value="OCULTO">Oculto</SelectItem>
+                                <SelectItem value="ADOTADO">Adotado</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">

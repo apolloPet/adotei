@@ -4,8 +4,8 @@ import com.apollopet.adotei.backend.application.exception.BadRequestException;
 import com.apollopet.adotei.backend.application.exception.NotFoundException;
 import com.apollopet.adotei.backend.domain.entity.AdoptionInterest;
 import com.apollopet.adotei.backend.domain.entity.Animal;
+import com.apollopet.adotei.backend.domain.entity.AnimalStatus;
 import com.apollopet.adotei.backend.domain.entity.AppUser;
-import com.apollopet.adotei.backend.domain.entity.InterestType;
 import com.apollopet.adotei.backend.domain.entity.Organization;
 import com.apollopet.adotei.backend.domain.entity.UserType;
 import com.apollopet.adotei.backend.domain.repository.AdoptionInterestRepository;
@@ -14,6 +14,7 @@ import com.apollopet.adotei.backend.domain.repository.AppUserRepository;
 import com.apollopet.adotei.backend.web.dto.AdoptionInterestDtos.AdoptionInterestResponse;
 import com.apollopet.adotei.backend.web.dto.AdoptionInterestDtos.RegisterAdoptionInterestRequest;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,9 @@ public class AdoptionInterestService {
         }
 
         Animal animal = loadAnimal(animalId);
+        if (animal.getStatus() != AnimalStatus.DISPONIVEL) {
+            throw new BadRequestException("Somente animais disponiveis podem receber interesse.");
+        }
         AdoptionInterest interest = adoptionInterestRepository
             .findByAnimalIdAndUserId(animalId, requester.getId())
             .orElseGet(AdoptionInterest::new);
@@ -71,6 +75,17 @@ public class AdoptionInterestService {
             );
         }
         throw new AccessDeniedException("Apenas administradores ou voluntarios podem consultar animais com interesse.");
+    }
+
+    @Transactional(readOnly = true)
+    public List<UUID> listMyAnimalIdsWithInterests(String requesterAuthSubject) {
+        AppUser requester = loadUserByAuthSubject(requesterAuthSubject);
+        if (requester.getUserType() != UserType.ADOTANTE) {
+            throw new AccessDeniedException("Apenas adotantes podem consultar seus interesses.");
+        }
+        return adoptionInterestRepository.findDistinctAnimalIdsWithInterestsByUserId(
+            Objects.requireNonNull(requester.getId())
+        );
     }
 
     @Transactional(readOnly = true)
@@ -102,16 +117,16 @@ public class AdoptionInterestService {
     }
 
     private Animal loadAnimal(UUID animalId) {
-        return animalRepository.findById(animalId)
+        return animalRepository.findById(Objects.requireNonNull(animalId))
             .orElseThrow(() -> new NotFoundException("Animal nao encontrado"));
     }
 
     private AdoptionInterestResponse toResponse(AdoptionInterest interest) {
         AppUser user = interest.getUser();
         return new AdoptionInterestResponse(
-            interest.getId(),
-            interest.getAnimal().getId(),
-            user.getId(),
+            Objects.requireNonNull(interest.getId()),
+            Objects.requireNonNull(interest.getAnimal().getId()),
+            Objects.requireNonNull(user.getId()),
             user.getFullName(),
             user.getEmail(),
             user.getPhone(),

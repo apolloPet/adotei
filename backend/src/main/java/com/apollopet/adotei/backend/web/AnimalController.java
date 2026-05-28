@@ -5,6 +5,7 @@ import com.apollopet.adotei.backend.application.service.AnimalService.ImageBinar
 import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalImageResponse;
 import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalRequest;
 import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalResponse;
+import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalStatusUpdateRequest;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Objects;
@@ -38,8 +39,8 @@ public class AnimalController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO','ADOTANTE')")
-    public List<AnimalResponse> list() {
-        return animalService.list();
+    public List<AnimalResponse> list(Authentication authentication) {
+        return animalService.list(authentication.getName());
     }
 
     @GetMapping("/{id}")
@@ -72,6 +73,16 @@ public class AnimalController {
     @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
     public AnimalResponse update(@PathVariable UUID id, @Valid @RequestBody AnimalRequest request, Authentication authentication) {
         return animalService.update(id, request, authentication.getName());
+    }
+
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
+    public AnimalResponse updateStatus(
+        @PathVariable UUID id,
+        @Valid @RequestBody AnimalStatusUpdateRequest request,
+        Authentication authentication
+    ) {
+        return animalService.updateStatus(id, request.status(), authentication.getName());
     }
 
     @DeleteMapping("/{id}")

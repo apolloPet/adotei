@@ -2,6 +2,17 @@
 import { apiRequest, getApiBaseUrl, getAuthToken, handleUnauthorizedIfLoggedIn } from '@/lib/apiClient';
 import { toast } from '@/hooks/use-sonner';
 
+export type AnimalStatus = 'DISPONIVEL' | 'OCULTO' | 'ADOTADO';
+
+type CostSimulationData = {
+  monthlyTotal: number;
+  yearlyTotal: number;
+  lifetimeTotal: number;
+  foodType?: string;
+  healthConditions?: string[];
+  specialCareNeeds?: string[];
+};
+
 export interface Animal {
   id: string;
   nome: string;
@@ -14,6 +25,7 @@ export interface Animal {
   responsavel_id?: string | null;
   data_cadastro: string;
   descricao?: string;
+  status?: AnimalStatus;
   fotoPrincipal?: string;
   fotos?: string[];
   adopterProfile?: {
@@ -56,6 +68,7 @@ export interface AnimalCreateData {
   fotos?: string[];
   organizationId?: string;
   createdByUserId?: string;
+  status?: AnimalStatus;
 }
 
 type BackendAnimal = {
@@ -95,6 +108,7 @@ type BackendAnimal = {
   };
   images?: { id: string; fileUrl: string; displayOrder: number }[];
   createdAt?: string;
+  status?: AnimalStatus;
 };
 
 const backendAnimalToAnimal = (animal: BackendAnimal): Animal => {
@@ -113,6 +127,7 @@ const backendAnimalToAnimal = (animal: BackendAnimal): Animal => {
     responsavel_id: null,
     data_cadastro: animal.createdAt || '',
     descricao: animal.description,
+    status: animal.status ?? 'DISPONIVEL',
     fotoPrincipal: orderedImages[0],
     fotos: orderedImages,
     ...(animal.location ? { location: animal.location } : {}),
@@ -259,6 +274,7 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
         },
         organizationId: animalData.organizationId,
         createdByUserId: animalData.createdByUserId,
+        status: animalData.status,
       },
     });
 
@@ -367,6 +383,7 @@ export const updateAnimal = async (id: string, animalData: Partial<Animal>): Pro
         goodWithChildren: animalData.goodWithChildren ?? current.goodWithChildren ?? false,
         goodWithOtherAnimals: animalData.goodWithOtherAnimals ?? current.goodWithOtherAnimals ?? false,
         goodWithSeniors: animalData.goodWithSeniors ?? current.goodWithSeniors ?? false,
+        status: animalData.status ?? current.status,
         adopterProfile: current.adopterProfile ?? {
           suitableHousing: ['house', 'apartment', 'farm'],
           requiresYard: (animalData.porte ?? current.size) === 'grande',
@@ -410,7 +427,25 @@ export const deleteAnimal = async (id: string): Promise<boolean> => {
   }
 };
 
-export const saveCostSimulation = async (animalId: string, simulationData: any): Promise<boolean> => {
+export const updateAnimalStatus = async (id: string, status: AnimalStatus): Promise<Animal | null> => {
+  try {
+    const data = await apiRequest<BackendAnimal>(`/api/animals/${id}/status`, {
+      method: 'PUT',
+      body: { status },
+    });
+    return backendAnimalToAnimal(data);
+  } catch (error) {
+    console.error('Error in updateAnimalStatus:', error);
+    if (error instanceof Error) {
+      toast.error(error.message);
+    } else {
+      toast.error('Erro ao atualizar status do animal');
+    }
+    throw error;
+  }
+};
+
+export const saveCostSimulation = async (animalId: string, simulationData: CostSimulationData): Promise<boolean> => {
   try {
     // Make sure the animal exists
     const animal = await getAnimalById(animalId);

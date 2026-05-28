@@ -6,8 +6,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.apollopet.adotei.backend.application.exception.BadRequestException;
 import com.apollopet.adotei.backend.domain.entity.AdoptionInterest;
 import com.apollopet.adotei.backend.domain.entity.Animal;
+import com.apollopet.adotei.backend.domain.entity.AnimalStatus;
 import com.apollopet.adotei.backend.domain.entity.AppUser;
 import com.apollopet.adotei.backend.domain.entity.InterestType;
 import com.apollopet.adotei.backend.domain.entity.Organization;
@@ -201,6 +203,54 @@ class AdoptionInterestServiceTest {
         );
     }
 
+    @Test
+    void deveBloquearInteresseEmAnimalNaoDisponivel() {
+        AdoptionInterestService service = new AdoptionInterestService(
+            adoptionInterestRepository,
+            animalRepository,
+            appUserRepository
+        );
+
+        UUID animalId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        AppUser adopter = buildUser(UserType.ADOTANTE, null, userId);
+        Animal animal = buildAnimal(animalId, null);
+        animal.setStatus(AnimalStatus.ADOTADO);
+
+        when(appUserRepository.findByAuthSubject("adopter-auth")).thenReturn(Optional.of(adopter));
+        when(animalRepository.findById(animalId)).thenReturn(Optional.of(animal));
+
+        assertThrows(
+            BadRequestException.class,
+            () -> service.register(
+                animalId,
+                "adopter-auth",
+                new RegisterAdoptionInterestRequest(InterestType.LIKED)
+            )
+        );
+    }
+
+    @Test
+    void deveListarMeusAnimaisComInteresseParaAdotante() {
+        AdoptionInterestService service = new AdoptionInterestService(
+            adoptionInterestRepository,
+            animalRepository,
+            appUserRepository
+        );
+
+        UUID userId = UUID.randomUUID();
+        UUID animalId = UUID.randomUUID();
+        AppUser adopter = buildUser(UserType.ADOTANTE, null, userId);
+
+        when(appUserRepository.findByAuthSubject("adopter-auth")).thenReturn(Optional.of(adopter));
+        when(adoptionInterestRepository.findDistinctAnimalIdsWithInterestsByUserId(userId)).thenReturn(List.of(animalId));
+
+        var ids = service.listMyAnimalIdsWithInterests("adopter-auth");
+
+        assertEquals(1, ids.size());
+        assertEquals(animalId, ids.get(0));
+    }
+
     private AppUser buildUser(UserType userType, Organization organization, UUID id) {
         AppUser user = new AppUser();
         user.setUserType(userType);
@@ -217,6 +267,7 @@ class AdoptionInterestServiceTest {
         Animal animal = new Animal();
         animal.setOrganization(organization);
         animal.setName("Rex");
+        animal.setStatus(AnimalStatus.DISPONIVEL);
         setEntityId(animal, animalId);
         return animal;
     }

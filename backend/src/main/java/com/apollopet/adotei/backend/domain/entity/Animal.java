@@ -2,6 +2,8 @@ package com.apollopet.adotei.backend.domain.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
@@ -45,6 +47,10 @@ public class Animal extends BaseEntity {
 
     @Column(nullable = false)
     private boolean sterilized;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AnimalStatus status = AnimalStatus.DISPONIVEL;
 
     private String vaccinationStatus;
     private String veterinaryInfo;

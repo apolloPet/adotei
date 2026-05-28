@@ -6,6 +6,7 @@ import com.apollopet.adotei.backend.domain.entity.AdoptionRequirement;
 import com.apollopet.adotei.backend.domain.entity.Animal;
 import com.apollopet.adotei.backend.domain.entity.AnimalAdopterProfile;
 import com.apollopet.adotei.backend.domain.entity.AnimalImage;
+import com.apollopet.adotei.backend.domain.entity.AnimalStatus;
 import com.apollopet.adotei.backend.domain.entity.AppUser;
 import com.apollopet.adotei.backend.domain.entity.Organization;
 import com.apollopet.adotei.backend.domain.entity.TemperamentTrait;
@@ -98,7 +99,11 @@ public class AnimalService {
     }
 
     @Transactional(readOnly = true)
-    public List<AnimalResponse> list() {
+    public List<AnimalResponse> list(String requesterAuthSubject) {
+        AppUser requester = loadRequester(requesterAuthSubject);
+        if (requester.getUserType() == UserType.ADOTANTE) {
+            return animalRepository.findByStatus(AnimalStatus.DISPONIVEL).stream().map(this::toResponse).toList();
+        }
         return animalRepository.findAll().stream().map(this::toResponse).toList();
     }
 
@@ -154,6 +159,16 @@ public class AnimalService {
         apply(animal, request, requester);
         animal = Objects.requireNonNull(animalRepository.save(Objects.requireNonNull(animal)));
         upsertAdopterProfile(animal, request.adopterProfile());
+        return toResponse(animal);
+    }
+
+    @Transactional
+    public AnimalResponse updateStatus(UUID id, AnimalStatus status, String requesterAuthSubject) {
+        AppUser requester = loadRequester(requesterAuthSubject);
+        Animal animal = load(id);
+        assertVolunteerCanManageAnimal(requester, animal);
+        animal.setStatus(status);
+        animal = Objects.requireNonNull(animalRepository.save(animal));
         return toResponse(animal);
     }
 
@@ -317,6 +332,11 @@ public class AnimalService {
         animal.setTutorContact(request.tutorContact());
         animal.setPersonalityTemperament(request.personalityTemperament());
         animal.setAdditionalInfo(request.additionalInfo());
+        if (request.status() != null) {
+            animal.setStatus(request.status());
+        } else if (animal.getStatus() == null) {
+            animal.setStatus(AnimalStatus.DISPONIVEL);
+        }
 
         Organization organization = resolveOrganization(request.organizationId());
         animal.setTutor(resolveTutor(request.tutorId()));
@@ -384,13 +404,6 @@ public class AnimalService {
             return null;
         }
         return tutorRepository.findById(id).orElseThrow(() -> new NotFoundException("Tutor nao encontrado"));
-    }
-
-    private AppUser resolveUser(UUID id) {
-        if (id == null) {
-            return null;
-        }
-        return appUserRepository.findById(id).orElseThrow(() -> new NotFoundException("Usuario criador nao encontrado"));
     }
 
     private AppUser loadRequester(String authSubject) {
@@ -469,6 +482,7 @@ public class AnimalService {
             animal.getTutorContact(),
             animal.getPersonalityTemperament(),
             animal.getAdditionalInfo(),
+            animal.getStatus(),
             animal.getOrganization() == null ? null : animal.getOrganization().getId(),
             animal.getTutor() == null ? null : animal.getTutor().getId(),
             animal.getVaccines().stream().map(Vaccine::getId).toList(),

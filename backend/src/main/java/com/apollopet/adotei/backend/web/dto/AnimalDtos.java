@@ -1,5 +1,6 @@
 package com.apollopet.adotei.backend.web.dto;
 
+import com.apollopet.adotei.backend.domain.entity.AnimalStatus;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -64,6 +65,7 @@ public class AnimalDtos {
         String tutorContact,
         String personalityTemperament,
         String additionalInfo,
+        AnimalStatus status,
         UUID organizationId,
         UUID tutorId,
         UUID createdByUserId,
@@ -102,6 +104,7 @@ public class AnimalDtos {
         String tutorContact,
         String personalityTemperament,
         String additionalInfo,
+        AnimalStatus status,
         UUID organizationId,
         UUID tutorId,
         List<UUID> vaccineIds,
@@ -110,6 +113,10 @@ public class AnimalDtos {
         AnimalAdopterProfileResponse adopterProfile,
         List<AnimalImageResponse> images,
         OffsetDateTime createdAt
+    ) {}
+
+    public record AnimalStatusUpdateRequest(
+        @NotNull AnimalStatus status
     ) {}
 
     public record GenerateImageUploadRequest(
