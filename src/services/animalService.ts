@@ -178,6 +178,7 @@ const uploadAnimalImageInternal = async (animalId: string, file: File, displayOr
     method: 'POST',
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body: formData,
+    credentials: 'include',
   });
 
   if (!response.ok) {
