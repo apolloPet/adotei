@@ -28,6 +28,11 @@ export interface Animal {
   status?: AnimalStatus;
   fotoPrincipal?: string;
   fotos?: string[];
+  imagens?: {
+    id: string;
+    url: string;
+    ordem: number;
+  }[];
   adopterProfile?: {
     suitableHousing: string[];
     requiresYard: boolean;
@@ -112,8 +117,8 @@ type BackendAnimal = {
 };
 
 const backendAnimalToAnimal = (animal: BackendAnimal): Animal => {
-  const orderedImages = [...(animal.images || [])]
-    .sort((a, b) => a.displayOrder - b.displayOrder)
+  const sortedImages = [...(animal.images || [])].sort((a, b) => a.displayOrder - b.displayOrder);
+  const orderedImages = sortedImages
     .map((image) => image.id ? `${getApiBaseUrl()}/api/animals/images/${image.id}` : image.fileUrl);
   return {
     id: animal.id,
@@ -130,6 +135,11 @@ const backendAnimalToAnimal = (animal: BackendAnimal): Animal => {
     status: animal.status ?? 'DISPONIVEL',
     fotoPrincipal: orderedImages[0],
     fotos: orderedImages,
+    imagens: sortedImages.map((image) => ({
+      id: image.id,
+      url: image.id ? `${getApiBaseUrl()}/api/animals/images/${image.id}` : image.fileUrl,
+      ordem: image.displayOrder,
+    })),
     ...(animal.location ? { location: animal.location } : {}),
     ...(animal.personalityTemperament
       ? { caracteristicas: [animal.personalityTemperament] }
@@ -158,7 +168,7 @@ type BackendAnimalImageResponse = {
   displayOrder: number;
 };
 
-const uploadAnimalImage = async (animalId: string, file: File, displayOrder: number): Promise<BackendAnimalImageResponse> => {
+const uploadAnimalImageInternal = async (animalId: string, file: File, displayOrder: number): Promise<BackendAnimalImageResponse> => {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('displayOrder', String(displayOrder));
@@ -281,7 +291,7 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
     if (animalData.imageFiles?.length) {
       const limitedFiles = animalData.imageFiles.slice(0, 2);
       for (let index = 0; index < limitedFiles.length; index += 1) {
-        await uploadAnimalImage(created.id, limitedFiles[index], index);
+        await uploadAnimalImageInternal(created.id, limitedFiles[index], index);
       }
     }
 
@@ -422,6 +432,36 @@ export const deleteAnimal = async (id: string): Promise<boolean> => {
       toast.error(error.message);
     } else {
       toast.error('Erro ao excluir animal');
+    }
+    throw error;
+  }
+};
+
+export const uploadAnimalImage = async (animalId: string, file: File, displayOrder: number): Promise<Animal | null> => {
+  try {
+    await uploadAnimalImageInternal(animalId, file, displayOrder);
+    return await getAnimalById(animalId);
+  } catch (error) {
+    console.error('Error in uploadAnimalImage:', error);
+    if (error instanceof Error) {
+      toast.error(error.message);
+    } else {
+      toast.error('Erro ao importar imagem');
+    }
+    throw error;
+  }
+};
+
+export const deleteAnimalImage = async (animalId: string, imageId: string): Promise<Animal | null> => {
+  try {
+    await apiRequest(`/api/animals/${animalId}/images/${imageId}`, { method: 'DELETE' });
+    return await getAnimalById(animalId);
+  } catch (error) {
+    console.error('Error in deleteAnimalImage:', error);
+    if (error instanceof Error) {
+      toast.error(error.message);
+    } else {
+      toast.error('Erro ao excluir imagem');
     }
     throw error;
   }

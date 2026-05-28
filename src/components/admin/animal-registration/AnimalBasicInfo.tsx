@@ -92,25 +92,15 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
         </div>
         
         <div className="space-y-2">
-          <Label htmlFor="breed" className="flex items-center">
-            Raça*
-            {isFieldEmpty(formData.breed) && (
-              <AlertCircle className="h-4 w-4 ml-2 text-destructive" />
-            )}
-          </Label>
+          <Label htmlFor="breed">Raça</Label>
           <Input 
             id="breed" 
             name="breed" 
             value={formData.breed} 
             onChange={handleInputChange} 
             placeholder="Ex: Labrador" 
-            required 
-            className={isFieldEmpty(formData.breed) ? "border-destructive" : ""}
-            aria-invalid={isFieldEmpty(formData.breed)}
+            className=""
           />
-          {isFieldEmpty(formData.breed) && (
-            <p className="text-sm text-destructive">Raça é obrigatória</p>
-          )}
         </div>
         
         <div className="space-y-2">

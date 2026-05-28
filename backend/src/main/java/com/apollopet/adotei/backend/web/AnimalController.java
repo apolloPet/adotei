@@ -103,4 +103,15 @@ public class AnimalController {
     ) {
         return animalService.uploadImage(id, authentication.getName(), file, displayOrder);
     }
+
+    @DeleteMapping("/{animalId}/images/{imageId}")
+    @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteImage(
+        @PathVariable UUID animalId,
+        @PathVariable UUID imageId,
+        Authentication authentication
+    ) {
+        animalService.deleteImage(animalId, imageId, authentication.getName());
+    }
 }

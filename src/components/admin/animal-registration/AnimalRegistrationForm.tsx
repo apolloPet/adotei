@@ -8,7 +8,6 @@ import AnimalBasicInfo from './AnimalBasicInfo';
 import AnimalCharacteristics from './AnimalCharacteristics';
 import AnimalHealthInfo from './AnimalHealthInfo';
 import AnimalImages from './AnimalImages';
-import AnimalLocationStaff from './AnimalLocationStaff';
 import { AnimalFormData } from './types';
 import AnimalList from './AnimalList';
 import { createAnimal } from '@/services/animalService';
@@ -28,8 +27,6 @@ const EMPTY_FORM: AnimalFormData = {
   specialNeedsDescription: '',
   sterilized: false,
   additionalInfo: '',
-  tutorName: '',
-  tutorContact: '',
   personalityTemperament: '',
   goodWithChildren: false,
   goodWithOtherAnimals: false,
@@ -42,7 +39,7 @@ interface AnimalCreateData {
   nome: string;
   idade: number;
   tipo: 'cachorro' | 'gato';
-  raca: string;
+  raca?: string;
   porte: 'pequeno' | 'medio' | 'grande';
   sexo: 'macho' | 'femea';
   castrado: boolean;
@@ -50,8 +47,6 @@ interface AnimalCreateData {
   vaccineIds: string[];
   specialNeeds: boolean;
   specialNeedsDescription?: string;
-  tutorName: string;
-  tutorContact: string;
   additionalInfo?: string;
   personalityTemperament?: string;
   goodWithChildren: boolean;
@@ -82,11 +77,8 @@ const AnimalRegistrationForm = () => {
 
   const validateForm = () => {
     if (!formData.name.trim()) return toast.error("Nome do animal é obrigatório"), false;
-    if (!formData.breed.trim()) return toast.error("Raça do animal é obrigatória"), false;
     if (!formData.age.trim()) return toast.error("Idade do animal é obrigatória"), false;
     if (!formData.description.trim()) return toast.error("Descrição do animal é obrigatória"), false;
-    if (!formData.tutorName.trim()) return toast.error("Nome do tutor é obrigatório"), false;
-    if (!formData.tutorContact.trim()) return toast.error("Contato do tutor é obrigatório"), false;
     if (formData.images.length === 0) return toast.error("Adicione pelo menos uma foto"), false;
     if (formData.images.length > 2) return toast.error("O cadastro aceita no máximo 2 fotos"), false;
     return true;
@@ -96,7 +88,7 @@ const AnimalRegistrationForm = () => {
     nome: formData.name.trim(),
     idade: parseInt(formData.age, 10) || 0,
     tipo: formData.type as "cachorro" | "gato",
-    raca: formData.breed.trim(),
+    raca: formData.breed.trim() || undefined,
     porte: formData.size as "pequeno" | "medio" | "grande",
     sexo: formData.gender as "macho" | "femea",
     castrado: formData.sterilized,
@@ -104,8 +96,6 @@ const AnimalRegistrationForm = () => {
     vaccineIds: formData.vaccineIds,
     specialNeeds: formData.specialNeeds,
     specialNeedsDescription: formData.specialNeedsDescription?.trim() || undefined,
-    tutorName: formData.tutorName.trim(),
-    tutorContact: formData.tutorContact.trim(),
     additionalInfo: formData.additionalInfo?.trim() || undefined,
     personalityTemperament: formData.personalityTemperament?.trim() || undefined,
     goodWithChildren: formData.goodWithChildren,
@@ -175,9 +165,6 @@ const AnimalRegistrationForm = () => {
                 </div>
                 <div className="pt-6 border-t">
                   <AnimalHealthInfo formData={formData} onFormChange={handleChangeMultiple} />
-                </div>
-                <div className="pt-6 border-t">
-                  <AnimalLocationStaff formData={formData} onFormChange={handleChangeMultiple} />
                 </div>
                 <div className="pt-6 border-t">
                   <AnimalCharacteristics formData={formData} onFormChange={handleChangeMultiple} />

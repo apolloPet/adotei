@@ -166,21 +166,27 @@ const AnimalList = () => {
     }
   };
 
-  const handleSaveEdit = async (updatedAnimal: Animal) => {
+  const handleSaveEdit = async (updatedAnimal: Animal): Promise<Animal | null> => {
     try {
       const result = await updateAnimal(updatedAnimal.id, updatedAnimal);
       if (result) {
-        // Update the animals list with the updated animal
-        setAnimals(animals.map(animal => 
-          animal.id === updatedAnimal.id ? updatedAnimal : animal
-        ));
-        setEditAnimal({ open: false, animal: null });
-        toast.success('Animal atualizado com sucesso!');
+        setAnimals((current) =>
+          current.map((animal) => (animal.id === updatedAnimal.id ? result : animal)),
+        );
+        return result;
       }
+      return null;
     } catch (error) {
       console.error('Erro ao atualizar animal:', error);
       toast.error('Não foi possível atualizar os dados do animal.');
+      throw error;
     }
+  };
+
+  const handleEditComplete = (updatedAnimal: Animal) => {
+    setAnimals((current) => current.map((animal) => (animal.id === updatedAnimal.id ? updatedAnimal : animal)));
+    setEditAnimal({ open: false, animal: null });
+    toast.success('Animal atualizado com sucesso!');
   };
 
   const handleStatusChange = async (id: string, status: AnimalStatus) => {
@@ -554,6 +560,7 @@ const AnimalList = () => {
             <AnimalEditForm 
               animal={editAnimal.animal}
               onSave={handleSaveEdit}
+              onComplete={handleEditComplete}
               onCancel={() => setEditAnimal({ open: false, animal: null })}
             />
           </DialogContent>

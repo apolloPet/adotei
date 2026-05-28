@@ -1,37 +1,137 @@
 
-import React, { useState } from 'react';
-import { Animal } from '@/services/animalService';
+import React, { useEffect, useRef, useState } from 'react';
+import { Animal, deleteAnimalImage, uploadAnimalImage } from '@/services/animalService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Upload, X } from 'lucide-react';
+import { toast } from '@/hooks/use-sonner';
 
 interface AnimalEditFormProps {
   animal: Animal;
-  onSave: (updatedAnimal: Animal) => void;
+  onSave: (updatedAnimal: Animal) => Promise<Animal | null>;
+  onComplete: (updatedAnimal: Animal) => void;
   onCancel: () => void;
 }
 
-const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCancel }) => {
+type PendingImage = {
+  file: File;
+  previewUrl: string;
+};
+
+const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onComplete, onCancel }) => {
   const [formData, setFormData] = useState<Animal>({ ...animal });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [existingImages, setExistingImages] = useState(animal.imagens ?? []);
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const [removedExistingImageIds, setRemovedExistingImageIds] = useState<string[]>([]);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const handleChange = (field: keyof Animal, value: any) => {
+  const handleChange = (field: keyof Animal, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  useEffect(() => {
+    return () => {
+      pendingImages.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+    };
+  }, [pendingImages]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     
     try {
-      await onSave(formData);
+      const savedAnimal = await onSave(formData);
+      if (!savedAnimal) {
+        throw new Error('Falha ao salvar dados do animal');
+      }
+
+      let latestAnimal: Animal | null = savedAnimal;
+      for (const imageId of removedExistingImageIds) {
+        latestAnimal = await deleteAnimalImage(savedAnimal.id, imageId);
+      }
+
+      const baseOrder = existingImages.length;
+      for (let index = 0; index < pendingImages.length; index += 1) {
+        latestAnimal = await uploadAnimalImage(
+          savedAnimal.id,
+          pendingImages[index].file,
+          baseOrder + index,
+        );
+      }
+
+      pendingImages.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+      onComplete(latestAnimal ?? savedAnimal);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleImportImages = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files?.length) return;
+
+    const imageCount = existingImages.length + pendingImages.length;
+    const remainingSlots = Math.max(0, 2 - imageCount);
+    if (remainingSlots <= 0) {
+      toast.error('Este animal já possui o máximo de 2 imagens.');
+      event.target.value = '';
+      return;
+    }
+
+    const files = Array.from(event.target.files).slice(0, remainingSlots);
+    const validFiles = files.filter((file) => {
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        toast.error(`O arquivo ${file.name} excede 5MB.`);
+        return false;
+      }
+      if (!file.type.startsWith('image/')) {
+        toast.error(`O arquivo ${file.name} não é uma imagem válida.`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) {
+      event.target.value = '';
+      return;
+    }
+
+    const newPending = validFiles.map((file) => ({
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+    setPendingImages((prev) => [...prev, ...newPending]);
+    event.target.value = '';
+  };
+
+  const handleRemoveExistingImage = (imageId: string) => {
+    setExistingImages((prev) => prev.filter((image) => image.id !== imageId));
+    setRemovedExistingImageIds((prev) => (prev.includes(imageId) ? prev : [...prev, imageId]));
+  };
+
+  const handleRemovePendingImage = (index: number) => {
+    setPendingImages((prev) => {
+      const updated = [...prev];
+      const [removed] = updated.splice(index, 1);
+      if (removed) {
+        URL.revokeObjectURL(removed.previewUrl);
+      }
+      return updated;
+    });
+  };
+
+  const openImagePicker = () => {
+    const imageCount = existingImages.length + pendingImages.length;
+    if (imageCount >= 2) {
+      toast.error('Este animal já possui o máximo de 2 imagens.');
+      return;
+    }
+    imageInputRef.current?.click();
   };
 
   return (
@@ -136,28 +236,80 @@ const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCance
         />
       </div>
 
-      {/* Fotos URLs - This would ideally be an image upload component, but for now we'll use a textarea */}
+      {/* Imagens atuais */}
       <div className="space-y-2">
-        <Label htmlFor="fotos">URLs das fotos (uma por linha)</Label>
-        <Textarea
-          id="fotos"
-          value={
-            Array.isArray(formData.fotos) 
-              ? formData.fotos.join('\n') 
-              : typeof formData.fotos === 'string'
-                ? formData.fotos
-                : ''
-          }
-          onChange={(e) => {
-            const urls = e.target.value
-              .split('\n')
-              .map(url => url.trim())
-              .filter(url => url !== '');
-            handleChange('fotos', urls);
-          }}
-          rows={3}
-          placeholder="https://exemplo.com/imagem1.jpg&#10;https://exemplo.com/imagem2.jpg"
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={handleImportImages}
+          disabled={isSubmitting}
         />
+        <div className="flex items-center justify-between">
+          <Label>Imagens do animal</Label>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={openImagePicker}
+            disabled={isSubmitting}
+          >
+            <Upload className="mr-2 h-4 w-4" />
+            Importar novas imagens
+          </Button>
+        </div>
+
+        {existingImages.length + pendingImages.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {existingImages.map((imagem, index) => (
+              <div key={imagem.id} className="relative aspect-square rounded-md overflow-hidden border">
+                <img
+                  src={imagem.url}
+                  alt={`Imagem ${index + 1} de ${formData.nome}`}
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  type="button"
+                  className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 hover:bg-black/80 disabled:opacity-50"
+                  onClick={() => handleRemoveExistingImage(imagem.id)}
+                  disabled={isSubmitting}
+                  aria-label="Excluir imagem"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+            {pendingImages.map((imagem, index) => (
+              <div key={`${imagem.file.name}-${index}`} className="relative aspect-square rounded-md overflow-hidden border border-dashed">
+                <img
+                  src={imagem.previewUrl}
+                  alt={`Nova imagem ${index + 1} de ${formData.nome}`}
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute left-2 top-2 rounded bg-amber-500/90 px-2 py-1 text-[11px] font-medium text-white">
+                  Nova
+                </div>
+                <button
+                  type="button"
+                  className="absolute top-2 right-2 bg-black/60 text-white rounded-full p-1 hover:bg-black/80 disabled:opacity-50"
+                  onClick={() => handleRemovePendingImage(index)}
+                  disabled={isSubmitting}
+                  aria-label="Excluir nova imagem"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
+            Nenhuma imagem cadastrada para este animal.
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Máximo de 2 imagens por animal.
+        </p>
       </div>
 
       <div className="flex justify-end space-x-2">

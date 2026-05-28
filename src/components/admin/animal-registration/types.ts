@@ -12,8 +12,6 @@ export interface AnimalFormData {
   specialNeedsDescription: string;
   sterilized: boolean;
   additionalInfo: string;
-  tutorName: string;
-  tutorContact: string;
   personalityTemperament: string;
   goodWithChildren: boolean;
   goodWithOtherAnimals: boolean;

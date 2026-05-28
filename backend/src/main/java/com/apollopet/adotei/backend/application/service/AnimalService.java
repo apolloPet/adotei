@@ -49,6 +49,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.ResponseBytes;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -272,6 +273,34 @@ public class AnimalService {
         );
     }
 
+    @Transactional
+    public void deleteImage(UUID animalId, UUID imageId, String requesterAuthSubject) {
+        AppUser requester = loadRequester(requesterAuthSubject);
+        Animal animal = load(animalId);
+        assertVolunteerCanManageAnimal(requester, animal);
+
+        AnimalImage image = imageRepository.findById(Objects.requireNonNull(imageId))
+            .orElseThrow(() -> new NotFoundException("Imagem nao encontrada"));
+
+        if (!Objects.equals(image.getAnimal().getId(), animalId)) {
+            throw new BadRequestException("Imagem nao pertence ao animal informado");
+        }
+
+        if (image.getS3Key() != null && !image.getS3Key().startsWith("local-inline/")) {
+            try {
+                DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                    .bucket(awsProperties.s3().bucket())
+                    .key(image.getS3Key())
+                    .build();
+                s3Client.deleteObject(deleteRequest);
+            } catch (Exception e) {
+                log.warn("Falha ao remover imagem no S3. imageId={} s3Key={}", imageId, image.getS3Key(), e);
+            }
+        }
+
+        imageRepository.delete(image);
+    }
+
     private String buildPublicUrl(String bucket, String key) {
         String base = publicEndpointBase();
         if (base != null) {
@@ -442,21 +471,21 @@ public class AnimalService {
 
     private Set<Vaccine> resolveVaccines(List<UUID> ids) {
         if (ids == null || ids.isEmpty()) {
-            return Set.of();
+            return new HashSet<>();
         }
         return new HashSet<>(vaccineRepository.findAllById(ids));
     }
 
     private Set<TemperamentTrait> resolveTraits(List<UUID> ids) {
         if (ids == null || ids.isEmpty()) {
-            return Set.of();
+            return new HashSet<>();
         }
         return new HashSet<>(traitRepository.findAllById(ids));
     }
 
     private Set<AdoptionRequirement> resolveRequirements(List<UUID> ids) {
         if (ids == null || ids.isEmpty()) {
-            return Set.of();
+            return new HashSet<>();
         }
         return new HashSet<>(requirementRepository.findAllById(ids));
     }
