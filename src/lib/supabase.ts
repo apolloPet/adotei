@@ -1,6 +1,6 @@
 
 import { toast } from '@/hooks/use-sonner';
-import { apiRequest, clearAuthSession, handleUnauthorizedIfLoggedIn } from './apiClient';
+import { apiRequest, clearAuthSession, handleUnauthorizedIfLoggedIn, setAuthToken } from './apiClient';
 import { offlineSupabase } from './offlineSupabase';
 
 type Filter = {
@@ -280,6 +280,9 @@ export const supabase = {
           body: { email, password },
           skipAuth: true,
         });
+        if (response?.accessToken) {
+          setAuthToken(response.accessToken);
+        }
         persistAuth(response.user);
         return { data: { user: getStoredUser(), session: getStoredSession() }, error: null };
       } catch (error) {
