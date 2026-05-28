@@ -20,7 +20,7 @@ export const usePetBrowse = () => {
     ageRange: [0, 15],
   });
 
-  const handleFilterChange = useCallback((name: string, value: any) => {
+  const handleFilterChange = useCallback((name: string, value: unknown) => {
     setFilters(prev => ({ ...prev, [name]: value }));
   }, []);
 
@@ -43,7 +43,7 @@ export const usePetBrowse = () => {
   }, []);
 
   return {
-    pets: displayedPets.length ? displayedPets : pets,
+    pets: displayedPets,
     filters,
     isLoading,
     handleFilterChange,

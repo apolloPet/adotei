@@ -11,24 +11,16 @@ interface PetBrowserProps {
 }
 
 const PetBrowser = ({ pets, onSwipe, onReset }: PetBrowserProps) => {
-  const [currentPetIndex, setCurrentPetIndex] = useState(0);
-  const currentPet = pets[currentPetIndex];
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const currentPet = pets[0];
   
   const handleSwipe = (direction: string, petId: string) => {
     onSwipe(direction as 'left' | 'right' | 'save', petId);
-    if (currentPetIndex < pets.length - 1) {
-      setTimeout(() => setCurrentPetIndex(currentPetIndex + 1), 300);
-    } else {
-      setCurrentPetIndex(currentPetIndex + 1);
-    }
+    setHasInteracted(true);
   };
 
   if (pets.length === 0) {
-    return <NoResults type="empty" onReset={onReset} />;
-  }
-  
-  if (currentPetIndex >= pets.length) {
-    return <NoResults type="end" onReset={onReset} />;
+    return <NoResults type={hasInteracted ? "end" : "empty"} onReset={onReset} />;
   }
 
   return (

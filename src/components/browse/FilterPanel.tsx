@@ -1,4 +1,4 @@
-
+import { useState } from 'react';
 import { Filter, RefreshCw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -17,7 +17,7 @@ interface FilterOptions {
 interface FilterPanelProps {
   filters: FilterOptions;
   isLoading: boolean;
-  onFilterChange: (key: string, value: any) => void;
+  onFilterChange: (key: string, value: unknown) => void;
   onApplyFilters: () => void;
   onResetFilters: () => void;
 }
@@ -29,8 +29,15 @@ const FilterPanel = ({
   onApplyFilters, 
   onResetFilters 
 }: FilterPanelProps) => {
+  const [open, setOpen] = useState(false);
+
+  const handleApplyFilters = () => {
+    onApplyFilters();
+    setOpen(false);
+  };
+
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="outline" size="sm" className="rounded-full h-10 w-10 p-0">
           <Filter className="h-5 w-5" />
@@ -140,7 +147,7 @@ const FilterPanel = ({
         </div>
         
         <div className="flex flex-col gap-3 mt-6">
-          <Button onClick={onApplyFilters}>
+          <Button onClick={handleApplyFilters}>
             {isLoading ? (
               <span className="flex items-center">
                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
