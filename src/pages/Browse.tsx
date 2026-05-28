@@ -9,7 +9,6 @@ import { useAuth } from "@/hooks/auth";
 import { getProfile } from "@/services/auth";
 import { UserProfile } from "@/types/user";
 import { filterPetsForUser } from "@/utils/petMatchFilter";
-import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -36,7 +35,6 @@ const Browse = () => {
   const navigate = useNavigate();
   const userId = user?.id || (isAdmin ? "admin@petmatch.com" : null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [blocked, setBlocked] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<{ petId: string; message: string }[]>([]);
   const [interestedPetIds, setInterestedPetIds] = useState<Set<string>>(new Set());
 
@@ -100,30 +98,24 @@ const Browse = () => {
         });
 
         const result = filterPetsForUser(petsData, profile);
-        if (result.blocked) {
-          setBlocked(result.blocked.reason);
-          setPets([]);
-        } else {
-          const authUserRaw = localStorage.getItem('authUser');
-          const authUserId = authUserRaw ? (JSON.parse(authUserRaw) as { id?: string }).id : undefined;
-          const localExtended = loadExtendedProfile(authUserId);
-          const compatibilityProfile = await loadCompatibilityProfileWithCache(
-            profile?.extended ?? localExtended ?? buildExtendedFromLegacyProfile(profile) ?? undefined,
-            profile,
-          );
-          const petsWithCompatibility = await Promise.all(
-            result.pets.map(async (pet) => {
-              const compatibility = await computeCompatibilityForPet(pet, compatibilityProfile);
-              return {
-                ...pet,
-                compatibilityScore: compatibility.scorePercent,
-              };
-            }),
-          );
-          setBlocked(null);
-          setPets(petsWithCompatibility);
-          setWarnings(result.warnings);
-        }
+        const authUserRaw = localStorage.getItem('authUser');
+        const authUserId = authUserRaw ? (JSON.parse(authUserRaw) as { id?: string }).id : undefined;
+        const localExtended = loadExtendedProfile(authUserId);
+        const compatibilityProfile = await loadCompatibilityProfileWithCache(
+          profile?.extended ?? localExtended ?? buildExtendedFromLegacyProfile(profile) ?? undefined,
+          profile,
+        );
+        const petsWithCompatibility = await Promise.all(
+          result.pets.map(async (pet) => {
+            const compatibility = await computeCompatibilityForPet(pet, compatibilityProfile);
+            return {
+              ...pet,
+              compatibilityScore: compatibility.scorePercent,
+            };
+          }),
+        );
+        setPets(petsWithCompatibility);
+        setWarnings(result.warnings);
       } catch (error) {
         console.error("Error fetching pets:", error);
         toast.error("Erro ao carregar os animais");
@@ -194,27 +186,15 @@ const Browse = () => {
             />
           </div>
 
-          {blocked ? (
-            <Card className="border-destructive">
-              <CardContent className="p-6 flex gap-3">
-                <AlertTriangle className="h-6 w-6 text-destructive flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold mb-1">Adoção indisponível</h3>
-                  <p className="text-sm text-muted-foreground">{blocked}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              {petsWithInterestStatus[0] && warningMap.has(petsWithInterestStatus[0].id) && (
-                <div className="absolute top-2 left-4 right-20 z-20 rounded-md border border-amber-300 bg-amber-50/95 dark:bg-amber-950/80 p-2 text-xs text-amber-900 dark:text-amber-200 flex gap-2">
-                  <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                  <span>{warningMap.get(petsWithInterestStatus[0].id)}</span>
-                </div>
-              )}
-              <PetBrowser pets={petsWithInterestStatus} onSwipe={handlePetSwipe} onReset={resetFilters} />
-            </>
-          )}
+          <>
+            {petsWithInterestStatus[0] && warningMap.has(petsWithInterestStatus[0].id) && (
+              <div className="absolute top-2 left-4 right-20 z-20 rounded-md border border-amber-300 bg-amber-50/95 dark:bg-amber-950/80 p-2 text-xs text-amber-900 dark:text-amber-200 flex gap-2">
+                <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <span>{warningMap.get(petsWithInterestStatus[0].id)}</span>
+              </div>
+            )}
+            <PetBrowser pets={petsWithInterestStatus} onSwipe={handlePetSwipe} onReset={resetFilters} />
+          </>
         </div>
       </main>
     </div>

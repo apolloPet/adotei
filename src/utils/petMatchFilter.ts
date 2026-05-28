@@ -3,7 +3,6 @@ import { UserProfile } from '@/types/user';
 
 export interface FilterResult {
   pets: Pet[];
-  blocked?: { reason: string };
   warnings: { petId: string; message: string }[];
 }
 
@@ -14,16 +13,12 @@ export const filterPetsForUser = (pets: Pet[], profile?: UserProfile | null): Fi
   const housing = profile?.extended?.housing;
   const experience = profile?.extended?.experience;
 
-  // Bloqueio: aluguel não permite pets
+  // Compatibilidade nunca bloqueia exibição; apenas orienta.
   if (housing?.ownership === 'rented' && housing.rentAllowsPets === false) {
-    return {
-      pets: [],
-      blocked: {
-        reason:
-          'Seu contrato de aluguel não permite animais. Resolva essa questão antes de adotar.',
-      },
-      warnings,
-    };
+    warnings.push({
+      petId: '__global__',
+      message: 'Seu contrato de aluguel indica restrição para animais. A compatibilidade pode ficar baixa.',
+    });
   }
 
   const filtered = [...pets];
