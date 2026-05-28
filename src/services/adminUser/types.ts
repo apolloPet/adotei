@@ -1,6 +1,3 @@
-
-import { supabase } from '@/lib/supabase';
-
 export interface AdminUser {
   id: string;
   email: string;

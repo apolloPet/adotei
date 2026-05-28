@@ -1,6 +1,7 @@
 
 import { supabase } from '@/lib/supabase';
 import { toast } from '@/hooks/use-sonner';
+import { apiRequest } from '@/lib/apiClient';
 
 /**
  * Request a password reset email
@@ -66,33 +67,19 @@ export const updatePassword = async (newPassword: string): Promise<boolean> => {
  */
 export const changeAdminPassword = async (currentPassword: string, newPassword: string): Promise<boolean> => {
   try {
-    // Use built-in Supabase client functionality with session validation
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    
-    if (sessionError) throw sessionError;
-    
+    const { data: sessionData } = await supabase.auth.getSession();
     if (!sessionData.session) {
       toast.error("Você precisa estar autenticado para alterar sua senha.");
       return false;
     }
 
-    // Verify current password by attempting a sign-in
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: sessionData.session.user.email!,
-      password: currentPassword
+    await apiRequest('/api/auth/change-password', {
+      method: 'POST',
+      body: {
+        currentPassword,
+        newPassword,
+      },
     });
-
-    if (signInError) {
-      toast.error("Senha atual incorreta.");
-      return false;
-    }
-
-    // Update the password
-    const { data, error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
-
-    if (error) throw error;
     
     toast.success("Senha atualizada com sucesso!");
     return true;

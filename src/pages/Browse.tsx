@@ -2,7 +2,7 @@ import FilterPanel from "@/components/browse/FilterPanel";
 import PetBrowser from "@/components/browse/PetBrowser";
 import { usePetBrowse } from "@/hooks/use-pet-browse";
 import { useEffect, useMemo, useState } from "react";
-import { generateMockPets } from "@/data/mockPets";
+import { fetchPets } from "@/services/petService";
 import { recordPetMatch } from "@/services/adoptionService";
 import { toast } from "@/hooks/use-sonner";
 import { useAuth } from "@/hooks/auth";
@@ -11,6 +11,13 @@ import { UserProfile } from "@/types/user";
 import { filterPetsForUser } from "@/utils/petMatchFilter";
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import {
+  buildExtendedFromLegacyProfile,
+  computeCompatibilityForPet,
+  loadCompatibilityProfileWithCache,
+} from "@/services/compatibilityService";
+import { loadExtendedProfile } from "@/utils/adopterProfileStorage";
 
 const Browse = () => {
   const {
@@ -25,11 +32,30 @@ const Browse = () => {
     setIsLoading,
   } = usePetBrowse();
 
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, isVolunteer } = useAuth();
+  const navigate = useNavigate();
   const userId = user?.id || (isAdmin ? "admin@petmatch.com" : null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [blocked, setBlocked] = useState<string | null>(null);
   const [warnings, setWarnings] = useState<{ petId: string; message: string }[]>([]);
+
+  useEffect(() => {
+    if (isVolunteer) {
+      toast.error("Voluntários de ONG não podem acessar Encontrar Pets.");
+      navigate("/admin", { replace: true });
+    }
+  }, [isVolunteer, navigate]);
+
+  useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -46,10 +72,11 @@ const Browse = () => {
     const loadPets = async () => {
       setIsLoading(true);
       try {
-        let petsData = generateMockPets(12);
-        if (filters.species !== "all") petsData = petsData.filter((p) => p.species === filters.species);
-        if (filters.size !== "all") petsData = petsData.filter((p) => p.size === filters.size);
-        if (filters.gender !== "all") petsData = petsData.filter((p) => p.gender === filters.gender);
+        let petsData = await fetchPets({
+          species: filters.species,
+          size: filters.size,
+          gender: filters.gender,
+        });
         petsData = petsData.filter((p) => {
           const age = parseInt(p.age) || 0;
           return age >= filters.ageRange[0] && age <= filters.ageRange[1];
@@ -60,8 +87,24 @@ const Browse = () => {
           setBlocked(result.blocked.reason);
           setPets([]);
         } else {
+          const authUserRaw = localStorage.getItem('authUser');
+          const authUserId = authUserRaw ? (JSON.parse(authUserRaw) as { id?: string }).id : undefined;
+          const localExtended = loadExtendedProfile(authUserId);
+          const compatibilityProfile = await loadCompatibilityProfileWithCache(
+            profile?.extended ?? localExtended ?? buildExtendedFromLegacyProfile(profile) ?? undefined,
+            profile,
+          );
+          const petsWithCompatibility = await Promise.all(
+            result.pets.map(async (pet) => {
+              const compatibility = await computeCompatibilityForPet(pet, compatibilityProfile);
+              return {
+                ...pet,
+                compatibilityScore: compatibility.scorePercent,
+              };
+            }),
+          );
           setBlocked(null);
-          setPets(result.pets);
+          setPets(petsWithCompatibility);
           setWarnings(result.warnings);
         }
       } catch (error) {
@@ -97,8 +140,6 @@ const Browse = () => {
         });
       } else if (direction === "save") {
         await recordPetMatch(id, userId, "saved");
-      } else if (direction === "left") {
-        await recordPetMatch(id, userId, "disliked");
       }
       handleSwipe(direction, id);
     } catch (error) {
@@ -108,10 +149,10 @@ const Browse = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <main className="w-full h-[100svh] pt-14 sm:pt-16 pb-[env(safe-area-inset-bottom)]">
-        <div className="relative max-w-md mx-auto h-full px-0 sm:px-2 pb-[max(env(safe-area-inset-bottom),1rem)]">
-          <div className="absolute top-2 right-4 sm:right-6 z-30">
+    <div className="fixed inset-x-0 top-14 sm:top-16 bottom-0 overflow-hidden bg-background">
+      <main className="h-full w-full overflow-hidden">
+        <div className="relative h-full w-full overflow-hidden">
+          <div className="absolute top-2 right-2 z-30">
             <FilterPanel
               filters={filters}
               isLoading={isLoading}

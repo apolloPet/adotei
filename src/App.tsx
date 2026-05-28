@@ -18,6 +18,7 @@ import ResetPassword from './pages/ResetPassword'
 import ResetPasswordConfirm from './pages/ResetPasswordConfirm'
 import Institution from './pages/Institution'
 import AdminProtectedRoute from './components/AdminProtectedRoute'
+import AuthenticatedRoute from './components/AuthenticatedRoute'
 import EmailConfirmation from './pages/EmailConfirmation'
 import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 import PaymentProcess from './pages/PaymentProcess'
@@ -57,8 +58,16 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/browse" element={<Browse />} />
         <Route path="/pets/:id" element={<PetDetails />} />
-        <Route path="/match" element={<PetMatch />} />
-        <Route path="/profile" element={<Profile />} />
+        <Route path="/match" element={
+          <AuthenticatedRoute>
+            <PetMatch />
+          </AuthenticatedRoute>
+        } />
+        <Route path="/profile" element={
+          <AuthenticatedRoute>
+            <Profile />
+          </AuthenticatedRoute>
+        } />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/reset-password-confirm" element={<ResetPasswordConfirm />} />
         <Route path="/institution" element={<Institution />} />
@@ -66,9 +75,21 @@ function App() {
         <Route path="/payment/:id" element={<PaymentProcess />} />
         
         {/* Novas rotas para as funcionalidades implementadas */}
-        <Route path="/security" element={<SecuritySettings />} />
-        <Route path="/payment-history" element={<PaymentHistory />} />
-        <Route path="/suppliers" element={<Suppliers />} />
+        <Route path="/security" element={
+          <AuthenticatedRoute>
+            <SecuritySettings />
+          </AuthenticatedRoute>
+        } />
+        <Route path="/payment-history" element={
+          <AuthenticatedRoute>
+            <PaymentHistory />
+          </AuthenticatedRoute>
+        } />
+        <Route path="/suppliers" element={
+          <AuthenticatedRoute>
+            <Suppliers />
+          </AuthenticatedRoute>
+        } />
         
         {/* Rotas Admin */}
         <Route path="/admin" element={

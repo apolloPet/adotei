@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import {
   PawPrint,
@@ -9,15 +9,15 @@ import {
   ShieldAlert,
   Phone,
   Mail,
-  MapPin,
   Calendar,
 } from 'lucide-react';
 import { AdoptionMatch } from './types';
-import { mockUsers } from '@/components/admin/users/mockData';
 import { ExtendedProfile, UserProfile } from '@/types/user';
 import { Pet, PetSpecies } from '@/types/pets';
 import { scoreCandidate, AdopterCandidate } from '@/utils/compatibilityScore';
 import { getProfileAlerts } from '@/utils/profileAlerts';
+import { apiRequest } from '@/lib/apiClient';
+import { BackendAdopterProfile, mapBackendProfileToExtended } from '@/services/compatibilityService';
 
 const EXTENDED_KEY = 'user_profile_extended';
 
@@ -29,15 +29,6 @@ const loadExtendedFor = (userId: string): ExtendedProfile | undefined => {
     return undefined;
   }
 };
-
-/** Try to find a richer adopter record from local mock users. */
-const findMockUser = (match: AdoptionMatch) =>
-  mockUsers.find(
-    (u) =>
-      u.id === match.userId ||
-      u.email?.toLowerCase() === match.userEmail?.toLowerCase() ||
-      u.name?.toLowerCase() === match.userName?.toLowerCase()
-  );
 
 /** Derive a synthetic Pet object from the match so we can score compatibility. */
 const buildPetFromMatch = (match: AdoptionMatch): Pet => {
@@ -107,20 +98,35 @@ const Row = ({ label, value }: { label: string; value: React.ReactNode }) => (
 );
 
 const AdoptionDetailsPanel = ({ match }: Props) => {
-  const mockUser = useMemo(() => findMockUser(match), [match]);
-  const extended = useMemo(() => loadExtendedFor(match.userId), [match.userId]);
+  const [extended, setExtended] = useState<ExtendedProfile | undefined>(() => loadExtendedFor(match.userId));
+
+  useEffect(() => {
+    let active = true;
+    const loadFromBackend = async () => {
+      try {
+        const backend = await apiRequest<BackendAdopterProfile>(`/api/users/${match.userId}/adopter-profile`);
+        if (!active) return;
+        const mapped = mapBackendProfileToExtended(backend);
+        setExtended(mapped);
+      } catch {
+        if (!active) return;
+        setExtended(loadExtendedFor(match.userId));
+      }
+    };
+    loadFromBackend();
+    return () => {
+      active = false;
+    };
+  }, [match.userId]);
   const pet = useMemo(() => buildPetFromMatch(match), [match]);
 
   const candidate: AdopterCandidate = {
     id: match.userId,
     name: match.userName,
     email: match.userEmail,
-    phone: match.userPhone || mockUser?.phone,
-    city: mockUser?.address?.city,
-    housingType: mockUser?.housingType,
-    hasChildren: mockUser?.hasChildren,
-    hadPetsBefore: mockUser?.hadPetsBefore,
-    hasAllergies: mockUser?.hasAllergies,
+    phone: match.userPhone,
+    hasChildren: extended?.housing?.hasChildren,
+    hadPetsBefore: extended?.experience?.hadPetsBefore,
     extended,
   };
 
@@ -300,32 +306,21 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
           <Row
             label="Telefone"
             value={
-              match.userPhone || mockUser?.phone ? (
+              match.userPhone ? (
                 <span className="flex items-center gap-1 justify-end">
-                  <Phone className="h-3 w-3" /> {match.userPhone || mockUser?.phone}
+                  <Phone className="h-3 w-3" /> {match.userPhone}
                 </span>
               ) : (
                 '—'
               )
             }
           />
-          {mockUser?.address && (
-            <Row
-              label="Endereço"
-              value={
-                <span className="flex items-center gap-1 justify-end text-right">
-                  <MapPin className="h-3 w-3" />
-                  {`${mockUser.address.city}, ${mockUser.address.state}`}
-                </span>
-              }
-            />
-          )}
           <Row label="ID" value={match.userId} />
         </Section>
 
         {/* Housing profile */}
         <Section icon={<Home className="h-4 w-4" />} title="Moradia">
-          <Row label="Tipo" value={housingLabel(housing?.type || mockUser?.housingType)} />
+          <Row label="Tipo" value={housingLabel(housing?.type)} />
           <Row
             label="Posse"
             value={
@@ -351,10 +346,10 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
           <Row
             label="Possui crianças"
             value={
-              (housing?.hasChildren ?? mockUser?.hasChildren)
+              housing?.hasChildren
                 ? `Sim${
-                    housing?.childrenAges || mockUser?.childrenAges
-                      ? ` (${housing?.childrenAges || mockUser?.childrenAges})`
+                    housing?.childrenAges
+                      ? ` (${housing?.childrenAges})`
                       : ''
                   }`
                 : 'Não'
@@ -366,7 +361,7 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
         <Section icon={<Heart className="h-4 w-4" />} title="Experiência & Compromisso">
           <Row
             label="Já teve pets"
-            value={(exp?.hadPetsBefore ?? mockUser?.hadPetsBefore) ? 'Sim' : 'Não'}
+            value={exp?.hadPetsBefore ? 'Sim' : 'Não'}
           />
           <Row label="Tem pets atualmente" value={exp?.currentlyHasPets ? 'Sim' : 'Não'} />
           {exp?.currentlyHasPets && (
@@ -378,14 +373,6 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
             />
           )}
           <Row label="Já devolveu animal" value={exp?.returnedAnimal ? 'Sim' : 'Não'} />
-          <Row
-            label="Possui alergia"
-            value={
-              mockUser?.hasAllergies
-                ? `Sim${mockUser?.allergiesDescription ? ` — ${mockUser.allergiesDescription}` : ''}`
-                : 'Não'
-            }
-          />
           <Row label="Orçamento mensal" value={fin?.monthlyBudget ?? '—'} />
           <Row label="Cobre emergências" value={fin?.willCoverEmergencies ? 'Sim' : 'Não'} />
           <Row label="Cobre vacinas" value={fin?.willCoverVaccines ? 'Sim' : 'Não'} />
@@ -394,6 +381,18 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
             <Row label="Horas sozinho/dia" value={`${intent.hoursAloneDaily}h`} />
           )}
           {intent?.reasonToAdopt && <Row label="Motivo da adoção" value={intent.reasonToAdopt} />}
+          {intent?.ifDestroyed && <Row label="Se destruir algo" value={intent.ifDestroyed} />}
+          {intent?.ifSick && <Row label="Se ficar doente" value={intent.ifSick} />}
+          {extended?.proof?.environmentPhotoUrl && (
+            <Row
+              label="Foto do ambiente"
+              value={
+                <a href={extended.proof.environmentPhotoUrl} target="_blank" rel="noreferrer" className="text-primary underline">
+                  Visualizar foto
+                </a>
+              }
+            />
+          )}
         </Section>
       </div>
 

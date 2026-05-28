@@ -7,7 +7,8 @@ export function useAuthSubscription({
   setUser,
   setSession, 
   setProfile,
-  setIsAdmin
+  setIsAdmin,
+  setIsVolunteer
 }) {
   // Use uma ref para controlar subscrições duplicadas
   const subscriptionRef = useRef(null);
@@ -37,6 +38,7 @@ export function useAuthSubscription({
         setSession(null);
         setProfile(null);
         setIsAdmin(false);
+        setIsVolunteer(false);
         
         // Clear localStorage on explicit logout
         localStorage.removeItem("isLoggedIn");
@@ -58,51 +60,45 @@ export function useAuthSubscription({
           expiraEm: newSession.expires_at ? new Date(newSession.expires_at * 1000).toISOString() : 'desconhecido'
         });
         
-        // Performance: set user and session immediately
         setSession(newSession);
-        setUser(newSession.user);
+        setUser((current) => (current?.id === newSession.user.id ? current : newSession.user));
         
-        // Check admin status
-        const userEmail = newSession.user.email;
-        if (userEmail) {
-          const isAdminUser = userEmail.includes('@ong') || 
-                          userEmail.includes('@admin') || 
-                          userEmail === 'admin@petmatch.com';
-          
-          console.log('State update - permissions check:', { 
-            email: userEmail, 
-            isAdmin: isAdminUser 
-          });
-          
-          setIsAdmin(isAdminUser);
-          
-          // Update localStorage
+        const isAdminUser = Boolean(
+          newSession.user.app_metadata?.role === 'admin' ||
+          newSession.user.user_metadata?.isAdmin === true
+        );
+        const isVolunteerUser = Boolean(
+          newSession.user.user_metadata?.userType === 'VOLUNTARIO' ||
+          (newSession.user.user_metadata?.roles as string[] | undefined)?.includes('VOLUNTARIO')
+        );
+        setIsAdmin(isAdminUser);
+        setIsVolunteer(isVolunteerUser);
+
+        if (newSession.user.email) {
           localStorage.setItem("isLoggedIn", "true");
           localStorage.setItem("isAdmin", isAdminUser.toString());
-          localStorage.setItem("userEmail", userEmail);
+          localStorage.setItem("userEmail", newSession.user.email);
         }
         
-        // Adicionar evento personalizado para informar todos os componentes
-        window.dispatchEvent(new Event('authStateChanged'));
-        
-        // Performance: fetch user profile in background
-        setTimeout(async () => {
-          try {
-            const userProfile = await getProfile();
-            if (userProfile) {
-              console.log('Profile fetched in background:', userProfile);
-              setProfile(userProfile);
-            } else {
-              console.log('No profile found in background fetch');
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+          window.dispatchEvent(new Event('authStateChanged'));
+        }
+
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+          setTimeout(async () => {
+            try {
+              const userProfile = await getProfile();
+              if (userProfile) {
+                console.log('Profile fetched in background:', userProfile);
+                setProfile(userProfile);
+              }
+            } catch (error) {
+              console.error('Error fetching profile in background:', error);
             }
-          } catch (error) {
-            console.error('Error fetching profile in background:', error);
-          }
-        }, 100);
+          }, 100);
+        }
       } else if (event !== 'INITIAL_SESSION') {
-        // Para eventos sem sessão (exceto verificação inicial), notificar mudança
         console.log('Evento de autenticação sem sessão:', event);
-        window.dispatchEvent(new Event('authStateChanged'));
       }
     });
     
@@ -118,5 +114,5 @@ export function useAuthSubscription({
         subscriptionRef.current = null;
       }
     };
-  }, [setUser, setSession, setProfile, setIsAdmin]);
+  }, [setUser, setSession, setProfile, setIsAdmin, setIsVolunteer]);
 }

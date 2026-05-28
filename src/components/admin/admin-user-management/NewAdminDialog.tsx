@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-sonner";
 import { createAdminUser } from "@/services/adminUserService";
 import type { NewAdminState, FormErrors } from "./types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { isValidEmail, normalizeEmail } from '@/utils/brMasks';
 
 interface Props {
   isOpen: boolean;
@@ -70,7 +71,7 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
     if (!newAdmin.email.trim()) {
       errors.email = "Email é obrigatório";
       isValid = false;
-    } else if (!/\S+@\S+\.\S+/.test(newAdmin.email)) {
+    } else if (!isValidEmail(newAdmin.email)) {
       errors.email = "Email inválido";
       isValid = false;
     }
@@ -106,7 +107,7 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
       });
 
       const result = await createAdminUser(
-        newAdmin.email,
+        normalizeEmail(newAdmin.email),
         newAdmin.password,
         newAdmin.name,
         newAdmin.permissions
@@ -167,7 +168,12 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
               id="name"
               name="name"
               value={newAdmin.name}
-              onChange={handleInputChange}
+              onChange={(e) => {
+                const value = normalizeEmail(e.target.value);
+                setNewAdmin((prev) => ({ ...prev, email: value }));
+                setFormErrors((prev) => ({ ...prev, email: "" }));
+                setSubmitError(null);
+              }}
               placeholder="Nome do administrador"
             />
             {formErrors.name && <p className="text-sm text-red-500">{formErrors.name}</p>}

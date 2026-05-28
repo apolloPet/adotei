@@ -56,8 +56,8 @@ export const animalToPet = (animal: Animal): Pet => {
     species: animal.tipo === 'cachorro' ? 'dog' :
              animal.tipo === 'gato' ? 'cat' : 'other',
     description: animal.descricao || '',
-    location: "Próximo a você",
-    shelterTime: "recente",
+    location: (animal as Animal & { location?: string }).location || 'Local não informado',
+    shelterTime: daysWaiting !== undefined ? `${daysWaiting} dias` : 'recente',
     weight: 0,
     traits,
     specialNeeds: !!extra.necessidades_especiais,
@@ -65,8 +65,22 @@ export const animalToPet = (animal: Animal): Pet => {
     vaccinated,
     neutered: !!animal.castrado,
     daysWaiting,
-    shelter: "PetMatch",
+    shelter: (animal as Animal & { location?: string }).location || 'ONG parceira',
     medicalInfo: extra.condicoes_saude || "",
     primaryImage: imageUrls[0] || fallbackImageUrl,
+    adopterProfile: animal.adopterProfile
+      ? {
+          suitableHousing: animal.adopterProfile.suitableHousing ?? [],
+          requiresYard: animal.adopterProfile.requiresYard,
+          requiresWalledYard: animal.adopterProfile.requiresWalledYard,
+          requiresWindowScreens: animal.adopterProfile.requiresWindowScreens,
+          allowsRented: animal.adopterProfile.allowsRented,
+          suitableForChildren: animal.adopterProfile.suitableForChildren,
+          suitableForFirstTimers: animal.adopterProfile.suitableForFirstTimers,
+          maxHoursAloneDaily: animal.adopterProfile.maxHoursAloneDaily,
+          estimatedMonthlyCost: animal.adopterProfile.estimatedMonthlyCost,
+          requiresEmergencyBudget: animal.adopterProfile.requiresEmergencyBudget,
+        }
+      : undefined,
   };
 };

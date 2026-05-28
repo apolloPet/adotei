@@ -1,12 +1,12 @@
 
 import { useState, useEffect } from 'react';
 import { User, FilterType } from '../types';
-import { mockUsers } from '../mockData';
+import { fetchUsers } from '@/services/userService';
 
 const ITEMS_PER_PAGE = 10;
 
 export const useUsersData = () => {
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -22,11 +22,20 @@ export const useUsersData = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    const loadUsers = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await fetchUsers();
+        setUsers(data);
+      } catch (err) {
+        setError('Erro ao carregar usuários');
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
+    loadUsers();
   }, []);
 
   const filteredUsers = users.filter(user => {

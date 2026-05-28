@@ -1,10 +1,18 @@
 
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { AnimalFormData } from "./types";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useEffect, useState } from "react";
+import { apiRequest } from "@/lib/apiClient";
+
+type VaccineOption = {
+  id: string;
+  name: string;
+  animalType: string;
+  active: boolean;
+};
 
 export interface AnimalHealthInfoProps {
   formData: AnimalFormData;
@@ -12,6 +20,20 @@ export interface AnimalHealthInfoProps {
 }
 
 const AnimalHealthInfo = ({ formData, onFormChange }: AnimalHealthInfoProps) => {
+  const [vaccines, setVaccines] = useState<VaccineOption[]>([]);
+
+  useEffect(() => {
+    const loadVaccines = async () => {
+      try {
+        const data = await apiRequest<VaccineOption[]>('/api/vaccines');
+        setVaccines(data.filter((item) => item.active));
+      } catch (error) {
+        console.error('Erro ao carregar vacinas:', error);
+      }
+    };
+    loadVaccines();
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     onFormChange({ [name]: value });
@@ -21,59 +43,47 @@ const AnimalHealthInfo = ({ formData, onFormChange }: AnimalHealthInfoProps) => 
     onFormChange({ [name]: checked });
   };
 
-  const handleRadioChange = (name: string, value: string) => {
-    onFormChange({ [name]: value });
+  const handleVaccineToggle = (id: string, checked: boolean) => {
+    const next = checked
+      ? [...formData.vaccineIds, id]
+      : formData.vaccineIds.filter((vaccineId) => vaccineId !== id);
+    onFormChange({ vaccineIds: next });
   };
 
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
-          <Label>Vacinação</Label>
-          <RadioGroup
-            value={formData.vaccinationStatus}
-            onValueChange={(value) => handleRadioChange('vaccinationStatus', value)}
-            className="grid grid-cols-1 gap-2"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="complete" id="complete" />
-              <Label htmlFor="complete">Completa</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="partial" id="partial" />
-              <Label htmlFor="partial">Parcial</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="none" id="none" />
-              <Label htmlFor="none">Não vacinado</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="unknown" id="unknown" />
-              <Label htmlFor="unknown">Desconhecido</Label>
-            </div>
-          </RadioGroup>
+          <Label>Vacinas</Label>
+          <div className="grid grid-cols-1 gap-2 rounded-md border p-3 max-h-48 overflow-y-auto">
+            {vaccines
+              .filter((vaccine) => vaccine.animalType === formData.type)
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((vaccine) => (
+                <div key={vaccine.id} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`vaccine-${vaccine.id}`}
+                    checked={formData.vaccineIds.includes(vaccine.id)}
+                    onCheckedChange={(checked) => handleVaccineToggle(vaccine.id, checked === true)}
+                  />
+                  <Label htmlFor={`vaccine-${vaccine.id}`}>{vaccine.name}</Label>
+                </div>
+              ))}
+            {vaccines.filter((vaccine) => vaccine.animalType === formData.type).length === 0 && (
+              <p className="text-sm text-muted-foreground">Nenhuma vacina cadastrada para esse tipo de animal.</p>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">Selecione uma ou mais vacinas.</p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="veterinaryInfo">Informações Veterinárias</Label>
+          <Label htmlFor="additionalInfo">Informações Complementares (Descrição)</Label>
           <Textarea
-            id="veterinaryInfo"
-            name="veterinaryInfo"
-            value={formData.veterinaryInfo}
+            id="additionalInfo"
+            name="additionalInfo"
+            value={formData.additionalInfo}
             onChange={handleInputChange}
-            placeholder="Histórico de consultas, vacinas específicas, etc."
-            rows={4}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="healthConditions">Condições de Saúde</Label>
-          <Textarea
-            id="healthConditions"
-            name="healthConditions"
-            value={formData.healthConditions}
-            onChange={handleInputChange}
-            placeholder="Lista de condições de saúde, se houver"
+            placeholder="Informações complementares sobre o animal"
             rows={4}
           />
         </div>
@@ -106,37 +116,10 @@ const AnimalHealthInfo = ({ formData, onFormChange }: AnimalHealthInfoProps) => 
             checked={formData.sterilized}
             onCheckedChange={(checked) => handleSwitchChange('sterilized', checked)}
           />
-          <Label htmlFor="sterilized">Castrado/Esterilizado</Label>
+          <Label htmlFor="sterilized">Castrado</Label>
         </div>
       </div>
       
-      <div className="pt-4 border-t">
-        <h3 className="text-lg font-medium mb-4">Informações do Tutor</h3>
-        
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="tutorName">Nome do Tutor</Label>
-            <Input
-              id="tutorName"
-              name="tutorName"
-              value={formData.tutorName}
-              onChange={handleInputChange}
-              placeholder="Nome do tutor responsável"
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="tutorContact">Contato do Tutor</Label>
-            <Input
-              id="tutorContact"
-              name="tutorContact"
-              value={formData.tutorContact}
-              onChange={handleInputChange}
-              placeholder="Telefone ou email do tutor"
-            />
-          </div>
-        </div>
-      </div>
     </div>
   );
 };

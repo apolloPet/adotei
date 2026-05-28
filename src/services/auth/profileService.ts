@@ -33,31 +33,33 @@ export const getProfile = async (): Promise<UserProfile | null> => {
         return null;
       }
       
-      if (!data) {
+      const payload = (data as any)?.data ?? data;
+
+      if (!payload) {
         console.log('No profile data returned from edge function');
         return null;
       }
       
       // Transform the data to match the UserProfile interface
       const profile: UserProfile = {
-        id: data.id,
-        userId: data.auth_id, // Ensure we get and store the auth_id/userId
-        firstName: data.name?.split(' ')[0] || '',
-        lastName: data.name?.split(' ').slice(1).join(' ') || '',
-        email: data.email || '',
-        phone: data.phone || '',
-        address: data.address || '',
-        city: data.city || '',
-        state: data.state || '',
-        zip: data.zip || '',
-        avatarUrl: data.avatar_url || '',
-        housingType: data.housing_type || 'house',
-        hasChildren: Boolean(data.has_children),
-        childrenAges: data.children_ages || '',
-        hadPetsBefore: Boolean(data.had_pets_before),
-        hasAllergies: Boolean(data.has_allergies),
-        allergiesDescription: data.allergies_description || '',
-        workSchedule: data.work_schedule || ''
+        id: payload.id,
+        userId: payload.authSubject ?? payload.auth_id, // Accept backend and edge naming
+        firstName: payload.fullName?.split(' ')[0] || payload.name?.split(' ')[0] || '',
+        lastName: payload.fullName?.split(' ').slice(1).join(' ') || payload.name?.split(' ').slice(1).join(' ') || '',
+        email: payload.email || '',
+        phone: payload.phone || '',
+        address: payload.addressLine || payload.address || '',
+        city: payload.city || '',
+        state: payload.state || '',
+        zip: payload.zipCode || payload.zip || '',
+        avatarUrl: payload.avatarUrl || payload.avatar_url || '',
+        housingType: payload.housingType || payload.housing_type || 'house',
+        hasChildren: Boolean(payload.hasChildren ?? payload.has_children),
+        childrenAges: payload.childrenAges || payload.children_ages || '',
+        hadPetsBefore: Boolean(payload.hadPetsBefore ?? payload.had_pets_before),
+        hasAllergies: Boolean(payload.hasAllergies ?? payload.has_allergies),
+        allergiesDescription: payload.allergiesDescription || payload.allergies_description || '',
+        workSchedule: payload.workSchedule || payload.work_schedule || ''
       };
       
       console.log('Profile fetched successfully:', profile);

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogIn, LogOut, ShieldAlert } from "lucide-react";
+import { LogIn, LogOut, ShieldAlert, User } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface DesktopAuthMenuProps {
   isAdmin?: boolean;
+  isVolunteer?: boolean;
   isLoggedIn?: boolean;
   onLogin?: () => void;
   onLogout?: () => void;
@@ -22,6 +23,7 @@ interface DesktopAuthMenuProps {
 
 const DesktopAuthMenu = ({ 
   isAdmin, 
+  isVolunteer,
   isLoggedIn, 
   onLogin, 
   onLogout 
@@ -74,10 +76,14 @@ const DesktopAuthMenu = ({
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {isAdmin && (
+            <DropdownMenuItem onClick={() => navigate("/profile")}>
+              <User className="mr-2 h-4 w-4" />
+              Meu perfil
+            </DropdownMenuItem>
+            {(isAdmin || isVolunteer) && (
               <DropdownMenuItem onClick={() => navigate("/admin")} className="text-primary">
                 <ShieldAlert className="mr-2 h-4 w-4" />
-                Admin
+                {isVolunteer && !isAdmin ? 'Cadastro de Pets' : 'Admin'}
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />

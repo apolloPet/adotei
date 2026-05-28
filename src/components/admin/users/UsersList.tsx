@@ -3,8 +3,6 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AlertTriangle } from "lucide-react";
 import { useAuth } from '@/hooks/auth';
-import { toast } from "@/hooks/use-sonner";
-import { supabase } from '@/lib/supabase';
 import { useUsersData } from './hooks/useUsersData';
 import { UserListHeader } from './components/UserListHeader';
 import { UserListContent } from './components/UserListContent';
@@ -13,7 +11,7 @@ import { NoPermissionView } from './components/NoPermissionView';
 const UsersList = () => {
   const [hasPermission, setHasPermission] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
-  const { user } = useAuth();
+  const { isAdmin } = useAuth();
   const { 
     users,
     isLoading,
@@ -30,51 +28,9 @@ const UsersList = () => {
   } = useUsersData();
 
   useEffect(() => {
-    const verifyPermissions = async () => {
-      try {
-        if (!user) {
-          setHasPermission(false);
-          setIsVerifying(false);
-          return;
-        }
-
-        const isMainAdmin = user.email === 'admin@petmatch.com';
-        const isAdminEmail = isMainAdmin || 
-                           (user.email || '').includes('@admin') || 
-                           (user.email || '').includes('@ong');
-
-        if (isAdminEmail) {
-          setHasPermission(true);
-          setIsVerifying(false);
-          return;
-        }
-
-        const { data: roleData } = await supabase
-          .from('user_roles')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .single();
-
-        if (roleData) {
-          const permissions = typeof roleData.permissions === 'string' 
-            ? JSON.parse(roleData.permissions) 
-            : roleData.permissions;
-
-          setHasPermission(permissions?.manageAdmins === true);
-        } else {
-          setHasPermission(false);
-        }
-      } catch (err) {
-        console.error('Error verifying permissions:', err);
-        setHasPermission(false);
-      } finally {
-        setIsVerifying(false);
-      }
-    };
-
-    verifyPermissions();
-  }, [user]);
+    setHasPermission(isAdmin);
+    setIsVerifying(false);
+  }, [isAdmin]);
 
   if (isVerifying) {
     return (

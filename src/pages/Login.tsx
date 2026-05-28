@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, PawPrint, Heart, Shield } from 'lucide-react';
 import LoginForm from "@/components/auth/LoginForm";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 const Login = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isMobile = useIsMobile();
+  const prefillEmail = (location.state as { prefillEmail?: string } | null)?.prefillEmail ?? '';
+  const prefillPassword = (location.state as { prefillPassword?: string } | null)?.prefillPassword ?? '';
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
@@ -90,7 +93,7 @@ const Login = () => {
                 </p>
               </div>
 
-              <LoginForm />
+              <LoginForm initialEmail={prefillEmail} initialPassword={prefillPassword} />
 
               <div className="text-center mt-6 text-sm text-muted-foreground">
                 Ainda não tem uma conta?{' '}

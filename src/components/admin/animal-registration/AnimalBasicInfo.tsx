@@ -88,10 +88,6 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
               <RadioGroupItem value="gato" id="cat" />
               <Label htmlFor="cat">Gato</Label>
             </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="outro" id="other_animal" />
-              <Label htmlFor="other_animal">Outro</Label>
-            </div>
           </RadioGroup>
         </div>
         
@@ -141,7 +137,7 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
         </div>
         
         <div className="space-y-2">
-          <Label>Gênero*</Label>
+          <Label>Sexo*</Label>
           <RadioGroup 
             value={formData.gender} 
             onValueChange={(value) => handleRadioChange('gender', value)}
@@ -159,7 +155,7 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
         </div>
         
         <div className="space-y-2">
-          <Label>Tamanho*</Label>
+          <Label>Porte*</Label>
           <RadioGroup 
             value={formData.size} 
             onValueChange={(value) => handleRadioChange('size', value)}
@@ -174,7 +170,7 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
               <Label htmlFor="medium">Médio</Label>
             </div>
             <div className="flex items-center space-x-2">
-              <RadioGroupItem value="large" id="large" />
+              <RadioGroupItem value="grande" id="large" />
               <Label htmlFor="large">Grande</Label>
             </div>
           </RadioGroup>

@@ -4,16 +4,17 @@ import { ShieldAlert, Heart, PawPrint, Building2, User, Mail } from 'lucide-reac
 
 interface DesktopNavProps {
   isAdmin: boolean;
+  isVolunteer: boolean;
   isLoggedIn: boolean;
 }
 
-const DesktopNav = ({ isAdmin, isLoggedIn }: DesktopNavProps) => {
+const DesktopNav = ({ isAdmin, isVolunteer, isLoggedIn }: DesktopNavProps) => {
   const location = useLocation();
   const isActive = (path: string) => location.pathname === path;
 
   return (
     <nav className="hidden md:flex items-center space-x-6">
-      {isLoggedIn && (
+      {isLoggedIn && !isVolunteer && (
         <Link 
           to="/browse" 
           className={`font-medium hover:text-primary transition-colors flex items-center gap-1 ${isActive('/browse') ? 'text-primary' : ''}`}
@@ -50,13 +51,13 @@ const DesktopNav = ({ isAdmin, isLoggedIn }: DesktopNavProps) => {
         <Mail className="h-4 w-4" />
         Contato
       </Link> */}
-      {isAdmin && (
+      {(isAdmin || isVolunteer) && (
         <Link 
           to="/admin" 
           className={`font-medium text-primary transition-colors flex items-center gap-1 ${isActive('/admin') ? 'underline' : ''}`}
         >
           <ShieldAlert className="h-4 w-4" />
-          Admin
+          {isVolunteer && !isAdmin ? 'Cadastro de Pets' : 'Admin'}
         </Link>
       )}
     </nav>

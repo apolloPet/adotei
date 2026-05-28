@@ -1,8 +1,8 @@
 
-import { PetInfo } from './interfaces';
+import { Pet } from './interfaces';
 
 export interface PetCardProps {
-  pet: PetInfo;
+  pet: Pet;
   onSwipe: (direction: string, id: string) => void;
 }
 

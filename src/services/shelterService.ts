@@ -1,11 +1,11 @@
 
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { apiRequest } from '@/lib/apiClient';
 import { toast } from '@/hooks/use-sonner';
-import { DbShelter } from '@/utils/dbConverters';
 
 export interface Shelter {
   id: string;
   name: string;
+  cnpj?: string;
   email: string;
   phone: string;
   address: string;
@@ -18,38 +18,40 @@ export interface Shelter {
   updatedAt: string;
 }
 
-// Convert database shelter to frontend shelter model
-const dbShelterToShelter = (dbShelter: DbShelter): Shelter => {
+type BackendOrganization = {
+  id: string;
+  legalName: string;
+  cnpj?: string;
+  primaryContactName: string;
+  secondaryContactName?: string;
+  contactPhone1: string;
+  contactPhone2?: string;
+  city: string;
+  state?: string;
+};
+
+const backendToShelter = (organization: BackendOrganization): Shelter => {
   return {
-    id: dbShelter.id,
-    name: dbShelter.name,
-    email: dbShelter.email,
-    phone: dbShelter.phone,
-    address: dbShelter.address,
-    city: dbShelter.city,
-    state: dbShelter.state,
-    zip: dbShelter.zip,
-    logoUrl: dbShelter.logo_url,
-    description: dbShelter.description,
-    createdAt: dbShelter.created_at,
-    updatedAt: dbShelter.updated_at
+    id: organization.id,
+    name: organization.legalName,
+    cnpj: organization.cnpj,
+    email: `${organization.legalName.toLowerCase().replace(/\s+/g, '.')}@entidade.local`,
+    phone: organization.contactPhone1,
+    address: '',
+    city: organization.city,
+    state: organization.state || '',
+    zip: '',
+    logoUrl: undefined,
+    description: `Responsável: ${organization.primaryContactName}`,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 };
 
 export const fetchShelters = async (): Promise<Shelter[]> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return [];
-    }
-
-    const { data, error } = await supabase
-      .from('shelters')
-      .select('*');
-    
-    if (error) throw error;
-    
-    return (data || []).map((dbShelter) => dbShelterToShelter(dbShelter as DbShelter));
+    const data = await apiRequest<BackendOrganization[]>('/api/organizations');
+    return data.map(backendToShelter);
   } catch (error) {
     console.error('Error fetching shelters:', error);
     return [];
@@ -58,21 +60,9 @@ export const fetchShelters = async (): Promise<Shelter[]> => {
 
 export const fetchShelterById = async (id: string): Promise<Shelter | null> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return null;
-    }
-
-    const { data, error } = await supabase
-      .from('shelters')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    if (!data) return null;
-    
-    return dbShelterToShelter(data as DbShelter);
+    const data = await apiRequest<BackendOrganization[]>('/api/organizations');
+    const found = data.find((organization) => organization.id === id);
+    return found ? backendToShelter(found) : null;
   } catch (error) {
     console.error('Error fetching shelter by ID:', error);
     return null;
@@ -81,19 +71,8 @@ export const fetchShelterById = async (id: string): Promise<Shelter | null> => {
 
 export const fetchShelterPets = async (shelterId: string): Promise<string[]> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return [];
-    }
-
-    const { data, error } = await supabase
-      .from('pets')
-      .select('id')
-      .eq('shelter_id', shelterId);
-    
-    if (error) throw error;
-    
-    return (data || []).map(pet => pet.id);
+    const data = await apiRequest<Array<{ id: string; organizationId?: string }>>('/api/animals');
+    return data.filter((animal) => animal.organizationId === shelterId).map((animal) => animal.id);
   } catch (error) {
     console.error('Error fetching shelter pets:', error);
     return [];
@@ -102,33 +81,21 @@ export const fetchShelterPets = async (shelterId: string): Promise<string[]> => 
 
 export const createShelter = async (shelter: Omit<Shelter, 'id' | 'createdAt' | 'updatedAt'>): Promise<Shelter | null> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return null;
-    }
+    const data = await apiRequest<BackendOrganization>('/api/organizations', {
+      method: 'POST',
+      body: {
+        legalName: shelter.name,
+        cnpj: shelter.cnpj ?? null,
+        primaryContactName: shelter.name,
+        secondaryContactName: null,
+        contactPhone1: shelter.phone,
+        contactPhone2: null,
+        city: shelter.city,
+        state: shelter.state,
+      },
+    });
 
-    const dbShelter = {
-      name: shelter.name,
-      email: shelter.email,
-      phone: shelter.phone,
-      address: shelter.address,
-      city: shelter.city,
-      state: shelter.state,
-      zip: shelter.zip,
-      logo_url: shelter.logoUrl,
-      description: shelter.description
-    };
-    
-    const { data, error } = await supabase
-      .from('shelters')
-      .insert(dbShelter)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    if (!data) throw new Error('Failed to create shelter');
-    
-    return dbShelterToShelter(data as DbShelter);
+    return backendToShelter(data);
   } catch (error) {
     console.error('Error creating shelter:', error);
     return null;
@@ -137,34 +104,26 @@ export const createShelter = async (shelter: Omit<Shelter, 'id' | 'createdAt' | 
 
 export const updateShelter = async (id: string, updates: Partial<Shelter>): Promise<Shelter | null> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return null;
+    const all = await apiRequest<BackendOrganization[]>('/api/organizations');
+    const existing = all.find((organization) => organization.id === id);
+    if (!existing) {
+      throw new Error('Entidade não encontrada');
     }
+    const data = await apiRequest<BackendOrganization>(`/api/organizations/${id}`, {
+      method: 'PUT',
+      body: {
+        legalName: updates.name ?? existing.legalName,
+        cnpj: updates.cnpj ?? existing.cnpj,
+        primaryContactName: existing.primaryContactName,
+        secondaryContactName: existing.secondaryContactName,
+        contactPhone1: updates.phone ?? existing.contactPhone1,
+        contactPhone2: existing.contactPhone2,
+        city: updates.city ?? existing.city,
+        state: updates.state ?? existing.state,
+      },
+    });
 
-    const dbUpdates: any = {};
-    
-    if (updates.name) dbUpdates.name = updates.name;
-    if (updates.email) dbUpdates.email = updates.email;
-    if (updates.phone) dbUpdates.phone = updates.phone;
-    if (updates.address) dbUpdates.address = updates.address;
-    if (updates.city) dbUpdates.city = updates.city;
-    if (updates.state) dbUpdates.state = updates.state;
-    if (updates.zip) dbUpdates.zip = updates.zip;
-    if (updates.logoUrl !== undefined) dbUpdates.logo_url = updates.logoUrl;
-    if (updates.description !== undefined) dbUpdates.description = updates.description;
-    
-    const { data, error } = await supabase
-      .from('shelters')
-      .update(dbUpdates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    if (!data) throw new Error('Failed to update shelter');
-    
-    return dbShelterToShelter(data as DbShelter);
+    return backendToShelter(data);
   } catch (error) {
     console.error('Error updating shelter:', error);
     return null;
@@ -173,18 +132,7 @@ export const updateShelter = async (id: string, updates: Partial<Shelter>): Prom
 
 export const deleteShelter = async (id: string): Promise<boolean> => {
   try {
-    if (!isSupabaseConfigured()) {
-      toast.error('Erro: Configuração do Supabase incompleta');
-      return false;
-    }
-
-    const { error } = await supabase
-      .from('shelters')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
-    
+    await apiRequest(`/api/organizations/${id}`, { method: 'DELETE' });
     return true;
   } catch (error) {
     console.error('Error deleting shelter:', error);

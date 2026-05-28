@@ -1,7 +1,6 @@
 
-import { supabase } from '@/lib/supabase';
+import { apiRequest, getApiBaseUrl, getAuthToken, handleUnauthorizedIfLoggedIn } from '@/lib/apiClient';
 import { toast } from '@/hooks/use-sonner';
-import { Json } from '@/lib/database.types';
 
 export interface Animal {
   id: string;
@@ -12,55 +11,175 @@ export interface Animal {
   sexo: 'macho' | 'femea';
   castrado: boolean;
   vacinas: string[];
-  responsavel_id?: string;
+  responsavel_id?: string | null;
   data_cadastro: string;
   descricao?: string;
   fotoPrincipal?: string;
   fotos?: string[];
+  adopterProfile?: {
+    suitableHousing: string[];
+    requiresYard: boolean;
+    requiresWalledYard: boolean;
+    requiresWindowScreens: boolean;
+    allowsRented: boolean;
+    suitableForChildren: boolean;
+    suitableForFirstTimers: boolean;
+    maxHoursAloneDaily?: number;
+    estimatedMonthlyCost?: string;
+    requiresEmergencyBudget: boolean;
+  };
 }
 
 export interface AnimalCreateData {
   nome: string;
   idade: number;
-  tipo: 'cachorro' | 'gato' | 'outro';
+  tipo: 'cachorro' | 'gato';
+  raca?: string;
   porte: 'pequeno' | 'medio' | 'grande';
   sexo: 'macho' | 'femea';
   castrado: boolean;
   vacinas?: string[];
+  vaccineIds?: string[];
   responsavel_id?: string;
-  descricao?: string;
+  descricao: string;
+  specialNeeds?: boolean;
+  specialNeedsDescription?: string;
+  tutorName?: string;
+  tutorContact?: string;
+  personalityTemperament?: string;
+  additionalInfo?: string;
+  goodWithChildren?: boolean;
+  goodWithOtherAnimals?: boolean;
+  goodWithSeniors?: boolean;
+  imageFiles?: File[];
   fotoPrincipal?: string;
   fotos?: string[];
+  organizationId?: string;
+  createdByUserId?: string;
 }
 
-// Helper function to convert database type to interface type
-const dbAnimalToAnimal = (dbAnimal: any): Animal => {
-  console.log('Convertendo animal do banco para interface:', dbAnimal);
+type BackendAnimal = {
+  id: string;
+  name: string;
+  animalType: 'cachorro' | 'gato';
+  breed?: string;
+  ageYears: number;
+  sex: 'macho' | 'femea';
+  size: 'pequeno' | 'medio' | 'grande';
+  description?: string;
+  sterilized: boolean;
+  vaccineIds?: string[];
+  tutorName?: string;
+  tutorContact?: string;
+  personalityTemperament?: string;
+  additionalInfo?: string;
+  specialNeeds?: boolean;
+  specialNeedsDescription?: string;
+  goodWithChildren?: boolean;
+  goodWithOtherAnimals?: boolean;
+  goodWithSeniors?: boolean;
+  location?: string;
+  personalityTemperament?: string;
+  adopterProfile?: {
+    suitableHousing?: string[];
+    requiresYard: boolean;
+    requiresWalledYard: boolean;
+    requiresWindowScreens: boolean;
+    allowsRented: boolean;
+    minResidentExperience?: string;
+    suitableForChildren: boolean;
+    suitableForFirstTimers: boolean;
+    maxHoursAloneDaily?: number;
+    estimatedMonthlyCost?: string;
+    requiresEmergencyBudget: boolean;
+  };
+  images?: { id: string; fileUrl: string; displayOrder: number }[];
+  createdAt?: string;
+};
+
+const backendAnimalToAnimal = (animal: BackendAnimal): Animal => {
+  const orderedImages = [...(animal.images || [])]
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+    .map((image) => image.id ? `${getApiBaseUrl()}/api/animals/images/${image.id}` : image.fileUrl);
   return {
-    id: dbAnimal.id,
-    nome: dbAnimal.nome,
-    idade: dbAnimal.idade,
-    tipo: dbAnimal.tipo as 'cachorro' | 'gato' | 'outro',
-    porte: dbAnimal.porte as 'pequeno' | 'medio' | 'grande',
-    sexo: dbAnimal.sexo as 'macho' | 'femea',
-    castrado: dbAnimal.castrado,
-    vacinas: Array.isArray(dbAnimal.vacinas) ? dbAnimal.vacinas : 
-             (dbAnimal.vacinas as Json) ? (dbAnimal.vacinas as any) : [],
-    responsavel_id: dbAnimal.responsavel_id,
-    data_cadastro: dbAnimal.data_cadastro,
-    descricao: dbAnimal.descricao,
-    fotoPrincipal: dbAnimal.fotoprincipal,
-    fotos: Array.isArray(dbAnimal.fotos) ? dbAnimal.fotos : 
-           (dbAnimal.fotos as Json) ? (dbAnimal.fotos as any) : []
+    id: animal.id,
+    nome: animal.name,
+    idade: animal.ageYears,
+    tipo: animal.animalType,
+    porte: animal.size,
+    sexo: animal.sex,
+    castrado: animal.sterilized,
+    vacinas: animal.vaccineIds ?? [],
+    responsavel_id: null,
+    data_cadastro: animal.createdAt || '',
+    descricao: animal.description,
+    fotoPrincipal: orderedImages[0],
+    fotos: orderedImages,
+    ...(animal.location ? { location: animal.location } : {}),
+    ...(animal.personalityTemperament
+      ? { caracteristicas: [animal.personalityTemperament] }
+      : {}),
+    adopterProfile: animal.adopterProfile
+      ? {
+          suitableHousing: animal.adopterProfile.suitableHousing ?? [],
+          requiresYard: animal.adopterProfile.requiresYard,
+          requiresWalledYard: animal.adopterProfile.requiresWalledYard,
+          requiresWindowScreens: animal.adopterProfile.requiresWindowScreens,
+          allowsRented: animal.adopterProfile.allowsRented,
+          suitableForChildren: animal.adopterProfile.suitableForChildren,
+          suitableForFirstTimers: animal.adopterProfile.suitableForFirstTimers,
+          maxHoursAloneDaily: animal.adopterProfile.maxHoursAloneDaily,
+          estimatedMonthlyCost: animal.adopterProfile.estimatedMonthlyCost,
+          requiresEmergencyBudget: animal.adopterProfile.requiresEmergencyBudget,
+        }
+      : undefined,
   };
 };
 
-// Create a new animal
+type BackendAnimalImageResponse = {
+  id: string;
+  fileUrl: string;
+  contentType: string;
+  displayOrder: number;
+};
+
+const uploadAnimalImage = async (animalId: string, file: File, displayOrder: number): Promise<BackendAnimalImageResponse> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('displayOrder', String(displayOrder));
+
+  const token = getAuthToken();
+  const response = await fetch(`${getApiBaseUrl()}/api/animals/${animalId}/images`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    let message = `Erro HTTP ${response.status}`;
+    try {
+      const errorBody = await response.json() as { message?: string };
+      if (errorBody?.message) message = errorBody.message;
+    } catch {
+      // noop
+    }
+    if (response.status === 401) {
+      handleUnauthorizedIfLoggedIn();
+    }
+    throw new Error(message);
+  }
+
+  return response.json() as Promise<BackendAnimalImageResponse>;
+};
+
+const estimatedMonthlyCostBySize = (size: 'pequeno' | 'medio' | 'grande'): string => {
+  if (size === 'grande') return '600+';
+  if (size === 'medio') return '300-600';
+  return '100-300';
+};
+
 export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal | null> => {
   try {
-    console.log('Iniciando cadastro de animal com dados:', animalData);
-    
-    // Validar dados críticos antes de prosseguir
     if (!animalData.nome || animalData.nome.trim() === '') {
       toast.error('O nome do animal é obrigatório', {
         description: 'Por favor, informe um nome válido para o animal.'
@@ -77,7 +196,7 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
     
     if (!animalData.tipo) {
       toast.error('Tipo de animal não especificado', {
-        description: 'Por favor, selecione se é um cachorro, gato ou outro animal.'
+        description: 'Por favor, selecione se é cachorro ou gato.'
       });
       throw new Error('Tipo de animal não especificado');
     }
@@ -102,156 +221,61 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
       });
       throw new Error('Descrição do animal é obrigatória');
     }
-    
-    // Get the current session to check if the user is authenticated
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    // IMPORTANT: Set the responsavel_id to the current user if not provided
-    // This is critical for RLS policies
-    if (!animalData.responsavel_id) {
-      const userId = session?.user?.id;
-      
-      if (userId) {
-        animalData.responsavel_id = userId;
-        console.log(`Definindo responsável para usuário autenticado: ${userId}`);
-      } else if (localStorage.getItem("isAdmin") === "true") {
-        // For demo admin mode, use a hardcoded ID or null (depending on your RLS policy)
-        animalData.responsavel_id = "00000000-0000-0000-0000-000000000000";
-        console.log(`Definindo responsável para modo admin: ${animalData.responsavel_id}`);
-      } else {
-        console.error('Nenhum ID de usuário disponível para cadastro');
-        toast.error('Autenticação necessária', {
-          description: 'Você precisa estar autenticado para cadastrar um animal.'
-        });
-        throw new Error('Você precisa estar autenticado para cadastrar um animal');
+    toast.loading('Cadastrando animal...', { id: 'animal-creation' });
+
+    const created = await apiRequest<BackendAnimal>('/api/animals', {
+      method: 'POST',
+      body: {
+        name: animalData.nome.trim(),
+        animalType: animalData.tipo,
+        breed: animalData.raca,
+        ageYears: animalData.idade,
+        sex: animalData.sexo,
+        size: animalData.porte,
+        description: animalData.descricao?.trim(),
+        sterilized: animalData.castrado,
+        vaccineIds: animalData.vaccineIds ?? [],
+        specialNeeds: animalData.specialNeeds ?? false,
+        specialNeedsDescription: animalData.specialNeedsDescription,
+        tutorName: animalData.tutorName,
+        tutorContact: animalData.tutorContact,
+        personalityTemperament: animalData.personalityTemperament,
+        additionalInfo: animalData.additionalInfo,
+        goodWithChildren: animalData.goodWithChildren ?? false,
+        goodWithOtherAnimals: animalData.goodWithOtherAnimals ?? false,
+        goodWithSeniors: animalData.goodWithSeniors ?? false,
+        adopterProfile: {
+          suitableHousing: ['house', 'apartment', 'farm'],
+          requiresYard: animalData.porte === 'grande',
+          requiresWalledYard: false,
+          requiresWindowScreens: animalData.tipo === 'gato',
+          allowsRented: true,
+          minResidentExperience: 'none',
+          suitableForChildren: animalData.goodWithChildren ?? true,
+          suitableForFirstTimers: true,
+          maxHoursAloneDaily: animalData.tipo === 'gato' ? 10 : 8,
+          estimatedMonthlyCost: estimatedMonthlyCostBySize(animalData.porte),
+          requiresEmergencyBudget: animalData.specialNeeds ?? false,
+        },
+        organizationId: animalData.organizationId,
+        createdByUserId: animalData.createdByUserId,
+      },
+    });
+
+    if (animalData.imageFiles?.length) {
+      const limitedFiles = animalData.imageFiles.slice(0, 2);
+      for (let index = 0; index < limitedFiles.length; index += 1) {
+        await uploadAnimalImage(created.id, limitedFiles[index], index);
       }
     }
-    
-    // Prepare animal data for insertion, ensuring arrays are properly handled
-    const animalForInsertion = {
-      nome: animalData.nome.trim(),
-      idade: animalData.idade,
-      tipo: animalData.tipo,
-      porte: animalData.porte,
-      sexo: animalData.sexo, 
-      castrado: animalData.castrado,
-      vacinas: animalData.vacinas || [],
-      responsavel_id: animalData.responsavel_id,
-      descricao: animalData.descricao.trim(),
-      fotoprincipal: animalData.fotoPrincipal,
-      fotos: animalData.fotos || []
-    };
-    
-    console.log('Dados preparados para inserção:', animalForInsertion);
 
-    // Check if we're using admin demo mode and need to use edge function
-    if (localStorage.getItem("isAdmin") === "true" && !session?.user) {
-      try {
-        console.log('Chamando Edge Function usando Supabase client.');
-        
-        toast.loading('Cadastrando animal...', {id: 'animal-creation'});
-        
-        // Use the edge function directly via Supabase client
-        const { data, error } = await supabase.functions.invoke('animals', {
-          body: animalForInsertion
-        });
-        
-        if (error) {
-          console.error('Erro na Edge Function:', error);
-          toast.error('Erro ao cadastrar animal', {
-            id: 'animal-creation',
-            description: error.message || 'Falha no processamento'
-          });
-          throw new Error(`Erro na Edge Function: ${error.message}`);
-        }
-        
-        // Check for application-level errors in the response
-        if (data && data.error) {
-          console.error('Erro retornado pela Edge Function:', data);
-          toast.error('Erro ao cadastrar animal', {
-            id: 'animal-creation',
-            description: data.details || data.error
-          });
-          throw new Error(`Erro na Edge Function: ${data.details || data.error}`);
-        }
-        
-        console.log('Animal cadastrado com sucesso via Edge Function! Dados:', data);
-        toast.success('Animal cadastrado com sucesso!', {
-          id: 'animal-creation',
-          description: `${animalForInsertion.nome} foi adicionado ao sistema.`
-        });
-        return data ? dbAnimalToAnimal(data) : null;
-      } catch (error) {
-        console.error('Erro na chamada à Edge Function:', error);
-        if (error instanceof Error) {
-          if (error.message.includes('Failed to fetch')) {
-            toast.error('Erro de conexão', {
-              id: 'animal-creation',
-              description: 'Não foi possível conectar à Edge Function. Verifique sua conexão com a internet e as configurações do Supabase.'
-            });
-          } else {
-            toast.error('Erro ao cadastrar animal', {
-              id: 'animal-creation',
-              description: error.message
-            });
-          }
-        } else {
-          toast.error('Erro ao cadastrar animal', {
-            id: 'animal-creation',
-            description: 'Erro desconhecido ao cadastrar animal via Edge Function'
-          });
-        }
-        throw error;
-      }
-    } else {
-      // For authenticated users, use the regular Supabase client
-      toast.loading('Cadastrando animal...', {id: 'animal-creation'});
-      
-      const { data, error } = await supabase
-        .from('animals')
-        .insert(animalForInsertion)
-        .select()
-        .single();
+    const data = await apiRequest<BackendAnimal>(`/api/animals/${created.id}`);
 
-      if (error) {
-        console.error('Erro ao cadastrar animal:', error);
-        if (error.code === '42501') {
-          toast.error('Permissão negada', {
-            id: 'animal-creation',
-            description: 'Verifique se você tem acesso para cadastrar animais.'
-          });
-          throw new Error('Permissão negada. Verifique se você tem acesso para cadastrar animais.');
-        } else if (error.code === '23505') {
-          toast.error('Animal já cadastrado', {
-            id: 'animal-creation',
-            description: 'Este animal já existe no sistema.'
-          });
-          throw new Error('Este animal já existe no sistema.');
-        } else {
-          toast.error('Erro ao cadastrar animal', {
-            id: 'animal-creation',
-            description: error.message
-          });
-          throw new Error(`Erro ao cadastrar animal: ${error.message}`);
-        }
-      }
-
-      if (!data) {
-        console.error('Nenhum dado retornado após inserção');
-        toast.error('Falha ao criar animal', {
-          id: 'animal-creation',
-          description: 'Nenhum dado retornado do servidor'
-        });
-        throw new Error('Falha ao criar animal: Nenhum dado retornado do servidor');
-      }
-
-      console.log('Animal cadastrado com sucesso! Dados:', data);
-      toast.success('Animal cadastrado com sucesso!', {
-        id: 'animal-creation',
-        description: `${animalForInsertion.nome} foi adicionado ao sistema.`
-      });
-      return data ? dbAnimalToAnimal(data) : null;
-    }
+    toast.success('Animal cadastrado com sucesso!', {
+      id: 'animal-creation',
+      description: `${animalData.nome} foi adicionado ao sistema.`,
+    });
+    return backendAnimalToAnimal(data);
   } catch (error) {
     console.error('Erro em createAnimal:', error);
     if (error instanceof Error) {
@@ -269,7 +293,6 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
   }
 };
 
-// Get all animals with optional filters
 export const getAnimals = async (filters?: {
   nome?: string;
   tipo?: string;
@@ -277,45 +300,21 @@ export const getAnimals = async (filters?: {
   responsavel_id?: string;
 }): Promise<Animal[]> => {
   try {
-    console.log('Getting animals with filters:', filters);
-    
-    let query = supabase
-      .from('animals')
-      .select('*');
+    const data = await apiRequest<BackendAnimal[]>('/api/animals');
+    let mappedAnimals = data.map(backendAnimalToAnimal);
 
-    // Apply filters if provided
-    if (filters) {
-      if (filters.nome) {
-        query = query.ilike('nome', `%${filters.nome}%`);
-      }
-      if (filters.tipo && filters.tipo !== 'all') {
-        query = query.eq('tipo', filters.tipo);
-      }
-      if (filters.porte && filters.porte !== 'all') {
-        query = query.eq('porte', filters.porte);
-      }
-      if (filters.responsavel_id) {
-        query = query.eq('responsavel_id', filters.responsavel_id);
-      }
+    if (filters?.nome) {
+      mappedAnimals = mappedAnimals.filter((animal) =>
+        animal.nome.toLowerCase().includes(filters.nome!.toLowerCase()),
+      );
+    }
+    if (filters?.tipo && filters.tipo !== 'all') {
+      mappedAnimals = mappedAnimals.filter((animal) => animal.tipo === filters.tipo);
+    }
+    if (filters?.porte && filters.porte !== 'all') {
+      mappedAnimals = mappedAnimals.filter((animal) => animal.porte === filters.porte);
     }
 
-    const { data, error } = await query.order('data_cadastro', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching animals:', error);
-      throw new Error(error.message);
-    }
-
-    console.log('Animals fetched successfully. Raw data:', data);
-    
-    if (!data || data.length === 0) {
-      console.log('No animals found with the given filters');
-      return [];
-    }
-    
-    const mappedAnimals = data.map(dbAnimalToAnimal);
-    console.log('Mapped animals:', mappedAnimals);
-    
     return mappedAnimals;
   } catch (error) {
     console.error('Error in getAnimals:', error);
@@ -328,25 +327,10 @@ export const getAnimals = async (filters?: {
   }
 };
 
-// Get a single animal by ID
 export const getAnimalById = async (id: string): Promise<Animal | null> => {
   try {
-    const { data, error } = await supabase
-      .from('animals')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // No rows returned error
-        return null;
-      }
-      console.error('Error fetching animal:', error);
-      throw new Error(error.message);
-    }
-
-    return data ? dbAnimalToAnimal(data) : null;
+    const data = await apiRequest<BackendAnimal>(`/api/animals/${id}`);
+    return data ? backendAnimalToAnimal(data) : null;
   } catch (error) {
     console.error('Error in getAnimalById:', error);
     if (error instanceof Error) {
@@ -358,68 +342,48 @@ export const getAnimalById = async (id: string): Promise<Animal | null> => {
   }
 };
 
-// Update an animal
 export const updateAnimal = async (id: string, animalData: Partial<Animal>): Promise<Animal | null> => {
   try {
-    // Create a properly formatted object for the update
-    const updateData: any = {};
-    
-    if (animalData.nome !== undefined) updateData.nome = animalData.nome.trim();
-    if (animalData.idade !== undefined) updateData.idade = animalData.idade;
-    if (animalData.tipo !== undefined) updateData.tipo = animalData.tipo;
-    if (animalData.porte !== undefined) updateData.porte = animalData.porte;
-    if (animalData.sexo !== undefined) updateData.sexo = animalData.sexo;
-    if (animalData.castrado !== undefined) updateData.castrado = animalData.castrado;
-    if (animalData.descricao !== undefined) updateData.descricao = animalData.descricao?.trim();
-    
-    // Handle vacinas array
-    if (animalData.vacinas !== undefined) {
-      updateData.vacinas = Array.isArray(animalData.vacinas) ? animalData.vacinas : [];
-    }
-    
-    // Handle fotos array
-    if (animalData.fotos !== undefined) {
-      updateData.fotos = Array.isArray(animalData.fotos) ? animalData.fotos : [];
-    }
-    
-    // Handle fotoPrincipal
-    if (animalData.fotoPrincipal !== undefined) {
-      updateData.fotoprincipal = animalData.fotoPrincipal;
-    }
+    const current = await apiRequest<BackendAnimal>(`/api/animals/${id}`);
 
-    console.log('Atualizando animal com ID:', id, 'Dados:', updateData);
-    
-    const { data, error } = await supabase
-      .from('animals')
-      .update(updateData)
-      .eq('id', id)
-      .select()
-      .single();
+    const data = await apiRequest<BackendAnimal>(`/api/animals/${id}`, {
+      method: 'PUT',
+      body: {
+        name: animalData.nome ?? current.name,
+        animalType: animalData.tipo ?? current.animalType,
+        breed: animalData.raca ?? current.breed,
+        ageYears: animalData.idade ?? current.ageYears,
+        sex: animalData.sexo ?? current.sex,
+        size: animalData.porte ?? current.size,
+        description: animalData.descricao ?? current.description,
+        sterilized: animalData.castrado ?? current.sterilized,
+        vaccineIds: animalData.vaccineIds ?? current.vaccineIds,
+        tutorName: animalData.tutorName ?? current.tutorName,
+        tutorContact: animalData.tutorContact ?? current.tutorContact,
+        personalityTemperament: animalData.personalityTemperament ?? current.personalityTemperament,
+        additionalInfo: animalData.additionalInfo ?? current.additionalInfo,
+        specialNeeds: animalData.specialNeeds ?? current.specialNeeds ?? false,
+        specialNeedsDescription: animalData.specialNeedsDescription ?? current.specialNeedsDescription,
+        goodWithChildren: animalData.goodWithChildren ?? current.goodWithChildren ?? false,
+        goodWithOtherAnimals: animalData.goodWithOtherAnimals ?? current.goodWithOtherAnimals ?? false,
+        goodWithSeniors: animalData.goodWithSeniors ?? current.goodWithSeniors ?? false,
+        adopterProfile: current.adopterProfile ?? {
+          suitableHousing: ['house', 'apartment', 'farm'],
+          requiresYard: (animalData.porte ?? current.size) === 'grande',
+          requiresWalledYard: false,
+          requiresWindowScreens: (animalData.tipo ?? current.animalType) === 'gato',
+          allowsRented: true,
+          minResidentExperience: 'none',
+          suitableForChildren: animalData.goodWithChildren ?? current.goodWithChildren ?? true,
+          suitableForFirstTimers: true,
+          maxHoursAloneDaily: (animalData.tipo ?? current.animalType) === 'gato' ? 10 : 8,
+          estimatedMonthlyCost: estimatedMonthlyCostBySize((animalData.porte ?? current.size) as 'pequeno' | 'medio' | 'grande'),
+          requiresEmergencyBudget: animalData.specialNeeds ?? current.specialNeeds ?? false,
+        },
+      },
+    });
 
-    if (error) {
-      console.error('Error updating animal:', error);
-      if (error.code === '42501') {
-        toast.error('Permissão negada', {
-          description: 'Você não tem permissão para atualizar este animal.'
-        });
-      } else {
-        toast.error('Erro ao atualizar animal', {
-          description: error.message
-        });
-      }
-      throw new Error(error.message);
-    }
-    
-    if (!data) {
-      console.error('Nenhum dado retornado após atualização');
-      toast.error('Falha ao atualizar animal');
-      throw new Error('Falha ao atualizar animal: Nenhum dado retornado do servidor');
-    }
-
-    const updatedAnimal = dbAnimalToAnimal(data);
-    console.log('Animal atualizado com sucesso:', updatedAnimal);
-    
-    return updatedAnimal;
+    return backendAnimalToAnimal(data);
   } catch (error) {
     console.error('Error in updateAnimal:', error);
     if (error instanceof Error) {
@@ -431,19 +395,9 @@ export const updateAnimal = async (id: string, animalData: Partial<Animal>): Pro
   }
 };
 
-// Delete an animal
 export const deleteAnimal = async (id: string): Promise<boolean> => {
   try {
-    const { error } = await supabase
-      .from('animals')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error deleting animal:', error);
-      throw new Error(error.message);
-    }
-
+    await apiRequest(`/api/animals/${id}`, { method: 'DELETE' });
     return true;
   } catch (error) {
     console.error('Error in deleteAnimal:', error);
@@ -456,7 +410,6 @@ export const deleteAnimal = async (id: string): Promise<boolean> => {
   }
 };
 
-// Save cost simulation for an animal
 export const saveCostSimulation = async (animalId: string, simulationData: any): Promise<boolean> => {
   try {
     // Make sure the animal exists
@@ -464,27 +417,20 @@ export const saveCostSimulation = async (animalId: string, simulationData: any):
     if (!animal) {
       throw new Error('Animal não encontrado');
     }
-
-    const { error } = await supabase
-      .from('cost_simulations')
-      .insert({
-        animal_id: animalId,
-        animal_type: animal.tipo,
-        animal_size: animal.porte,
-        age_months: animal.idade * 12, // Convert years to months for consistency
-        estimated_monthly_cost: simulationData.monthlyTotal,
-        estimated_yearly_cost: simulationData.yearlyTotal,
-        estimated_lifetime_cost: simulationData.lifetimeTotal,
-        food_type: simulationData.foodType || 'basic',
-        health_conditions: simulationData.healthConditions || [],
-        special_care_needs: simulationData.specialCareNeeds || [],
-        results_json: simulationData
-      });
-
-    if (error) {
-      console.error('Error saving cost simulation:', error);
-      throw new Error(error.message);
-    }
+    const simulationKey = `cost-simulation-${animalId}-${Date.now()}`;
+    localStorage.setItem(simulationKey, JSON.stringify({
+      animal_id: animalId,
+      animal_type: animal.tipo,
+      animal_size: animal.porte,
+      age_months: animal.idade * 12,
+      estimated_monthly_cost: simulationData.monthlyTotal,
+      estimated_yearly_cost: simulationData.yearlyTotal,
+      estimated_lifetime_cost: simulationData.lifetimeTotal,
+      food_type: simulationData.foodType || 'basic',
+      health_conditions: simulationData.healthConditions || [],
+      special_care_needs: simulationData.specialCareNeeds || [],
+      results_json: simulationData,
+    }));
 
     return true;
   } catch (error) {

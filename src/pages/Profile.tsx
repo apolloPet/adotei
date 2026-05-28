@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from '@/hooks/use-sonner';
@@ -24,7 +24,17 @@ import {
   FinancialForm,
   IntentionForm,
 } from '@/lib/schemas/profile';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Trash2 } from 'lucide-react';
+import { changeAdminPassword } from '@/services/auth';
+import {
+  getMyAdopterProfile,
+  mapBackendProfileToExtended,
+  mapExtendedToBackendProfile,
+  saveMyAdopterProfile,
+  invalidateCompatibilityProfileCache,
+  syncAdopterProfileToBackend,
+} from '@/services/compatibilityService';
+import { loadExtendedProfile, saveExtendedProfile } from '@/utils/adopterProfileStorage';
 
 const EXTENDED_KEY = 'user_profile_extended';
 
@@ -44,11 +54,19 @@ const saveExtended = (userId: string, ext: ExtendedProfile) => {
 };
 
 export default function Profile() {
-  const { user, fetchUserData } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const userId = user?.id ?? null;
   const [loading, setLoading] = useState(true);
+  const hasLoadedRef = useRef(false);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [extended, setExtended] = useState<ExtendedProfile>({});
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [removingProof, setRemovingProof] = useState(false);
+  const proofFileInputKey = useRef(0);
 
   // Forms
   const housingForm = useForm<HousingForm>({
@@ -88,12 +106,15 @@ export default function Profile() {
 
   useEffect(() => {
     (async () => {
-      if (!user) return;
-      setLoading(true);
+      if (!userId || !user) return;
+      const isInitialLoad = !hasLoadedRef.current;
+      if (isInitialLoad) {
+        setLoading(true);
+      }
       try {
         const fetched = await getProfile();
         const base: UserProfile = fetched ?? {
-          id: '',
+          id: userId,
           firstName: user.user_metadata?.firstName || '',
           lastName: user.user_metadata?.lastName || '',
           email: user.email || '',
@@ -112,62 +133,149 @@ export default function Profile() {
           workSchedule: '',
         };
         setProfile(base);
-        const ext = loadExtended(user.id);
+        let ext = loadExtended(userId) || loadExtendedProfile(userId) || {};
+        try {
+          const backendProfile = await getMyAdopterProfile();
+          if (backendProfile) {
+            ext = mapBackendProfileToExtended(backendProfile);
+            saveExtended(userId, ext);
+            saveExtendedProfile(userId, ext);
+          } else if (isInitialLoad && Object.keys(ext).length > 0) {
+            const synced = await syncAdopterProfileToBackend(userId, ext);
+            ext = mapBackendProfileToExtended(synced);
+            saveExtended(userId, ext);
+          }
+        } catch {
+          // fallback para cache local quando o perfil estendido ainda nao existir
+        }
         setExtended(ext);
-        if (ext.housing) housingForm.reset(ext.housing as HousingForm);
-        if (ext.experience) experienceForm.reset(ext.experience as ExperienceForm);
-        if (ext.financial) financialForm.reset(ext.financial as FinancialForm);
-        if (ext.intention) intentionForm.reset(ext.intention as IntentionForm);
+        if (isInitialLoad) {
+          if (ext.housing) {
+            housingForm.reset({
+              type: ext.housing.type ?? 'house',
+              ownership: ext.housing.ownership ?? 'owned',
+              rentAllowsPets: ext.housing.rentAllowsPets ?? undefined,
+              hasYard: ext.housing.hasYard ?? false,
+              yardWalled: ext.housing.yardWalled ?? undefined,
+              hasWindowScreens: ext.housing.hasWindowScreens ?? undefined,
+              numResidents: ext.housing.numResidents ?? 1,
+              hasChildren: ext.housing.hasChildren ?? false,
+              childrenAges: ext.housing.childrenAges,
+            });
+          }
+          if (ext.experience) experienceForm.reset(ext.experience as ExperienceForm);
+          if (ext.financial) financialForm.reset(ext.financial as FinancialForm);
+          if (ext.intention) intentionForm.reset(ext.intention as IntentionForm);
+        }
+        hasLoadedRef.current = true;
       } catch (e) {
         console.error(e);
-        toast.error('Erro ao carregar perfil');
+        if (isInitialLoad) {
+          toast.error('Erro ao carregar perfil');
+        }
       } finally {
-        setLoading(false);
+        if (isInitialLoad) {
+          setLoading(false);
+        }
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [userId]);
 
   const handleSavePersonal = async () => {
     if (!profile) return;
     setSaving(true);
     try {
       await updateProfile(profile);
-      fetchUserData();
     } finally {
       setSaving(false);
     }
   };
 
-  const persistExtended = (next: ExtendedProfile) => {
+  const persistExtended = async (next: ExtendedProfile) => {
     if (!user?.id) return;
-    setExtended(next);
-    saveExtended(user.id, next);
-    toast.success('Informações salvas');
+    try {
+      const payload = mapExtendedToBackendProfile(user.id, next);
+      await saveMyAdopterProfile(payload);
+      invalidateCompatibilityProfileCache();
+      setExtended(next);
+      saveExtended(user.id, next);
+      toast.success('Informações salvas');
+    } catch (error) {
+      console.error(error);
+      toast.error('Nao foi possivel salvar o perfil estendido no servidor');
+    }
   };
 
-  const handleHousing = housingForm.handleSubmit((data) => persistExtended({ ...extended, housing: data as any }));
-  const handleExperience = experienceForm.handleSubmit((data) => persistExtended({ ...extended, experience: data as any }));
-  const handleFinancial = financialForm.handleSubmit((data) => persistExtended({ ...extended, financial: data as any }));
-  const handleIntention = intentionForm.handleSubmit((data) => persistExtended({ ...extended, intention: data as any }));
+  const handleHousing = housingForm.handleSubmit(async (data) => persistExtended({ ...extended, housing: data as any }));
+  const handleExperience = experienceForm.handleSubmit(async (data) => persistExtended({ ...extended, experience: data as any }));
+  const handleFinancial = financialForm.handleSubmit(async (data) => persistExtended({ ...extended, financial: data as any }));
+  const handleIntention = intentionForm.handleSubmit(async (data) => persistExtended({ ...extended, intention: data as any }));
 
-  const handleProofUpload = async (kind: 'photo' | 'video', file: File) => {
+  const handleProofUpload = async (file: File) => {
     try {
-      const url = await fileToDataUrl(
-        file,
-        kind === 'photo' ? 2 * 1024 * 1024 : 10 * 1024 * 1024,
-        kind === 'photo' ? 'image/' : 'video/'
-      );
+      const url = await fileToDataUrl(file, 2 * 1024 * 1024, 'image/');
       const next = {
         ...extended,
         proof: {
           ...(extended.proof || {}),
-          [kind === 'photo' ? 'environmentPhotoUrl' : 'environmentVideoUrl']: url,
+          environmentPhotoUrl: url,
         },
       };
-      persistExtended(next);
+      await persistExtended(next);
+      proofFileInputKey.current += 1;
     } catch (e: any) {
       toast.error(e.message || 'Erro no upload');
+    }
+  };
+
+  const handleProofRemove = async () => {
+    if (!user?.id || !extended.proof?.environmentPhotoUrl) return;
+    setRemovingProof(true);
+    try {
+      const next: ExtendedProfile = {
+        ...extended,
+        proof: {
+          ...extended.proof,
+          environmentPhotoUrl: undefined,
+        },
+      };
+      const payload = mapExtendedToBackendProfile(user.id, next);
+      await saveMyAdopterProfile({ ...payload, environmentPhotoUrl: '' });
+      invalidateCompatibilityProfileCache(user.id);
+      setExtended(next);
+      saveExtended(user.id, next);
+      proofFileInputKey.current += 1;
+      toast.success('Comprovação removida');
+    } catch (error) {
+      console.error(error);
+      toast.error('Não foi possível remover a comprovação');
+    } finally {
+      setRemovingProof(false);
+    }
+  };
+
+  const handleAdminPasswordChange = async () => {
+    if (newPassword !== confirmPassword) {
+      toast.error('As novas senhas não coincidem.');
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast.error('A nova senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const success = await changeAdminPassword(currentPassword, newPassword);
+      if (success) {
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -431,11 +539,14 @@ export default function Profile() {
             <TabsContent value="intention" className="pt-4">
               <form onSubmit={handleIntention} className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Por que deseja adotar? (mín. 1000 caracteres)</Label>
-                  <Textarea rows={8} {...intentionForm.register('reasonToAdopt')} />
-                  <p className={`text-xs ${reasonLen < 1000 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  <Label>Por que deseja adotar? (máx. 1000 caracteres)</Label>
+                  <Textarea rows={8} maxLength={1000} {...intentionForm.register('reasonToAdopt')} />
+                  <p className={`text-xs ${reasonLen > 1000 ? 'text-destructive' : 'text-muted-foreground'}`}>
                     {reasonLen}/1000
                   </p>
+                  {intentionForm.formState.errors.reasonToAdopt && (
+                    <p className="text-xs text-destructive">{intentionForm.formState.errors.reasonToAdopt.message}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Quanto tempo o animal ficaria sozinho por dia (horas)?</Label>
@@ -459,9 +570,6 @@ export default function Profile() {
                   <Label>Está disposto à adaptação inicial?</Label>
                   <Switch checked={!!intentionForm.watch('willAdapt')} onCheckedChange={(c) => intentionForm.setValue('willAdapt', c)} />
                 </div>
-                {intentionForm.formState.errors.reasonToAdopt && (
-                  <p className="text-xs text-destructive">{intentionForm.formState.errors.reasonToAdopt.message}</p>
-                )}
                 <div className="flex justify-end"><Button type="submit">Salvar intenção</Button></div>
               </form>
             </TabsContent>
@@ -470,24 +578,81 @@ export default function Profile() {
             <TabsContent value="proof" className="pt-4 space-y-6">
               <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm flex gap-2">
                 <AlertTriangle className="h-4 w-4 mt-0.5" />
-                <span>Envie comprovação visual do ambiente onde o animal viverá. Reduz drasticamente o risco de adoção mal sucedida.</span>
+                <span>
+                  Você pode enviar uma foto opcional do ambiente onde o animal viverá. Isso ajuda a ONG a validar a adoção.
+                </span>
               </div>
               <div className="space-y-2">
-                <Label>Foto do local (máx 2MB)</Label>
-                <Input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && handleProofUpload('photo', e.target.files[0])} />
+                <Label>Foto do local (opcional, máx. 2MB)</Label>
+                <Input
+                  key={proofFileInputKey.current}
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => e.target.files?.[0] && handleProofUpload(e.target.files[0])}
+                />
                 {extended.proof?.environmentPhotoUrl && (
-                  <img src={extended.proof.environmentPhotoUrl} alt="Local" className="mt-2 rounded-md max-h-48 object-cover" />
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label>Vídeo curto do ambiente (máx 10MB)</Label>
-                <Input type="file" accept="video/*" onChange={(e) => e.target.files?.[0] && handleProofUpload('video', e.target.files[0])} />
-                {extended.proof?.environmentVideoUrl && (
-                  <video src={extended.proof.environmentVideoUrl} controls className="mt-2 rounded-md max-h-48" />
+                  <div className="mt-2 space-y-2">
+                    <img
+                      src={extended.proof.environmentPhotoUrl}
+                      alt="Local"
+                      className="rounded-md max-h-48 w-full object-cover"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      disabled={removingProof}
+                      onClick={handleProofRemove}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      {removingProof ? 'Removendo...' : 'Excluir comprovação'}
+                    </Button>
+                  </div>
                 )}
               </div>
             </TabsContent>
           </Tabs>
+
+          {isAdmin && (
+            <div className="mt-8 rounded-lg border p-4 space-y-4">
+              <h3 className="text-lg font-semibold">Segurança do Administrador</h3>
+              <p className="text-sm text-muted-foreground">
+                Altere sua senha de administrador diretamente em Meu Perfil.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-2">
+                  <Label>Senha atual</Label>
+                  <Input
+                    type="password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Nova senha</Label>
+                  <Input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Confirmar nova senha</Label>
+                  <Input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={handleAdminPasswordChange} disabled={changingPassword}>
+                  {changingPassword ? 'Salvando...' : 'Alterar senha'}
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

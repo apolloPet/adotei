@@ -1,15 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Heart, Info, MapPin, Clock, Calendar, Ruler, Weight, Star, DollarSign } from 'lucide-react';
+import { X, Heart, Info, MapPin, Clock, Calendar, Ruler, Weight, Star, DollarSign, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { PetInfo } from '@/types/pets';
+import { Pet } from '@/types/pets';
 
 interface PetDetailsViewProps {
-  pet: PetInfo;
+  pet: Pet;
   onClose: () => void;
 }
 
@@ -26,19 +26,21 @@ const PetDetailsView = ({ pet, onClose }: PetDetailsViewProps) => {
       let monthlyFood = 0;
       let monthlyMedical = 0;
       
+      const petAge = parseInt(pet.age, 10) || 0;
+
       // Food cost based on size
       if (pet.size === 'small') {
-        monthlyFood = pet.type === 'dog' ? 120 : 100;
+        monthlyFood = pet.species === 'dog' ? 120 : 100;
       } else if (pet.size === 'medium') {
-        monthlyFood = pet.type === 'dog' ? 220 : 150;
+        monthlyFood = pet.species === 'dog' ? 220 : 150;
       } else {
-        monthlyFood = pet.type === 'dog' ? 320 : 200;
+        monthlyFood = pet.species === 'dog' ? 320 : 200;
       }
       
       // Medical costs based on age
-      if (pet.age < 1) {
+      if (petAge < 1) {
         monthlyMedical = 100; // Puppies/kittens need more care
-      } else if (pet.age > 7) {
+      } else if (petAge > 7) {
         monthlyMedical = 150; // Senior pets need more care
       } else {
         monthlyMedical = 80; // Adult pets
@@ -74,6 +76,19 @@ const PetDetailsView = ({ pet, onClose }: PetDetailsViewProps) => {
         </div>
         
         <ScrollArea className="flex-1 px-4 pb-28">
+          {typeof pet.compatibilityScore === 'number' && (
+            <div className="mt-4 rounded-lg border border-primary/30 bg-primary/10 p-4">
+              <h3 className="font-semibold mb-1 flex items-center gap-2 text-primary">
+                <Sparkles className="h-5 w-5" />
+                Compatibilidade com você
+              </h3>
+              <p className="text-3xl font-bold text-primary">{pet.compatibilityScore}%</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Com base no seu perfil de adotante e no perfil ideal deste animal.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-2 my-4">
             <div className="flex items-center text-sm">
               <MapPin className="h-4 w-4 mr-1 text-primary" />
@@ -81,18 +96,18 @@ const PetDetailsView = ({ pet, onClose }: PetDetailsViewProps) => {
             </div>
             <div className="flex items-center text-sm">
               <Clock className="h-4 w-4 mr-1 text-primary" />
-              <span>No abrigo há {pet.shelterTime}</span>
+              <span>{pet.shelterTime ? `No abrigo há ${pet.shelterTime}` : 'Tempo no abrigo não informado'}</span>
             </div>
           </div>
           
           <div className="flex flex-wrap gap-2 mb-4">
             <Badge variant="secondary" className="flex items-center gap-1">
               <Heart className="h-3 w-3" />
-              {pet.type}
+              {pet.species === 'dog' ? 'Cachorro' : pet.species === 'cat' ? 'Gato' : 'Outro'}
             </Badge>
             <Badge variant="secondary" className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              {pet.age} {pet.age === 1 ? 'ano' : 'anos'}
+              {pet.age} {parseInt(pet.age, 10) === 1 ? 'ano' : 'anos'}
             </Badge>
             <Badge variant="secondary" className="flex items-center gap-1">
               <Ruler className="h-3 w-3" />
@@ -114,14 +129,14 @@ const PetDetailsView = ({ pet, onClose }: PetDetailsViewProps) => {
             <p className="text-sm text-muted-foreground">{pet.description}</p>
           </div>
           
-          {pet.personality && (
+          {pet.traits && pet.traits.length > 0 && (
             <div className="mb-4">
               <h3 className="font-semibold mb-2 flex items-center">
                 <Star className="h-4 w-4 mr-1 text-primary" />
                 Personalidade
               </h3>
               <div className="flex flex-wrap gap-2">
-                {pet.personality.map((trait, index) => (
+                {pet.traits.map((trait, index) => (
                   <Badge key={index} variant="outline">
                     {trait}
                   </Badge>

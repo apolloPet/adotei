@@ -10,6 +10,11 @@ lerna-debug.log*
 node_modules
 .env
 dist
+
+# Backend (Gradle/Maven)
+backend/build
+backend/.gradle
+backend/target
 dist-ssr
 *.local
 
