@@ -28,6 +28,7 @@ import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalAdopterProfileRespo
 import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalImageResponse;
 import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalRequest;
 import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalResponse;
+import jakarta.persistence.EntityManager;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Base64;
@@ -70,6 +71,8 @@ public class AnimalService {
     private final AwsProperties awsProperties;
     private final Environment environment;
 
+    private final EntityManager entityManager;
+
     public AnimalService(
         AnimalRepository animalRepository,
         OrganizationRepository organizationRepository,
@@ -82,7 +85,8 @@ public class AnimalService {
         AnimalImageRepository imageRepository,
         S3Client s3Client,
         AwsProperties awsProperties,
-        Environment environment
+        Environment environment,
+        EntityManager entityManager
     ) {
         this.animalRepository = animalRepository;
         this.organizationRepository = organizationRepository;
@@ -96,6 +100,7 @@ public class AnimalService {
         this.s3Client = s3Client;
         this.awsProperties = awsProperties;
         this.environment = environment;
+        this.entityManager = entityManager;
     }
 
     @Transactional(readOnly = true)
@@ -177,7 +182,7 @@ public class AnimalService {
         AppUser requester = loadRequester(requesterAuthSubject);
         Animal animal = load(id);
         assertVolunteerCanManageAnimal(requester, animal);
-        animalRepository.delete(Objects.requireNonNull(animal));
+        entityManager.remove(entityManager.getReference(Animal.class, Objects.requireNonNull(id)));
     }
 
     @Transactional

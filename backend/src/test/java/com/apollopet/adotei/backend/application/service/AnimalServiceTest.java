@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.eq;
 
 import com.apollopet.adotei.backend.application.exception.BadRequestException;
 import com.apollopet.adotei.backend.domain.entity.Animal;
@@ -22,6 +23,7 @@ import com.apollopet.adotei.backend.domain.repository.TemperamentTraitRepository
 import com.apollopet.adotei.backend.domain.repository.TutorRepository;
 import com.apollopet.adotei.backend.domain.repository.VaccineRepository;
 import com.apollopet.adotei.backend.infrastructure.config.AwsProperties;
+import jakarta.persistence.EntityManager;
 import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
@@ -47,6 +49,7 @@ class AnimalServiceTest {
     @Mock private AnimalImageRepository imageRepository;
     @Mock private S3Client s3Client;
     @Mock private Environment environment;
+    @Mock private EntityManager entityManager;
 
     private AnimalService animalService;
 
@@ -68,7 +71,8 @@ class AnimalServiceTest {
             imageRepository,
             s3Client,
             awsProperties,
-            environment
+            environment,
+            entityManager
         );
     }
 
@@ -122,10 +126,11 @@ class AnimalServiceTest {
 
         when(appUserRepository.findByAuthSubject("admin-auth")).thenReturn(Optional.of(admin));
         when(animalRepository.findById(animalId)).thenReturn(Optional.of(animal));
+        when(entityManager.getReference(eq(Animal.class), eq(animalId))).thenReturn(animal);
 
         animalService.delete(animalId, "admin-auth");
 
-        verify(animalRepository).delete(animal);
+        verify(entityManager).remove(animal);
     }
 
     private void setEntityId(Object entity, UUID id) {
