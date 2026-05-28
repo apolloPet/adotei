@@ -29,13 +29,16 @@ public class AuthController {
 
     private final AuthService authService;
     private final boolean authCookieSecure;
+    private final String authCookieSameSite;
 
     public AuthController(
         AuthService authService,
-        @Value("${app.security.cookie.secure:true}") boolean authCookieSecure
+        @Value("${app.security.cookie.secure:true}") boolean authCookieSecure,
+        @Value("${app.security.cookie.same-site:Strict}") String authCookieSameSite
     ) {
         this.authService = authService;
         this.authCookieSecure = authCookieSecure;
+        this.authCookieSameSite = normalizeSameSite(authCookieSameSite);
     }
 
     @PostMapping("/register")
@@ -59,7 +62,7 @@ public class AuthController {
         ResponseCookie expiredCookie = ResponseCookie.from(CookieBearerTokenResolver.AUTH_COOKIE_NAME, "")
             .httpOnly(true)
             .secure(authCookieSecure)
-            .sameSite("Strict")
+            .sameSite(authCookieSameSite)
             .path("/")
             .maxAge(Duration.ZERO)
             .build();
@@ -86,9 +89,17 @@ public class AuthController {
         return ResponseCookie.from(CookieBearerTokenResolver.AUTH_COOKIE_NAME, token)
             .httpOnly(true)
             .secure(authCookieSecure)
-            .sameSite("Strict")
+            .sameSite(authCookieSameSite)
             .path("/")
             .maxAge(maxAgeSeconds)
             .build();
+    }
+
+    private static String normalizeSameSite(String value) {
+        if (value == null) {
+            return "Strict";
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? "Strict" : trimmed;
     }
 }

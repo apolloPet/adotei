@@ -104,6 +104,13 @@ export const apiRequest = async <T>(path: string, options: RequestOptions = {}):
     ...headers,
   };
 
+  if (!skipAuth) {
+    const token = getAuthToken();
+    if (token && !requestHeaders.Authorization) {
+      requestHeaders.Authorization = `Bearer ${token}`;
+    }
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method,
     headers: requestHeaders,
