@@ -36,6 +36,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.security.access.AccessDeniedException;
@@ -52,6 +54,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 public class AnimalService {
 
     private static final int MAX_IMAGES_PER_ANIMAL = 2;
+    private static final Logger log = LoggerFactory.getLogger(AnimalService.class);
 
     private final AnimalRepository animalRepository;
     private final OrganizationRepository organizationRepository;
@@ -207,6 +210,15 @@ public class AnimalService {
             fileUrl = buildPublicUrl(bucket, key);
         } catch (Exception e) {
             if (!isLocalProfile()) {
+                log.error(
+                    "Falha ao enviar imagem para S3. bucket={} key={} region={} endpoint={} publicEndpoint={}",
+                    bucket,
+                    key,
+                    awsProperties.region(),
+                    awsProperties.s3().endpoint(),
+                    awsProperties.s3().publicEndpoint(),
+                    e
+                );
                 throw new BadRequestException(
                     "Falha ao enviar imagem para o S3. Verifique S3_ACCESS_KEY, S3_SECRET_KEY e S3_BUCKET."
                 );
@@ -234,9 +246,26 @@ public class AnimalService {
     private String buildPublicUrl(String bucket, String key) {
         String base = publicEndpointBase();
         if (base != null) {
+            // Railway "s3-public-presigner" template expects the URL path to be the object key only.
+            // Example: https://<presigner-app>.up.railway.app/duck.png
+            if (isPublicBucketPresigner(base)) {
+                return base + "/" + key;
+            }
             return base + "/" + bucket + "/" + key;
         }
         return "https://%s.s3.%s.amazonaws.com/%s".formatted(bucket, awsProperties.region(), key);
+    }
+
+    private static boolean isPublicBucketPresigner(String base) {
+        try {
+            String host = URI.create(base).getHost();
+            if (host == null) {
+                return false;
+            }
+            return host.contains("s3-public-presigner");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private String publicEndpointBase() {
