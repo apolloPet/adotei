@@ -26,11 +26,18 @@ export const filterPetsForUser = (pets: Pet[], profile?: UserProfile | null): Fi
     };
   }
 
-  let filtered = [...pets];
+  const filtered = [...pets];
 
-  // Apartamento → sem pets grandes
+  // Apartamento: sinaliza pets grandes, mas não remove da listagem.
   if (housing?.type === 'apartment') {
-    filtered = filtered.filter((p) => p.size !== 'large');
+    filtered.forEach((p) => {
+      if (p.size === 'large') {
+        warnings.push({
+          petId: p.id,
+          message: 'Este pet de porte grande pode exigir mais espaco do que um apartamento comum.',
+        });
+      }
+    });
   }
 
   // Gato sem tela → adicionar warning, não filtrar
