@@ -4,10 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.apollopet.adotei.backend.application.exception.BadRequestException;
+import com.apollopet.adotei.backend.domain.entity.AdopterProfile;
 import com.apollopet.adotei.backend.domain.entity.AppUser;
 import com.apollopet.adotei.backend.domain.entity.Organization;
 import com.apollopet.adotei.backend.domain.entity.Role;
@@ -151,6 +153,42 @@ class UserServiceTest {
         );
 
         assertEquals("VOLUNTARIO", response.userType());
+    }
+
+    @Test
+    void devePermitirAdotanteSalvarProprioPerfilDeAdotante() {
+        AppUser adopter = new AppUser();
+        adopter.setUserType(UserType.ADOTANTE);
+
+        when(appUserRepository.findByAuthSubject("adotante-auth")).thenReturn(Optional.of(adopter));
+        when(adopterProfileRepository.findByUserId(nullable(UUID.class))).thenReturn(Optional.empty());
+
+        UpsertAdopterProfileRequest request = new UpsertAdopterProfileRequest(
+            "house", "owned", false, false, false, false, 1, false, null, false,
+            false, null, null, false, null, null, false, null, false, false,
+            false, null, null, null, null, true, null, null
+        );
+
+        userService.upsertOwnAdopterProfile("adotante-auth", request);
+
+        verify(adopterProfileRepository).save(any(AdopterProfile.class));
+    }
+
+    @Test
+    void deveImpedirSalvarPerfilDeAdotanteParaUsuarioNaoAdotanteNoFluxoProprio() {
+        AppUser volunteer = new AppUser();
+        volunteer.setUserType(UserType.VOLUNTARIO);
+
+        when(appUserRepository.findByAuthSubject("voluntario-auth")).thenReturn(Optional.of(volunteer));
+
+        UpsertAdopterProfileRequest request = new UpsertAdopterProfileRequest(
+            null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null, null, null,
+            null, null, null, null, null, null, null, null
+        );
+
+        assertThrows(BadRequestException.class, () -> userService.upsertOwnAdopterProfile("voluntario-auth", request));
+        verifyNoInteractions(adopterProfileRepository);
     }
 
     private UpsertUserRequest request(String userType, List<String> roles) {

@@ -2,7 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from '@/hooks/use-sonner';
-import { ExtendedProfile, UserProfile } from '@/types/user';
+import {
+  ExtendedProfile,
+  FinancialProfile,
+  HousingProfile,
+  HousingType,
+  IntentionProfile,
+  MonthlyBudget,
+  Ownership,
+  ExperienceProfile,
+  UserProfile,
+} from '@/types/user';
 import { getProfile, updateProfile } from '@/services/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -37,6 +47,16 @@ import {
 import { loadExtendedProfile, saveExtendedProfile } from '@/utils/adopterProfileStorage';
 
 const EXTENDED_KEY = 'user_profile_extended';
+
+const firstErrorMessage = (errors: Record<string, unknown>): string | null => {
+  const values = Object.values(errors) as Array<{ message?: string } | undefined>;
+  for (const err of values) {
+    if (err?.message && typeof err.message === 'string') {
+      return err.message;
+    }
+  }
+  return null;
+};
 
 const loadExtended = (userId?: string): ExtendedProfile => {
   if (!userId) return {};
@@ -74,7 +94,10 @@ export default function Profile() {
     defaultValues: {
       type: 'house',
       ownership: 'owned',
+      rentAllowsPets: false,
       hasYard: false,
+      yardWalled: false,
+      hasWindowScreens: false,
       numResidents: 1,
       hasChildren: false,
     },
@@ -144,6 +167,7 @@ export default function Profile() {
             const synced = await syncAdopterProfileToBackend(userId, ext);
             ext = mapBackendProfileToExtended(synced);
             saveExtended(userId, ext);
+            saveExtendedProfile(userId, ext);
           }
         } catch {
           // fallback para cache local quando o perfil estendido ainda nao existir
@@ -154,13 +178,13 @@ export default function Profile() {
             housingForm.reset({
               type: ext.housing.type ?? 'house',
               ownership: ext.housing.ownership ?? 'owned',
-              rentAllowsPets: ext.housing.rentAllowsPets ?? undefined,
+              rentAllowsPets: ext.housing.rentAllowsPets ?? false,
               hasYard: ext.housing.hasYard ?? false,
-              yardWalled: ext.housing.yardWalled ?? undefined,
-              hasWindowScreens: ext.housing.hasWindowScreens ?? undefined,
+              yardWalled: ext.housing.yardWalled ?? false,
+              hasWindowScreens: ext.housing.hasWindowScreens ?? false,
               numResidents: ext.housing.numResidents ?? 1,
               hasChildren: ext.housing.hasChildren ?? false,
-              childrenAges: ext.housing.childrenAges,
+              childrenAges: ext.housing.childrenAges ?? '',
             });
           }
           if (ext.experience) experienceForm.reset(ext.experience as ExperienceForm);
@@ -193,24 +217,68 @@ export default function Profile() {
   };
 
   const persistExtended = async (next: ExtendedProfile) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      toast.error('Você precisa estar logado para salvar seu perfil');
+      return;
+    }
     try {
       const payload = mapExtendedToBackendProfile(user.id, next);
       await saveMyAdopterProfile(payload);
-      invalidateCompatibilityProfileCache();
+      invalidateCompatibilityProfileCache(user.id);
       setExtended(next);
       saveExtended(user.id, next);
+      saveExtendedProfile(user.id, next);
       toast.success('Informações salvas');
     } catch (error) {
       console.error(error);
-      toast.error('Nao foi possivel salvar o perfil estendido no servidor');
+      toast.error('Não foi possível salvar o perfil estendido no servidor');
     }
   };
 
-  const handleHousing = housingForm.handleSubmit(async (data) => persistExtended({ ...extended, housing: data as any }));
-  const handleExperience = experienceForm.handleSubmit(async (data) => persistExtended({ ...extended, experience: data as any }));
-  const handleFinancial = financialForm.handleSubmit(async (data) => persistExtended({ ...extended, financial: data as any }));
-  const handleIntention = intentionForm.handleSubmit(async (data) => persistExtended({ ...extended, intention: data as any }));
+  const focusFirstError = (form: typeof housingForm | typeof experienceForm | typeof financialForm | typeof intentionForm) => {
+    const fields = Object.keys(form.formState.errors);
+    const first = fields[0];
+    if (first) {
+      form.setFocus(first as never);
+    }
+  };
+
+  const handleHousing = housingForm.handleSubmit(
+    async (data) => persistExtended({ ...extended, housing: data as HousingProfile }),
+    () => {
+      focusFirstError(housingForm);
+      const msg =
+        housingForm.formState.errors.rentAllowsPets?.message ||
+        firstErrorMessage(housingForm.formState.errors as unknown as Record<string, unknown>);
+      toast.error(msg || 'Revise os campos obrigatórios');
+    },
+  );
+  const handleExperience = experienceForm.handleSubmit(
+    async (data) => persistExtended({ ...extended, experience: data as ExperienceProfile }),
+    () => {
+      focusFirstError(experienceForm);
+      const msg = firstErrorMessage(experienceForm.formState.errors as unknown as Record<string, unknown>);
+      toast.error(msg || 'Revise os campos obrigatórios');
+    },
+  );
+  const handleFinancial = financialForm.handleSubmit(
+    async (data) => persistExtended({ ...extended, financial: data as FinancialProfile }),
+    () => {
+      focusFirstError(financialForm);
+      const msg = firstErrorMessage(financialForm.formState.errors as unknown as Record<string, unknown>);
+      toast.error(msg || 'Revise os campos obrigatórios');
+    },
+  );
+  const handleIntention = intentionForm.handleSubmit(
+    async (data) => persistExtended({ ...extended, intention: data as IntentionProfile }),
+    () => {
+      focusFirstError(intentionForm);
+      const reason = intentionForm.formState.errors.reasonToAdopt?.message
+        || intentionForm.formState.errors.ifDestroyed?.message
+        || intentionForm.formState.errors.ifSick?.message;
+      toast.error(reason || 'Revise os campos obrigatórios');
+    },
+  );
 
   const handleProofUpload = async (file: File) => {
     try {
@@ -224,8 +292,9 @@ export default function Profile() {
       };
       await persistExtended(next);
       proofFileInputKey.current += 1;
-    } catch (e: any) {
-      toast.error(e.message || 'Erro no upload');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : null;
+      toast.error(message || 'Erro no upload');
     }
   };
 
@@ -302,6 +371,7 @@ export default function Profile() {
   }
 
   const housingOwn = housingForm.watch('ownership');
+  const housingHasYard = housingForm.watch('hasYard');
   const housingHasChildren = housingForm.watch('hasChildren');
   const expHasPets = experienceForm.watch('currentlyHasPets');
   const reasonLen = intentionForm.watch('reasonToAdopt')?.length ?? 0;
@@ -386,10 +456,31 @@ export default function Profile() {
             {/* HOUSING */}
             <TabsContent value="housing" className="pt-4">
               <form onSubmit={handleHousing} className="space-y-4">
+                {housingForm.formState.isSubmitted && Object.keys(housingForm.formState.errors).length > 0 && (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+                    <div className="font-semibold">Faltam campos para salvar</div>
+                    <ul className="mt-1 list-disc pl-5">
+                      {Object.entries(housingForm.formState.errors).map(([key, value]) => {
+                        const message =
+                          typeof (value as { message?: unknown } | undefined)?.message === 'string'
+                            ? String((value as { message?: unknown }).message)
+                            : null;
+                        return (
+                          <li key={key}>
+                            {message || `Campo inválido: ${key}`}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Tipo de moradia</Label>
-                    <Select value={housingForm.watch('type')} onValueChange={(v) => housingForm.setValue('type', v as any)}>
+                    <Select
+                      value={housingForm.watch('type')}
+                      onValueChange={(v) => housingForm.setValue('type', v as HousingType)}
+                    >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="house">Casa</SelectItem>
@@ -400,7 +491,16 @@ export default function Profile() {
                   </div>
                   <div className="space-y-2">
                     <Label>Imóvel</Label>
-                    <Select value={housingOwn} onValueChange={(v) => housingForm.setValue('ownership', v as any)}>
+                    <Select
+                      value={housingOwn}
+                      onValueChange={(v) => {
+                        const ownership = v as Ownership;
+                        housingForm.setValue('ownership', ownership, { shouldDirty: true });
+                        if (ownership === 'owned') {
+                          housingForm.setValue('rentAllowsPets', false, { shouldDirty: true });
+                        }
+                      }}
+                    >
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="owned">Próprio</SelectItem>
@@ -413,25 +513,38 @@ export default function Profile() {
                       <Label>Aluguel permite animais?</Label>
                       <Switch
                         checked={!!housingForm.watch('rentAllowsPets')}
-                        onCheckedChange={(c) => housingForm.setValue('rentAllowsPets', c, { shouldValidate: true })}
+                        onCheckedChange={(c) => housingForm.setValue('rentAllowsPets', c, { shouldDirty: true })}
                       />
                     </div>
-                  )}
-                  {housingForm.formState.errors.rentAllowsPets && (
-                    <p className="text-xs text-destructive md:col-span-2">{housingForm.formState.errors.rentAllowsPets.message}</p>
                   )}
 
                   <div className="flex items-center justify-between rounded-md border p-3">
                     <Label>Possui quintal?</Label>
-                    <Switch checked={!!housingForm.watch('hasYard')} onCheckedChange={(c) => housingForm.setValue('hasYard', c)} />
+                    <Switch
+                      checked={!!housingHasYard}
+                      onCheckedChange={(c) => {
+                        housingForm.setValue('hasYard', c, { shouldDirty: true });
+                        if (!c) {
+                          housingForm.setValue('yardWalled', false, { shouldDirty: true });
+                        }
+                      }}
+                    />
                   </div>
-                  <div className="flex items-center justify-between rounded-md border p-3">
-                    <Label>Quintal é murado?</Label>
-                    <Switch checked={!!housingForm.watch('yardWalled')} onCheckedChange={(c) => housingForm.setValue('yardWalled', c)} />
-                  </div>
+                  {housingHasYard && (
+                    <div className="flex items-center justify-between rounded-md border p-3">
+                      <Label>Quintal é murado?</Label>
+                      <Switch
+                        checked={!!housingForm.watch('yardWalled')}
+                        onCheckedChange={(c) => housingForm.setValue('yardWalled', c, { shouldDirty: true })}
+                      />
+                    </div>
+                  )}
                   <div className="flex items-center justify-between rounded-md border p-3">
                     <Label>Tela em janelas (gatos)?</Label>
-                    <Switch checked={!!housingForm.watch('hasWindowScreens')} onCheckedChange={(c) => housingForm.setValue('hasWindowScreens', c)} />
+                    <Switch
+                      checked={!!housingForm.watch('hasWindowScreens')}
+                      onCheckedChange={(c) => housingForm.setValue('hasWindowScreens', c, { shouldDirty: true })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Quantas pessoas moram com você?</Label>
@@ -507,7 +620,7 @@ export default function Profile() {
                   <Label>Estimativa de gasto mensal viável</Label>
                   <Select
                     value={financialForm.watch('monthlyBudget')}
-                    onValueChange={(v) => financialForm.setValue('monthlyBudget', v as any)}
+                    onValueChange={(v) => financialForm.setValue('monthlyBudget', v as MonthlyBudget)}
                   >
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>

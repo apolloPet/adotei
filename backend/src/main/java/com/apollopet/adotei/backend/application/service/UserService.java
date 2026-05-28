@@ -197,10 +197,21 @@ public class UserService {
             throw new AccessDeniedException("Somente administradores podem alterar perfil de adotante de terceiros.");
         }
         AppUser user = loadUser(userId);
+        upsertAdopterProfileForUser(user, request);
+    }
+
+    @Transactional
+    public void upsertOwnAdopterProfile(String authSubject, UpsertAdopterProfileRequest request) {
+        AppUser user = appUserRepository.findByAuthSubject(authSubject)
+            .orElseThrow(() -> new NotFoundException("Usuario nao encontrado"));
+        upsertAdopterProfileForUser(user, request);
+    }
+
+    private void upsertAdopterProfileForUser(AppUser user, UpsertAdopterProfileRequest request) {
         if (user.getUserType() != UserType.ADOTANTE) {
             throw new BadRequestException("Perfil de adotante so pode ser preenchido por usuarios do tipo ADOTANTE.");
         }
-        AdopterProfile profile = adopterProfileRepository.findByUserId(userId).orElseGet(AdopterProfile::new);
+        AdopterProfile profile = adopterProfileRepository.findByUserId(user.getId()).orElseGet(AdopterProfile::new);
         profile.setUser(user);
         profile.setHousingType(request.housingType());
         profile.setOwnershipType(request.ownershipType());
@@ -231,13 +242,6 @@ public class UserService {
         profile.setEnvironmentPhotoUrl(request.environmentPhotoUrl());
         profile.setEnvironmentVideoUrl(request.environmentVideoUrl());
         adopterProfileRepository.save(profile);
-    }
-
-    @Transactional
-    public void upsertOwnAdopterProfile(String authSubject, UpsertAdopterProfileRequest request) {
-        AppUser user = appUserRepository.findByAuthSubject(authSubject)
-            .orElseThrow(() -> new NotFoundException("Usuario nao encontrado"));
-        upsertAdopterProfile(user.getId(), request, authSubject);
     }
 
     private AppUser loadRequester(String authSubject) {

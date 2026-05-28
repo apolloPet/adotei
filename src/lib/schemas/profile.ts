@@ -7,28 +7,27 @@ const bool = (defaultValue = false) =>
 const boolOptional = () =>
   z.preprocess((value) => (value === null ? undefined : value), z.boolean().optional());
 
-export const housingSchema = z
-  .object({
-    type: z.enum(['house', 'apartment', 'farm']),
-    ownership: z.enum(['owned', 'rented']),
-    rentAllowsPets: boolOptional(),
-    hasYard: bool(false),
-    yardWalled: boolOptional(),
-    hasWindowScreens: boolOptional(),
-    numResidents: z.coerce.number().int().min(1, 'Informe ao menos 1'),
-    hasChildren: bool(false),
-    childrenAges: z.string().optional(),
-  })
-  .refine((d) => d.ownership !== 'rented' || typeof d.rentAllowsPets === 'boolean', {
-    message: 'Informe se o aluguel permite animais',
-    path: ['rentAllowsPets'],
-  });
+const stringOptional = () =>
+  z.preprocess((value) => (value === null ? undefined : value), z.string().optional());
+
+export const housingSchema = z.object({
+  type: z.enum(['house', 'apartment', 'farm']),
+  ownership: z.enum(['owned', 'rented']),
+  // Campos booleanos da UI devem sempre ter fallback explícito para evitar bloqueio de submit.
+  rentAllowsPets: bool(false),
+  hasYard: bool(false),
+  yardWalled: bool(false),
+  hasWindowScreens: bool(false),
+  numResidents: z.coerce.number().int().min(1, 'Informe ao menos 1'),
+  hasChildren: bool(false),
+  childrenAges: stringOptional(),
+});
 
 export const experienceSchema = z.object({
   hadPetsBefore: bool(false),
   currentlyHasPets: bool(false),
   currentPetsCount: z.coerce.number().int().min(0).optional(),
-  currentPetsTypes: z.string().optional(),
+  currentPetsTypes: stringOptional(),
   returnedAnimal: bool(false),
   petsVaccinated: boolOptional(),
   petsNeutered: boolOptional(),
@@ -54,7 +53,7 @@ export const intentionSchema = z.object({
 });
 
 export const proofSchema = z.object({
-  environmentPhotoUrl: z.string().optional(),
+  environmentPhotoUrl: stringOptional(),
 });
 
 export type HousingForm = z.infer<typeof housingSchema>;
