@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,6 +71,7 @@ public class AnimalService {
     private final S3Client s3Client;
     private final AwsProperties awsProperties;
     private final Environment environment;
+    private final JdbcTemplate jdbcTemplate;
 
     private final EntityManager entityManager;
 
@@ -86,7 +88,8 @@ public class AnimalService {
         S3Client s3Client,
         AwsProperties awsProperties,
         Environment environment,
-        EntityManager entityManager
+        EntityManager entityManager,
+        JdbcTemplate jdbcTemplate
     ) {
         this.animalRepository = animalRepository;
         this.organizationRepository = organizationRepository;
@@ -101,6 +104,7 @@ public class AnimalService {
         this.awsProperties = awsProperties;
         this.environment = environment;
         this.entityManager = entityManager;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Transactional(readOnly = true)
@@ -182,7 +186,12 @@ public class AnimalService {
         AppUser requester = loadRequester(requesterAuthSubject);
         Animal animal = load(id);
         assertVolunteerCanManageAnimal(requester, animal);
-        entityManager.remove(entityManager.getReference(Animal.class, Objects.requireNonNull(id)));
+        // Detach managed graph to avoid flush cascading transient references unrelated to the delete itself.
+        entityManager.clear();
+        int affectedRows = jdbcTemplate.update("delete from animal where id = ?", id);
+        if (affectedRows == 0) {
+            throw new NotFoundException("Animal nao encontrado");
+        }
     }
 
     @Transactional

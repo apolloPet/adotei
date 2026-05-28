@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.eq;
 
 import com.apollopet.adotei.backend.application.exception.BadRequestException;
 import com.apollopet.adotei.backend.domain.entity.Animal;
@@ -33,6 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.env.Environment;
+import org.springframework.jdbc.core.JdbcTemplate;
 import software.amazon.awssdk.services.s3.S3Client;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,6 +50,7 @@ class AnimalServiceTest {
     @Mock private S3Client s3Client;
     @Mock private Environment environment;
     @Mock private EntityManager entityManager;
+    @Mock private JdbcTemplate jdbcTemplate;
 
     private AnimalService animalService;
 
@@ -72,7 +73,8 @@ class AnimalServiceTest {
             s3Client,
             awsProperties,
             environment,
-            entityManager
+            entityManager,
+            jdbcTemplate
         );
     }
 
@@ -83,7 +85,7 @@ class AnimalServiceTest {
         AppUser requester = new AppUser();
         requester.setUserType(UserType.ADMIN);
 
-        when(animalRepository.findById(animalId)).thenReturn(Optional.of(animal));
+        when(animalRepository.findById(animalId)).thenReturn(Optional.ofNullable(animal));
         when(appUserRepository.findByAuthSubject("admin-auth")).thenReturn(Optional.of(requester));
         when(imageRepository.countByAnimalId(animalId)).thenReturn(2L);
 
@@ -125,12 +127,13 @@ class AnimalServiceTest {
         setEntityId(animal, animalId);
 
         when(appUserRepository.findByAuthSubject("admin-auth")).thenReturn(Optional.of(admin));
-        when(animalRepository.findById(animalId)).thenReturn(Optional.of(animal));
-        when(entityManager.getReference(eq(Animal.class), eq(animalId))).thenReturn(animal);
+        when(animalRepository.findById(animalId)).thenReturn(Optional.ofNullable(animal));
+        when(jdbcTemplate.update("delete from animal where id = ?", animalId)).thenReturn(1);
 
         animalService.delete(animalId, "admin-auth");
 
-        verify(entityManager).remove(animal);
+        verify(entityManager).clear();
+        verify(jdbcTemplate).update("delete from animal where id = ?", animalId);
     }
 
     private void setEntityId(Object entity, UUID id) {
