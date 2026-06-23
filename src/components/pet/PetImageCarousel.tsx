@@ -5,9 +5,10 @@ interface PetImageCarouselProps {
   images: string[];
   petName: string;
   onShowDetails: () => void;
+  fillFrame?: boolean;
 }
 
-const PetImageCarousel = ({ images, petName }: PetImageCarouselProps) => {
+const PetImageCarousel = ({ images, petName, fillFrame = false }: PetImageCarouselProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageError, setImageError] = useState<Record<number, boolean>>({});
   const touchStartX = useRef<number | null>(null);
@@ -44,19 +45,23 @@ const PetImageCarousel = ({ images, petName }: PetImageCarouselProps) => {
       <img
         src={currentImage}
         alt={petName}
-        className="max-w-full max-h-full w-auto h-auto object-contain object-center"
+        className={
+          fillFrame
+            ? 'w-full h-full object-cover object-center'
+            : 'max-w-full max-h-full w-auto h-auto object-contain object-center'
+        }
         onError={() => handleImageError(currentImageIndex)}
         draggable={false}
       />
 
       {images.length > 1 && (
         <>
-          <div className="absolute top-3 left-0 right-0 flex justify-center gap-1 z-10">
+          <div className="absolute top-3 left-3 right-3 flex justify-center gap-1 z-10">
             {images.map((_, index) => (
               <div
                 key={index}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  index === currentImageIndex ? 'bg-white w-6' : 'bg-white/50 w-2'
+                className={`h-1 rounded-full transition-all duration-300 flex-1 max-w-12 ${
+                  index === currentImageIndex ? 'bg-white' : 'bg-white/40'
                 }`}
                 onClick={() => setCurrentImageIndex(index)}
               />

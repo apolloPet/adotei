@@ -168,7 +168,7 @@ const Browse = () => {
   };
 
   return (
-    <div className="fixed inset-x-0 top-14 sm:top-16 bottom-0 overflow-hidden bg-background">
+    <div className="fixed inset-x-0 top-14 sm:top-16 bottom-0 overflow-hidden bg-muted/30 md:bg-background">
       <main className="h-full w-full overflow-hidden">
         <div className="relative h-full w-full overflow-hidden">
           <div className="absolute top-2 right-2 z-30">

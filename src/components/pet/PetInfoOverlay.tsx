@@ -20,7 +20,7 @@ const PetInfoOverlay = ({ pet }: PetInfoOverlayProps) => {
   const isSpecial = petAsPet.specialNeeds || petAsPet.healthIssues;
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-4 pt-12 pb-24 text-white z-10">
+    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/55 to-transparent px-4 pt-16 pb-4 md:pt-12 md:pb-24 text-white z-10">
       {/* Top row: compact compatibility + waiting */}
       <div className="flex items-center gap-2 mb-2 text-sm">
         {typeof compatibilityScore === 'number' && (
@@ -45,7 +45,7 @@ const PetInfoOverlay = ({ pet }: PetInfoOverlayProps) => {
 
       {/* Name + location */}
       <div>
-        <h2 className="text-2xl font-bold flex items-center gap-1.5 leading-tight">
+        <h2 className="text-3xl md:text-2xl font-bold flex items-center gap-2 leading-tight">
           {pet.name}
           <span className="text-base">{petSpecies === 'dog' ? '🐶' : petSpecies === 'cat' ? '🐱' : '🐾'}</span>
         </h2>
