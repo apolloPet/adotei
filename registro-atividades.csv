@@ -1,0 +1,6 @@
+Atividade,Tempo de execução,Data,Hora
+"Remover opção visual de cadastro na página de Login",2 min,18/06/2026,21:30
+"Corrigir autenticação mobile (Bearer token + proxy Vercel)",25 min,18/06/2026,21:45
+"Remover menu Techanimal do header desktop",1 min,18/06/2026,21:50
+"Remover links PetMatch/Adotei do menu mobile e footer",1 min,18/06/2026,21:52
+"Ocultar menu Configurações de Pagamento no painel admin",2 min,18/06/2026,21:55

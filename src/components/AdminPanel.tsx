@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { UsersList } from './admin/users';
 import AdminUserManagement from './admin/AdminUserManagement';
-import PaymentSettings from './admin/PaymentSettings';
 import AnimalRegistrationForm from './admin/animal-registration';
 import AdopterCompatibility from './admin/AdopterCompatibility';
 import OrganizationManagement from './admin/organization-management/OrganizationManagement';
@@ -174,7 +173,6 @@ const AdminPanel = ({ onLogout }) => {
                         <Building2 className="h-4 w-4" />
                         <span className="hidden sm:inline">ONGs</span>
                       </TabsTrigger>
-                      <TabsTrigger value="payment-settings">Configurações de Pagamento</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="administrators">
@@ -187,10 +185,6 @@ const AdminPanel = ({ onLogout }) => {
 
                     <TabsContent value="organizations">
                       <OrganizationManagement />
-                    </TabsContent>
-
-                    <TabsContent value="payment-settings">
-                      <PaymentSettings />
                     </TabsContent>
                   </Tabs>
                 </TabsContent>

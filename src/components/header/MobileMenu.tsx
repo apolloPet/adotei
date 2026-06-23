@@ -6,10 +6,8 @@ import {
   ShieldAlert, 
   Heart, 
   PawPrint, 
-  Building2, 
   User, 
   LogIn, 
-  Mail,
   LogOut 
 } from 'lucide-react';
 import { Button } from "../ui/button";
@@ -98,14 +96,6 @@ const MobileMenu = ({
             >
               <PawPrint className="h-4 w-4 mr-2" />
               Como Funciona
-            </Link>
-            <Link 
-              to="/petmatch" 
-              className="flex items-center font-medium text-lg hover:text-primary transition-colors"
-              onClick={handleLinkClick}
-            >
-              <Building2 className="h-4 w-4 mr-2" />
-              Adotei
             </Link>
             <Link 
               to="/institution" 

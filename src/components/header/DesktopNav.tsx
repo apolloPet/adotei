@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from 'react-router-dom';
-import { ShieldAlert, Heart, PawPrint, Building2, User, Mail } from 'lucide-react';
+import { ShieldAlert, Heart, PawPrint, User, Mail } from 'lucide-react';
 
 interface DesktopNavProps {
   isAdmin: boolean;
@@ -29,13 +29,6 @@ const DesktopNav = ({ isAdmin, isVolunteer, isLoggedIn }: DesktopNavProps) => {
       >
         <PawPrint className="h-4 w-4" />
         Como Funciona
-      </Link>
-      <Link 
-        to="/petmatch" 
-        className={`font-medium hover:text-primary transition-colors flex items-center gap-1 ${isActive('/petmatch') ? 'text-primary' : ''}`}
-      >
-        <Building2 className="h-4 w-4" />
-        Techanimal
       </Link>
       <Link 
         to="/institution" 

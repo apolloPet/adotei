@@ -94,13 +94,6 @@ const Login = () => {
               </div>
 
               <LoginForm initialEmail={prefillEmail} initialPassword={prefillPassword} />
-
-              <div className="text-center mt-6 text-sm text-muted-foreground">
-                Ainda não tem uma conta?{' '}
-                <Link to="/register" className="text-primary font-medium hover:underline">
-                  Cadastre-se
-                </Link>
-              </div>
             </div>
           </div>
         </div>

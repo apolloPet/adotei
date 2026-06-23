@@ -17,7 +17,7 @@ export const signInAdmin = async (email: string, password: string): Promise<bool
       throw error;
     }
 
-    const me = await apiRequest<{ userType: string; roles: string[] }>('/api/auth/me', { skipAuth: true });
+    const me = await apiRequest<{ userType: string; roles: string[] }>('/api/auth/me');
     const isEntityStaff =
       me.userType === 'VOLUNTARIO' ||
       me.roles.includes('VOLUNTARIO') ||

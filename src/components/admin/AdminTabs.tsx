@@ -1,7 +1,6 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card } from "@/components/ui/card";
-import PaymentSettings from './PaymentSettings';
 import { Match } from './MatchCard';
 import { Settings, Users, PawPrint, ShieldCheck } from 'lucide-react';
 import AnimalRegistrationForm from './animal-registration';
@@ -61,7 +60,6 @@ const AdminTabs = ({
             <TabsList className="w-full mb-4">
               <TabsTrigger value="administrators">Administradores</TabsTrigger>
               <TabsTrigger value="users">Usuários</TabsTrigger>
-              <TabsTrigger value="payment-settings">Configurações de Pagamento</TabsTrigger>
             </TabsList>
             
             <TabsContent value="administrators">
@@ -70,10 +68,6 @@ const AdminTabs = ({
             
             <TabsContent value="users">
               <UsersList />
-            </TabsContent>
-            
-            <TabsContent value="payment-settings">
-              <PaymentSettings />
             </TabsContent>
           </Tabs>
         </TabsContent>

@@ -42,11 +42,6 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <Link to="/petmatch" className="text-muted-foreground hover:text-primary transition-colors">
-                  PetMatch
-                </Link>
-              </li>
-              <li>
                 <Link to="/institution" className="text-muted-foreground hover:text-primary transition-colors">
                   ONG Parceira
                 </Link>

@@ -1,6 +1,6 @@
 
 import { toast } from '@/hooks/use-sonner';
-import { apiRequest, clearAuthSession, handleUnauthorizedIfLoggedIn, setAuthToken } from './apiClient';
+import { apiRequest, clearAuthSession, getAuthToken, handleUnauthorizedIfLoggedIn, setAuthToken } from './apiClient';
 import { offlineSupabase } from './offlineSupabase';
 
 type Filter = {
@@ -61,7 +61,7 @@ const getStoredSession = () => {
     return null;
   }
   return {
-    access_token: 'http-only-cookie',
+    access_token: getAuthToken() ?? '',
     refresh_token: null,
     expires_at: Math.floor(Date.now() / 1000) + 60 * 60,
     user,
@@ -242,7 +242,7 @@ export const supabase = {
   auth: {
     getSession: async () => {
       try {
-        const me = await apiRequest<BackendUserSession>('/api/auth/me', { skipAuth: true });
+        const me = await apiRequest<BackendUserSession>('/api/auth/me');
         localStorage.setItem(AUTH_USER_KEY, JSON.stringify(me));
         return { data: { session: getStoredSession() }, error: null };
       } catch {
@@ -255,7 +255,7 @@ export const supabase = {
     },
     getUser: async () => {
       try {
-        const me = await apiRequest<BackendUserSession>('/api/auth/me', { skipAuth: true });
+        const me = await apiRequest<BackendUserSession>('/api/auth/me');
         localStorage.setItem(AUTH_USER_KEY, JSON.stringify(me));
         return { data: { user: getStoredUser() }, error: null };
       } catch (error) {
@@ -265,7 +265,7 @@ export const supabase = {
     },
     refreshSession: async () => {
       try {
-        const me = await apiRequest<BackendUserSession>('/api/auth/me', { skipAuth: true });
+        const me = await apiRequest<BackendUserSession>('/api/auth/me');
         localStorage.setItem(AUTH_USER_KEY, JSON.stringify(me));
         return { data: { session: getStoredSession() }, error: null };
       } catch {

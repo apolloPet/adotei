@@ -6,6 +6,11 @@ export const getApiBaseUrl = (): string => {
     return envBaseUrl;
   }
 
+  // Production: same-origin /api (proxied by Vercel to Railway).
+  if (import.meta.env.PROD && typeof window !== 'undefined') {
+    return '';
+  }
+
   // When Vite runs on :8080 locally, backend usually runs on :8081.
   if (typeof window !== 'undefined' && window.location.hostname === 'localhost' && window.location.port === '8080') {
     return 'http://localhost:8081';
