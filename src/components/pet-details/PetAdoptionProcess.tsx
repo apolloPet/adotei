@@ -33,21 +33,10 @@ const PetAdoptionProcess = ({ id, adoptionProcess }: PetAdoptionProcessProps) =>
       // Registrar interesse mesmo para usuários admin
       const userId = user?.id || localStorage.getItem("userEmail") || "admin@petmatch.com";
       console.log("Tentando registrar interesse na adoção:", { petId: id, userId });
-      
-      // Mostrar toast durante processamento
-      toast.loading("Processando seu interesse...", { id: "adoption-interest" });
-      
+
       const success = await recordPetMatch(id, userId, 'liked');
-      
-      // Remover toast de carregamento
-      toast.dismiss("adoption-interest");
-      
+
       if (success) {
-        toast.success("Você demonstrou interesse neste pet!", {
-          description: "A ONG será notificada e entrará em contato.",
-          duration: 5000
-        });
-        
         console.log(`Liked pet with ID: ${id}`);
         setShowPDF(true);
       }
@@ -94,7 +83,7 @@ const PetAdoptionProcess = ({ id, adoptionProcess }: PetAdoptionProcessProps) =>
           disabled={isSubmitting}
         >
           <Heart className="h-5 w-5 mr-2" />
-          {isSubmitting ? "Processando..." : "Quero Adotar"}
+          Quero Adotar
         </Button>
       </CardFooter>
     </Card>

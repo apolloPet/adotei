@@ -33,7 +33,7 @@ const Browse = () => {
 
   const { user, isAdmin, isVolunteer } = useAuth();
   const navigate = useNavigate();
-  const userId = user?.id || (isAdmin ? "admin@petmatch.com" : null);
+  const userId = !isAdmin && !isVolunteer ? (user?.id ?? null) : null;
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [warnings, setWarnings] = useState<{ petId: string; message: string }[]>([]);
   const [interestedPetIds, setInterestedPetIds] = useState<Set<string>>(new Set());
@@ -68,7 +68,7 @@ const Browse = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!user || isVolunteer) {
+    if (!user || isVolunteer || isAdmin) {
       setInterestedPetIds(new Set());
       return;
     }
@@ -81,7 +81,7 @@ const Browse = () => {
         console.error("Error fetching my interests:", error);
       }
     })();
-  }, [user, isVolunteer]);
+  }, [user, isVolunteer, isAdmin]);
 
   useEffect(() => {
     const loadPets = async () => {
@@ -154,13 +154,8 @@ const Browse = () => {
           handleSwipe(direction, id);
           return;
         }
-        toast.loading("Processando seu interesse...", { id: "match-processing" });
         await recordPetMatch(id, userId, "liked");
-        toast.dismiss("match-processing");
         setInterestedPetIds((prev) => new Set(prev).add(id));
-        toast.success("Você demonstrou interesse em adotar! 💖", {
-          description: "A ONG será notificada do seu interesse.",
-        });
       } else if (direction === "save") {
         await recordPetMatch(id, userId, "saved");
         setInterestedPetIds((prev) => new Set(prev).add(id));

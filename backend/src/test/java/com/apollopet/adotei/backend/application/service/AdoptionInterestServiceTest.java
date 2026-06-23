@@ -183,6 +183,28 @@ class AdoptionInterestServiceTest {
     }
 
     @Test
+    void deveBloquearRegistroPorAdministrador() {
+        AdoptionInterestService service = new AdoptionInterestService(
+            adoptionInterestRepository,
+            animalRepository,
+            appUserRepository
+        );
+
+        AppUser admin = buildUser(UserType.ADMIN, null, UUID.randomUUID());
+        when(appUserRepository.findByAuthSubject("admin-auth")).thenReturn(Optional.of(admin));
+
+        AccessDeniedException ex = assertThrows(
+            AccessDeniedException.class,
+            () -> service.register(
+                UUID.randomUUID(),
+                "admin-auth",
+                new RegisterAdoptionInterestRequest(InterestType.LIKED)
+            )
+        );
+        assertEquals("Apenas adotantes podem registrar interesse em animais.", ex.getMessage());
+    }
+
+    @Test
     void deveBloquearRegistroPorNaoAdotante() {
         AdoptionInterestService service = new AdoptionInterestService(
             adoptionInterestRepository,

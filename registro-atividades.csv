@@ -4,3 +4,5 @@ Atividade,Tempo de execução,Data,Hora
 "Remover menu Techanimal do header desktop",1 min,18/06/2026,21:50
 "Remover links PetMatch/Adotei do menu mobile e footer",1 min,18/06/2026,21:52
 "Ocultar menu Configurações de Pagamento no painel admin",2 min,18/06/2026,21:55
+"Corrigir 403 ao registrar interesse (admin vs adotante)",15 min,23/06/2026,16:35
+"Remover feedback visual ao registrar interesse no animal",3 min,23/06/2026,16:40

@@ -2,7 +2,6 @@
 import { Heart, Badge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge as UIBadge } from "@/components/ui/badge";
-import { toast } from "@/hooks/use-sonner";
 
 interface PetHeaderProps {
   id: string;
@@ -14,10 +13,6 @@ interface PetHeaderProps {
 
 const PetHeader = ({ id, name, type, breed, age }: PetHeaderProps) => {
   const handleLikeClick = () => {
-    toast.success("Você demonstrou interesse neste pet!", {
-      description: "A ONG será notificada e entrará em contato."
-    });
-    
     console.log(`Liked pet with ID: ${id}`);
   };
   

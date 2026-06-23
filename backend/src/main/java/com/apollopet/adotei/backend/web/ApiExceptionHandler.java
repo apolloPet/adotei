@@ -41,7 +41,11 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(payload(HttpStatus.FORBIDDEN, "Acesso negado"));
+        String message = ex.getMessage();
+        if (message == null || message.isBlank()) {
+            message = "Acesso negado";
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(payload(HttpStatus.FORBIDDEN, message));
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

@@ -212,8 +212,14 @@ export const recordPetMatch = async (
     const me = await apiRequest<{ userType?: string; roles?: string[] }>('/api/users/me');
     const isVolunteerUser =
       me.userType === 'VOLUNTARIO' || Boolean(me.roles?.includes('VOLUNTARIO'));
+    const isAdminUser =
+      me.userType === 'ADMIN' || Boolean(me.roles?.includes('ADMIN'));
     if (isVolunteerUser) {
       toast.error('Voluntários de ONG não podem realizar ações de tutor/adotante.');
+      return false;
+    }
+    if (isAdminUser) {
+      toast.error('Administradores não podem registrar interesse em animais. Use uma conta de adotante.');
       return false;
     }
   } catch {
@@ -230,9 +236,6 @@ export const recordPetMatch = async (
   existingMatches.push({ petId, userId, matchType, at });
   localStorage.setItem(STAGE_HISTORY_KEY, JSON.stringify(existingMatches));
 
-  if (matchType === 'saved') {
-    toast.success('Animal salvo para acompanhar 🔖');
-  }
   return true;
 };
 

@@ -34,14 +34,14 @@ public class AdoptionInterestController {
     }
 
     @GetMapping("/interests/my-animal-ids")
-    @PreAuthorize("hasRole('ADOTANTE')")
+    @PreAuthorize("isAuthenticated()")
     public List<UUID> listMyAnimalIdsWithInterests(Authentication authentication) {
         return adoptionInterestService.listMyAnimalIdsWithInterests(authentication.getName());
     }
 
     @PostMapping("/{animalId}/interests")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADOTANTE')")
+    @PreAuthorize("isAuthenticated()")
     public AdoptionInterestResponse registerInterest(
         @PathVariable UUID animalId,
         Authentication authentication,
