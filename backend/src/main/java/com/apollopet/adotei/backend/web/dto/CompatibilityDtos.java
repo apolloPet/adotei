@@ -21,4 +21,16 @@ public class CompatibilityDtos {
         int totalAnsweredCount,
         List<CompatibilityQuestionResult> questions
     ) {}
+
+    public record CompatibilityCandidateResponse(
+        UUID userId,
+        String fullName,
+        String email,
+        String phone,
+        String city,
+        int scorePercent,
+        int matchedCount,
+        int totalAnsweredCount,
+        List<CompatibilityQuestionResult> questions
+    ) {}
 }

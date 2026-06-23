@@ -533,3 +533,29 @@ export const computeCompatibilityForPet = async (
     return { scorePercent: 0, matchedCount: 0, totalAnsweredCount: 0, questions: [] };
   }
 };
+
+export type CompatibilityCandidate = {
+  userId: string;
+  fullName: string;
+  email: string;
+  phone?: string;
+  city?: string;
+  scorePercent: number;
+  matchedCount: number;
+  totalAnsweredCount: number;
+  questions: CompatibilityQuestion[];
+};
+
+export const fetchCompatibilityCandidates = async (animalId: string): Promise<CompatibilityCandidate[]> =>
+  apiRequest<CompatibilityCandidate[]>(`/api/compatibility/animals/${animalId}/candidates`);
+
+export const mapQuestionsToReasons = (questions: CompatibilityQuestion[]) => {
+  const positive = questions.filter((q) => q.compatible).map((q) => q.label);
+  const blockers = questions
+    .filter((q) => !q.compatible && (q.code === 'rented_policy' || q.code === 'hours_alone'))
+    .map((q) => q.label);
+  const negative = questions
+    .filter((q) => !q.compatible && !blockers.includes(q.label))
+    .map((q) => q.label);
+  return { positive, negative, blockers };
+};

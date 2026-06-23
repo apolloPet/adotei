@@ -11,8 +11,10 @@ import com.apollopet.adotei.backend.domain.repository.AnimalAdopterProfileReposi
 import com.apollopet.adotei.backend.domain.repository.AnimalRepository;
 import com.apollopet.adotei.backend.domain.repository.AppUserRepository;
 import com.apollopet.adotei.backend.web.dto.CompatibilityDtos.CompatibilityQuestionResult;
+import com.apollopet.adotei.backend.web.dto.CompatibilityDtos.CompatibilityCandidateResponse;
 import com.apollopet.adotei.backend.web.dto.CompatibilityDtos.CompatibilityScoreResponse;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.security.access.AccessDeniedException;
@@ -185,6 +187,51 @@ public class CompatibilityService {
             totalAnswered,
             questions
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<CompatibilityCandidateResponse> listCandidates(UUID animalId, String requesterAuthSubject) {
+        AppUser requester = appUserRepository.findByAuthSubject(requesterAuthSubject)
+            .orElseThrow(() -> new NotFoundException("Usuario autenticado nao encontrado"));
+        if (requester.getUserType() != UserType.ADMIN && requester.getUserType() != UserType.VOLUNTARIO) {
+            throw new AccessDeniedException("Apenas administradores ou voluntarios podem listar candidatos.");
+        }
+
+        Animal animal = animalRepository.findById(animalId)
+            .orElseThrow(() -> new NotFoundException("Animal nao encontrado"));
+        if (requester.getUserType() == UserType.VOLUNTARIO) {
+            if (requester.getOrganization() == null) {
+                throw new AccessDeniedException("Voluntario sem ONG vinculada.");
+            }
+            if (
+                animal.getOrganization() == null ||
+                !requester.getOrganization().getId().equals(animal.getOrganization().getId())
+            ) {
+                throw new AccessDeniedException("Voluntario so pode consultar compatibilidade dos animais da propria ONG.");
+            }
+        }
+
+        animalAdopterProfileRepository.findByAnimalId(animalId)
+            .orElseThrow(() -> new NotFoundException("Perfil ideal do adotante para este animal nao encontrado"));
+
+        return adopterProfileRepository.findAllByUser_UserType(UserType.ADOTANTE).stream()
+            .map(profile -> {
+                AppUser user = profile.getUser();
+                CompatibilityScoreResponse score = score(animalId, user.getId(), requesterAuthSubject);
+                return new CompatibilityCandidateResponse(
+                    user.getId(),
+                    user.getFullName(),
+                    user.getEmail(),
+                    user.getPhone(),
+                    user.getCity(),
+                    score.scorePercent(),
+                    score.matchedCount(),
+                    score.totalAnsweredCount(),
+                    score.questions()
+                );
+            })
+            .sorted(Comparator.comparing(CompatibilityCandidateResponse::scorePercent).reversed())
+            .toList();
     }
 
     private void evaluateBooleanRequirement(

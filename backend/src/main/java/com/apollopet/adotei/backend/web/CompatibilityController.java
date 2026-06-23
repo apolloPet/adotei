@@ -1,7 +1,9 @@
 package com.apollopet.adotei.backend.web;
 
 import com.apollopet.adotei.backend.application.service.CompatibilityService;
+import com.apollopet.adotei.backend.web.dto.CompatibilityDtos.CompatibilityCandidateResponse;
 import com.apollopet.adotei.backend.web.dto.CompatibilityDtos.CompatibilityScoreResponse;
+import java.util.List;
 import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -28,5 +30,14 @@ public class CompatibilityController {
         Authentication authentication
     ) {
         return compatibilityService.score(animalId, userId, authentication.getName());
+    }
+
+    @GetMapping("/animals/{animalId}/candidates")
+    @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
+    public List<CompatibilityCandidateResponse> listCandidates(
+        @PathVariable UUID animalId,
+        Authentication authentication
+    ) {
+        return compatibilityService.listCandidates(animalId, authentication.getName());
     }
 }
