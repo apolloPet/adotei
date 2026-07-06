@@ -9,6 +9,7 @@ import com.apollopet.adotei.backend.domain.entity.AnimalImage;
 import com.apollopet.adotei.backend.domain.entity.AnimalStatus;
 import com.apollopet.adotei.backend.domain.entity.AppUser;
 import com.apollopet.adotei.backend.domain.entity.Organization;
+import com.apollopet.adotei.backend.domain.entity.OrganizationPersonality;
 import com.apollopet.adotei.backend.domain.entity.TemperamentTrait;
 import com.apollopet.adotei.backend.domain.entity.Tutor;
 import com.apollopet.adotei.backend.domain.entity.UserType;
@@ -69,6 +70,7 @@ public class AnimalService {
     private final AdoptionRequirementRepository requirementRepository;
     private final AnimalAdopterProfileRepository adopterProfileRepository;
     private final AnimalImageRepository imageRepository;
+    private final PersonalityService personalityService;
     private final S3Client s3Client;
     private final AwsProperties awsProperties;
     private final Environment environment;
@@ -86,6 +88,7 @@ public class AnimalService {
         AdoptionRequirementRepository requirementRepository,
         AnimalAdopterProfileRepository adopterProfileRepository,
         AnimalImageRepository imageRepository,
+        PersonalityService personalityService,
         S3Client s3Client,
         AwsProperties awsProperties,
         Environment environment,
@@ -101,6 +104,7 @@ public class AnimalService {
         this.requirementRepository = requirementRepository;
         this.adopterProfileRepository = adopterProfileRepository;
         this.imageRepository = imageRepository;
+        this.personalityService = personalityService;
         this.s3Client = s3Client;
         this.awsProperties = awsProperties;
         this.environment = environment;
@@ -356,7 +360,6 @@ public class AnimalService {
         animal.setAgeYears(request.ageYears());
         animal.setSex(request.sex());
         animal.setSize(request.size());
-        animal.setDescription(request.description());
         animal.setSterilized(request.sterilized());
         animal.setVaccinationStatus(request.vaccinationStatus());
         animal.setVeterinaryInfo(request.veterinaryInfo());
@@ -373,7 +376,6 @@ public class AnimalService {
         animal.setResponsibleContact(request.responsibleContact());
         animal.setTutorName(request.tutorName());
         animal.setTutorContact(request.tutorContact());
-        animal.setPersonalityTemperament(request.personalityTemperament());
         animal.setAdditionalInfo(request.additionalInfo());
         if (request.status() != null) {
             animal.setStatus(request.status());
@@ -396,6 +398,11 @@ public class AnimalService {
         }
         animal.setOrganization(organization);
         animal.setCreatedBy(createdBy);
+
+        OrganizationPersonality personality = personalityService.loadForAnimal(request.personalityId(), organization);
+        animal.setPersonality(personality);
+        animal.setDescription(personality.getDescription());
+        animal.setPersonalityTemperament(personality.getName());
 
         animal.setVaccines(resolveVaccines(request.vaccineIds()));
         animal.setTemperamentTraits(resolveTraits(request.temperamentTraitIds()));
@@ -527,6 +534,8 @@ public class AnimalService {
             animal.getAdditionalInfo(),
             animal.getStatus(),
             animal.getOrganization() == null ? null : animal.getOrganization().getId(),
+            animal.getPersonality() == null ? null : animal.getPersonality().getId(),
+            animal.getPersonality() == null ? null : animal.getPersonality().getName(),
             animal.getTutor() == null ? null : animal.getTutor().getId(),
             animal.getVaccines().stream().map(Vaccine::getId).toList(),
             animal.getTemperamentTraits().stream().map(TemperamentTrait::getId).toList(),

@@ -47,6 +47,7 @@ class AnimalServiceTest {
     @Mock private AdoptionRequirementRepository requirementRepository;
     @Mock private AnimalAdopterProfileRepository adopterProfileRepository;
     @Mock private AnimalImageRepository imageRepository;
+    @Mock private PersonalityService personalityService;
     @Mock private S3Client s3Client;
     @Mock private Environment environment;
     @Mock private EntityManager entityManager;
@@ -70,6 +71,7 @@ class AnimalServiceTest {
             requirementRepository,
             adopterProfileRepository,
             imageRepository,
+            personalityService,
             s3Client,
             awsProperties,
             environment,

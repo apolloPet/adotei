@@ -71,6 +71,10 @@ public class Animal extends BaseEntity {
     private String additionalInfo;
 
     @ManyToOne
+    @JoinColumn(name = "personality_id")
+    private OrganizationPersonality personality;
+
+    @ManyToOne
     @JoinColumn(name = "organization_id")
     private Organization organization;
 

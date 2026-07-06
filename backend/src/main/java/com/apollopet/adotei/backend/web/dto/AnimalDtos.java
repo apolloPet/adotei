@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -46,7 +47,7 @@ public class AnimalDtos {
         @NotNull @Min(0) Integer ageYears,
         @NotBlank String sex,
         @NotBlank String size,
-        @NotBlank String description,
+        String description,
         boolean sterilized,
         String vaccinationStatus,
         String veterinaryInfo,
@@ -67,6 +68,7 @@ public class AnimalDtos {
         String additionalInfo,
         AnimalStatus status,
         UUID organizationId,
+        @NotNull UUID personalityId,
         UUID tutorId,
         UUID createdByUserId,
         List<UUID> vaccineIds,
@@ -106,6 +108,8 @@ public class AnimalDtos {
         String additionalInfo,
         AnimalStatus status,
         UUID organizationId,
+        UUID personalityId,
+        String personalityName,
         UUID tutorId,
         List<UUID> vaccineIds,
         List<UUID> temperamentTraitIds,
