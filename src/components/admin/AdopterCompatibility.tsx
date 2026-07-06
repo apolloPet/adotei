@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import AuthedImage from '@/components/ui/authed-image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -132,7 +133,7 @@ const AdopterCompatibility = () => {
         <CardContent className="space-y-4 p-3 sm:p-6 pt-0 sm:pt-0">
           <div className="flex flex-col md:flex-row gap-3 md:items-center">
             <div className="flex items-center gap-3 min-w-0">
-              <img
+              <AuthedImage
                 src={selectedPet.fotoPrincipal || '/placeholder.svg'}
                 alt={selectedPet.nome}
                 className="h-14 w-14 sm:h-16 sm:w-16 rounded-md object-cover shrink-0"

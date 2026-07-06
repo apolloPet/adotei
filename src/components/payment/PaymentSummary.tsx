@@ -1,6 +1,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import AuthedImage from "@/components/ui/authed-image";
 import { Check, Percent } from "lucide-react";
 
 interface PaymentSummaryProps {
@@ -28,7 +29,7 @@ const PaymentSummary = ({ adoption, settings, isPaymentComplete }: PaymentSummar
     <div>
       <div className="flex items-center space-x-4 mb-6">
         <div className="h-20 w-20 overflow-hidden rounded-md">
-          <img 
+          <AuthedImage
             src={adoption.petImage} 
             alt={adoption.petName} 
             className="h-full w-full object-cover"

@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import AuthedImage from '@/components/ui/authed-image';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -325,7 +326,7 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
                 return (
                   <div key={match.id} className="border rounded-lg p-3 bg-card">
                     <div className="flex items-start gap-3">
-                      <img
+                      <AuthedImage
                         src={match.petImage}
                         alt={match.petName}
                         className="w-14 h-14 rounded-full object-cover shrink-0"

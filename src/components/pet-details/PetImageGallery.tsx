@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import AuthedImage from '@/components/ui/authed-image';
 
 interface PetImageGalleryProps {
   images: string[];
@@ -34,7 +35,7 @@ const PetImageGallery = ({ images, petName }: PetImageGalleryProps) => {
   
   return (
     <div className="relative rounded-lg overflow-hidden aspect-square bg-muted">
-      <img
+      <AuthedImage
         src={currentImage}
         alt={`Foto de ${petName}`}
         className="w-full h-full object-cover"

@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import AuthedImage from '@/components/ui/authed-image';
 import { 
   Dialog, 
   DialogContent, 
@@ -61,7 +62,7 @@ const SchedulingDialog = ({
         
         <div className="py-4 space-y-4">
           <div className="flex items-center gap-3">
-            <img 
+            <AuthedImage
               src={match.petImage} 
               alt={match.petName}
               className="w-12 h-12 rounded-full object-cover"

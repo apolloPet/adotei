@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Loader2, Upload, X } from 'lucide-react';
 import { toast } from '@/hooks/use-sonner';
 import PersonalitySelect from './PersonalitySelect';
+import AuthedImage from '@/components/ui/authed-image';
 
 interface AnimalEditFormProps {
   animal: Animal;
@@ -260,7 +261,7 @@ const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCompl
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {existingImages.map((imagem, index) => (
               <div key={imagem.id} className="relative aspect-square rounded-md overflow-hidden border">
-                <img
+                <AuthedImage
                   src={imagem.url}
                   alt={`Imagem ${index + 1} de ${formData.nome}`}
                   className="w-full h-full object-cover"

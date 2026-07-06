@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import AuthedImage from '@/components/ui/authed-image';
 import { 
   Card, 
   CardFooter 
@@ -173,7 +174,7 @@ const MatchCard = ({
         <div className={`p-4 border-l-4 ${match.currentStage === "completed" ? "border-primary" : "border-muted"}`}>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <img 
+              <AuthedImage
                 src={match.petImage} 
                 alt={match.petName}
                 className="w-16 h-16 rounded-full object-cover"

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import AuthedImage from '@/components/ui/authed-image';
 
 interface AnimalDetailViewProps {
   animal: Animal;
@@ -117,7 +118,7 @@ const AnimalDetailView: React.FC<AnimalDetailViewProps> = ({ animal, onClose }) 
             <h3 className="text-lg font-semibold">Fotos</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {animal.fotos.map((foto, index) => (
-                <img 
+                <AuthedImage
                   key={index}
                   src={foto} 
                   alt={`${animal.nome} - Foto ${index + 1}`} 

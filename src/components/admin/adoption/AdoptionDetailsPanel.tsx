@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import AuthedImage from '@/components/ui/authed-image';
 import { Badge } from '@/components/ui/badge';
 import {
   PawPrint,
@@ -273,7 +274,7 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
                 const photos = (pet.images || []).filter(Boolean).slice(0, 3);
                 while (photos.length < 3) photos.push(match.petImage);
                 return photos.slice(0, 3).map((src, i) => (
-                  <img
+                  <AuthedImage
                     key={i}
                     src={src}
                     alt={`${match.petName} foto ${i + 1}`}

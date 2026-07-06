@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import AuthedImage from '@/components/ui/authed-image';
 
 interface PetImageCarouselProps {
   images: string[];
@@ -42,7 +43,7 @@ const PetImageCarousel = ({ images, petName, fillFrame = false }: PetImageCarous
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      <img
+      <AuthedImage
         src={currentImage}
         alt={petName}
         className={

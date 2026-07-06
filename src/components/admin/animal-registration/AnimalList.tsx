@@ -18,6 +18,7 @@ import AnimalDetailView from './AnimalDetailView';
 import AnimalEditForm from './AnimalEditForm';
 import { useAuth } from '@/hooks/auth';
 import AnimalInterestedDialog from './AnimalInterestedDialog';
+import AuthedImage from '@/components/ui/authed-image';
 
 type PageSizeOption = '10' | '20' | 'all';
 const FALLBACK_STATUS: AnimalStatus = 'DISPONIVEL';
@@ -307,7 +308,7 @@ const AnimalList = () => {
                   <div key={animal.id} className="border rounded-lg p-3 bg-card">
                     <div className="flex gap-3">
                       {animal.fotoPrincipal && (
-                        <img
+                        <AuthedImage
                           src={animal.fotoPrincipal}
                           alt={animal.nome}
                           className="w-16 h-16 rounded-md object-cover border shrink-0"
