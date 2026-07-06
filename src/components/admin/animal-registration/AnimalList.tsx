@@ -221,7 +221,7 @@ const AnimalList = () => {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0">
       <Card>
         <CardHeader className="p-4 sm:p-6">
           <CardTitle className="text-base sm:text-lg">Filtros</CardTitle>
@@ -508,7 +508,7 @@ const AnimalList = () => {
       
       {/* Confirm Delete Dialog */}
       <Dialog open={confirmDelete.open} onOpenChange={(open) => setConfirmDelete({ ...confirmDelete, open })}>
-        <DialogContent>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-lg">
           <DialogHeader>
             <DialogTitle>Confirmar exclusão</DialogTitle>
             <DialogDescription>

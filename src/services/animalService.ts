@@ -25,6 +25,9 @@ export interface Animal {
   responsavel_id?: string | null;
   data_cadastro: string;
   descricao?: string;
+  personalityId?: string;
+  personalityName?: string;
+  organizationId?: string;
   status?: AnimalStatus;
   fotoPrincipal?: string;
   fotos?: string[];
@@ -58,12 +61,13 @@ export interface AnimalCreateData {
   vacinas?: string[];
   vaccineIds?: string[];
   responsavel_id?: string;
-  descricao: string;
+  personalityId: string;
+  organizationId?: string;
+  createdByUserId?: string;
   specialNeeds?: boolean;
   specialNeedsDescription?: string;
   tutorName?: string;
   tutorContact?: string;
-  personalityTemperament?: string;
   additionalInfo?: string;
   goodWithChildren?: boolean;
   goodWithOtherAnimals?: boolean;
@@ -71,8 +75,6 @@ export interface AnimalCreateData {
   imageFiles?: File[];
   fotoPrincipal?: string;
   fotos?: string[];
-  organizationId?: string;
-  createdByUserId?: string;
   status?: AnimalStatus;
 }
 
@@ -85,11 +87,13 @@ type BackendAnimal = {
   sex: 'macho' | 'femea';
   size: 'pequeno' | 'medio' | 'grande';
   description?: string;
+  personalityId?: string;
+  personalityName?: string;
+  organizationId?: string;
   sterilized: boolean;
   vaccineIds?: string[];
   tutorName?: string;
   tutorContact?: string;
-  personalityTemperament?: string;
   additionalInfo?: string;
   specialNeeds?: boolean;
   specialNeedsDescription?: string;
@@ -97,7 +101,6 @@ type BackendAnimal = {
   goodWithOtherAnimals?: boolean;
   goodWithSeniors?: boolean;
   location?: string;
-  personalityTemperament?: string;
   adopterProfile?: {
     suitableHousing?: string[];
     requiresYard: boolean;
@@ -132,6 +135,9 @@ const backendAnimalToAnimal = (animal: BackendAnimal): Animal => {
     responsavel_id: null,
     data_cadastro: animal.createdAt || '',
     descricao: animal.description,
+    personalityId: animal.personalityId,
+    personalityName: animal.personalityName,
+    organizationId: animal.organizationId,
     status: animal.status ?? 'DISPONIVEL',
     fotoPrincipal: orderedImages[0],
     fotos: orderedImages,
@@ -141,8 +147,8 @@ const backendAnimalToAnimal = (animal: BackendAnimal): Animal => {
       ordem: image.displayOrder,
     })),
     ...(animal.location ? { location: animal.location } : {}),
-    ...(animal.personalityTemperament
-      ? { caracteristicas: [animal.personalityTemperament] }
+    ...(animal.personalityName
+      ? { caracteristicas: [animal.personalityName] }
       : {}),
     adopterProfile: animal.adopterProfile
       ? {
@@ -241,11 +247,11 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
       throw new Error('Sexo do animal não especificado');
     }
     
-    if (!animalData.descricao || animalData.descricao.trim() === '') {
-      toast.error('Descrição do animal é obrigatória', {
-        description: 'Por favor, forneça uma breve descrição sobre o animal.'
+    if (!animalData.personalityId) {
+      toast.error('Personalidade e temperamento são obrigatórios', {
+        description: 'Selecione uma personalidade cadastrada pela ONG.'
       });
-      throw new Error('Descrição do animal é obrigatória');
+      throw new Error('Personalidade e temperamento são obrigatórios');
     }
     toast.loading('Cadastrando animal...', { id: 'animal-creation' });
 
@@ -258,14 +264,13 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
         ageYears: animalData.idade,
         sex: animalData.sexo,
         size: animalData.porte,
-        description: animalData.descricao?.trim(),
+        personalityId: animalData.personalityId,
         sterilized: animalData.castrado,
         vaccineIds: animalData.vaccineIds ?? [],
         specialNeeds: animalData.specialNeeds ?? false,
         specialNeedsDescription: animalData.specialNeedsDescription,
         tutorName: animalData.tutorName,
         tutorContact: animalData.tutorContact,
-        personalityTemperament: animalData.personalityTemperament,
         additionalInfo: animalData.additionalInfo,
         goodWithChildren: animalData.goodWithChildren ?? false,
         goodWithOtherAnimals: animalData.goodWithOtherAnimals ?? false,
@@ -382,12 +387,11 @@ export const updateAnimal = async (id: string, animalData: Partial<Animal>): Pro
         ageYears: animalData.idade ?? current.ageYears,
         sex: animalData.sexo ?? current.sex,
         size: animalData.porte ?? current.size,
-        description: animalData.descricao ?? current.description,
+        personalityId: animalData.personalityId ?? current.personalityId,
         sterilized: animalData.castrado ?? current.sterilized,
         vaccineIds: animalData.vaccineIds ?? current.vaccineIds,
         tutorName: animalData.tutorName ?? current.tutorName,
         tutorContact: animalData.tutorContact ?? current.tutorContact,
-        personalityTemperament: animalData.personalityTemperament ?? current.personalityTemperament,
         additionalInfo: animalData.additionalInfo ?? current.additionalInfo,
         specialNeeds: animalData.specialNeeds ?? current.specialNeeds ?? false,
         specialNeedsDescription: animalData.specialNeedsDescription ?? current.specialNeedsDescription,

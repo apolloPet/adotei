@@ -1,30 +1,22 @@
 
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AnimalFormData } from "./types";
 import { AlertCircle } from "lucide-react";
+import PersonalitySelect from "./PersonalitySelect";
+import type { Personality } from "@/services/personalityService";
 
 export interface AnimalBasicInfoProps {
   formData: AnimalFormData;
+  organizationId?: string;
   onFormChange: (updates: Partial<AnimalFormData>) => void;
 }
 
-const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
-  // Handler for age field to accept only numbers
+const AnimalBasicInfo = ({ formData, organizationId, onFormChange }: AnimalBasicInfoProps) => {
   const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Only allow numbers
     if (value === '' || /^[0-9]+$/.test(value)) {
-      handleInputChange(e);
-    }
-  };
-
-  // Handler for description field to limit to 200 characters
-  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    if (value.length <= 200) {
       handleInputChange(e);
     }
   };
@@ -38,19 +30,23 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
     onFormChange({ [name]: value });
   };
 
-  // Helper to check if a field is empty
-  const isFieldEmpty = (value: string): boolean => {
-    return value.trim() === '';
+  const handlePersonalityChange = (personalityId: string, personality?: Personality) => {
+    onFormChange({
+      personalityId,
+      ...(personality ? { personalityDescription: personality.description } : {}),
+    });
   };
 
+  const isFieldEmpty = (value: string): boolean => value.trim() === '';
+
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="name" className="flex items-center">
+    <div className="space-y-6 min-w-0">
+      <div className="grid gap-4 md:grid-cols-2 min-w-0">
+        <div className="space-y-2 min-w-0">
+          <Label htmlFor="name" className="flex flex-wrap items-center gap-x-1">
             Nome do Animal*
             {isFieldEmpty(formData.name) && (
-              <AlertCircle className="h-4 w-4 ml-2 text-destructive" />
+              <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
             )}
           </Label>
           <Input 
@@ -68,11 +64,11 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
           )}
         </div>
         
-        <div className="space-y-2">
-          <Label className="flex items-center">
+        <div className="space-y-2 min-w-0">
+          <Label className="flex flex-wrap items-center gap-x-1">
             Tipo de Animal*
             {!formData.type && (
-              <AlertCircle className="h-4 w-4 ml-2 text-destructive" />
+              <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
             )}
           </Label>
           <RadioGroup 
@@ -103,11 +99,12 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
           />
         </div>
         
-        <div className="space-y-2">
-          <Label htmlFor="age" className="flex items-center">
-            Idade* (apenas números)
+        <div className="space-y-2 min-w-0">
+          <Label htmlFor="age" className="flex flex-wrap items-center gap-x-1 leading-snug">
+            <span>Idade*</span>
+            <span className="text-muted-foreground font-normal text-sm">(apenas números)</span>
             {isFieldEmpty(formData.age) && (
-              <AlertCircle className="h-4 w-4 ml-2 text-destructive" />
+              <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
             )}
           </Label>
           <Input 
@@ -167,41 +164,11 @@ const AnimalBasicInfo = ({ formData, onFormChange }: AnimalBasicInfoProps) => {
         </div>
       </div>
       
-      <div className="space-y-2">
-        <Label htmlFor="description" className="flex items-center">
-          Descrição* (máximo 200 caracteres)
-          {isFieldEmpty(formData.description) && (
-            <AlertCircle className="h-4 w-4 ml-2 text-destructive" />
-          )}
-        </Label>
-        <Textarea 
-          id="description" 
-          name="description" 
-          value={formData.description} 
-          onChange={handleDescriptionChange} 
-          placeholder="Descreva o animal, seu comportamento e características" 
-          required 
-          rows={4}
-          maxLength={200}
-          className={isFieldEmpty(formData.description) ? "border-destructive" : ""}
-          aria-invalid={isFieldEmpty(formData.description)}
-        />
-        <div className="flex justify-between">
-          <div>
-            {isFieldEmpty(formData.description) && (
-              <p className="text-sm text-destructive">Descrição é obrigatória</p>
-            )}
-            {!isFieldEmpty(formData.description) && formData.description.length < 20 && (
-              <p className="text-sm text-amber-500">A descrição deve ter pelo menos 20 caracteres</p>
-            )}
-          </div>
-          <div className={`text-xs ${
-            formData.description.length > 180 ? "text-amber-500" : "text-gray-500"
-          }`}>
-            {formData.description.length}/200 caracteres
-          </div>
-        </div>
-      </div>
+      <PersonalitySelect
+        organizationId={organizationId}
+        value={formData.personalityId}
+        onChange={handlePersonalityChange}
+      />
     </div>
   );
 };

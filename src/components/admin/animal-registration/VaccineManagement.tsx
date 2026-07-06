@@ -138,10 +138,10 @@ const VaccineManagement = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-md border p-4 space-y-4">
-        <h3 className="font-semibold">{editing ? "Editar vacina" : "Cadastrar vacina"}</h3>
-        <div className="grid gap-4 md:grid-cols-3">
+    <div className="space-y-6 min-w-0">
+      <div className="rounded-md border p-3 sm:p-4 space-y-4 min-w-0">
+        <h3 className="font-semibold text-base sm:text-lg">{editing ? "Editar vacina" : "Cadastrar vacina"}</h3>
+        <div className="grid gap-4 md:grid-cols-3 min-w-0">
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="vaccine-name">Nome da vacina</Label>
             <Input
@@ -166,27 +166,30 @@ const VaccineManagement = () => {
             </select>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-start gap-3">
           <Checkbox
             id="vaccine-active"
             checked={form.active}
             onCheckedChange={(checked) => setForm((prev) => ({ ...prev, active: checked === true }))}
+            className="mt-0.5"
           />
-          <Label htmlFor="vaccine-active">Vacina ativa para seleção no cadastro de animal</Label>
+          <Label htmlFor="vaccine-active" className="leading-snug">
+            Vacina ativa para seleção no cadastro de animal
+          </Label>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handleSave} disabled={isSaving}>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button onClick={handleSave} disabled={isSaving} className="w-full sm:w-auto">
             {isSaving ? "Salvando..." : editing ? "Salvar alterações" : "Cadastrar vacina"}
           </Button>
           {editing && (
-            <Button variant="outline" onClick={resetForm}>
+            <Button variant="outline" onClick={resetForm} className="w-full sm:w-auto">
               Cancelar edição
             </Button>
           )}
         </div>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -213,13 +216,15 @@ const VaccineManagement = () => {
                     {vaccine.active ? "Ativa" : "Inativa"}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => handleEdit(vaccine)}>
-                    Editar
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => handleDelete(vaccine.id)}>
-                    Excluir
-                  </Button>
+                <TableCell className="text-right">
+                  <div className="flex flex-col sm:flex-row gap-2 sm:justify-end">
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(vaccine)} className="w-full sm:w-auto">
+                      Editar
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleDelete(vaccine.id)} className="w-full sm:w-auto">
+                      Excluir
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}

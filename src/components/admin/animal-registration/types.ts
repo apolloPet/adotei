@@ -6,13 +6,13 @@ export interface AnimalFormData {
   age: string;
   gender: string;
   size: string;
-  description: string;
+  personalityId: string;
+  personalityDescription?: string;
   vaccineIds: string[];
   specialNeeds: boolean;
   specialNeedsDescription: string;
   sterilized: boolean;
   additionalInfo: string;
-  personalityTemperament: string;
   goodWithChildren: boolean;
   goodWithOtherAnimals: boolean;
   goodWithSeniors: boolean;

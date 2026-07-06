@@ -51,22 +51,25 @@ const AnimalHealthInfo = ({ formData, onFormChange }: AnimalHealthInfoProps) => 
   };
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-2">
+    <div className="space-y-6 min-w-0">
+      <div className="grid gap-4 md:grid-cols-2 min-w-0">
+        <div className="space-y-2 min-w-0">
           <Label>Vacinas</Label>
           <div className="grid grid-cols-1 gap-2 rounded-md border p-3 max-h-48 overflow-y-auto">
             {vaccines
               .filter((vaccine) => vaccine.animalType === formData.type)
               .sort((a, b) => a.name.localeCompare(b.name))
               .map((vaccine) => (
-                <div key={vaccine.id} className="flex items-center space-x-2">
+                <div key={vaccine.id} className="flex items-start gap-2 min-w-0">
                   <Checkbox
                     id={`vaccine-${vaccine.id}`}
                     checked={formData.vaccineIds.includes(vaccine.id)}
                     onCheckedChange={(checked) => handleVaccineToggle(vaccine.id, checked === true)}
+                    className="mt-0.5"
                   />
-                  <Label htmlFor={`vaccine-${vaccine.id}`}>{vaccine.name}</Label>
+                  <Label htmlFor={`vaccine-${vaccine.id}`} className="leading-snug break-words">
+                    {vaccine.name}
+                  </Label>
                 </div>
               ))}
             {vaccines.filter((vaccine) => vaccine.animalType === formData.type).length === 0 && (
@@ -76,8 +79,10 @@ const AnimalHealthInfo = ({ formData, onFormChange }: AnimalHealthInfoProps) => 
           <p className="text-xs text-muted-foreground">Selecione uma ou mais vacinas.</p>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="additionalInfo">Informações Complementares (Descrição)</Label>
+        <div className="space-y-2 min-w-0">
+          <Label htmlFor="additionalInfo" className="leading-snug">
+            Informações Complementares (Descrição)
+          </Label>
           <Textarea
             id="additionalInfo"
             name="additionalInfo"
@@ -88,14 +93,15 @@ const AnimalHealthInfo = ({ formData, onFormChange }: AnimalHealthInfoProps) => 
           />
         </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2">
+        <div className="space-y-4 min-w-0">
+          <div className="flex items-start gap-3">
             <Switch
               id="specialNeeds"
               checked={formData.specialNeeds}
               onCheckedChange={(checked) => handleSwitchChange('specialNeeds', checked)}
+              className="mt-0.5"
             />
-            <Label htmlFor="specialNeeds">Necessidades Especiais</Label>
+            <Label htmlFor="specialNeeds" className="leading-snug">Necessidades Especiais</Label>
           </div>
           
           {formData.specialNeeds && (
@@ -110,11 +116,12 @@ const AnimalHealthInfo = ({ formData, onFormChange }: AnimalHealthInfoProps) => 
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-start gap-3 min-w-0">
           <Switch
             id="sterilized"
             checked={formData.sterilized}
             onCheckedChange={(checked) => handleSwitchChange('sterilized', checked)}
+            className="mt-0.5"
           />
           <Label htmlFor="sterilized">Castrado</Label>
         </div>

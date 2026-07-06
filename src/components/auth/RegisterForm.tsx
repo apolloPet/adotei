@@ -43,7 +43,6 @@ const RegisterForm = () => {
   const [housingType, setHousingType] = useState<'house' | 'apartment' | 'other'>('house');
   const [externalAccess, setExternalAccess] = useState<string>('');
   const [escapeControl, setEscapeControl] = useState<string>('');
-  const [proximityKm, setProximityKm] = useState('');
 
   // Step 4 - Lifestyle & commitment
   const [hasChildren, setHasChildren] = useState(false);
@@ -149,7 +148,6 @@ const RegisterForm = () => {
         `Área útil: ${usefulArea}m²`,
         `Acesso externo: ${externalAccess}`,
         `Controle de fugas: ${escapeControl}`,
-        `Proximidade parques/vet: ${proximityKm}km`,
         `Rotina: ${workSchedule}`,
       ].filter(Boolean).join(' | ');
 
@@ -390,10 +388,6 @@ const RegisterForm = () => {
                     </Select>
                     {errors.escapeControl && <p className="text-destructive text-sm">{errors.escapeControl}</p>}
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="proximity-km">Proximidade de parques/veterinários (km)</Label>
-                  <Input id="proximity-km" placeholder="Ex: 2km" value={proximityKm} onChange={(e) => setProximityKm(e.target.value)} />
                 </div>
               </div>
             </>

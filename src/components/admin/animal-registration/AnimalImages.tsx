@@ -85,11 +85,11 @@ const AnimalImages = ({
   };
   
   return (
-    <div className="space-y-4">
-      <Label className="flex items-center">
+    <div className="space-y-4 min-w-0">
+      <Label className="flex flex-wrap items-center gap-x-1">
         Fotos do Animal*
         {(previewImages.length === 0 || error) && (
-          <AlertCircle className="h-4 w-4 ml-2 text-destructive" />
+          <AlertCircle className="h-4 w-4 text-destructive shrink-0" />
         )}
       </Label>
       
@@ -174,7 +174,7 @@ const AnimalImages = ({
         </div>
       )}
       
-      <div className="space-y-1">
+      <div className="space-y-1 break-words">
         <p className="text-sm text-muted-foreground">
           Adicione no maximo 2 fotos. A primeira será a foto principal.
         </p>

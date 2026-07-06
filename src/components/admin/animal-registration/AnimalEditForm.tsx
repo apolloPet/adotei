@@ -3,12 +3,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Animal, deleteAnimalImage, uploadAnimalImage } from '@/services/animalService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Loader2, Upload, X } from 'lucide-react';
 import { toast } from '@/hooks/use-sonner';
+import PersonalitySelect from './PersonalitySelect';
 
 interface AnimalEditFormProps {
   animal: Animal;
@@ -135,8 +135,8 @@ const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCompl
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-6 min-w-0">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-w-0">
         {/* Nome */}
         <div className="space-y-2">
           <Label htmlFor="nome">Nome</Label>
@@ -225,16 +225,12 @@ const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCompl
         </div>
       </div>
 
-      {/* Descrição */}
-      <div className="space-y-2">
-        <Label htmlFor="descricao">Descrição</Label>
-        <Textarea
-          id="descricao"
-          value={formData.descricao || ''}
-          onChange={(e) => handleChange('descricao', e.target.value)}
-          rows={5}
-        />
-      </div>
+      {/* Personalidade */}
+      <PersonalitySelect
+        organizationId={formData.organizationId}
+        value={formData.personalityId ?? ''}
+        onChange={(personalityId) => handleChange('personalityId', personalityId)}
+      />
 
       {/* Imagens atuais */}
       <div className="space-y-2">
@@ -312,11 +308,11 @@ const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCompl
         </p>
       </div>
 
-      <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+        <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting} className="w-full sm:w-auto">
           Cancelar
         </Button>
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
           {isSubmitting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
