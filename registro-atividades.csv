@@ -11,3 +11,4 @@ Atividade,Tempo de execução,Data,Hora
 "Criar cadastro de personalidade/temperamento por ONG e dropdown no cadastro de animal",50 min,05/07/2026,20:30
 "Corrigir responsividade mobile da tela de cadastro de animais",25 min,05/07/2026,20:45
 "Remover campo proximidade de parques do cadastro de adotante",3 min,05/07/2026,21:00
+"Corrigir carregamento de imagens no Safari iOS (AuthedImage com Bearer token)",35 min,05/07/2026,21:15

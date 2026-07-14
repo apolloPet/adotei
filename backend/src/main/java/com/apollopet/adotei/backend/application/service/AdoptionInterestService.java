@@ -89,6 +89,28 @@ public class AdoptionInterestService {
     }
 
     @Transactional(readOnly = true)
+    public List<AdoptionInterestResponse> listAll(String requesterAuthSubject) {
+        AppUser requester = loadUserByAuthSubject(requesterAuthSubject);
+        if (requester.getUserType() == UserType.ADMIN) {
+            return adoptionInterestRepository.findAllByOrderByCreatedAtDesc().stream()
+                .map(this::toResponse)
+                .toList();
+        }
+        if (requester.getUserType() == UserType.VOLUNTARIO) {
+            Organization volunteerOrganization = requester.getOrganization();
+            if (volunteerOrganization == null) {
+                throw new BadRequestException("Voluntario precisa estar vinculado a uma ONG.");
+            }
+            return adoptionInterestRepository
+                .findByAnimalOrganizationIdOrderByCreatedAtDesc(volunteerOrganization.getId())
+                .stream()
+                .map(this::toResponse)
+                .toList();
+        }
+        throw new AccessDeniedException("Apenas administradores ou voluntarios podem listar intenções de adoção.");
+    }
+
+    @Transactional(readOnly = true)
     public List<AdoptionInterestResponse> listByAnimal(UUID animalId, String requesterAuthSubject) {
         AppUser requester = loadUserByAuthSubject(requesterAuthSubject);
         if (requester.getUserType() != UserType.VOLUNTARIO) {

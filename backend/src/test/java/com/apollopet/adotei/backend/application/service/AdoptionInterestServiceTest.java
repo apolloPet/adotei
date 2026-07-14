@@ -273,6 +273,78 @@ class AdoptionInterestServiceTest {
         assertEquals(animalId, ids.get(0));
     }
 
+    @Test
+    void deveListarTodosOsInteressesParaAdmin() {
+        AdoptionInterestService service = new AdoptionInterestService(
+            adoptionInterestRepository,
+            animalRepository,
+            appUserRepository
+        );
+
+        UUID animalId = UUID.randomUUID();
+        AppUser admin = buildUser(UserType.ADMIN, null, UUID.randomUUID());
+        Animal animal = buildAnimal(animalId, null);
+        AdoptionInterest interest = new AdoptionInterest();
+        interest.setAnimal(animal);
+        interest.setUser(buildUser(UserType.ADOTANTE, null, UUID.randomUUID()));
+        interest.setInterestType(InterestType.LIKED);
+        interest.prePersist();
+
+        when(appUserRepository.findByAuthSubject("admin-auth")).thenReturn(Optional.of(admin));
+        when(adoptionInterestRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of(interest));
+
+        var responses = service.listAll("admin-auth");
+
+        assertEquals(1, responses.size());
+        assertEquals(animalId, responses.get(0).animalId());
+        assertEquals(InterestType.LIKED, responses.get(0).interestType());
+    }
+
+    @Test
+    void deveListarInteressesDaOngParaVoluntario() {
+        AdoptionInterestService service = new AdoptionInterestService(
+            adoptionInterestRepository,
+            animalRepository,
+            appUserRepository
+        );
+
+        UUID orgId = UUID.randomUUID();
+        Organization org = buildOrganization(orgId);
+        AppUser volunteer = buildUser(UserType.VOLUNTARIO, org, UUID.randomUUID());
+        Animal animal = buildAnimal(UUID.randomUUID(), org);
+        AdoptionInterest interest = new AdoptionInterest();
+        interest.setAnimal(animal);
+        interest.setUser(buildUser(UserType.ADOTANTE, null, UUID.randomUUID()));
+        interest.setInterestType(InterestType.SAVED);
+        interest.prePersist();
+
+        when(appUserRepository.findByAuthSubject("volunteer-auth")).thenReturn(Optional.of(volunteer));
+        when(adoptionInterestRepository.findByAnimalOrganizationIdOrderByCreatedAtDesc(orgId))
+            .thenReturn(List.of(interest));
+
+        var responses = service.listAll("volunteer-auth");
+
+        assertEquals(1, responses.size());
+        assertEquals(InterestType.SAVED, responses.get(0).interestType());
+    }
+
+    @Test
+    void deveBloquearListagemGlobalParaAdotante() {
+        AdoptionInterestService service = new AdoptionInterestService(
+            adoptionInterestRepository,
+            animalRepository,
+            appUserRepository
+        );
+
+        AppUser adopter = buildUser(UserType.ADOTANTE, null, UUID.randomUUID());
+        when(appUserRepository.findByAuthSubject("adopter-auth")).thenReturn(Optional.of(adopter));
+
+        assertThrows(
+            AccessDeniedException.class,
+            () -> service.listAll("adopter-auth")
+        );
+    }
+
     private AppUser buildUser(UserType userType, Organization organization, UUID id) {
         AppUser user = new AppUser();
         user.setUserType(userType);

@@ -19,14 +19,6 @@ type StoredAdoption = {
   nextFollowUpDate?: string | null;
 };
 
-type BackendUser = {
-  id: string;
-  authSubject: string;
-  fullName: string;
-  email: string;
-  phone?: string;
-};
-
 const STORAGE_KEY = 'adoption_matches_local';
 const STAGE_HISTORY_KEY = 'pet_matches_local';
 
@@ -42,77 +34,39 @@ const writeAdoptions = (rows: StoredAdoption[]) => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(rows));
 };
 
-const toStage = (matchType: PetMatchType): AdoptionStage =>
-  matchType === 'liked' ? 'interested' : 'pending_approval';
-
-const readLegacyPetMatches = (): Array<{ petId: string; userId: string; matchType: PetMatchType; at: string }> => {
-  try {
-    return JSON.parse(localStorage.getItem(STAGE_HISTORY_KEY) || '[]');
-  } catch {
-    return [];
-  }
-};
-
-const ensureFromLegacyMatches = () => {
-  const existing = readAdoptions();
-  if (existing.length > 0) {
-    return;
-  }
-
-  const legacy = readLegacyPetMatches()
-    .filter((m) => m.matchType === 'liked' || m.matchType === 'saved')
-    .map<StoredAdoption>((m, index) => ({
-      id: `adoption-${index + 1}-${m.at}`,
-      petId: m.petId,
-      userId: m.userId,
-      currentStage: toStage(m.matchType),
-      createdAt: m.at,
-      updatedAt: m.at,
-    }));
-
-  if (legacy.length > 0) {
-    writeAdoptions(legacy);
-  }
-};
-
 export const fetchAdoptions = async (): Promise<AdoptionMatch[]> => {
-  ensureFromLegacyMatches();
-
-  const [animals, users] = await Promise.all([
+  const [interests, animals] = await Promise.all([
+    apiRequest<BackendAdoptionInterest[]>('/api/animals/interests'),
     getAnimals(),
-    apiRequest<BackendUser[]>('/api/users'),
   ]);
 
   const animalById = new Map(animals.map((animal) => [animal.id, animal]));
-  const userByIdOrEmail = new Map<string, BackendUser>();
-  users.forEach((user) => {
-    userByIdOrEmail.set(user.id, user);
-    userByIdOrEmail.set(user.email, user);
-    userByIdOrEmail.set(user.authSubject, user);
-  });
+  const localOverrides = new Map(readAdoptions().map((row) => [row.id, row]));
 
-  return readAdoptions().map((adoption) => {
-    const animal = animalById.get(adoption.petId);
-    const user = userByIdOrEmail.get(adoption.userId);
+  return interests.map((interest) => {
+    const animal = animalById.get(interest.animalId);
+    const override = localOverrides.get(interest.id);
+    const stageFromInterest: AdoptionStage =
+      interest.interestType === 'LIKED' ? 'interested' : 'pending_approval';
 
     return {
-      id: adoption.id,
-      petId: adoption.petId,
+      id: interest.id,
+      petId: interest.animalId,
       petName: animal?.nome || 'Animal não encontrado',
       petImage: animal?.fotoPrincipal || animal?.fotos?.[0] || '/placeholder.svg',
-      userId: user?.id || adoption.userId,
-      userName: user?.fullName || adoption.userId,
-      userEmail: user?.email || adoption.userId,
-      userPhone: user?.phone || '',
-      currentStage: adoption.currentStage,
-      createdAt: adoption.createdAt,
-      updatedAt: adoption.updatedAt,
-      notes: adoption.notes,
-      rejectionReason: adoption.rejectionReason,
-      responsibleId: adoption.responsibleId,
-      followUpStatus: adoption.followUpStatus,
-      lastFollowUpDate: adoption.lastFollowUpDate,
-      nextFollowUpDate: adoption.nextFollowUpDate,
+      userId: interest.userId,
+      userName: interest.userFullName || interest.userId,
+      userEmail: interest.userEmail || interest.userId,
+      userPhone: interest.userPhone || '',
+      currentStage: override?.currentStage ?? stageFromInterest,
+      createdAt: interest.createdAt,
+      updatedAt: override?.updatedAt ?? interest.updatedAt,
+      notes: override?.notes,
+      rejectionReason: override?.rejectionReason,
+      responsibleId: override?.responsibleId,
+      followUpStatus: override?.followUpStatus,
+      lastFollowUpDate: override?.lastFollowUpDate,
+      nextFollowUpDate: override?.nextFollowUpDate,
       matchPoints: [],
     };
   });
@@ -124,18 +78,32 @@ export const updateAdoptionStage = async (
   notes?: string,
   rejectionReason?: string
 ): Promise<boolean> => {
-  const updated = readAdoptions().map((adoption) =>
-    adoption.id === id
-      ? {
-          ...adoption,
-          currentStage: stage,
-          notes: notes ?? adoption.notes,
-          rejectionReason: rejectionReason ?? adoption.rejectionReason,
-          updatedAt: new Date().toISOString(),
-        }
-      : adoption
-  );
-  writeAdoptions(updated);
+  const existing = readAdoptions();
+  const index = existing.findIndex((adoption) => adoption.id === id);
+  const now = new Date().toISOString();
+
+  if (index >= 0) {
+    existing[index] = {
+      ...existing[index],
+      currentStage: stage,
+      notes: notes ?? existing[index].notes,
+      rejectionReason: rejectionReason ?? existing[index].rejectionReason,
+      updatedAt: now,
+    };
+  } else {
+    existing.push({
+      id,
+      petId: '',
+      userId: '',
+      currentStage: stage,
+      createdAt: now,
+      updatedAt: now,
+      notes,
+      rejectionReason,
+    });
+  }
+
+  writeAdoptions(existing);
   toast.success('Estágio atualizado');
   return true;
 };
@@ -253,12 +221,25 @@ export const assignResponsible = async (
   adoptionId: string,
   responsibleId: string
 ): Promise<boolean> => {
-  const updated = readAdoptions().map((adoption) =>
-    adoption.id === adoptionId
-      ? { ...adoption, responsibleId, updatedAt: new Date().toISOString() }
-      : adoption
-  );
-  writeAdoptions(updated);
+  const existing = readAdoptions();
+  const index = existing.findIndex((adoption) => adoption.id === adoptionId);
+  const now = new Date().toISOString();
+
+  if (index >= 0) {
+    existing[index] = { ...existing[index], responsibleId, updatedAt: now };
+  } else {
+    existing.push({
+      id: adoptionId,
+      petId: '',
+      userId: '',
+      currentStage: 'interested',
+      createdAt: now,
+      updatedAt: now,
+      responsibleId,
+    });
+  }
+
+  writeAdoptions(existing);
   toast.success('Responsável atribuído');
   return true;
 };
@@ -269,18 +250,32 @@ export const recordFollowUp = async (
   status: 'successful' | 'needs_attention' | 'failed'
 ): Promise<boolean> => {
   const now = new Date().toISOString();
-  const updated = readAdoptions().map((adoption) =>
-    adoption.id === adoptionId
-      ? {
-          ...adoption,
-          notes: notes || adoption.notes,
-          followUpStatus: status,
-          lastFollowUpDate: now,
-          updatedAt: now,
-        }
-      : adoption
-  );
-  writeAdoptions(updated);
+  const existing = readAdoptions();
+  const index = existing.findIndex((adoption) => adoption.id === adoptionId);
+
+  if (index >= 0) {
+    existing[index] = {
+      ...existing[index],
+      notes: notes || existing[index].notes,
+      followUpStatus: status,
+      lastFollowUpDate: now,
+      updatedAt: now,
+    };
+  } else {
+    existing.push({
+      id: adoptionId,
+      petId: '',
+      userId: '',
+      currentStage: 'completed',
+      createdAt: now,
+      updatedAt: now,
+      notes,
+      followUpStatus: status,
+      lastFollowUpDate: now,
+    });
+  }
+
+  writeAdoptions(existing);
   toast.success('Acompanhamento registrado');
   return true;
 };

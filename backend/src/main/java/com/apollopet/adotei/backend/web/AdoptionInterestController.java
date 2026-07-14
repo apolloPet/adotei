@@ -27,6 +27,12 @@ public class AdoptionInterestController {
         this.adoptionInterestService = adoptionInterestService;
     }
 
+    @GetMapping("/interests")
+    @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
+    public List<AdoptionInterestResponse> listAllInterests(Authentication authentication) {
+        return adoptionInterestService.listAll(authentication.getName());
+    }
+
     @GetMapping("/interests/animal-ids")
     @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
     public List<UUID> listAnimalIdsWithInterests(Authentication authentication) {

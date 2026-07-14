@@ -16,6 +16,12 @@ public interface AdoptionInterestRepository extends JpaRepository<AdoptionIntere
     @EntityGraph(attributePaths = {"user", "user.organization"})
     List<AdoptionInterest> findByAnimalIdOrderByCreatedAtDesc(UUID animalId);
 
+    @EntityGraph(attributePaths = {"user", "user.organization", "animal"})
+    List<AdoptionInterest> findAllByOrderByCreatedAtDesc();
+
+    @EntityGraph(attributePaths = {"user", "user.organization", "animal"})
+    List<AdoptionInterest> findByAnimalOrganizationIdOrderByCreatedAtDesc(UUID organizationId);
+
     @Query("SELECT DISTINCT ai.animal.id FROM AdoptionInterest ai")
     List<UUID> findDistinctAnimalIdsWithInterests();
 
