@@ -37,6 +37,12 @@ const AnimalBasicInfo = ({ formData, organizationId, onFormChange }: AnimalBasic
     });
   };
 
+  const handlePendingPersonalityChange = (
+    pendingPersonality: AnimalFormData['pendingPersonality']
+  ) => {
+    onFormChange({ pendingPersonality: pendingPersonality ?? null });
+  };
+
   const isFieldEmpty = (value: string): boolean => value.trim() === '';
 
   return (
@@ -168,6 +174,9 @@ const AnimalBasicInfo = ({ formData, organizationId, onFormChange }: AnimalBasic
         organizationId={organizationId}
         value={formData.personalityId}
         onChange={handlePersonalityChange}
+        deferCreateUntilAnimalSubmit
+        pendingPersonality={formData.pendingPersonality}
+        onPendingPersonalityChange={handlePendingPersonalityChange}
       />
     </div>
   );

@@ -1,4 +1,12 @@
 
+export type PendingPersonalityDraft = {
+  name: string;
+  description: string;
+};
+
+/** ID local para personalidade criada no formulário, ainda não persistida na API. */
+export const DRAFT_PERSONALITY_ID = '__draft_personality__';
+
 export interface AnimalFormData {
   name: string;
   type: string;
@@ -8,6 +16,8 @@ export interface AnimalFormData {
   size: string;
   personalityId: string;
   personalityDescription?: string;
+  /** Rascunho de personalidade/temperamento; só é enviado à API no submit do animal. */
+  pendingPersonality?: PendingPersonalityDraft | null;
   vaccineIds: string[];
   specialNeeds: boolean;
   specialNeedsDescription: string;

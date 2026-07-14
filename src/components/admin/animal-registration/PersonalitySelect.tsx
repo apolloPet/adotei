@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,11 +26,19 @@ import {
   listPersonalities,
   type Personality,
 } from '@/services/personalityService';
+import {
+  DRAFT_PERSONALITY_ID,
+  type PendingPersonalityDraft,
+} from './types';
 
 export interface PersonalitySelectProps {
   organizationId?: string;
   value: string;
   onChange: (personalityId: string, personality?: Personality) => void;
+  /** Quando true, "Nova" só cria rascunho local; a API só é chamada no submit do animal. */
+  deferCreateUntilAnimalSubmit?: boolean;
+  pendingPersonality?: PendingPersonalityDraft | null;
+  onPendingPersonalityChange?: (draft: PendingPersonalityDraft | null) => void;
   disabled?: boolean;
 }
 
@@ -40,6 +48,9 @@ const PersonalitySelect = ({
   organizationId,
   value,
   onChange,
+  deferCreateUntilAnimalSubmit = false,
+  pendingPersonality = null,
+  onPendingPersonalityChange,
   disabled = false,
 }: PersonalitySelectProps) => {
   const [personalities, setPersonalities] = useState<Personality[]>([]);
@@ -69,29 +80,62 @@ const PersonalitySelect = ({
     loadPersonalities();
   }, [organizationId]);
 
-  const handleCreate = async () => {
+  const selectablePersonalities = useMemo(() => {
+    if (!pendingPersonality) return personalities;
+    const draft: Personality = {
+      id: DRAFT_PERSONALITY_ID,
+      organizationId: organizationId || '',
+      name: `${pendingPersonality.name} (nova — salva com o animal)`,
+      description: pendingPersonality.description,
+      active: true,
+    };
+    return [draft, ...personalities];
+  }, [personalities, pendingPersonality, organizationId]);
+
+  const validateDraftForm = (): PendingPersonalityDraft | null => {
     const name = form.name.trim();
     const description = form.description.trim();
     if (!name) {
       toast.error('Informe o nome da personalidade.');
-      return;
+      return null;
     }
     if (!description) {
-      toast.error('Informe a descrição da personalidade.');
-      return;
+      toast.error('Informe a descrição da personalidade e temperamento.');
+      return null;
     }
     if (description.length > 200) {
       toast.error('A descrição deve ter no máximo 200 caracteres.');
-      return;
+      return null;
     }
     if (!organizationId) {
       toast.error('Selecione uma ONG antes de cadastrar personalidade.');
+      return null;
+    }
+    return { name, description };
+  };
+
+  const handleCreate = async () => {
+    const draft = validateDraftForm();
+    if (!draft) return;
+
+    if (deferCreateUntilAnimalSubmit) {
+      onPendingPersonalityChange?.(draft);
+      onChange(DRAFT_PERSONALITY_ID, {
+        id: DRAFT_PERSONALITY_ID,
+        organizationId: organizationId!,
+        name: draft.name,
+        description: draft.description,
+        active: true,
+      });
+      setForm(EMPTY_FORM);
+      setDialogOpen(false);
+      toast.success('Personalidade e temperamento prontos. Serão salvos ao cadastrar o animal.');
       return;
     }
 
     setIsSaving(true);
     try {
-      const created = await createPersonality({ name, description, active: true }, organizationId);
+      const created = await createPersonality({ ...draft, active: true }, organizationId);
       setPersonalities((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
       onChange(created.id, created);
       setForm(EMPTY_FORM);
@@ -105,7 +149,7 @@ const PersonalitySelect = ({
     }
   };
 
-  const selectedPersonality = personalities.find((p) => p.id === value);
+  const selectedPersonality = selectablePersonalities.find((p) => p.id === value);
 
   return (
     <div className="space-y-2 min-w-0">
@@ -116,14 +160,17 @@ const PersonalitySelect = ({
 
       {!organizationId ? (
         <p className="text-sm text-muted-foreground break-words">
-          Vincule o cadastro a uma ONG para selecionar ou criar personalidades.
+          Selecione a ONG no início do cadastro para visualizar e criar personalidade e temperamento.
         </p>
       ) : (
         <div className="flex flex-col sm:flex-row gap-2 min-w-0">
           <Select
             value={value || undefined}
             onValueChange={(id) => {
-              const personality = personalities.find((p) => p.id === id);
+              if (id !== DRAFT_PERSONALITY_ID) {
+                onPendingPersonalityChange?.(null);
+              }
+              const personality = selectablePersonalities.find((p) => p.id === id);
               onChange(id, personality);
             }}
             disabled={disabled || isLoading || !organizationId}
@@ -132,12 +179,12 @@ const PersonalitySelect = ({
               <SelectValue placeholder={isLoading ? 'Carregando...' : 'Selecione uma personalidade'} />
             </SelectTrigger>
             <SelectContent>
-              {personalities.length === 0 ? (
+              {selectablePersonalities.length === 0 ? (
                 <SelectItem value="__empty__" disabled>
                   Nenhuma personalidade cadastrada
                 </SelectItem>
               ) : (
-                personalities.map((personality) => (
+                selectablePersonalities.map((personality) => (
                   <SelectItem key={personality.id} value={personality.id}>
                     {personality.name}
                   </SelectItem>
@@ -155,9 +202,11 @@ const PersonalitySelect = ({
             </DialogTrigger>
             <DialogContent className="w-[calc(100vw-2rem)] max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Cadastrar personalidade</DialogTitle>
+                <DialogTitle>Cadastrar personalidade e temperamento</DialogTitle>
                 <DialogDescription>
-                  Crie uma personalidade reutilizável para os animais da sua ONG.
+                  {deferCreateUntilAnimalSubmit
+                    ? 'Preencha os dados agora. Eles só serão salvos no servidor quando você cadastrar o animal.'
+                    : 'Crie uma personalidade reutilizável para os animais da sua ONG.'}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-2">
@@ -173,7 +222,7 @@ const PersonalitySelect = ({
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="personality-description" className="leading-snug">
-                    Descrição* (máx. 200 caracteres)
+                    Descrição do temperamento* (máx. 200 caracteres)
                   </Label>
                   <Textarea
                     id="personality-description"
@@ -202,6 +251,8 @@ const PersonalitySelect = ({
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Salvando...
                     </>
+                  ) : deferCreateUntilAnimalSubmit ? (
+                    'Usar no cadastro'
                   ) : (
                     'Cadastrar'
                   )}
@@ -213,10 +264,15 @@ const PersonalitySelect = ({
       )}
 
       {!value && organizationId && (
-        <p className="text-sm text-destructive">Personalidade é obrigatória</p>
+        <p className="text-sm text-destructive">Personalidade e temperamento são obrigatórios</p>
       )}
       {selectedPersonality && (
         <p className="text-sm text-muted-foreground break-words">{selectedPersonality.description}</p>
+      )}
+      {value === DRAFT_PERSONALITY_ID && pendingPersonality && (
+        <p className="text-xs text-amber-700 dark:text-amber-400">
+          Esta personalidade será registrada junto com o animal.
+        </p>
       )}
     </div>
   );

@@ -10,9 +10,10 @@ import AnimalBasicInfo from './AnimalBasicInfo';
 import AnimalCharacteristics from './AnimalCharacteristics';
 import AnimalHealthInfo from './AnimalHealthInfo';
 import AnimalImages from './AnimalImages';
-import { AnimalFormData } from './types';
+import { AnimalFormData, DRAFT_PERSONALITY_ID } from './types';
 import AnimalList from './AnimalList';
 import { createAnimal } from '@/services/animalService';
+import { createPersonality } from '@/services/personalityService';
 import { apiRequest } from '@/lib/apiClient';
 import VaccineManagement from './VaccineManagement';
 
@@ -24,6 +25,7 @@ const EMPTY_FORM: AnimalFormData = {
   gender: 'macho',
   size: 'medio',
   personalityId: '',
+  pendingPersonality: null,
   vaccineIds: [],
   specialNeeds: false,
   specialNeedsDescription: '',
@@ -113,12 +115,18 @@ const AnimalRegistrationForm = () => {
     if (!formData.age.trim()) return toast.error("Idade do animal é obrigatória"), false;
     if (!organizationId) return toast.error("Selecione uma ONG para cadastrar o animal"), false;
     if (!formData.personalityId) return toast.error("Selecione uma personalidade e temperamento"), false;
+    if (
+      formData.personalityId === DRAFT_PERSONALITY_ID &&
+      (!formData.pendingPersonality?.name?.trim() || !formData.pendingPersonality?.description?.trim())
+    ) {
+      return toast.error("Complete os dados da nova personalidade e temperamento"), false;
+    }
     if (formData.images.length === 0) return toast.error("Adicione pelo menos uma foto"), false;
     if (formData.images.length > 2) return toast.error("O cadastro aceita no máximo 2 fotos"), false;
     return true;
   };
 
-  const mapFormDataToAnimal = (): AnimalCreateData => ({
+  const mapFormDataToAnimal = (personalityId: string): AnimalCreateData => ({
     nome: formData.name.trim(),
     idade: parseInt(formData.age, 10) || 0,
     tipo: formData.type as "cachorro" | "gato",
@@ -126,7 +134,7 @@ const AnimalRegistrationForm = () => {
     porte: formData.size as "pequeno" | "medio" | "grande",
     sexo: formData.gender as "macho" | "femea",
     castrado: formData.sterilized,
-    personalityId: formData.personalityId,
+    personalityId,
     vaccineIds: formData.vaccineIds,
     specialNeeds: formData.specialNeeds,
     specialNeedsDescription: formData.specialNeedsDescription?.trim() || undefined,
@@ -138,11 +146,30 @@ const AnimalRegistrationForm = () => {
     organizationId,
   });
 
+  const resolvePersonalityId = async (): Promise<string> => {
+    if (formData.personalityId !== DRAFT_PERSONALITY_ID) {
+      return formData.personalityId;
+    }
+    if (!organizationId || !formData.pendingPersonality) {
+      throw new Error('Rascunho de personalidade inválido');
+    }
+    const created = await createPersonality(
+      {
+        name: formData.pendingPersonality.name.trim(),
+        description: formData.pendingPersonality.description.trim(),
+        active: true,
+      },
+      organizationId
+    );
+    return created.id;
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) return;
     try {
       setIsSubmitting(true);
-      const animalData = mapFormDataToAnimal();
+      const personalityId = await resolvePersonalityId();
+      const animalData = mapFormDataToAnimal(personalityId);
       const currentEmail = localStorage.getItem('userEmail');
       if (currentEmail) {
         const users = await apiRequest<BackendUserContext[]>('/api/users');
@@ -154,9 +181,13 @@ const AnimalRegistrationForm = () => {
 
       await createAnimal(animalData);
       setFormData(EMPTY_FORM);
+      if (isAdmin) {
+        setOrganizationId(undefined);
+      }
       setActiveTab('list');
     } catch (error) {
       console.error("Error submitting animal:", error);
+      toast.error(error instanceof Error ? error.message : 'Erro ao cadastrar animal');
     } finally {
       setIsSubmitting(false);
     }
@@ -197,7 +228,7 @@ const AnimalRegistrationForm = () => {
                       value={organizationId ?? undefined}
                       onValueChange={(value) => {
                         setOrganizationId(value);
-                        handleChangeMultiple({ personalityId: '' });
+                        handleChangeMultiple({ personalityId: '', pendingPersonality: null });
                       }}
                     >
                       <SelectTrigger>
