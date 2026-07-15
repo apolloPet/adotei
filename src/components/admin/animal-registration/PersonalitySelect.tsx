@@ -33,6 +33,8 @@ import {
 
 export interface PersonalitySelectProps {
   organizationId?: string;
+  /** Quando true, a ONG já está definida (ex.: voluntário) e não há seletor de ONG. */
+  organizationLocked?: boolean;
   value: string;
   onChange: (personalityId: string, personality?: Personality) => void;
   /** Quando true, "Nova" só cria rascunho local; a API só é chamada no submit do animal. */
@@ -46,6 +48,7 @@ const EMPTY_FORM = { name: '', description: '' };
 
 const PersonalitySelect = ({
   organizationId,
+  organizationLocked = false,
   value,
   onChange,
   deferCreateUntilAnimalSubmit = false,
@@ -108,7 +111,11 @@ const PersonalitySelect = ({
       return null;
     }
     if (!organizationId) {
-      toast.error('Selecione uma ONG antes de cadastrar personalidade.');
+      toast.error(
+        organizationLocked
+          ? 'Vínculo com a ONG é necessário para cadastrar personalidade.'
+          : 'Selecione uma ONG antes de cadastrar personalidade.'
+      );
       return null;
     }
     return { name, description };
@@ -160,7 +167,9 @@ const PersonalitySelect = ({
 
       {!organizationId ? (
         <p className="text-sm text-muted-foreground break-words">
-          Selecione a ONG no início do cadastro para visualizar e criar personalidade e temperamento.
+          {organizationLocked
+            ? 'Aguarde o carregamento da sua ONG para visualizar e criar personalidade e temperamento.'
+            : 'Selecione a ONG no início do cadastro para visualizar e criar personalidade e temperamento.'}
         </p>
       ) : (
         <div className="flex flex-col sm:flex-row gap-2 min-w-0">

@@ -10,10 +10,11 @@ import type { Personality } from "@/services/personalityService";
 export interface AnimalBasicInfoProps {
   formData: AnimalFormData;
   organizationId?: string;
+  organizationLocked?: boolean;
   onFormChange: (updates: Partial<AnimalFormData>) => void;
 }
 
-const AnimalBasicInfo = ({ formData, organizationId, onFormChange }: AnimalBasicInfoProps) => {
+const AnimalBasicInfo = ({ formData, organizationId, organizationLocked = false, onFormChange }: AnimalBasicInfoProps) => {
   const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (value === '' || /^[0-9]+$/.test(value)) {
@@ -172,6 +173,7 @@ const AnimalBasicInfo = ({ formData, organizationId, onFormChange }: AnimalBasic
       
       <PersonalitySelect
         organizationId={organizationId}
+        organizationLocked={organizationLocked}
         value={formData.personalityId}
         onChange={handlePersonalityChange}
         deferCreateUntilAnimalSubmit

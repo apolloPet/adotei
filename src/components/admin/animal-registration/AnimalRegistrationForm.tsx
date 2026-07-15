@@ -65,6 +65,7 @@ interface BackendUserContext {
   email: string;
   userType: string;
   organizationId?: string;
+  organizationName?: string;
   roles: string[];
 }
 
@@ -78,21 +79,26 @@ const AnimalRegistrationForm = () => {
   const [formData, setFormData] = useState<AnimalFormData>(EMPTY_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [organizationId, setOrganizationId] = useState<string | undefined>();
+  const [organizationName, setOrganizationName] = useState<string | undefined>();
   const [organizations, setOrganizations] = useState<OrganizationOption[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>();
 
   useEffect(() => {
     const loadUserContext = async () => {
-      const currentEmail = localStorage.getItem('userEmail');
-      if (!currentEmail) return;
-
       try {
-        const users = await apiRequest<BackendUserContext[]>('/api/users');
-        const currentUser = users.find((user) => user.email === currentEmail || user.authSubject === currentEmail);
-        if (!currentUser) return;
+        // Usa /me para obter a ONG do usuário autenticado (voluntário não escolhe outra ONG).
+        const currentUser = await apiRequest<BackendUserContext>('/api/users/me');
+        setCurrentUserId(currentUser.id);
 
         if (currentUser.userType === 'VOLUNTARIO') {
-          setOrganizationId(currentUser.organizationId);
+          setIsAdmin(false);
+          if (currentUser.organizationId) {
+            setOrganizationId(currentUser.organizationId);
+            setOrganizationName(currentUser.organizationName);
+          } else {
+            toast.error('Seu usuário voluntário precisa estar vinculado a uma ONG para cadastrar animais.');
+          }
         } else if (currentUser.userType === 'ADMIN') {
           setIsAdmin(true);
           const orgs = await apiRequest<OrganizationOption[]>('/api/organizations');
@@ -113,7 +119,13 @@ const AnimalRegistrationForm = () => {
   const validateForm = () => {
     if (!formData.name.trim()) return toast.error("Nome do animal é obrigatório"), false;
     if (!formData.age.trim()) return toast.error("Idade do animal é obrigatória"), false;
-    if (!organizationId) return toast.error("Selecione uma ONG para cadastrar o animal"), false;
+    if (!organizationId) {
+      return toast.error(
+        isAdmin
+          ? "Selecione uma ONG para cadastrar o animal"
+          : "Você precisa estar vinculado a uma ONG para cadastrar o animal"
+      ), false;
+    }
     if (!formData.personalityId) return toast.error("Selecione uma personalidade e temperamento"), false;
     if (
       formData.personalityId === DRAFT_PERSONALITY_ID &&
@@ -170,19 +182,15 @@ const AnimalRegistrationForm = () => {
       setIsSubmitting(true);
       const personalityId = await resolvePersonalityId();
       const animalData = mapFormDataToAnimal(personalityId);
-      const currentEmail = localStorage.getItem('userEmail');
-      if (currentEmail) {
-        const users = await apiRequest<BackendUserContext[]>('/api/users');
-        const currentUser = users.find((user) => user.email === currentEmail || user.authSubject === currentEmail);
-        if (currentUser) {
-          animalData.createdByUserId = currentUser.id;
-        }
+      if (currentUserId) {
+        animalData.createdByUserId = currentUserId;
       }
 
       await createAnimal(animalData);
       setFormData(EMPTY_FORM);
       if (isAdmin) {
         setOrganizationId(undefined);
+        setOrganizationName(undefined);
       }
       setActiveTab('list');
     } catch (error) {
@@ -228,6 +236,8 @@ const AnimalRegistrationForm = () => {
                       value={organizationId ?? undefined}
                       onValueChange={(value) => {
                         setOrganizationId(value);
+                        const selected = organizations.find((org) => org.id === value);
+                        setOrganizationName(selected?.legalName);
                         handleChangeMultiple({ personalityId: '', pendingPersonality: null });
                       }}
                     >
@@ -244,9 +254,16 @@ const AnimalRegistrationForm = () => {
                     </Select>
                   </div>
                 )}
+                {!isAdmin && organizationName && (
+                  <div className="space-y-1 pb-4 border-b">
+                    <Label>ONG</Label>
+                    <p className="text-sm text-muted-foreground break-words">{organizationName}</p>
+                  </div>
+                )}
                 <AnimalBasicInfo
                   formData={formData}
                   organizationId={organizationId}
+                  organizationLocked={!isAdmin}
                   onFormChange={handleChangeMultiple}
                 />
                 <div className="pt-6 border-t">
