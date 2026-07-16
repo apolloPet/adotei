@@ -10,10 +10,11 @@ import { recordPetMatch } from "@/services/adoptionService";
 
 interface PetAdoptionProcessProps {
   id: string;
+  petName: string;
   adoptionProcess: string;
 }
 
-const PetAdoptionProcess = ({ id, adoptionProcess }: PetAdoptionProcessProps) => {
+const PetAdoptionProcess = ({ id, petName, adoptionProcess }: PetAdoptionProcessProps) => {
   const [showPDF, setShowPDF] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user, isAdmin, isAuthenticated } = useAuth();
@@ -62,7 +63,7 @@ const PetAdoptionProcess = ({ id, adoptionProcess }: PetAdoptionProcessProps) =>
           <div className="mt-4 p-4 border rounded bg-muted/30">
             <p className="mb-2 text-sm">Baixe o termo de responsabilidade para adoção:</p>
             <AdoptionTermsPDF 
-              petName={`Pet #${id}`}
+              petName={petName}
               adopterName="Usuário"
               adopterDocument="000.000.000-00"
               adopterAddress="Endereço do adotante"

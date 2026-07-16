@@ -389,10 +389,10 @@ const AdoptionManagement: React.FC<AdoptionManagementProps> = () => {
                 {pendingFollowUps.map((followUp) => (
                   <div key={followUp.id} className="py-4">
                     <p className="text-sm font-medium">
-                      Adoção ID: {followUp.id}
+                      Animal: {followUp.petName}
                     </p>
                     <p className="text-sm text-gray-500">
-                      Animal: {followUp.petName}
+                      Adotante: {followUp.userName}
                     </p>
                     <p className="text-sm text-gray-500">
                       Data da Adoção: {formatDate(followUp.createdAt)}

@@ -96,8 +96,6 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
               })()}
             </div>
           </div>
-          <Row label="ID" value={match.petId} />
-          {match.animal_id && <Row label="ID importado" value={match.animal_id} />}
           <Row label="Espécie" value={pet.species === 'cat' ? 'Gato' : 'Cão'} />
           <Row label="Porte estimado" value={pet.size} />
         </Section>
@@ -124,7 +122,6 @@ const AdoptionDetailsPanel = ({ match }: Props) => {
               )
             }
           />
-          <Row label="ID" value={match.userId} />
         </Section>
       </div>
 

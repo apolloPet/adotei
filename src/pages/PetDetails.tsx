@@ -83,6 +83,7 @@ const PetDetails = () => {
           
           <PetAdoptionProcess 
             id={pet.id}
+            petName={pet.name}
             adoptionProcess="Entre em contato para iniciar o processo de adoção"
           />
         </div>

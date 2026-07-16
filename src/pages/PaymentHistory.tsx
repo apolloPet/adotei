@@ -104,7 +104,6 @@ const PaymentHistory = () => {
                     <TableHead>Data</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Método</TableHead>
-                    <TableHead>Transação</TableHead>
                     <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -120,9 +119,6 @@ const PaymentHistory = () => {
                       <TableCell className="flex items-center gap-2">
                         {getPaymentMethodIcon(payment.payment_method)}
                         <span>{payment.payment_method === 'credit_card' ? 'Cartão de Crédito' : 'PIX'}</span>
-                      </TableCell>
-                      <TableCell className="font-mono text-xs">
-                        {payment.transaction_id || '-'}
                       </TableCell>
                       <TableCell>
                         {getStatusBadge(payment.payment_status)}
