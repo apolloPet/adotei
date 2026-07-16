@@ -12,14 +12,11 @@ import {
   Calendar, 
   Clock, 
   Edit, 
-  HeartHandshake, 
   MapPin, 
-  MessageCircle, 
   UserCheck,
   Heart 
 } from 'lucide-react';
-import { AdoptionMatch, MatchCardProps } from './types';
-import MatchCompatibilityDialog from './MatchCompatibilityDialog';
+import { MatchCardProps } from './types';
 import SchedulingDialog from './SchedulingDialog';
 import { getProfileAlerts } from '@/utils/profileAlerts';
 import { UserProfile } from '@/types/user';
@@ -47,7 +44,6 @@ const MatchCard = ({
   const [expanded, setExpanded] = useState(false);
   const [showVisitDialog, setShowVisitDialog] = useState(false);
   const [showInspectionDialog, setShowInspectionDialog] = useState(false);
-  const [showMatchDialog, setShowMatchDialog] = useState(false);
   
   const handleOpenVisitDialog = () => {
     setShowVisitDialog(true);
@@ -55,10 +51,6 @@ const MatchCard = ({
   
   const handleOpenInspectionDialog = () => {
     setShowInspectionDialog(true);
-  };
-
-  const handleOpenMatchDialog = () => {
-    setShowMatchDialog(true);
   };
   
   const getAvailableActions = () => {
@@ -78,17 +70,6 @@ const MatchCard = ({
       case "pending_approval":
         return (
           <>
-            {match.matchPoints && match.matchPoints.length > 0 && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex items-center gap-1"
-                onClick={handleOpenMatchDialog}
-              >
-                <HeartHandshake className="h-4 w-4" />
-                <span>Ver Compatibilidade</span>
-              </Button>
-            )}
             <Button 
               variant="outline" 
               size="sm"
@@ -236,12 +217,6 @@ const MatchCard = ({
       </Card>
       
       {/* Dialogs */}
-      <MatchCompatibilityDialog 
-        open={showMatchDialog}
-        onOpenChange={setShowMatchDialog}
-        match={match}
-      />
-      
       <SchedulingDialog 
         open={showVisitDialog}
         onOpenChange={setShowVisitDialog}

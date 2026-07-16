@@ -52,6 +52,7 @@ export const createAdminUser = async (
         state: null,
         zipCode: null,
         organizationId: null,
+        password,
         roles: ['ADMIN'],
       },
     });

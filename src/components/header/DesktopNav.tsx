@@ -50,7 +50,7 @@ const DesktopNav = ({ isAdmin, isVolunteer, isLoggedIn }: DesktopNavProps) => {
           className={`font-medium text-primary transition-colors flex items-center gap-1 ${isActive('/admin') ? 'underline' : ''}`}
         >
           <ShieldAlert className="h-4 w-4" />
-          {isVolunteer && !isAdmin ? 'Cadastro de Pets' : 'Admin'}
+          {isVolunteer && !isAdmin ? 'Painel da ONG' : 'Admin'}
         </Link>
       )}
     </nav>

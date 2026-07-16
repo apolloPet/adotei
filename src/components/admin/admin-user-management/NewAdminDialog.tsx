@@ -168,12 +168,7 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
               id="name"
               name="name"
               value={newAdmin.name}
-              onChange={(e) => {
-                const value = normalizeEmail(e.target.value);
-                setNewAdmin((prev) => ({ ...prev, email: value }));
-                setFormErrors((prev) => ({ ...prev, email: "" }));
-                setSubmitError(null);
-              }}
+              onChange={handleInputChange}
               placeholder="Nome do administrador"
             />
             {formErrors.name && <p className="text-sm text-red-500">{formErrors.name}</p>}
@@ -186,7 +181,12 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
               name="email"
               type="email"
               value={newAdmin.email}
-              onChange={handleInputChange}
+              onChange={(e) => {
+                const value = normalizeEmail(e.target.value);
+                setNewAdmin((prev) => ({ ...prev, email: value }));
+                setFormErrors((prev) => ({ ...prev, email: "" }));
+                setSubmitError(null);
+              }}
               placeholder="email@exemplo.com"
             />
             {formErrors.email && <p className="text-sm text-red-500">{formErrors.email}</p>}

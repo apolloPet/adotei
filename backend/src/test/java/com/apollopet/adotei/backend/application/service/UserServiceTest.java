@@ -147,12 +147,47 @@ class UserServiceTest {
         Organization organization = new Organization();
         when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(organization));
         when(passwordEncoder.encode("senha123")).thenReturn("encoded-hash");
+        when(userCredentialRepository.findByUserId(nullable(UUID.class))).thenReturn(Optional.empty());
 
         var response = userService.create(
             request("VOLUNTARIO", List.of("VOLUNTARIO"), organizationId, "senha123")
         );
 
         assertEquals("VOLUNTARIO", response.userType());
+        verify(userCredentialRepository).save(any());
+    }
+
+    @Test
+    void deveCriarAdminComSenha() {
+        mockSaveAndReload();
+        Role role = new Role();
+        role.setCode("ADMIN");
+        when(roleRepository.findByCode("ADMIN")).thenReturn(Optional.of(role));
+        when(passwordEncoder.encode("senhaAdmin")).thenReturn("encoded-admin-hash");
+        when(userCredentialRepository.findByUserId(nullable(UUID.class))).thenReturn(Optional.empty());
+
+        var response = userService.create(
+            request("ADMIN", List.of("ADMIN"), null, "senhaAdmin")
+        );
+
+        assertEquals("ADMIN", response.userType());
+        assertEquals(List.of("ADMIN"), response.roles());
+        verify(passwordEncoder).encode("senhaAdmin");
+        verify(userCredentialRepository).save(any());
+    }
+
+    @Test
+    void deveFalharAoCriarAdminSemSenha() {
+        Role role = new Role();
+        role.setCode("ADMIN");
+        when(roleRepository.findByCode("ADMIN")).thenReturn(Optional.of(role));
+        when(appUserRepository.save(any(AppUser.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertThrows(
+            BadRequestException.class,
+            () -> userService.create(request("ADMIN", List.of("ADMIN"), null, null))
+        );
+        verifyNoInteractions(userCredentialRepository);
     }
 
     @Test

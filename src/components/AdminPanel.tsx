@@ -12,12 +12,10 @@ import {
   Users,
   ShieldCheck,
   Building2,
-  Heart
 } from 'lucide-react';
 import { UsersList } from './admin/users';
 import AdminUserManagement from './admin/AdminUserManagement';
 import AnimalRegistrationForm from './admin/animal-registration';
-import AdopterCompatibility from './admin/AdopterCompatibility';
 import OrganizationManagement from './admin/organization-management/OrganizationManagement';
 import { signOut } from '@/services/auth';
 import { useAuth } from '@/hooks/auth';
@@ -116,79 +114,63 @@ const AdminPanel = ({ onLogout }) => {
         </CardHeader>
 
         <CardContent className="pt-2 sm:pt-6 px-2 sm:px-6">
-          <Tabs defaultValue={isVolunteer && !isAdmin ? "animals" : "adoption"} className="w-full">
+          <Tabs defaultValue="adoption" className="w-full">
             <TabsList className="w-full mb-4 sm:mb-6 overflow-x-auto flex flex-nowrap whitespace-nowrap">
-              {!isVolunteer && (
-                <TabsTrigger value="adoption" className="flex items-center gap-1">
-                  <PawPrint className="h-4 w-4" />
-                  <span className="hidden sm:inline">Adoção</span>
-                </TabsTrigger>
-              )}
+              <TabsTrigger value="adoption" className="flex items-center gap-1">
+                <PawPrint className="h-4 w-4" />
+                <span className="hidden sm:inline">Adoção</span>
+              </TabsTrigger>
               <TabsTrigger value="animals" className="flex items-center gap-1">
                 <PawPrint className="h-4 w-4" />
                 <span className="hidden sm:inline">Animais</span>
               </TabsTrigger>
-              {!isVolunteer && (
-                <>
-                  <TabsTrigger value="compatibility" className="flex items-center gap-1">
-                    <Heart className="h-4 w-4" />
-                    <span className="hidden sm:inline">Compatibilidade</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="settings" className="flex items-center gap-1">
-                    <Settings className="h-4 w-4" />
-                    <span className="hidden sm:inline">Configurações</span>
-                  </TabsTrigger>
-                </>
+              {isAdmin && (
+                <TabsTrigger value="settings" className="flex items-center gap-1">
+                  <Settings className="h-4 w-4" />
+                  <span className="hidden sm:inline">Configurações</span>
+                </TabsTrigger>
               )}
             </TabsList>
 
-            {!isVolunteer && (
-              <TabsContent value="adoption">
-                <AdoptionManagement />
-              </TabsContent>
-            )}
+            <TabsContent value="adoption">
+              <AdoptionManagement />
+            </TabsContent>
 
             <TabsContent value="animals">
               <AnimalRegistrationForm />
             </TabsContent>
 
-            {!isVolunteer && (
-              <>
-                <TabsContent value="compatibility">
-                  <AdopterCompatibility />
-                </TabsContent>
+            {isAdmin && (
+              <TabsContent value="settings">
+                <Tabs defaultValue="administrators" className="w-full">
+                  <TabsList className="w-full mb-4 overflow-x-auto flex flex-nowrap whitespace-nowrap">
+                    <TabsTrigger value="administrators" className="flex items-center gap-1">
+                      <ShieldCheck className="h-4 w-4" />
+                      <span className="hidden sm:inline">Administradores</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="users" className="flex items-center gap-1">
+                      <Users className="h-4 w-4" />
+                      <span className="hidden sm:inline">Usuários</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="organizations" className="flex items-center gap-1">
+                      <Building2 className="h-4 w-4" />
+                      <span className="hidden sm:inline">ONGs</span>
+                    </TabsTrigger>
+                  </TabsList>
 
-                <TabsContent value="settings">
-                  <Tabs defaultValue="administrators" className="w-full">
-                    <TabsList className="w-full mb-4 overflow-x-auto flex flex-nowrap whitespace-nowrap">
-                      <TabsTrigger value="administrators" className="flex items-center gap-1">
-                        <ShieldCheck className="h-4 w-4" />
-                        <span className="hidden sm:inline">Administradores</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="users" className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        <span className="hidden sm:inline">Usuários</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="organizations" className="flex items-center gap-1">
-                        <Building2 className="h-4 w-4" />
-                        <span className="hidden sm:inline">ONGs</span>
-                      </TabsTrigger>
-                    </TabsList>
+                  <TabsContent value="administrators">
+                    <AdminUserManagement />
+                  </TabsContent>
 
-                    <TabsContent value="administrators">
-                      <AdminUserManagement />
-                    </TabsContent>
+                  <TabsContent value="users">
+                    <UsersList />
+                  </TabsContent>
 
-                    <TabsContent value="users">
-                      <UsersList />
-                    </TabsContent>
-
-                    <TabsContent value="organizations">
-                      <OrganizationManagement />
-                    </TabsContent>
-                  </Tabs>
-                </TabsContent>
-              </>
+                  <TabsContent value="organizations">
+                    <OrganizationManagement />
+                  </TabsContent>
+                </Tabs>
+              </TabsContent>
             )}
           </Tabs>
         </CardContent>

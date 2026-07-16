@@ -112,7 +112,7 @@ const MobileMenu = ({
                 onClick={handleLinkClick}
               >
                 <ShieldAlert className="h-4 w-4 mr-2" />
-                {isVolunteer && !isAdmin ? 'Cadastro de Pets' : 'Admin'}
+                {isVolunteer && !isAdmin ? 'Painel da ONG' : 'Admin'}
               </Link>
             )}
           </nav>

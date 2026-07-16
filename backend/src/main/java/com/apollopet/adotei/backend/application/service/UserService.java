@@ -316,18 +316,21 @@ public class UserService {
     }
 
     private void upsertCredential(AppUser user, UpsertUserRequest request, boolean creating) {
-        if (user.getUserType() != UserType.VOLUNTARIO) {
+        if (user.getUserType() != UserType.VOLUNTARIO && user.getUserType() != UserType.ADMIN) {
             return;
         }
 
         String password = request.password();
-        UserCredential existingCredential = userCredentialRepository.findByUserId(user.getId()).orElse(null);
+        String userLabel = user.getUserType() == UserType.ADMIN ? "administrador" : "voluntario";
         if (creating && (password == null || password.isBlank())) {
-            throw new BadRequestException("Senha e obrigatoria para cadastro de voluntario.");
+            throw new BadRequestException("Senha e obrigatoria para cadastro de " + userLabel + ".");
         }
 
+        UserCredential existingCredential = userCredentialRepository.findByUserId(user.getId()).orElse(null);
         if (!creating && existingCredential == null && (password == null || password.isBlank())) {
-            throw new BadRequestException("Este voluntario ainda nao possui senha. Informe uma senha para habilitar o login.");
+            throw new BadRequestException(
+                "Este " + userLabel + " ainda nao possui senha. Informe uma senha para habilitar o login."
+            );
         }
 
         if (password == null || password.isBlank()) {

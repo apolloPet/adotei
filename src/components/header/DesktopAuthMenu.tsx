@@ -83,7 +83,7 @@ const DesktopAuthMenu = ({
             {(isAdmin || isVolunteer) && (
               <DropdownMenuItem onClick={() => navigate("/admin")} className="text-primary">
                 <ShieldAlert className="mr-2 h-4 w-4" />
-                {isVolunteer && !isAdmin ? 'Cadastro de Pets' : 'Admin'}
+                {isVolunteer && !isAdmin ? 'Painel da ONG' : 'Admin'}
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
