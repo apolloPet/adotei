@@ -1,14 +1,18 @@
 package com.apollopet.adotei.backend.application.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.apollopet.adotei.backend.application.exception.BadRequestException;
+import com.apollopet.adotei.backend.domain.entity.AdminPermission;
 import com.apollopet.adotei.backend.domain.entity.AdopterProfile;
 import com.apollopet.adotei.backend.domain.entity.AppUser;
 import com.apollopet.adotei.backend.domain.entity.Organization;
@@ -19,6 +23,7 @@ import com.apollopet.adotei.backend.domain.repository.AppUserRepository;
 import com.apollopet.adotei.backend.domain.repository.OrganizationRepository;
 import com.apollopet.adotei.backend.domain.repository.RoleRepository;
 import com.apollopet.adotei.backend.domain.repository.UserCredentialRepository;
+import com.apollopet.adotei.backend.web.dto.UserDtos.AdminPermissionsDto;
 import com.apollopet.adotei.backend.web.dto.UserDtos.UpsertAdopterProfileRequest;
 import com.apollopet.adotei.backend.web.dto.UserDtos.UpsertUserRequest;
 import java.util.List;
@@ -36,12 +41,15 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
+    private static final String REQUESTER = "requester-auth";
+
     @Mock private AppUserRepository appUserRepository;
     @Mock private RoleRepository roleRepository;
     @Mock private AdopterProfileRepository adopterProfileRepository;
     @Mock private OrganizationRepository organizationRepository;
     @Mock private UserCredentialRepository userCredentialRepository;
     @Mock private PasswordEncoder passwordEncoder;
+    @Mock private AdminPermissionGuard adminPermissionGuard;
 
     private UserService userService;
 
@@ -53,7 +61,8 @@ class UserServiceTest {
             adopterProfileRepository,
             organizationRepository,
             userCredentialRepository,
-            passwordEncoder
+            passwordEncoder,
+            adminPermissionGuard
         );
     }
 
@@ -76,10 +85,11 @@ class UserServiceTest {
         role.setCode("ADOTANTE");
         when(roleRepository.findByCode("ADOTANTE")).thenReturn(Optional.of(role));
 
-        var response = userService.create(request("ADOTANTE", List.of("ADOTANTE")));
+        var response = userService.create(request("ADOTANTE", List.of("ADOTANTE")), REQUESTER);
 
         assertEquals("ADOTANTE", response.userType());
         assertEquals(List.of("ADOTANTE"), response.roles());
+        verifyNoInteractions(adminPermissionGuard);
     }
 
     @Test
@@ -88,11 +98,16 @@ class UserServiceTest {
         role.setCode("VOLUNTARIO");
         when(roleRepository.findByCode("VOLUNTARIO")).thenReturn(Optional.of(role));
 
-        assertThrows(BadRequestException.class, () -> userService.create(request("ADOTANTE", List.of("VOLUNTARIO"))));
+        assertThrows(
+            BadRequestException.class,
+            () -> userService.create(request("ADOTANTE", List.of("VOLUNTARIO")), REQUESTER)
+        );
     }
 
     @Test
     void deveFalharQuandoUsuarioTemMaisDeUmPapel() {
+        doNothing().when(adminPermissionGuard)
+            .requireAdminPermission(eq(REQUESTER), eq(AdminPermission.MANAGE_ADMINS));
         Role admin = new Role();
         admin.setCode("ADMIN");
         Role voluntario = new Role();
@@ -102,7 +117,7 @@ class UserServiceTest {
 
         assertThrows(
             BadRequestException.class,
-            () -> userService.create(request("ADMIN", List.of("ADMIN", "VOLUNTARIO")))
+            () -> userService.create(request("ADMIN", List.of("ADMIN", "VOLUNTARIO")), REQUESTER)
         );
     }
 
@@ -130,16 +145,23 @@ class UserServiceTest {
 
     @Test
     void deveFalharQuandoVoluntarioNaoTemOng() {
+        when(adminPermissionGuard.require(eq(REQUESTER), eq(AdminPermission.MANAGE_SETTINGS)))
+            .thenReturn(new AppUser());
         Role role = new Role();
         role.setCode("VOLUNTARIO");
         when(roleRepository.findByCode("VOLUNTARIO")).thenReturn(Optional.of(role));
 
-        assertThrows(BadRequestException.class, () -> userService.create(request("VOLUNTARIO", List.of("VOLUNTARIO"), null)));
+        assertThrows(
+            BadRequestException.class,
+            () -> userService.create(request("VOLUNTARIO", List.of("VOLUNTARIO"), null), REQUESTER)
+        );
     }
 
     @Test
     void deveCriarVoluntarioComOng() {
         mockSaveAndReload();
+        when(adminPermissionGuard.require(eq(REQUESTER), eq(AdminPermission.MANAGE_SETTINGS)))
+            .thenReturn(new AppUser());
         Role role = new Role();
         role.setCode("VOLUNTARIO");
         when(roleRepository.findByCode("VOLUNTARIO")).thenReturn(Optional.of(role));
@@ -150,7 +172,8 @@ class UserServiceTest {
         when(userCredentialRepository.findByUserId(nullable(UUID.class))).thenReturn(Optional.empty());
 
         var response = userService.create(
-            request("VOLUNTARIO", List.of("VOLUNTARIO"), organizationId, "senha123")
+            request("VOLUNTARIO", List.of("VOLUNTARIO"), organizationId, "senha123"),
+            REQUESTER
         );
 
         assertEquals("VOLUNTARIO", response.userType());
@@ -158,8 +181,10 @@ class UserServiceTest {
     }
 
     @Test
-    void deveCriarAdminComSenha() {
+    void deveCriarAdminComSenhaEPermissoes() {
         mockSaveAndReload();
+        doNothing().when(adminPermissionGuard)
+            .requireAdminPermission(eq(REQUESTER), eq(AdminPermission.MANAGE_ADMINS));
         Role role = new Role();
         role.setCode("ADMIN");
         when(roleRepository.findByCode("ADMIN")).thenReturn(Optional.of(role));
@@ -167,17 +192,31 @@ class UserServiceTest {
         when(userCredentialRepository.findByUserId(nullable(UUID.class))).thenReturn(Optional.empty());
 
         var response = userService.create(
-            request("ADMIN", List.of("ADMIN"), null, "senhaAdmin")
+            request(
+                "ADMIN",
+                List.of("ADMIN"),
+                null,
+                "senhaAdmin",
+                new AdminPermissionsDto(true, false, true, false)
+            ),
+            REQUESTER
         );
 
         assertEquals("ADMIN", response.userType());
         assertEquals(List.of("ADMIN"), response.roles());
+        assertNotNull(response.permissions());
+        assertEquals(true, response.permissions().manageAnimals());
+        assertEquals(false, response.permissions().approveAdoptions());
+        assertEquals(true, response.permissions().manageSettings());
+        assertEquals(false, response.permissions().manageAdmins());
         verify(passwordEncoder).encode("senhaAdmin");
         verify(userCredentialRepository).save(any());
     }
 
     @Test
     void deveFalharAoCriarAdminSemSenha() {
+        doNothing().when(adminPermissionGuard)
+            .requireAdminPermission(eq(REQUESTER), eq(AdminPermission.MANAGE_ADMINS));
         Role role = new Role();
         role.setCode("ADMIN");
         when(roleRepository.findByCode("ADMIN")).thenReturn(Optional.of(role));
@@ -185,7 +224,7 @@ class UserServiceTest {
 
         assertThrows(
             BadRequestException.class,
-            () -> userService.create(request("ADMIN", List.of("ADMIN"), null, null))
+            () -> userService.create(request("ADMIN", List.of("ADMIN"), null, null), REQUESTER)
         );
         verifyNoInteractions(userCredentialRepository);
     }
@@ -235,6 +274,16 @@ class UserServiceTest {
     }
 
     private UpsertUserRequest request(String userType, List<String> roles, UUID organizationId, String password) {
+        return request(userType, roles, organizationId, password, null);
+    }
+
+    private UpsertUserRequest request(
+        String userType,
+        List<String> roles,
+        UUID organizationId,
+        String password,
+        AdminPermissionsDto permissions
+    ) {
         return new UpsertUserRequest(
             "auth-subject",
             "Pessoa Teste",
@@ -250,6 +299,7 @@ class UserServiceTest {
             organizationId,
             false,
             password,
+            permissions,
             roles
         );
     }

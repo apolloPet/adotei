@@ -1,4 +1,3 @@
-
 import { apiRequest } from '@/lib/apiClient';
 import { AdminUser } from './types';
 import { isValidEmail, normalizeEmail } from '@/utils/brMasks';
@@ -18,7 +17,6 @@ export const createAdminUser = async (
       };
     }
     
-    // Validate email format
     if (!isValidEmail(normalizedEmail)) {
       return {
         success: false,
@@ -37,6 +35,7 @@ export const createAdminUser = async (
       id: string;
       email: string;
       roles: string[];
+      permissions?: AdminUser['permissions'] | null;
     }>('/api/users', {
       method: 'POST',
       body: {
@@ -53,6 +52,7 @@ export const createAdminUser = async (
         zipCode: null,
         organizationId: null,
         password,
+        permissions,
         roles: ['ADMIN'],
       },
     });
@@ -64,14 +64,13 @@ export const createAdminUser = async (
         id: data.id,
         email: data.email,
         role: 'admin',
-        permissions,
+        permissions: data.permissions ?? permissions,
       },
     };
   } catch (error) {
     console.error('Error in createAdminUser:', error);
     const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
     
-    // Convert technical error to user-friendly message
     const userFriendlyMessage = getUserFriendlyErrorMessage(errorMessage);
     
     return {
@@ -90,11 +89,11 @@ function getUserFriendlyErrorMessage(errorMessage: string): string {
     return 'O servidor demorou muito para responder. Tente novamente mais tarde.';
   }
   
-  if (errorMessage.includes('duplicate') || errorMessage.includes('já existe')) {
+  if (errorMessage.includes('duplicate') || errorMessage.includes('já existe') || errorMessage.includes('ja esta')) {
     return 'Este email já está cadastrado no sistema.';
   }
   
-  if (errorMessage.includes('permission') || errorMessage.includes('unauthorized')) {
+  if (errorMessage.includes('permission') || errorMessage.includes('unauthorized') || errorMessage.includes('permissao')) {
     return 'Você não tem permissão para realizar esta operação.';
   }
   
@@ -102,6 +101,5 @@ function getUserFriendlyErrorMessage(errorMessage: string): string {
     return 'Os dados fornecidos são inválidos. Verifique os campos e tente novamente.';
   }
   
-  // Return a default user-friendly message or the original error if nothing matches
   return errorMessage;
 }

@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -71,21 +72,28 @@ public class CatalogController {
     @PostMapping("/organizations")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.CREATED)
-    public OrganizationResponse createOrganization(@Valid @RequestBody OrganizationRequest request) {
-        return catalogService.createOrganization(request);
+    public OrganizationResponse createOrganization(
+        Authentication authentication,
+        @Valid @RequestBody OrganizationRequest request
+    ) {
+        return catalogService.createOrganization(request, authentication.getName());
     }
 
     @PutMapping("/organizations/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public OrganizationResponse updateOrganization(@PathVariable UUID id, @Valid @RequestBody OrganizationRequest request) {
-        return catalogService.updateOrganization(id, request);
+    public OrganizationResponse updateOrganization(
+        @PathVariable UUID id,
+        Authentication authentication,
+        @Valid @RequestBody OrganizationRequest request
+    ) {
+        return catalogService.updateOrganization(id, request, authentication.getName());
     }
 
     @DeleteMapping("/organizations/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteOrganization(@PathVariable UUID id) {
-        catalogService.deleteOrganization(id);
+    public void deleteOrganization(@PathVariable UUID id, Authentication authentication) {
+        catalogService.deleteOrganization(id, authentication.getName());
     }
 
     @GetMapping("/vaccines")

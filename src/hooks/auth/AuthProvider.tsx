@@ -1,10 +1,15 @@
-
 import { createContext, useEffect, useMemo } from 'react';
-import { AuthContextType, AuthProviderProps } from './types';
+import { AuthContextType, AuthProviderProps, AdminPermissions } from './types';
 import { useAuthState } from './useAuthState';
 import { useAuthSubscription } from './useAuthSubscription';
 
-// Performance: configuração imutável para contexto inicial
+const FULL_ADMIN_PERMISSIONS: AdminPermissions = {
+  manageAnimals: true,
+  approveAdoptions: true,
+  manageSettings: true,
+  manageAdmins: true,
+};
+
 const INITIAL_AUTH_STATE: AuthContextType = {
   user: null,
   session: null,
@@ -12,7 +17,8 @@ const INITIAL_AUTH_STATE: AuthContextType = {
   isLoading: true,
   isAdmin: false,
   isVolunteer: false,
-  isAuthenticated: false
+  isAuthenticated: false,
+  adminPermissions: null,
 };
 
 export const AuthContext = createContext<AuthContextType>(INITIAL_AUTH_STATE);
@@ -34,7 +40,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     fetchUserData
   } = useAuthState();
 
-  // Configurar assinatura de autenticação
   useAuthSubscription({
     setUser,
     setSession,
@@ -43,22 +48,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setIsVolunteer
   });
 
-  // Performance: buscar dados do usuário apenas uma vez na montagem
   useEffect(() => {
     console.log('AuthProvider montado - carregando dados iniciais do usuário');
     
-    // Executar imediatamente a primeira verificação
     fetchUserData();
     
-    // Performance: executar verificações adicionais em segundo plano para não bloquear a renderização
     const periodicCheck = setInterval(() => {
-      // Verificar apenas se localStorage indica que o usuário está logado
       const localStorageLoggedIn = localStorage.getItem("isLoggedIn") === "true";
       if (localStorageLoggedIn) {
         console.log('Verificação periódica de AuthProvider');
         fetchUserData();
       }
-    }, 60000); // Verificação a cada minuto
+    }, 60000);
     
     const AUTH_STORAGE_KEYS = new Set(['authToken', 'authUser', 'isLoggedIn', 'isAdmin', 'userEmail']);
 
@@ -84,7 +85,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
   }, [fetchUserData]);
 
-  // Performance: memorização de valor do contexto
+  const adminPermissions = useMemo<AdminPermissions | null>(() => {
+    if (!isAdmin) {
+      return null;
+    }
+    const raw = user?.user_metadata?.permissions as Partial<AdminPermissions> | null | undefined;
+    if (!raw || typeof raw !== 'object') {
+      return FULL_ADMIN_PERMISSIONS;
+    }
+    return {
+      manageAnimals: Boolean(raw.manageAnimals),
+      approveAdoptions: Boolean(raw.approveAdoptions),
+      manageSettings: Boolean(raw.manageSettings),
+      manageAdmins: Boolean(raw.manageAdmins),
+    };
+  }, [isAdmin, user]);
+
   const value = useMemo(() => ({
     user,
     session,
@@ -93,8 +109,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     isAdmin,
     isVolunteer,
     isAuthenticated,
+    adminPermissions,
     fetchUserData
-  }), [user, session, profile, isLoading, isAdmin, isVolunteer, isAuthenticated, fetchUserData]);
+  }), [user, session, profile, isLoading, isAdmin, isVolunteer, isAuthenticated, adminPermissions, fetchUserData]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

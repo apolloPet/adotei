@@ -63,6 +63,7 @@ public class AuthDtos {
         String fullName,
         String email,
         String userType,
-        List<String> roles
+        List<String> roles,
+        UserDtos.AdminPermissionsDto permissions
     ) {}
 }

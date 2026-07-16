@@ -9,6 +9,13 @@ type Filter = {
   value: unknown;
 };
 
+type AdminPermissions = {
+  manageAnimals: boolean;
+  approveAdoptions: boolean;
+  manageSettings: boolean;
+  manageAdmins: boolean;
+};
+
 type BackendUserSession = {
   id: string;
   authSubject: string;
@@ -16,6 +23,7 @@ type BackendUserSession = {
   email: string;
   userType: string;
   roles: string[];
+  permissions?: AdminPermissions | null;
 };
 
 type BackendAuthResponse = {
@@ -48,6 +56,7 @@ const getStoredUser = () => {
         fullName: user.fullName,
         userType: user.userType,
         roles: user.roles,
+        permissions: user.permissions ?? null,
       },
     };
   } catch {
@@ -368,6 +377,13 @@ export const supabase = {
                 fullName: payload.name ?? payload.email,
                 email: payload.email,
                 userType: 'ADMIN',
+                password: payload.password,
+                permissions: payload.permissions ?? {
+                  manageAnimals: true,
+                  approveAdoptions: true,
+                  manageSettings: false,
+                  manageAdmins: false,
+                },
                 roles: ['ADMIN'],
               },
             });

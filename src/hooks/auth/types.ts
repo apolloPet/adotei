@@ -2,6 +2,13 @@
 import { User, Session } from '@supabase/supabase-js';
 import { UserProfile } from '@/types/user';
 
+export type AdminPermissions = {
+  manageAnimals: boolean;
+  approveAdoptions: boolean;
+  manageSettings: boolean;
+  manageAdmins: boolean;
+};
+
 export interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -10,7 +17,8 @@ export interface AuthContextType {
   isAdmin: boolean;
   isVolunteer: boolean;
   isAuthenticated: boolean;
-  fetchUserData?: () => Promise<void>; // Added missing fetchUserData method
+  adminPermissions: AdminPermissions | null;
+  fetchUserData?: () => Promise<void>;
 }
 
 export interface AuthProviderProps {

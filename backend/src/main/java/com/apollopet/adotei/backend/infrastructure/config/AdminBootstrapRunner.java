@@ -1,5 +1,6 @@
 package com.apollopet.adotei.backend.infrastructure.config;
 
+import com.apollopet.adotei.backend.domain.entity.AdminPermissions;
 import com.apollopet.adotei.backend.domain.entity.AppUser;
 import com.apollopet.adotei.backend.domain.entity.Role;
 import com.apollopet.adotei.backend.domain.entity.UserCredential;
@@ -69,6 +70,7 @@ public class AdminBootstrapRunner implements ApplicationRunner {
         admin.setEmail(properties.getEmail());
         admin.setUserType(UserType.ADMIN);
         admin.setRoles(new HashSet<>(Set.of(adminRole)));
+        admin.setAdminPermissions(AdminPermissions.fullAccess());
 
         AppUser persistedAdmin = appUserRepository.save(admin);
         UserCredential credential = userCredentialRepository.findByUserId(persistedAdmin.getId()).orElseGet(UserCredential::new);

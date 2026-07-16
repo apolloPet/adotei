@@ -40,7 +40,15 @@ public class UserDtos {
         Boolean organizationResponsible,
         @Size(min = 6, message = "senha deve ter ao menos 6 caracteres")
         String password,
+        AdminPermissionsDto permissions,
         @NotEmpty List<String> roles
+    ) {}
+
+    public record AdminPermissionsDto(
+        Boolean manageAnimals,
+        Boolean approveAdoptions,
+        Boolean manageSettings,
+        Boolean manageAdmins
     ) {}
 
     public record UpsertAdopterProfileRequest(
@@ -143,7 +151,9 @@ public class UserDtos {
         UUID organizationId,
         String organizationName,
         boolean organizationResponsible,
-        List<String> roles
+        List<String> roles,
+        AdminPermissionsDto permissions,
+        OffsetDateTime createdAt
     ) {}
 
     public record UserTypeResponse(

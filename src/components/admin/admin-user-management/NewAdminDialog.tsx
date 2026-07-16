@@ -224,7 +224,7 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
             <Label>Permissões</Label>
             
             <div className="flex items-center justify-between">
-              <Label htmlFor="manage-animals" className="cursor-pointer">Gerenciar Animais</Label>
+              <Label htmlFor="manage-animals" className="cursor-pointer">Animais</Label>
               <Switch 
                 id="manage-animals"
                 checked={newAdmin.permissions.manageAnimals}
@@ -233,7 +233,7 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
             </div>
             
             <div className="flex items-center justify-between">
-              <Label htmlFor="approve-adoptions" className="cursor-pointer">Aprovar Adoções</Label>
+              <Label htmlFor="approve-adoptions" className="cursor-pointer">Adoções</Label>
               <Switch 
                 id="approve-adoptions"
                 checked={newAdmin.permissions.approveAdoptions}
@@ -242,7 +242,7 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
             </div>
             
             <div className="flex items-center justify-between">
-              <Label htmlFor="manage-settings" className="cursor-pointer">Configurar Parâmetros</Label>
+              <Label htmlFor="manage-settings" className="cursor-pointer">Parâmetros</Label>
               <Switch 
                 id="manage-settings"
                 checked={newAdmin.permissions.manageSettings}
@@ -251,7 +251,7 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
             </div>
             
             <div className="flex items-center justify-between">
-              <Label htmlFor="manage-admins" className="cursor-pointer">Gerenciar Administradores</Label>
+              <Label htmlFor="manage-admins" className="cursor-pointer">Admins</Label>
               <Switch 
                 id="manage-admins"
                 checked={newAdmin.permissions.manageAdmins}

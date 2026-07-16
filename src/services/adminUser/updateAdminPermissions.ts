@@ -21,10 +21,9 @@ export const updateAdminPermissions = async (
       state?: string;
       zipCode?: string;
       organizationId?: string;
+      organizationResponsible?: boolean;
       roles: string[];
     }>(`/api/users/${userId}`);
-
-    const roles = permissions.manageAdmins ? ['ADMIN'] : ['VOLUNTARIO'];
 
     await apiRequest(`/api/users/${userId}`, {
       method: 'PUT',
@@ -32,16 +31,18 @@ export const updateAdminPermissions = async (
         authSubject: current.authSubject,
         fullName: current.fullName,
         email: current.email,
-        phone: current.phone,
-        userType: current.userType ?? 'ADOTANTE',
-        addressLine: current.addressLine,
-        addressNumber: current.addressNumber,
-        neighborhood: current.neighborhood,
-        city: current.city,
-        state: current.state,
-        zipCode: current.zipCode,
+        phone: current.phone ?? null,
+        userType: 'ADMIN',
+        addressLine: current.addressLine ?? null,
+        addressNumber: current.addressNumber ?? null,
+        neighborhood: current.neighborhood ?? null,
+        city: current.city ?? null,
+        state: current.state ?? null,
+        zipCode: current.zipCode ?? null,
         organizationId: current.organizationId ?? null,
-        roles,
+        organizationResponsible: current.organizationResponsible ?? false,
+        permissions,
+        roles: ['ADMIN'],
       },
     });
 

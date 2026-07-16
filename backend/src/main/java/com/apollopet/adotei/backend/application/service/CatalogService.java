@@ -1,6 +1,7 @@
 package com.apollopet.adotei.backend.application.service;
 
 import com.apollopet.adotei.backend.application.exception.NotFoundException;
+import com.apollopet.adotei.backend.domain.entity.AdminPermission;
 import com.apollopet.adotei.backend.domain.entity.AdoptionRequirement;
 import com.apollopet.adotei.backend.domain.entity.Organization;
 import com.apollopet.adotei.backend.domain.entity.TemperamentTrait;
@@ -34,19 +35,22 @@ public class CatalogService {
     private final VaccineRepository vaccineRepository;
     private final TemperamentTraitRepository temperamentTraitRepository;
     private final AdoptionRequirementRepository adoptionRequirementRepository;
+    private final AdminPermissionGuard adminPermissionGuard;
 
     public CatalogService(
         TutorRepository tutorRepository,
         OrganizationRepository organizationRepository,
         VaccineRepository vaccineRepository,
         TemperamentTraitRepository temperamentTraitRepository,
-        AdoptionRequirementRepository adoptionRequirementRepository
+        AdoptionRequirementRepository adoptionRequirementRepository,
+        AdminPermissionGuard adminPermissionGuard
     ) {
         this.tutorRepository = tutorRepository;
         this.organizationRepository = organizationRepository;
         this.vaccineRepository = vaccineRepository;
         this.temperamentTraitRepository = temperamentTraitRepository;
         this.adoptionRequirementRepository = adoptionRequirementRepository;
+        this.adminPermissionGuard = adminPermissionGuard;
     }
 
     public List<TutorResponse> listTutors() {
@@ -77,14 +81,16 @@ public class CatalogService {
     }
 
     @Transactional
-    public OrganizationResponse createOrganization(OrganizationRequest request) {
+    public OrganizationResponse createOrganization(OrganizationRequest request, String requesterAuthSubject) {
+        adminPermissionGuard.requireAdminPermission(requesterAuthSubject, AdminPermission.MANAGE_SETTINGS);
         Organization organization = new Organization();
         apply(organization, request);
         return toResponse(organizationRepository.save(organization));
     }
 
     @Transactional
-    public OrganizationResponse updateOrganization(UUID id, OrganizationRequest request) {
+    public OrganizationResponse updateOrganization(UUID id, OrganizationRequest request, String requesterAuthSubject) {
+        adminPermissionGuard.requireAdminPermission(requesterAuthSubject, AdminPermission.MANAGE_SETTINGS);
         Organization organization = organizationRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Organizacao nao encontrada"));
         apply(organization, request);
@@ -92,7 +98,8 @@ public class CatalogService {
     }
 
     @Transactional
-    public void deleteOrganization(UUID id) {
+    public void deleteOrganization(UUID id, String requesterAuthSubject) {
+        adminPermissionGuard.requireAdminPermission(requesterAuthSubject, AdminPermission.MANAGE_SETTINGS);
         organizationRepository.deleteById(id);
     }
 

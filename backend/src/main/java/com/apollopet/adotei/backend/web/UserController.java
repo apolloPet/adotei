@@ -85,14 +85,18 @@ public class UserController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
-    public UserResponse create(@Valid @RequestBody UpsertUserRequest request) {
-        return userService.create(request);
+    public UserResponse create(Authentication authentication, @Valid @RequestBody UpsertUserRequest request) {
+        return userService.create(request, authentication.getName());
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public UserResponse update(@PathVariable UUID id, @Valid @RequestBody UpsertUserRequest request) {
-        return userService.update(id, request);
+    public UserResponse update(
+        @PathVariable UUID id,
+        Authentication authentication,
+        @Valid @RequestBody UpsertUserRequest request
+    ) {
+        return userService.update(id, request, authentication.getName());
     }
 
     @PutMapping("/{id}/adopter-profile")
@@ -115,7 +119,7 @@ public class UserController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")
-    public void delete(@PathVariable UUID id) {
-        userService.delete(id);
+    public void delete(@PathVariable UUID id, Authentication authentication) {
+        userService.delete(id, authentication.getName());
     }
 }

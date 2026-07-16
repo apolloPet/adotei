@@ -2,6 +2,8 @@ package com.apollopet.adotei.backend.application.service;
 
 import com.apollopet.adotei.backend.application.exception.BadRequestException;
 import com.apollopet.adotei.backend.application.exception.NotFoundException;
+import com.apollopet.adotei.backend.domain.entity.AdminPermission;
+import com.apollopet.adotei.backend.domain.entity.AdminPermissions;
 import com.apollopet.adotei.backend.domain.entity.AdopterProfile;
 import com.apollopet.adotei.backend.domain.entity.AppUser;
 import com.apollopet.adotei.backend.domain.entity.Organization;
@@ -14,6 +16,7 @@ import com.apollopet.adotei.backend.domain.repository.OrganizationRepository;
 import com.apollopet.adotei.backend.domain.repository.RoleRepository;
 import com.apollopet.adotei.backend.domain.repository.UserCredentialRepository;
 import com.apollopet.adotei.backend.web.dto.UserDtos.AdopterProfileResponse;
+import com.apollopet.adotei.backend.web.dto.UserDtos.AdminPermissionsDto;
 import com.apollopet.adotei.backend.web.dto.UserDtos.UpsertAdopterProfileRequest;
 import com.apollopet.adotei.backend.web.dto.UserDtos.UpdateOwnProfileRequest;
 import com.apollopet.adotei.backend.web.dto.UserDtos.UpsertUserRequest;
@@ -38,6 +41,7 @@ public class UserService {
     private final OrganizationRepository organizationRepository;
     private final UserCredentialRepository userCredentialRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AdminPermissionGuard adminPermissionGuard;
 
     public UserService(
         AppUserRepository appUserRepository,
@@ -45,7 +49,8 @@ public class UserService {
         AdopterProfileRepository adopterProfileRepository,
         OrganizationRepository organizationRepository,
         UserCredentialRepository userCredentialRepository,
-        PasswordEncoder passwordEncoder
+        PasswordEncoder passwordEncoder,
+        AdminPermissionGuard adminPermissionGuard
     ) {
         this.appUserRepository = appUserRepository;
         this.roleRepository = roleRepository;
@@ -53,6 +58,7 @@ public class UserService {
         this.organizationRepository = organizationRepository;
         this.userCredentialRepository = userCredentialRepository;
         this.passwordEncoder = passwordEncoder;
+        this.adminPermissionGuard = adminPermissionGuard;
     }
 
     @Transactional(readOnly = true)
@@ -150,7 +156,14 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse create(UpsertUserRequest request) {
+    public UserResponse create(UpsertUserRequest request, String requesterAuthSubject) {
+        UserType userType = parseUserType(request.userType());
+        if (userType == UserType.ADMIN) {
+            adminPermissionGuard.requireAdminPermission(requesterAuthSubject, AdminPermission.MANAGE_ADMINS);
+        } else if (userType == UserType.VOLUNTARIO) {
+            adminPermissionGuard.require(requesterAuthSubject, AdminPermission.MANAGE_SETTINGS);
+        }
+
         AppUser user = new AppUser();
         apply(user, request);
         AppUser saved = appUserRepository.save(user);
@@ -159,8 +172,15 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse update(UUID id, UpsertUserRequest request) {
+    public UserResponse update(UUID id, UpsertUserRequest request, String requesterAuthSubject) {
         AppUser user = loadUser(id);
+        UserType requestedType = parseUserType(request.userType());
+        if (user.getUserType() == UserType.ADMIN || requestedType == UserType.ADMIN) {
+            adminPermissionGuard.requireAdminPermission(requesterAuthSubject, AdminPermission.MANAGE_ADMINS);
+        } else if (user.getUserType() == UserType.VOLUNTARIO || requestedType == UserType.VOLUNTARIO) {
+            adminPermissionGuard.require(requesterAuthSubject, AdminPermission.MANAGE_SETTINGS);
+        }
+
         apply(user, request);
         AppUser saved = appUserRepository.save(user);
         upsertCredential(saved, request, false);
@@ -168,8 +188,18 @@ public class UserService {
     }
 
     @Transactional
-    public void delete(UUID id) {
-        appUserRepository.delete(loadUser(id));
+    public void delete(UUID id, String requesterAuthSubject) {
+        AppUser user = loadUser(id);
+        AppUser requester = loadRequester(requesterAuthSubject);
+        if (requester.getId() != null && requester.getId().equals(user.getId())) {
+            throw new BadRequestException("Nao e permitido excluir a propria conta.");
+        }
+        if (user.getUserType() == UserType.ADMIN) {
+            adminPermissionGuard.requireAdminPermission(requesterAuthSubject, AdminPermission.MANAGE_ADMINS);
+        } else {
+            adminPermissionGuard.require(requesterAuthSubject, AdminPermission.MANAGE_SETTINGS);
+        }
+        appUserRepository.delete(user);
     }
 
     @Transactional
@@ -277,6 +307,38 @@ public class UserService {
         validateRolesByType(userType, roles);
         validateOrganizationByType(userType, user.getOrganization());
         user.setRoles(roles);
+        user.setAdminPermissions(resolveAdminPermissions(userType, request.permissions()));
+    }
+
+    private AdminPermissions resolveAdminPermissions(UserType userType, AdminPermissionsDto dto) {
+        if (userType != UserType.ADMIN) {
+            return null;
+        }
+        if (dto == null) {
+            return AdminPermissions.defaultsForNewAdmin();
+        }
+        return new AdminPermissions(
+            Boolean.TRUE.equals(dto.manageAnimals()),
+            Boolean.TRUE.equals(dto.approveAdoptions()),
+            Boolean.TRUE.equals(dto.manageSettings()),
+            Boolean.TRUE.equals(dto.manageAdmins())
+        );
+    }
+
+    private AdminPermissionsDto toPermissionsDto(AppUser user) {
+        if (user.getUserType() != UserType.ADMIN) {
+            return null;
+        }
+        AdminPermissions permissions = user.getAdminPermissions();
+        if (permissions == null) {
+            permissions = AdminPermissions.fullAccess();
+        }
+        return new AdminPermissionsDto(
+            permissions.isManageAnimals(),
+            permissions.isApproveAdoptions(),
+            permissions.isManageSettings(),
+            permissions.isManageAdmins()
+        );
     }
 
     private UserType parseUserType(String rawUserType) {
@@ -364,7 +426,9 @@ public class UserService {
             organizationId,
             organizationName,
             user.isOrganizationResponsible(),
-            user.getRoles().stream().map(Role::getCode).sorted().toList()
+            user.getRoles().stream().map(Role::getCode).sorted().toList(),
+            toPermissionsDto(user),
+            user.getCreatedAt()
         );
     }
 

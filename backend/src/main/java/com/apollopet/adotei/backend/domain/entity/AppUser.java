@@ -13,6 +13,8 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.util.HashSet;
 import java.util.Set;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Entity
 @Table(name = "app_user")
@@ -39,6 +41,10 @@ public class AppUser extends BaseEntity {
     private String zipCode;
     @Column(nullable = false)
     private boolean organizationResponsible;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "admin_permissions", columnDefinition = "jsonb")
+    private AdminPermissions adminPermissions;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id")
@@ -149,6 +155,14 @@ public class AppUser extends BaseEntity {
 
     public void setOrganizationResponsible(boolean organizationResponsible) {
         this.organizationResponsible = organizationResponsible;
+    }
+
+    public AdminPermissions getAdminPermissions() {
+        return adminPermissions;
+    }
+
+    public void setAdminPermissions(AdminPermissions adminPermissions) {
+        this.adminPermissions = adminPermissions;
     }
 
     public Set<Role> getRoles() {

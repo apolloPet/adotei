@@ -1,6 +1,7 @@
 package com.apollopet.adotei.backend.application.service;
 
 import com.apollopet.adotei.backend.application.exception.NotFoundException;
+import com.apollopet.adotei.backend.domain.entity.AdminPermission;
 import com.apollopet.adotei.backend.domain.entity.SystemParameter;
 import com.apollopet.adotei.backend.domain.repository.SystemParameterRepository;
 import com.apollopet.adotei.backend.web.dto.SystemParameterDtos.SystemParameterResponse;
@@ -14,9 +15,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class SystemParameterService {
 
     private final SystemParameterRepository repository;
+    private final AdminPermissionGuard adminPermissionGuard;
 
-    public SystemParameterService(SystemParameterRepository repository) {
+    public SystemParameterService(
+        SystemParameterRepository repository,
+        AdminPermissionGuard adminPermissionGuard
+    ) {
         this.repository = repository;
+        this.adminPermissionGuard = adminPermissionGuard;
     }
 
     public List<SystemParameterResponse> list(String category) {
@@ -27,14 +33,16 @@ public class SystemParameterService {
     }
 
     @Transactional
-    public SystemParameterResponse create(UpsertSystemParameterRequest request) {
+    public SystemParameterResponse create(UpsertSystemParameterRequest request, String requesterAuthSubject) {
+        adminPermissionGuard.requireAdminPermission(requesterAuthSubject, AdminPermission.MANAGE_SETTINGS);
         SystemParameter parameter = new SystemParameter();
         apply(parameter, request);
         return toResponse(repository.save(parameter));
     }
 
     @Transactional
-    public SystemParameterResponse update(UUID id, UpsertSystemParameterRequest request) {
+    public SystemParameterResponse update(UUID id, UpsertSystemParameterRequest request, String requesterAuthSubject) {
+        adminPermissionGuard.requireAdminPermission(requesterAuthSubject, AdminPermission.MANAGE_SETTINGS);
         SystemParameter parameter = repository.findById(id)
             .orElseThrow(() -> new NotFoundException("Parametro nao encontrado"));
         apply(parameter, request);

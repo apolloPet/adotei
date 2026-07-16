@@ -2,6 +2,8 @@ package com.apollopet.adotei.backend.application.service;
 
 import com.apollopet.adotei.backend.application.exception.BadRequestException;
 import com.apollopet.adotei.backend.application.exception.NotFoundException;
+import com.apollopet.adotei.backend.domain.entity.AdminPermission;
+import com.apollopet.adotei.backend.domain.entity.AdminPermissions;
 import com.apollopet.adotei.backend.domain.entity.AdoptionRequirement;
 import com.apollopet.adotei.backend.domain.entity.Animal;
 import com.apollopet.adotei.backend.domain.entity.AnimalAdopterProfile;
@@ -158,6 +160,7 @@ public class AnimalService {
     @Transactional
     public AnimalResponse create(AnimalRequest request, String requesterAuthSubject) {
         AppUser requester = loadRequester(requesterAuthSubject);
+        assertCanManageAnimals(requester);
         Animal animal = new Animal();
         apply(animal, request, requester);
         animal = Objects.requireNonNull(animalRepository.save(animal));
@@ -168,6 +171,7 @@ public class AnimalService {
     @Transactional
     public AnimalResponse update(UUID id, AnimalRequest request, String requesterAuthSubject) {
         AppUser requester = loadRequester(requesterAuthSubject);
+        assertCanManageAnimals(requester);
         Animal animal = load(id);
         assertVolunteerCanManageAnimal(requester, animal);
         apply(animal, request, requester);
@@ -179,6 +183,7 @@ public class AnimalService {
     @Transactional
     public AnimalResponse updateStatus(UUID id, AnimalStatus status, String requesterAuthSubject) {
         AppUser requester = loadRequester(requesterAuthSubject);
+        assertCanManageAnimals(requester);
         Animal animal = load(id);
         assertVolunteerCanManageAnimal(requester, animal);
         animal.setStatus(status);
@@ -189,6 +194,7 @@ public class AnimalService {
     @Transactional
     public void delete(UUID id, String requesterAuthSubject) {
         AppUser requester = loadRequester(requesterAuthSubject);
+        assertCanManageAnimals(requester);
         Animal animal = load(id);
         assertVolunteerCanManageAnimal(requester, animal);
         // Detach managed graph to avoid flush cascading transient references unrelated to the delete itself.
@@ -202,6 +208,7 @@ public class AnimalService {
     @Transactional
     public AnimalImageResponse uploadImage(UUID animalId, String requesterAuthSubject, MultipartFile file, Integer displayOrder) {
         AppUser requester = loadRequester(requesterAuthSubject);
+        assertCanManageAnimals(requester);
         Animal animal = load(animalId);
         assertVolunteerCanManageAnimal(requester, animal);
         long existing = imageRepository.countByAnimalId(animalId);
@@ -280,6 +287,7 @@ public class AnimalService {
     @Transactional
     public void deleteImage(UUID animalId, UUID imageId, String requesterAuthSubject) {
         AppUser requester = loadRequester(requesterAuthSubject);
+        assertCanManageAnimals(requester);
         Animal animal = load(animalId);
         assertVolunteerCanManageAnimal(requester, animal);
 
@@ -459,6 +467,19 @@ public class AnimalService {
     private AppUser loadRequester(String authSubject) {
         return appUserRepository.findByAuthSubject(authSubject)
             .orElseThrow(() -> new NotFoundException("Usuario autenticado nao encontrado"));
+    }
+
+    private void assertCanManageAnimals(AppUser requester) {
+        if (requester.getUserType() != UserType.ADMIN) {
+            return;
+        }
+        AdminPermissions permissions = requester.getAdminPermissions();
+        if (permissions == null) {
+            permissions = AdminPermissions.fullAccess();
+        }
+        if (!permissions.allows(AdminPermission.MANAGE_ANIMALS)) {
+            throw new AccessDeniedException("Administrador sem permissao: MANAGE_ANIMALS");
+        }
     }
 
     private void assertVolunteerCanManageAnimal(AppUser requester, Animal animal) {

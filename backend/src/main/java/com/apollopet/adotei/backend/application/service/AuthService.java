@@ -2,6 +2,7 @@ package com.apollopet.adotei.backend.application.service;
 
 import com.apollopet.adotei.backend.application.exception.BadRequestException;
 import com.apollopet.adotei.backend.application.exception.NotFoundException;
+import com.apollopet.adotei.backend.domain.entity.AdminPermissions;
 import com.apollopet.adotei.backend.domain.entity.AdopterProfile;
 import com.apollopet.adotei.backend.domain.entity.AppUser;
 import com.apollopet.adotei.backend.domain.entity.Role;
@@ -16,6 +17,7 @@ import com.apollopet.adotei.backend.web.dto.AuthDtos.ChangePasswordRequest;
 import com.apollopet.adotei.backend.web.dto.AuthDtos.LoginRequest;
 import com.apollopet.adotei.backend.web.dto.AuthDtos.RegisterRequest;
 import com.apollopet.adotei.backend.web.dto.AuthDtos.UserSession;
+import com.apollopet.adotei.backend.web.dto.UserDtos.AdminPermissionsDto;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -169,7 +171,24 @@ public class AuthService {
             user.getFullName(),
             user.getEmail(),
             user.getUserType().name(),
-            user.getRoles().stream().map(Role::getCode).sorted().toList()
+            user.getRoles().stream().map(Role::getCode).sorted().toList(),
+            toPermissionsDto(user)
+        );
+    }
+
+    private AdminPermissionsDto toPermissionsDto(AppUser user) {
+        if (user.getUserType() != UserType.ADMIN) {
+            return null;
+        }
+        AdminPermissions permissions = user.getAdminPermissions();
+        if (permissions == null) {
+            permissions = AdminPermissions.fullAccess();
+        }
+        return new AdminPermissionsDto(
+            permissions.isManageAnimals(),
+            permissions.isApproveAdoptions(),
+            permissions.isManageSettings(),
+            permissions.isManageAdmins()
         );
     }
 

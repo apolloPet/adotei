@@ -1,16 +1,21 @@
-
 import { Shield, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { AdminTableProps } from "./types";
+import { useAuth } from "@/hooks/auth";
 
 export const AdminTable = ({
   admins,
   isLoading,
   onRemove,
-  onUpdatePermissions,
   formatDate,
 }: AdminTableProps) => {
+  const { user } = useAuth();
+  const currentEmail = user?.email?.toLowerCase();
+
+  const canDelete = (email: string) =>
+    email !== "admin@petmatch.com" && email.toLowerCase() !== currentEmail;
+
   const renderPermBadges = (admin: AdminTableProps["admins"][number]) => (
     <div className="flex flex-wrap gap-1">
       {admin.permissions.manageAnimals && (
@@ -42,7 +47,6 @@ export const AdminTable = ({
 
   return (
     <>
-      {/* Mobile cards */}
       <div className="md:hidden space-y-3">
         {admins.map((admin) => (
           <div key={admin.id} className="border rounded-lg p-3 bg-card">
@@ -55,7 +59,8 @@ export const AdminTable = ({
                 variant="ghost"
                 size="icon"
                 onClick={() => onRemove(admin.id, admin.email)}
-                disabled={admin.email === "admin@petmatch.com"}
+                disabled={!canDelete(admin.email)}
+                title={!canDelete(admin.email) ? "Não é possível remover esta conta" : "Remover administrador"}
                 className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8 shrink-0"
               >
                 <Trash2 className="h-4 w-4" />
@@ -69,7 +74,6 @@ export const AdminTable = ({
         ))}
       </div>
 
-      {/* Desktop table */}
       <div className="hidden md:block border rounded-md overflow-x-auto">
         <Table>
           <TableHeader>
@@ -96,7 +100,8 @@ export const AdminTable = ({
                     variant="ghost"
                     size="icon"
                     onClick={() => onRemove(admin.id, admin.email)}
-                    disabled={admin.email === "admin@petmatch.com"}
+                    disabled={!canDelete(admin.email)}
+                    title={!canDelete(admin.email) ? "Não é possível remover esta conta" : "Remover administrador"}
                     className="text-red-500 hover:text-red-700 hover:bg-red-50"
                   >
                     <Trash2 className="h-4 w-4" />

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-sonner";
@@ -22,8 +22,23 @@ import { useAuth } from '@/hooks/auth';
 
 const AdminPanel = ({ onLogout }) => {
   const navigate = useNavigate();
-  const { isAdmin, isVolunteer, isAuthenticated, fetchUserData } = useAuth();
+  const { isAdmin, isVolunteer, isAuthenticated, fetchUserData, adminPermissions } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
+
+  const canManageAdoptions = isVolunteer || Boolean(adminPermissions?.approveAdoptions);
+  const canManageAnimals = isVolunteer || Boolean(adminPermissions?.manageAnimals);
+  const canManageSettings = Boolean(adminPermissions?.manageSettings);
+  const canManageAdmins = Boolean(adminPermissions?.manageAdmins);
+  const canOpenSettings = canManageSettings || canManageAdmins;
+
+  const defaultTab = useMemo(() => {
+    if (canManageAdoptions) return 'adoption';
+    if (canManageAnimals) return 'animals';
+    if (canOpenSettings) return 'settings';
+    return 'adoption';
+  }, [canManageAdoptions, canManageAnimals, canOpenSettings]);
+
+  const settingsDefaultTab = canManageAdmins ? 'administrators' : canManageSettings ? 'users' : 'administrators';
 
   useEffect(() => {
     const checkAuthStatus = async () => {
@@ -114,17 +129,21 @@ const AdminPanel = ({ onLogout }) => {
         </CardHeader>
 
         <CardContent className="pt-2 sm:pt-6 px-2 sm:px-6">
-          <Tabs defaultValue="adoption" className="w-full">
+          <Tabs defaultValue={defaultTab} className="w-full">
             <TabsList className="w-full mb-4 sm:mb-6 overflow-x-auto flex flex-nowrap whitespace-nowrap">
-              <TabsTrigger value="adoption" className="flex items-center gap-1">
-                <PawPrint className="h-4 w-4" />
-                <span className="hidden sm:inline">Adoção</span>
-              </TabsTrigger>
-              <TabsTrigger value="animals" className="flex items-center gap-1">
-                <PawPrint className="h-4 w-4" />
-                <span className="hidden sm:inline">Animais</span>
-              </TabsTrigger>
-              {isAdmin && (
+              {canManageAdoptions && (
+                <TabsTrigger value="adoption" className="flex items-center gap-1">
+                  <PawPrint className="h-4 w-4" />
+                  <span className="hidden sm:inline">Adoção</span>
+                </TabsTrigger>
+              )}
+              {canManageAnimals && (
+                <TabsTrigger value="animals" className="flex items-center gap-1">
+                  <PawPrint className="h-4 w-4" />
+                  <span className="hidden sm:inline">Animais</span>
+                </TabsTrigger>
+              )}
+              {canOpenSettings && (
                 <TabsTrigger value="settings" className="flex items-center gap-1">
                   <Settings className="h-4 w-4" />
                   <span className="hidden sm:inline">Configurações</span>
@@ -132,43 +151,59 @@ const AdminPanel = ({ onLogout }) => {
               )}
             </TabsList>
 
-            <TabsContent value="adoption">
-              <AdoptionManagement />
-            </TabsContent>
+            {canManageAdoptions && (
+              <TabsContent value="adoption">
+                <AdoptionManagement />
+              </TabsContent>
+            )}
 
-            <TabsContent value="animals">
-              <AnimalRegistrationForm />
-            </TabsContent>
+            {canManageAnimals && (
+              <TabsContent value="animals">
+                <AnimalRegistrationForm />
+              </TabsContent>
+            )}
 
-            {isAdmin && (
+            {canOpenSettings && (
               <TabsContent value="settings">
-                <Tabs defaultValue="administrators" className="w-full">
+                <Tabs defaultValue={settingsDefaultTab} className="w-full">
                   <TabsList className="w-full mb-4 overflow-x-auto flex flex-nowrap whitespace-nowrap">
-                    <TabsTrigger value="administrators" className="flex items-center gap-1">
-                      <ShieldCheck className="h-4 w-4" />
-                      <span className="hidden sm:inline">Administradores</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="users" className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      <span className="hidden sm:inline">Usuários</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="organizations" className="flex items-center gap-1">
-                      <Building2 className="h-4 w-4" />
-                      <span className="hidden sm:inline">ONGs</span>
-                    </TabsTrigger>
+                    {canManageAdmins && (
+                      <TabsTrigger value="administrators" className="flex items-center gap-1">
+                        <ShieldCheck className="h-4 w-4" />
+                        <span className="hidden sm:inline">Administradores</span>
+                      </TabsTrigger>
+                    )}
+                    {canManageSettings && (
+                      <>
+                        <TabsTrigger value="users" className="flex items-center gap-1">
+                          <Users className="h-4 w-4" />
+                          <span className="hidden sm:inline">Usuários</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="organizations" className="flex items-center gap-1">
+                          <Building2 className="h-4 w-4" />
+                          <span className="hidden sm:inline">ONGs</span>
+                        </TabsTrigger>
+                      </>
+                    )}
                   </TabsList>
 
-                  <TabsContent value="administrators">
-                    <AdminUserManagement />
-                  </TabsContent>
+                  {canManageAdmins && (
+                    <TabsContent value="administrators">
+                      <AdminUserManagement />
+                    </TabsContent>
+                  )}
 
-                  <TabsContent value="users">
-                    <UsersList />
-                  </TabsContent>
+                  {canManageSettings && (
+                    <>
+                      <TabsContent value="users">
+                        <UsersList />
+                      </TabsContent>
 
-                  <TabsContent value="organizations">
-                    <OrganizationManagement />
-                  </TabsContent>
+                      <TabsContent value="organizations">
+                        <OrganizationManagement />
+                      </TabsContent>
+                    </>
+                  )}
                 </Tabs>
               </TabsContent>
             )}

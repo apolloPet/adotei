@@ -2,6 +2,8 @@ package com.apollopet.adotei.backend.application.service;
 
 import com.apollopet.adotei.backend.application.exception.BadRequestException;
 import com.apollopet.adotei.backend.application.exception.NotFoundException;
+import com.apollopet.adotei.backend.domain.entity.AdminPermission;
+import com.apollopet.adotei.backend.domain.entity.AdminPermissions;
 import com.apollopet.adotei.backend.domain.entity.AdoptionInterest;
 import com.apollopet.adotei.backend.domain.entity.Animal;
 import com.apollopet.adotei.backend.domain.entity.AnimalStatus;
@@ -63,6 +65,7 @@ public class AdoptionInterestService {
     public List<UUID> listAnimalIdsWithInterests(String requesterAuthSubject) {
         AppUser requester = loadUserByAuthSubject(requesterAuthSubject);
         if (requester.getUserType() == UserType.ADMIN) {
+            assertCanApproveAdoptions(requester);
             return adoptionInterestRepository.findDistinctAnimalIdsWithInterests();
         }
         if (requester.getUserType() == UserType.VOLUNTARIO) {
@@ -92,6 +95,7 @@ public class AdoptionInterestService {
     public List<AdoptionInterestResponse> listAll(String requesterAuthSubject) {
         AppUser requester = loadUserByAuthSubject(requesterAuthSubject);
         if (requester.getUserType() == UserType.ADMIN) {
+            assertCanApproveAdoptions(requester);
             return adoptionInterestRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(this::toResponse)
                 .toList();
@@ -136,6 +140,16 @@ public class AdoptionInterestService {
     private AppUser loadUserByAuthSubject(String authSubject) {
         return appUserRepository.findByAuthSubject(authSubject)
             .orElseThrow(() -> new NotFoundException("Usuario autenticado nao encontrado"));
+    }
+
+    private void assertCanApproveAdoptions(AppUser requester) {
+        AdminPermissions permissions = requester.getAdminPermissions();
+        if (permissions == null) {
+            permissions = AdminPermissions.fullAccess();
+        }
+        if (!permissions.allows(AdminPermission.APPROVE_ADOPTIONS)) {
+            throw new AccessDeniedException("Administrador sem permissao: APPROVE_ADOPTIONS");
+        }
     }
 
     private Animal loadAnimal(UUID animalId) {
