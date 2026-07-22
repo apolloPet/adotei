@@ -36,6 +36,8 @@ export interface PersonalitySelectProps {
   /** Quando true, a ONG já está definida (ex.: voluntário) e não há seletor de ONG. */
   organizationLocked?: boolean;
   value: string;
+  /** Texto legado recebido da API quando o animal ainda não possui personalityId. */
+  fallbackPersonalityText?: string;
   onChange: (personalityId: string, personality?: Personality) => void;
   /** Quando true, "Nova" só cria rascunho local; a API só é chamada no submit do animal. */
   deferCreateUntilAnimalSubmit?: boolean;
@@ -50,6 +52,7 @@ const PersonalitySelect = ({
   organizationId,
   organizationLocked = false,
   value,
+  fallbackPersonalityText,
   onChange,
   deferCreateUntilAnimalSubmit = false,
   pendingPersonality = null,
@@ -82,6 +85,20 @@ const PersonalitySelect = ({
   useEffect(() => {
     loadPersonalities();
   }, [organizationId]);
+
+  useEffect(() => {
+    if (value || !fallbackPersonalityText || personalities.length === 0) {
+      return;
+    }
+    const normalize = (text: string) => text.trim().toLocaleLowerCase('pt-BR');
+    const fallback = normalize(fallbackPersonalityText);
+    const matched = personalities.find((personality) =>
+      normalize(personality.name) === fallback || normalize(personality.description) === fallback,
+    );
+    if (matched) {
+      onChange(matched.id, matched);
+    }
+  }, [fallbackPersonalityText, onChange, personalities, value]);
 
   const selectablePersonalities = useMemo(() => {
     if (!pendingPersonality) return personalities;
@@ -274,6 +291,11 @@ const PersonalitySelect = ({
 
       {!value && organizationId && (
         <p className="text-sm text-destructive">Personalidade e temperamento são obrigatórios</p>
+      )}
+      {!value && fallbackPersonalityText && personalities.length > 0 && (
+        <p className="text-sm text-amber-700 dark:text-amber-400">
+          A personalidade antiga “{fallbackPersonalityText}” não foi encontrada no catálogo desta ONG. Selecione uma opção para atualizar o cadastro.
+        </p>
       )}
       {selectedPersonality && (
         <p className="text-sm text-muted-foreground break-words">{selectedPersonality.description}</p>

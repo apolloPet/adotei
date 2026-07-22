@@ -288,6 +288,7 @@ const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCompl
       <PersonalitySelect
         organizationId={formData.organizationId}
         value={formData.personalityId ?? ''}
+        fallbackPersonalityText={formData.personalityName ?? formData.personalityTemperament}
         onChange={(personalityId) => handleChange('personalityId', personalityId)}
       />
 
