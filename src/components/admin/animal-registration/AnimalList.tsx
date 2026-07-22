@@ -381,9 +381,6 @@ const AnimalList = () => {
                       <TableHead>Nome</TableHead>
                       <TableHead>Tipo</TableHead>
                       <TableHead>Descrição</TableHead>
-                      <TableHead>Idade</TableHead>
-                      <TableHead>Porte</TableHead>
-                      <TableHead>Sexo</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
@@ -397,14 +394,6 @@ const AnimalList = () => {
                            animal.tipo === 'gato' ? 'Gato' : 'Outro'}
                         </TableCell>
                         <TableCell className="max-w-xs truncate">{animal.descricao || '-'}</TableCell>
-                        <TableCell>{animal.idade} {animal.idade === 1 ? 'ano' : 'anos'}</TableCell>
-                        <TableCell>
-                          {animal.porte === 'pequeno' ? 'Pequeno' : 
-                           animal.porte === 'medio' ? 'Médio' : 'Grande'}
-                        </TableCell>
-                        <TableCell>
-                          {animal.sexo === 'macho' ? 'Macho' : 'Fêmea'}
-                        </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Badge className={statusBadgeClass[(animal.status ?? FALLBACK_STATUS)]}>

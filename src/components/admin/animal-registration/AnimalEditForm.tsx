@@ -6,10 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Upload, X } from 'lucide-react';
 import { toast } from '@/hooks/use-sonner';
 import PersonalitySelect from './PersonalitySelect';
 import AuthedImage from '@/components/ui/authed-image';
+import { apiRequest } from '@/lib/apiClient';
 
 interface AnimalEditFormProps {
   animal: Animal;
@@ -23,16 +26,42 @@ type PendingImage = {
   previewUrl: string;
 };
 
+type VaccineOption = {
+  id: string;
+  name: string;
+  animalType: string;
+  active: boolean;
+};
+
+type TraitOption = { id: string; description: string; active: boolean };
+type RequirementOption = { id: string; name: string; active: boolean };
+
 const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onComplete, onCancel }) => {
   const [formData, setFormData] = useState<Animal>({ ...animal });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingImages, setExistingImages] = useState(animal.imagens ?? []);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [removedExistingImageIds, setRemovedExistingImageIds] = useState<string[]>([]);
+  const [vaccines, setVaccines] = useState<VaccineOption[]>([]);
+  const [traits, setTraits] = useState<TraitOption[]>([]);
+  const [requirements, setRequirements] = useState<RequirementOption[]>([]);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (field: keyof Animal, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleVaccineToggle = (vaccineId: string, checked: boolean) => {
+    const currentIds = formData.vaccineIds ?? [];
+    handleChange(
+      'vaccineIds',
+      checked ? [...currentIds, vaccineId] : currentIds.filter((id) => id !== vaccineId),
+    );
+  };
+
+  const handleCatalogToggle = (field: 'temperamentTraitIds' | 'requirementIds', id: string, checked: boolean) => {
+    const currentIds = formData[field] ?? [];
+    handleChange(field, checked ? [...currentIds, id] : currentIds.filter((currentId) => currentId !== id));
   };
 
   useEffect(() => {
@@ -40,6 +69,25 @@ const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCompl
       pendingImages.forEach((image) => URL.revokeObjectURL(image.previewUrl));
     };
   }, [pendingImages]);
+
+  useEffect(() => {
+    const loadVaccines = async () => {
+      try {
+        const [vaccineData, traitData, requirementData] = await Promise.all([
+          apiRequest<VaccineOption[]>('/api/vaccines'),
+          apiRequest<TraitOption[]>('/api/temperament-traits'),
+          apiRequest<RequirementOption[]>('/api/adoption-requirements'),
+        ]);
+        setVaccines(vaccineData.filter((vaccine) => vaccine.active));
+        setTraits(traitData.filter((trait) => trait.active));
+        setRequirements(requirementData.filter((requirement) => requirement.active));
+      } catch (error) {
+        console.error('Erro ao carregar vacinas:', error);
+        toast.error('Não foi possível carregar as vacinas disponíveis.');
+      }
+    };
+    void loadVaccines();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,6 +215,16 @@ const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCompl
           </Select>
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="raca">Raça</Label>
+          <Input
+            id="raca"
+            value={formData.raca ?? ''}
+            onChange={(e) => handleChange('raca', e.target.value)}
+            placeholder="Ex.: Sem raça definida"
+          />
+        </div>
+
         {/* Idade */}
         <div className="space-y-2">
           <Label htmlFor="idade">Idade (anos)</Label>
@@ -232,6 +290,91 @@ const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCompl
         value={formData.personalityId ?? ''}
         onChange={(personalityId) => handleChange('personalityId', personalityId)}
       />
+
+      <section className="space-y-4 rounded-lg border p-4">
+        <div>
+          <h3 className="font-semibold">Saúde e vacinas</h3>
+          <p className="text-sm text-muted-foreground">Atualize vacinas, condições de saúde e cuidados especiais.</p>
+        </div>
+        <div className="space-y-2">
+          <Label>Vacinas</Label>
+          <div className="grid max-h-48 grid-cols-1 gap-2 overflow-y-auto rounded-md border p-3 sm:grid-cols-2">
+            {vaccines.filter((vaccine) => vaccine.animalType === formData.tipo).sort((a, b) => a.name.localeCompare(b.name)).map((vaccine) => (
+              <div key={vaccine.id} className="flex items-start gap-2">
+                <Checkbox id={`edit-vaccine-${vaccine.id}`} checked={(formData.vaccineIds ?? []).includes(vaccine.id)} onCheckedChange={(checked) => handleVaccineToggle(vaccine.id, checked === true)} />
+                <Label htmlFor={`edit-vaccine-${vaccine.id}`} className="leading-snug">{vaccine.name}</Label>
+              </div>
+            ))}
+            {vaccines.filter((vaccine) => vaccine.animalType === formData.tipo).length === 0 && (
+              <p className="text-sm text-muted-foreground">Nenhuma vacina cadastrada para este tipo de animal.</p>
+            )}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="vaccinationStatus">Status de vacinação</Label>
+            <Input id="vaccinationStatus" value={formData.vaccinationStatus ?? ''} onChange={(e) => handleChange('vaccinationStatus', e.target.value)} placeholder="Ex.: vacinação em dia" />
+          </div>
+          <div className="flex items-center justify-between gap-4 rounded-md border p-3">
+            <Label htmlFor="specialNeeds">Possui necessidades especiais</Label>
+            <Switch id="specialNeeds" checked={formData.specialNeeds ?? false} onCheckedChange={(checked) => handleChange('specialNeeds', checked)} />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="veterinaryInfo">Informações veterinárias</Label>
+            <Textarea id="veterinaryInfo" value={formData.veterinaryInfo ?? ''} onChange={(e) => handleChange('veterinaryInfo', e.target.value)} placeholder="Consultas, tratamentos ou observações veterinárias" />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="healthConditions">Condições de saúde</Label>
+            <Textarea id="healthConditions" value={formData.healthConditions ?? ''} onChange={(e) => handleChange('healthConditions', e.target.value)} placeholder="Ex.: alergias, doenças crônicas ou restrições" />
+          </div>
+          {(formData.specialNeeds ?? false) && (
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="specialNeedsDescription">Descrição das necessidades especiais</Label>
+              <Textarea id="specialNeedsDescription" value={formData.specialNeedsDescription ?? ''} onChange={(e) => handleChange('specialNeedsDescription', e.target.value)} placeholder="Descreva os cuidados necessários" />
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="space-y-4 rounded-lg border p-4">
+        <div>
+          <h3 className="font-semibold">Comportamento e convivência</h3>
+          <p className="text-sm text-muted-foreground">Esses dados ajudam a encontrar o adotante mais adequado.</p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="flex items-center justify-between gap-4 rounded-md border p-3"><Label htmlFor="goodWithChildren">Convive bem com crianças</Label><Switch id="goodWithChildren" checked={formData.goodWithChildren ?? false} onCheckedChange={(checked) => handleChange('goodWithChildren', checked)} /></div>
+          <div className="flex items-center justify-between gap-4 rounded-md border p-3"><Label htmlFor="goodWithOtherAnimals">Convive bem com outros animais</Label><Switch id="goodWithOtherAnimals" checked={formData.goodWithOtherAnimals ?? false} onCheckedChange={(checked) => handleChange('goodWithOtherAnimals', checked)} /></div>
+          <div className="flex items-center justify-between gap-4 rounded-md border p-3"><Label htmlFor="goodWithSeniors">Convive bem com idosos</Label><Switch id="goodWithSeniors" checked={formData.goodWithSeniors ?? false} onCheckedChange={(checked) => handleChange('goodWithSeniors', checked)} /></div>
+          <div className="space-y-2"><Label htmlFor="energyLevel">Nível de energia</Label><Input id="energyLevel" value={formData.energyLevel ?? ''} onChange={(e) => handleChange('energyLevel', e.target.value)} placeholder="Ex.: alto, moderado" /></div>
+          <div className="space-y-2 md:col-span-2"><Label htmlFor="trainability">Treinabilidade</Label><Textarea id="trainability" value={formData.trainability ?? ''} onChange={(e) => handleChange('trainability', e.target.value)} placeholder="Ex.: responde bem a comandos básicos" /></div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Traços de temperamento</Label>
+            <div className="grid gap-2 rounded-md border p-3 sm:grid-cols-2">
+              {traits.map((trait) => <div key={trait.id} className="flex items-start gap-2"><Checkbox id={`trait-${trait.id}`} checked={(formData.temperamentTraitIds ?? []).includes(trait.id)} onCheckedChange={(checked) => handleCatalogToggle('temperamentTraitIds', trait.id, checked === true)} /><Label htmlFor={`trait-${trait.id}`} className="leading-snug">{trait.description}</Label></div>)}
+              {traits.length === 0 && <p className="text-sm text-muted-foreground">Nenhum traço de temperamento cadastrado.</p>}
+            </div>
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Requisitos para adoção</Label>
+            <div className="grid gap-2 rounded-md border p-3 sm:grid-cols-2">
+              {requirements.map((requirement) => <div key={requirement.id} className="flex items-start gap-2"><Checkbox id={`requirement-${requirement.id}`} checked={(formData.requirementIds ?? []).includes(requirement.id)} onCheckedChange={(checked) => handleCatalogToggle('requirementIds', requirement.id, checked === true)} /><Label htmlFor={`requirement-${requirement.id}`} className="leading-snug">{requirement.name}</Label></div>)}
+              {requirements.length === 0 && <p className="text-sm text-muted-foreground">Nenhum requisito cadastrado.</p>}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-4 rounded-lg border p-4">
+        <h3 className="font-semibold">Localização e responsáveis</h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-2 md:col-span-2"><Label htmlFor="location">Localização</Label><Input id="location" value={formData.location ?? ''} onChange={(e) => handleChange('location', e.target.value)} placeholder="Cidade/UF ou endereço de referência" /></div>
+          <div className="space-y-2"><Label htmlFor="tutorName">Nome do tutor/responsável</Label><Input id="tutorName" value={formData.tutorName ?? ''} onChange={(e) => handleChange('tutorName', e.target.value)} /></div>
+          <div className="space-y-2"><Label htmlFor="tutorContact">Contato do tutor/responsável</Label><Input id="tutorContact" value={formData.tutorContact ?? ''} onChange={(e) => handleChange('tutorContact', e.target.value)} /></div>
+          <div className="space-y-2"><Label htmlFor="responsibleName">Responsável pelo cadastro</Label><Input id="responsibleName" value={formData.responsibleName ?? ''} onChange={(e) => handleChange('responsibleName', e.target.value)} /></div>
+          <div className="space-y-2"><Label htmlFor="responsibleContact">Contato do responsável</Label><Input id="responsibleContact" value={formData.responsibleContact ?? ''} onChange={(e) => handleChange('responsibleContact', e.target.value)} /></div>
+          <div className="space-y-2 md:col-span-2"><Label htmlFor="additionalInfo">Informações complementares</Label><Textarea id="additionalInfo" value={formData.additionalInfo ?? ''} onChange={(e) => handleChange('additionalInfo', e.target.value)} /></div>
+        </div>
+      </section>
 
       {/* Imagens atuais */}
       <div className="space-y-2">

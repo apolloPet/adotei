@@ -153,7 +153,8 @@ public class UserDtos {
         boolean organizationResponsible,
         List<String> roles,
         AdminPermissionsDto permissions,
-        OffsetDateTime createdAt
+        OffsetDateTime createdAt,
+        AdopterProfileResponse adopterProfile
     ) {}
 
     public record UserTypeResponse(

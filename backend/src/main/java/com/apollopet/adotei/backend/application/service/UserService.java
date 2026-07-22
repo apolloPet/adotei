@@ -24,8 +24,10 @@ import com.apollopet.adotei.backend.web.dto.UserDtos.UserResponse;
 import com.apollopet.adotei.backend.web.dto.UserDtos.UserTypeResponse;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -65,7 +67,15 @@ public class UserService {
     public List<UserResponse> list(String requesterAuthSubject) {
         AppUser requester = loadRequester(requesterAuthSubject);
         if (requester.getUserType() == UserType.ADMIN) {
-            return appUserRepository.findAll().stream().map(this::toResponse).toList();
+            Map<UUID, AdopterProfileResponse> profilesByUserId = adopterProfileRepository
+                .findAllByUser_UserType(UserType.ADOTANTE)
+                .stream()
+                .map(this::toAdopterProfileResponse)
+                .collect(Collectors.toMap(AdopterProfileResponse::userId, Function.identity()));
+
+            return appUserRepository.findAll().stream()
+                .map(user -> toResponse(user, profilesByUserId.get(user.getId())))
+                .toList();
         }
         if (requester.getUserType() == UserType.VOLUNTARIO && requester.getOrganization() != null) {
             return appUserRepository.findByOrganizationId(requester.getOrganization().getId()).stream()
@@ -80,7 +90,10 @@ public class UserService {
         AppUser requester = loadRequester(requesterAuthSubject);
         AppUser requested = loadUser(id);
         if (requester.getUserType() == UserType.ADMIN) {
-            return toResponse(requested);
+            AdopterProfileResponse profile = adopterProfileRepository.findByUserId(id)
+                .map(this::toAdopterProfileResponse)
+                .orElse(null);
+            return toResponse(requested, profile);
         }
         if (
             requester.getUserType() == UserType.VOLUNTARIO &&
@@ -406,6 +419,10 @@ public class UserService {
     }
 
     private UserResponse toResponse(AppUser user) {
+        return toResponse(user, null);
+    }
+
+    private UserResponse toResponse(AppUser user, AdopterProfileResponse adopterProfile) {
         Organization organization = user.getOrganization();
         UUID organizationId = organization != null ? organization.getId() : null;
         String organizationName = organization != null ? organization.getLegalName() : null;
@@ -428,7 +445,8 @@ public class UserService {
             user.isOrganizationResponsible(),
             user.getRoles().stream().map(Role::getCode).sorted().toList(),
             toPermissionsDto(user),
-            user.getCreatedAt()
+            user.getCreatedAt(),
+            adopterProfile
         );
     }
 

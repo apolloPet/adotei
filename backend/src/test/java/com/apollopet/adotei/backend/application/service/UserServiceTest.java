@@ -78,6 +78,38 @@ class UserServiceTest {
     }
 
     @Test
+    void deveIncluirPerfilCompletoDoAdotanteNaListaDoAdministrador() {
+        AppUser admin = new AppUser();
+        admin.setUserType(UserType.ADMIN);
+        admin.setRoles(Set.of());
+        admin.prePersist();
+
+        AppUser adopter = new AppUser();
+        adopter.setUserType(UserType.ADOTANTE);
+        adopter.setRoles(Set.of());
+        adopter.prePersist();
+
+        AdopterProfile profile = new AdopterProfile();
+        profile.setUser(adopter);
+        profile.setHousingType("house");
+        profile.setHasYard(true);
+        profile.setMonthlyBudget("300-600");
+        profile.prePersist();
+
+        when(appUserRepository.findByAuthSubject(REQUESTER)).thenReturn(Optional.of(admin));
+        when(appUserRepository.findAll()).thenReturn(List.of(adopter));
+        when(adopterProfileRepository.findAllByUser_UserType(UserType.ADOTANTE)).thenReturn(List.of(profile));
+
+        var response = userService.list(REQUESTER);
+
+        assertEquals(1, response.size());
+        assertNotNull(response.getFirst().adopterProfile());
+        assertEquals("house", response.getFirst().adopterProfile().housingType());
+        assertEquals(true, response.getFirst().adopterProfile().hasYard());
+        assertEquals("300-600", response.getFirst().adopterProfile().monthlyBudget());
+    }
+
+    @Test
     void deveCriarAdotanteComPapelAdotante() {
         mockSaveAndReload();
 

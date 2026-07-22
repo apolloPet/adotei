@@ -559,6 +559,7 @@ public class AnimalService {
             animal.getPersonality() == null ? null : animal.getPersonality().getName(),
             animal.getTutor() == null ? null : animal.getTutor().getId(),
             animal.getVaccines().stream().map(Vaccine::getId).toList(),
+            animal.getVaccines().stream().map(Vaccine::getName).sorted().toList(),
             animal.getTemperamentTraits().stream().map(TemperamentTrait::getId).toList(),
             animal.getRequirements().stream().map(AdoptionRequirement::getId).toList(),
             adopterProfileResponse,

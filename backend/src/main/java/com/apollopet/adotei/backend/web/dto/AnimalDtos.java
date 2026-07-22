@@ -112,6 +112,7 @@ public class AnimalDtos {
         String personalityName,
         UUID tutorId,
         List<UUID> vaccineIds,
+        List<String> vaccineNames,
         List<UUID> temperamentTraitIds,
         List<UUID> requirementIds,
         AnimalAdopterProfileResponse adopterProfile,

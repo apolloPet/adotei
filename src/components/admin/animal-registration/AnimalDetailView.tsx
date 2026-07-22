@@ -85,7 +85,7 @@ const AnimalDetailView: React.FC<AnimalDetailViewProps> = ({ animal, onClose }) 
             
             <div className="space-y-3">
               <div>
-                <p className="text-sm text-muted-foreground">Status de Vacinação</p>
+                <p className="text-sm text-muted-foreground">Vacinas</p>
                 <div className="mt-1">
                   {Array.isArray(animal.vacinas) && animal.vacinas.length > 0 ? (
                     animal.vacinas.map((vacina, index) => (
@@ -98,6 +98,38 @@ const AnimalDetailView: React.FC<AnimalDetailViewProps> = ({ animal, onClose }) 
                   )}
                 </div>
               </div>
+              {animal.vaccinationStatus && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Status de vacinação</p>
+                  <p className="font-medium">{animal.vaccinationStatus}</p>
+                </div>
+              )}
+              {animal.veterinaryInfo && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Informações veterinárias</p>
+                  <p className="font-medium whitespace-pre-line">{animal.veterinaryInfo}</p>
+                </div>
+              )}
+              {animal.healthConditions && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Condições de saúde</p>
+                  <p className="font-medium whitespace-pre-line">{animal.healthConditions}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-sm text-muted-foreground">Necessidades especiais</p>
+                <p className="font-medium">
+                  {animal.specialNeeds
+                    ? animal.specialNeedsDescription || 'Sim, sem descrição informada.'
+                    : 'Não'}
+                </p>
+              </div>
+              {animal.additionalInfo && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Informações complementares</p>
+                  <p className="font-medium whitespace-pre-line">{animal.additionalInfo}</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

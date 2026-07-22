@@ -18,15 +18,36 @@ export interface Animal {
   nome: string;
   idade: number;
   tipo: 'cachorro' | 'gato' | 'outro';
+  raca?: string;
   porte: 'pequeno' | 'medio' | 'grande';
   sexo: 'macho' | 'femea';
   castrado: boolean;
   vacinas: string[];
+  vaccineIds?: string[];
+  temperamentTraitIds?: string[];
+  requirementIds?: string[];
+  vaccinationStatus?: string;
+  veterinaryInfo?: string;
+  healthConditions?: string;
+  specialNeeds?: boolean;
+  specialNeedsDescription?: string;
+  additionalInfo?: string;
+  goodWithChildren?: boolean;
+  goodWithOtherAnimals?: boolean;
+  goodWithSeniors?: boolean;
+  energyLevel?: string;
+  trainability?: string;
+  location?: string;
+  responsibleName?: string;
+  responsibleContact?: string;
+  tutorName?: string;
+  tutorContact?: string;
   responsavel_id?: string | null;
   data_cadastro: string;
   descricao?: string;
   personalityId?: string;
   personalityName?: string;
+  personalityTemperament?: string;
   organizationId?: string;
   status?: AnimalStatus;
   fotoPrincipal?: string;
@@ -87,11 +108,17 @@ type BackendAnimal = {
   sex: 'macho' | 'femea';
   size: 'pequeno' | 'medio' | 'grande';
   description?: string;
+  vaccinationStatus?: string;
+  veterinaryInfo?: string;
+  healthConditions?: string;
   personalityId?: string;
   personalityName?: string;
   organizationId?: string;
   sterilized: boolean;
   vaccineIds?: string[];
+  vaccineNames?: string[];
+  temperamentTraitIds?: string[];
+  requirementIds?: string[];
   tutorName?: string;
   tutorContact?: string;
   additionalInfo?: string;
@@ -100,7 +127,12 @@ type BackendAnimal = {
   goodWithChildren?: boolean;
   goodWithOtherAnimals?: boolean;
   goodWithSeniors?: boolean;
+  energyLevel?: string;
+  trainability?: string;
   location?: string;
+  responsibleName?: string;
+  responsibleContact?: string;
+  personalityTemperament?: string;
   adopterProfile?: {
     suitableHousing?: string[];
     requiresYard: boolean;
@@ -128,15 +160,36 @@ const backendAnimalToAnimal = (animal: BackendAnimal): Animal => {
     nome: animal.name,
     idade: animal.ageYears,
     tipo: animal.animalType,
+    raca: animal.breed,
     porte: animal.size,
     sexo: animal.sex,
     castrado: animal.sterilized,
-    vacinas: animal.vaccineIds ?? [],
+    vacinas: animal.vaccineNames ?? [],
+    vaccineIds: animal.vaccineIds ?? [],
+    temperamentTraitIds: animal.temperamentTraitIds ?? [],
+    requirementIds: animal.requirementIds ?? [],
+    vaccinationStatus: animal.vaccinationStatus,
+    veterinaryInfo: animal.veterinaryInfo,
+    healthConditions: animal.healthConditions,
+    specialNeeds: animal.specialNeeds,
+    specialNeedsDescription: animal.specialNeedsDescription,
+    additionalInfo: animal.additionalInfo,
+    goodWithChildren: animal.goodWithChildren,
+    goodWithOtherAnimals: animal.goodWithOtherAnimals,
+    goodWithSeniors: animal.goodWithSeniors,
+    energyLevel: animal.energyLevel,
+    trainability: animal.trainability,
+    location: animal.location,
+    responsibleName: animal.responsibleName,
+    responsibleContact: animal.responsibleContact,
+    tutorName: animal.tutorName,
+    tutorContact: animal.tutorContact,
     responsavel_id: null,
     data_cadastro: animal.createdAt || '',
     descricao: animal.description,
     personalityId: animal.personalityId,
     personalityName: animal.personalityName,
+    personalityTemperament: animal.personalityTemperament,
     organizationId: animal.organizationId,
     status: animal.status ?? 'DISPONIVEL',
     fotoPrincipal: orderedImages[0],
@@ -390,14 +443,24 @@ export const updateAnimal = async (id: string, animalData: Partial<Animal>): Pro
         personalityId: animalData.personalityId ?? current.personalityId,
         sterilized: animalData.castrado ?? current.sterilized,
         vaccineIds: animalData.vaccineIds ?? current.vaccineIds,
+        vaccinationStatus: animalData.vaccinationStatus ?? current.vaccinationStatus,
+        veterinaryInfo: animalData.veterinaryInfo ?? current.veterinaryInfo,
+        healthConditions: animalData.healthConditions ?? current.healthConditions,
         tutorName: animalData.tutorName ?? current.tutorName,
         tutorContact: animalData.tutorContact ?? current.tutorContact,
+        responsibleName: animalData.responsibleName ?? current.responsibleName,
+        responsibleContact: animalData.responsibleContact ?? current.responsibleContact,
+        location: animalData.location ?? current.location,
         additionalInfo: animalData.additionalInfo ?? current.additionalInfo,
         specialNeeds: animalData.specialNeeds ?? current.specialNeeds ?? false,
         specialNeedsDescription: animalData.specialNeedsDescription ?? current.specialNeedsDescription,
         goodWithChildren: animalData.goodWithChildren ?? current.goodWithChildren ?? false,
         goodWithOtherAnimals: animalData.goodWithOtherAnimals ?? current.goodWithOtherAnimals ?? false,
         goodWithSeniors: animalData.goodWithSeniors ?? current.goodWithSeniors ?? false,
+        energyLevel: animalData.energyLevel ?? current.energyLevel,
+        trainability: animalData.trainability ?? current.trainability,
+        temperamentTraitIds: animalData.temperamentTraitIds ?? current.temperamentTraitIds ?? [],
+        requirementIds: animalData.requirementIds ?? current.requirementIds ?? [],
         status: animalData.status ?? current.status,
         adopterProfile: current.adopterProfile ?? {
           suitableHousing: ['house', 'apartment', 'farm'],

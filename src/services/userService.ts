@@ -2,6 +2,8 @@ import { apiRequest } from '@/lib/apiClient';
 import type { User } from '@/components/admin/users/types';
 import { toast } from '@/hooks/use-sonner';
 
+type BackendAdopterProfile = User['adopterProfile'];
+
 type BackendUser = {
   id: string;
   authSubject: string;
@@ -18,6 +20,8 @@ type BackendUser = {
   organizationId?: string;
   organizationName?: string;
   roles: string[];
+  createdAt?: string;
+  adopterProfile?: BackendAdopterProfile;
 };
 
 const mapBackendUser = (user: BackendUser): User => ({
@@ -25,7 +29,7 @@ const mapBackendUser = (user: BackendUser): User => ({
   name: user.fullName,
   email: user.email,
   phone: user.phone,
-  registrationDate: new Date().toISOString(),
+  registrationDate: user.createdAt ?? new Date().toISOString(),
   address: {
     street: user.addressLine,
     number: user.addressNumber,
@@ -34,7 +38,11 @@ const mapBackendUser = (user: BackendUser): User => ({
     state: user.state,
     cep: user.zipCode,
   },
-  housingType: 'other',
+  housingType: user.adopterProfile?.housingType as User['housingType'],
+  hasChildren: user.adopterProfile?.hasChildren,
+  childrenAges: user.adopterProfile?.childrenAges,
+  hadPetsBefore: user.adopterProfile?.hadPetsBefore,
+  adopterProfile: user.adopterProfile,
 });
 
 const mapRequest = (user: Omit<User, 'id' | 'registrationDate'>, authId: string) => ({

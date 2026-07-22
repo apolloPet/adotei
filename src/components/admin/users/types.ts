@@ -13,7 +13,7 @@ export type User = {
     city?: string;
     state?: string;
   };
-  housingType?: 'apartment' | 'house' | 'other';
+  housingType?: 'apartment' | 'house' | 'farm' | 'other';
   hasChildren?: boolean;
   childrenAges?: string;
   hadPetsBefore?: boolean;
@@ -23,6 +23,34 @@ export type User = {
   auth_id?: string;
   created_at?: string;
   updated_at?: string;
+  adopterProfile?: {
+    housingType?: string;
+    ownershipType?: string;
+    rentAllowsPets?: boolean;
+    hasYard?: boolean;
+    yardWalled?: boolean;
+    hasWindowScreens?: boolean;
+    residentsCount?: number;
+    hasChildren?: boolean;
+    childrenAges?: string;
+    hadPetsBefore?: boolean;
+    currentlyHasPets?: boolean;
+    currentPetsCount?: number;
+    currentPetsTypes?: string;
+    returnedAnimal?: boolean;
+    petsVaccinated?: boolean;
+    petsNeutered?: boolean;
+    awareOfCosts?: boolean;
+    monthlyBudget?: string;
+    willCoverVaccines?: boolean;
+    willCoverNeutering?: boolean;
+    willCoverEmergencies?: boolean;
+    reasonToAdopt?: string;
+    hoursAloneDaily?: number;
+    ifDestroyed?: string;
+    ifSick?: string;
+    willAdapt?: boolean;
+  };
 };
 
 export type FilterType = {
