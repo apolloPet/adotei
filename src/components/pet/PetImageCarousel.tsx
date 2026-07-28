@@ -48,7 +48,7 @@ const PetImageCarousel = ({ images, petName, fillFrame = false }: PetImageCarous
         alt={petName}
         className={
           fillFrame
-            ? 'w-full h-full object-cover object-center'
+            ? 'w-full h-full object-contain object-center md:object-cover'
             : 'max-w-full max-h-full w-auto h-auto object-contain object-center'
         }
         onError={() => handleImageError(currentImageIndex)}
