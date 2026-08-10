@@ -11,10 +11,21 @@ export interface AnimalBasicInfoProps {
   formData: AnimalFormData;
   organizationId?: string;
   organizationLocked?: boolean;
+  /** Na edição a personalidade é criada na hora; no cadastro só ao salvar o animal. */
+  deferPersonalityCreate?: boolean;
+  /** Texto legado de personalidade para animais antigos sem personalityId. */
+  fallbackPersonalityText?: string;
   onFormChange: (updates: Partial<AnimalFormData>) => void;
 }
 
-const AnimalBasicInfo = ({ formData, organizationId, organizationLocked = false, onFormChange }: AnimalBasicInfoProps) => {
+const AnimalBasicInfo = ({
+  formData,
+  organizationId,
+  organizationLocked = false,
+  deferPersonalityCreate = true,
+  fallbackPersonalityText,
+  onFormChange,
+}: AnimalBasicInfoProps) => {
   const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (value === '' || /^[0-9]+$/.test(value)) {
@@ -175,8 +186,9 @@ const AnimalBasicInfo = ({ formData, organizationId, organizationLocked = false,
         organizationId={organizationId}
         organizationLocked={organizationLocked}
         value={formData.personalityId}
+        fallbackPersonalityText={fallbackPersonalityText}
         onChange={handlePersonalityChange}
-        deferCreateUntilAnimalSubmit
+        deferCreateUntilAnimalSubmit={deferPersonalityCreate}
         pendingPersonality={formData.pendingPersonality}
         onPendingPersonalityChange={handlePendingPersonalityChange}
       />

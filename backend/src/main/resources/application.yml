@@ -5,6 +5,11 @@ spring:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/adotei}
     username: ${DATABASE_USERNAME:postgres}
     password: ${DATABASE_PASSWORD:postgres}
+  servlet:
+    multipart:
+      # Default do Spring Boot é 1MB; o front aceita 5MB por foto (máx. 2).
+      max-file-size: 5MB
+      max-request-size: 12MB
   jpa:
     open-in-view: false
     hibernate:

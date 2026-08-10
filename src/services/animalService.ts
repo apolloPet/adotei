@@ -440,6 +440,8 @@ export const updateAnimal = async (id: string, animalData: Partial<Animal>): Pro
         ageYears: animalData.idade ?? current.ageYears,
         sex: animalData.sexo ?? current.sex,
         size: animalData.porte ?? current.size,
+        // Sem organizationId o backend desvincula a ONG do animal e recusa a personalidade.
+        organizationId: animalData.organizationId ?? current.organizationId,
         personalityId: animalData.personalityId ?? current.personalityId,
         sterilized: animalData.castrado ?? current.sterilized,
         vaccineIds: animalData.vaccineIds ?? current.vaccineIds,
