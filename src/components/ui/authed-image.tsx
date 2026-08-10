@@ -1,61 +1,30 @@
-import { useEffect, useState } from 'react';
-import { isAuthApiImage, loadAuthedImage } from '@/lib/imageAuth';
-
 export interface AuthedImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   src?: string;
   fallbackSrc?: string;
 }
 
 /**
- * Drop-in para <img> que carrega imagens do endpoint autenticado
- * (/api/animals/images/...) usando o Bearer token e servindo via blob URL.
- * Para qualquer outra URL (placeholder, blob:, data:, externas) renderiza
- * a imagem normalmente.
+ * <img> com fallback para placeholder quando a imagem falha.
+ *
+ * O endpoint /api/animals/images/{id} e publico e cacheavel, entao a tag carrega
+ * a URL direto: o CDN e o cache do browser servem a imagem sem passar pelo backend.
+ * Antes o binario era baixado via fetch + Bearer e servido como blob URL, o que
+ * impedia qualquer cache (de borda ou de browser) entre carregamentos de pagina.
  */
-const AuthedImage = ({ src, fallbackSrc = '/placeholder.svg', onError, ...rest }: AuthedImageProps) => {
-  const [resolvedSrc, setResolvedSrc] = useState<string | undefined>(
-    isAuthApiImage(src) ? undefined : src,
-  );
-
-  useEffect(() => {
-    let active = true;
-
-    if (!isAuthApiImage(src)) {
-      setResolvedSrc(src);
-      return;
-    }
-
-    setResolvedSrc(undefined);
-    loadAuthedImage(src as string)
-      .then((objectUrl) => {
-        if (active) {
-          setResolvedSrc(objectUrl);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setResolvedSrc(fallbackSrc);
-        }
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [src, fallbackSrc]);
-
-  return (
-    <img
-      {...rest}
-      src={resolvedSrc ?? fallbackSrc}
-      onError={(event) => {
-        if (event.currentTarget.src !== window.location.origin + fallbackSrc
-          && !event.currentTarget.src.endsWith(fallbackSrc)) {
-          event.currentTarget.src = fallbackSrc;
-        }
-        onError?.(event);
-      }}
-    />
-  );
-};
+const AuthedImage = ({ src, fallbackSrc = '/placeholder.svg', onError, ...rest }: AuthedImageProps) => (
+  <img
+    {...rest}
+    src={src || fallbackSrc}
+    loading={rest.loading ?? 'lazy'}
+    decoding={rest.decoding ?? 'async'}
+    onError={(event) => {
+      if (event.currentTarget.src !== window.location.origin + fallbackSrc
+        && !event.currentTarget.src.endsWith(fallbackSrc)) {
+        event.currentTarget.src = fallbackSrc;
+      }
+      onError?.(event);
+    }}
+  />
+);
 
 export default AuthedImage;
