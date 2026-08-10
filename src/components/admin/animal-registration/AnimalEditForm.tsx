@@ -1,18 +1,20 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animal, deleteAnimalImage, uploadAnimalImage } from '@/services/animalService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Upload, X } from 'lucide-react';
 import { toast } from '@/hooks/use-sonner';
-import PersonalitySelect from './PersonalitySelect';
 import AuthedImage from '@/components/ui/authed-image';
 import { apiRequest } from '@/lib/apiClient';
+import AnimalBasicInfo from './AnimalBasicInfo';
+import AnimalHealthInfo from './AnimalHealthInfo';
+import AnimalCharacteristics from './AnimalCharacteristics';
+import { AnimalFormData } from './types';
 
 interface AnimalEditFormProps {
   animal: Animal;
@@ -26,15 +28,27 @@ type PendingImage = {
   previewUrl: string;
 };
 
-type VaccineOption = {
-  id: string;
-  name: string;
-  animalType: string;
-  active: boolean;
-};
-
 type TraitOption = { id: string; description: string; active: boolean };
 type RequirementOption = { id: string; name: string; active: boolean };
+type OrganizationOption = { id: string; legalName: string };
+
+interface BackendUserContext {
+  id: string;
+  userType: string;
+  organizationId?: string;
+  organizationName?: string;
+}
+
+/** Campos do cadastro (AnimalFormData) -> campos do animal salvo (Animal). */
+const FIELD_MAP: Record<string, keyof Animal> = {
+  name: 'nome',
+  type: 'tipo',
+  breed: 'raca',
+  age: 'idade',
+  gender: 'sexo',
+  size: 'porte',
+  sterilized: 'castrado',
+};
 
 const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onComplete, onCancel }) => {
   const [formData, setFormData] = useState<Animal>({ ...animal });
@@ -42,22 +56,52 @@ const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCompl
   const [existingImages, setExistingImages] = useState(animal.imagens ?? []);
   const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
   const [removedExistingImageIds, setRemovedExistingImageIds] = useState<string[]>([]);
-  const [vaccines, setVaccines] = useState<VaccineOption[]>([]);
   const [traits, setTraits] = useState<TraitOption[]>([]);
   const [requirements, setRequirements] = useState<RequirementOption[]>([]);
+  const [organizations, setOrganizations] = useState<OrganizationOption[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userOrganizationName, setUserOrganizationName] = useState<string | undefined>();
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (field: keyof Animal, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleVaccineToggle = (vaccineId: string, checked: boolean) => {
-    const currentIds = formData.vaccineIds ?? [];
-    handleChange(
-      'vaccineIds',
-      checked ? [...currentIds, vaccineId] : currentIds.filter((id) => id !== vaccineId),
-    );
+  const handleFormDataChange = (updates: Partial<AnimalFormData>) => {
+    setFormData((prev) => {
+      const next: Record<string, unknown> = { ...prev };
+      Object.entries(updates).forEach(([key, value]) => {
+        const field = FIELD_MAP[key] ?? key;
+        next[field] = field === 'idade' ? parseInt(String(value), 10) || 0 : value;
+      });
+      return next as unknown as Animal;
+    });
   };
+
+  const basicFormData: AnimalFormData = useMemo(() => ({
+    name: formData.nome ?? '',
+    type: formData.tipo,
+    breed: formData.raca ?? '',
+    age: formData.idade === undefined || formData.idade === null ? '' : String(formData.idade),
+    gender: formData.sexo,
+    size: formData.porte,
+    personalityId: formData.personalityId ?? '',
+    pendingPersonality: null,
+    vaccineIds: formData.vaccineIds ?? [],
+    specialNeeds: formData.specialNeeds ?? false,
+    specialNeedsDescription: formData.specialNeedsDescription ?? '',
+    sterilized: formData.castrado ?? false,
+    additionalInfo: formData.additionalInfo ?? '',
+    goodWithChildren: formData.goodWithChildren ?? false,
+    goodWithOtherAnimals: formData.goodWithOtherAnimals ?? false,
+    goodWithSeniors: formData.goodWithSeniors ?? false,
+    images: [],
+    previewImages: [],
+  }), [formData]);
+
+  const organizationName = isAdmin
+    ? organizations.find((org) => org.id === formData.organizationId)?.legalName
+    : userOrganizationName;
 
   const handleCatalogToggle = (field: 'temperamentTraitIds' | 'requirementIds', id: string, checked: boolean) => {
     const currentIds = formData[field] ?? [];
@@ -71,28 +115,54 @@ const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCompl
   }, [pendingImages]);
 
   useEffect(() => {
-    const loadVaccines = async () => {
+    const loadCatalogs = async () => {
       try {
-        const [vaccineData, traitData, requirementData] = await Promise.all([
-          apiRequest<VaccineOption[]>('/api/vaccines'),
+        const [traitData, requirementData] = await Promise.all([
           apiRequest<TraitOption[]>('/api/temperament-traits'),
           apiRequest<RequirementOption[]>('/api/adoption-requirements'),
         ]);
-        setVaccines(vaccineData.filter((vaccine) => vaccine.active));
         setTraits(traitData.filter((trait) => trait.active));
         setRequirements(requirementData.filter((requirement) => requirement.active));
       } catch (error) {
-        console.error('Erro ao carregar vacinas:', error);
-        toast.error('Não foi possível carregar as vacinas disponíveis.');
+        console.error('Erro ao carregar catálogos:', error);
+        toast.error('Não foi possível carregar traços e requisitos.');
       }
     };
-    void loadVaccines();
+
+    const loadUserContext = async () => {
+      try {
+        const currentUser = await apiRequest<BackendUserContext>('/api/users/me');
+        if (currentUser.userType === 'ADMIN') {
+          setIsAdmin(true);
+          setOrganizations(await apiRequest<OrganizationOption[]>('/api/organizations'));
+        } else {
+          setUserOrganizationName(currentUser.organizationName);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar contexto do usuário:', error);
+      }
+    };
+
+    void loadCatalogs();
+    void loadUserContext();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.organizationId) {
+      toast.error(
+        isAdmin
+          ? 'Selecione a ONG responsável pelo animal'
+          : 'Você precisa estar vinculado a uma ONG para editar o animal',
+      );
+      return;
+    }
+    if (!formData.personalityId) {
+      toast.error('Selecione uma personalidade e temperamento');
+      return;
+    }
     setIsSubmitting(true);
-    
+
     try {
       const savedAnimal = await onSave(formData);
       if (!savedAnimal) {
@@ -185,200 +255,55 @@ const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCompl
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 min-w-0">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-w-0">
-        {/* Nome */}
-        <div className="space-y-2">
-          <Label htmlFor="nome">Nome</Label>
-          <Input
-            id="nome"
-            value={formData.nome}
-            onChange={(e) => handleChange('nome', e.target.value)}
-            required
-          />
-        </div>
-
-        {/* Tipo */}
-        <div className="space-y-2">
-          <Label htmlFor="tipo">Tipo</Label>
-          <Select 
-            value={formData.tipo} 
-            onValueChange={(value) => handleChange('tipo', value)}
+      {isAdmin ? (
+        <div className="space-y-2 pb-4 border-b">
+          <Label>ONG*</Label>
+          <Select
+            value={formData.organizationId ?? undefined}
+            onValueChange={(value) => {
+              setFormData((prev) => ({
+                ...prev,
+                organizationId: value,
+                // Personalidade é por ONG: ao transferir o animal é preciso escolher de novo.
+                ...(value === prev.organizationId ? {} : { personalityId: undefined }),
+              }));
+            }}
           >
-            <SelectTrigger id="tipo">
-              <SelectValue placeholder="Selecione o tipo" />
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione a ONG responsável" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="cachorro">Cachorro</SelectItem>
-              <SelectItem value="gato">Gato</SelectItem>
-              <SelectItem value="outro">Outro</SelectItem>
+              {organizations.map((org) => (
+                <SelectItem key={org.id} value={org.id}>
+                  {org.legalName}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground">
+            Alterar a ONG transfere o animal e exige selecionar uma personalidade da nova ONG.
+          </p>
         </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="raca">Raça</Label>
-          <Input
-            id="raca"
-            value={formData.raca ?? ''}
-            onChange={(e) => handleChange('raca', e.target.value)}
-            placeholder="Ex.: Sem raça definida"
-          />
+      ) : (
+        <div className="space-y-1 pb-4 border-b">
+          <Label>ONG</Label>
+          <p className="text-sm text-muted-foreground break-words">
+            {organizationName ?? 'ONG não identificada'}
+          </p>
         </div>
+      )}
 
-        {/* Idade */}
-        <div className="space-y-2">
-          <Label htmlFor="idade">Idade (anos)</Label>
-          <Input
-            id="idade"
-            type="number"
-            min="0"
-            value={formData.idade}
-            onChange={(e) => handleChange('idade', parseInt(e.target.value) || 0)}
-            required
-          />
-        </div>
-
-        {/* Sexo */}
-        <div className="space-y-2">
-          <Label htmlFor="sexo">Sexo</Label>
-          <Select 
-            value={formData.sexo} 
-            onValueChange={(value) => handleChange('sexo', value)}
-          >
-            <SelectTrigger id="sexo">
-              <SelectValue placeholder="Selecione o sexo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="macho">Macho</SelectItem>
-              <SelectItem value="femea">Fêmea</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Porte */}
-        <div className="space-y-2">
-          <Label htmlFor="porte">Porte</Label>
-          <Select 
-            value={formData.porte} 
-            onValueChange={(value) => handleChange('porte', value)}
-          >
-            <SelectTrigger id="porte">
-              <SelectValue placeholder="Selecione o porte" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pequeno">Pequeno</SelectItem>
-              <SelectItem value="medio">Médio</SelectItem>
-              <SelectItem value="grande">Grande</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Castrado */}
-        <div className="flex items-center justify-between">
-          <Label htmlFor="castrado">Castrado</Label>
-          <Switch
-            id="castrado"
-            checked={formData.castrado}
-            onCheckedChange={(checked) => handleChange('castrado', checked)}
-          />
-        </div>
-      </div>
-
-      {/* Personalidade */}
-      <PersonalitySelect
+      <AnimalBasicInfo
+        formData={basicFormData}
         organizationId={formData.organizationId}
-        value={formData.personalityId ?? ''}
+        organizationLocked={!isAdmin}
+        deferPersonalityCreate={false}
         fallbackPersonalityText={formData.personalityName ?? formData.personalityTemperament}
-        onChange={(personalityId) => handleChange('personalityId', personalityId)}
+        onFormChange={handleFormDataChange}
       />
 
-      <section className="space-y-4 rounded-lg border p-4">
-        <div>
-          <h3 className="font-semibold">Saúde e vacinas</h3>
-          <p className="text-sm text-muted-foreground">Atualize vacinas, condições de saúde e cuidados especiais.</p>
-        </div>
-        <div className="space-y-2">
-          <Label>Vacinas</Label>
-          <div className="grid max-h-48 grid-cols-1 gap-2 overflow-y-auto rounded-md border p-3 sm:grid-cols-2">
-            {vaccines.filter((vaccine) => vaccine.animalType === formData.tipo).sort((a, b) => a.name.localeCompare(b.name)).map((vaccine) => (
-              <div key={vaccine.id} className="flex items-start gap-2">
-                <Checkbox id={`edit-vaccine-${vaccine.id}`} checked={(formData.vaccineIds ?? []).includes(vaccine.id)} onCheckedChange={(checked) => handleVaccineToggle(vaccine.id, checked === true)} />
-                <Label htmlFor={`edit-vaccine-${vaccine.id}`} className="leading-snug">{vaccine.name}</Label>
-              </div>
-            ))}
-            {vaccines.filter((vaccine) => vaccine.animalType === formData.tipo).length === 0 && (
-              <p className="text-sm text-muted-foreground">Nenhuma vacina cadastrada para este tipo de animal.</p>
-            )}
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="vaccinationStatus">Status de vacinação</Label>
-            <Input id="vaccinationStatus" value={formData.vaccinationStatus ?? ''} onChange={(e) => handleChange('vaccinationStatus', e.target.value)} placeholder="Ex.: vacinação em dia" />
-          </div>
-          <div className="flex items-center justify-between gap-4 rounded-md border p-3">
-            <Label htmlFor="specialNeeds">Possui necessidades especiais</Label>
-            <Switch id="specialNeeds" checked={formData.specialNeeds ?? false} onCheckedChange={(checked) => handleChange('specialNeeds', checked)} />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="veterinaryInfo">Informações veterinárias</Label>
-            <Textarea id="veterinaryInfo" value={formData.veterinaryInfo ?? ''} onChange={(e) => handleChange('veterinaryInfo', e.target.value)} placeholder="Consultas, tratamentos ou observações veterinárias" />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="healthConditions">Condições de saúde</Label>
-            <Textarea id="healthConditions" value={formData.healthConditions ?? ''} onChange={(e) => handleChange('healthConditions', e.target.value)} placeholder="Ex.: alergias, doenças crônicas ou restrições" />
-          </div>
-          {(formData.specialNeeds ?? false) && (
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="specialNeedsDescription">Descrição das necessidades especiais</Label>
-              <Textarea id="specialNeedsDescription" value={formData.specialNeedsDescription ?? ''} onChange={(e) => handleChange('specialNeedsDescription', e.target.value)} placeholder="Descreva os cuidados necessários" />
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="space-y-4 rounded-lg border p-4">
-        <div>
-          <h3 className="font-semibold">Comportamento e convivência</h3>
-          <p className="text-sm text-muted-foreground">Esses dados ajudam a encontrar o adotante mais adequado.</p>
-        </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="flex items-center justify-between gap-4 rounded-md border p-3"><Label htmlFor="goodWithChildren">Convive bem com crianças</Label><Switch id="goodWithChildren" checked={formData.goodWithChildren ?? false} onCheckedChange={(checked) => handleChange('goodWithChildren', checked)} /></div>
-          <div className="flex items-center justify-between gap-4 rounded-md border p-3"><Label htmlFor="goodWithOtherAnimals">Convive bem com outros animais</Label><Switch id="goodWithOtherAnimals" checked={formData.goodWithOtherAnimals ?? false} onCheckedChange={(checked) => handleChange('goodWithOtherAnimals', checked)} /></div>
-          <div className="flex items-center justify-between gap-4 rounded-md border p-3"><Label htmlFor="goodWithSeniors">Convive bem com idosos</Label><Switch id="goodWithSeniors" checked={formData.goodWithSeniors ?? false} onCheckedChange={(checked) => handleChange('goodWithSeniors', checked)} /></div>
-          <div className="space-y-2"><Label htmlFor="energyLevel">Nível de energia</Label><Input id="energyLevel" value={formData.energyLevel ?? ''} onChange={(e) => handleChange('energyLevel', e.target.value)} placeholder="Ex.: alto, moderado" /></div>
-          <div className="space-y-2 md:col-span-2"><Label htmlFor="trainability">Treinabilidade</Label><Textarea id="trainability" value={formData.trainability ?? ''} onChange={(e) => handleChange('trainability', e.target.value)} placeholder="Ex.: responde bem a comandos básicos" /></div>
-          <div className="space-y-2 md:col-span-2">
-            <Label>Traços de temperamento</Label>
-            <div className="grid gap-2 rounded-md border p-3 sm:grid-cols-2">
-              {traits.map((trait) => <div key={trait.id} className="flex items-start gap-2"><Checkbox id={`trait-${trait.id}`} checked={(formData.temperamentTraitIds ?? []).includes(trait.id)} onCheckedChange={(checked) => handleCatalogToggle('temperamentTraitIds', trait.id, checked === true)} /><Label htmlFor={`trait-${trait.id}`} className="leading-snug">{trait.description}</Label></div>)}
-              {traits.length === 0 && <p className="text-sm text-muted-foreground">Nenhum traço de temperamento cadastrado.</p>}
-            </div>
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <Label>Requisitos para adoção</Label>
-            <div className="grid gap-2 rounded-md border p-3 sm:grid-cols-2">
-              {requirements.map((requirement) => <div key={requirement.id} className="flex items-start gap-2"><Checkbox id={`requirement-${requirement.id}`} checked={(formData.requirementIds ?? []).includes(requirement.id)} onCheckedChange={(checked) => handleCatalogToggle('requirementIds', requirement.id, checked === true)} /><Label htmlFor={`requirement-${requirement.id}`} className="leading-snug">{requirement.name}</Label></div>)}
-              {requirements.length === 0 && <p className="text-sm text-muted-foreground">Nenhum requisito cadastrado.</p>}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="space-y-4 rounded-lg border p-4">
-        <h3 className="font-semibold">Localização e responsáveis</h3>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="space-y-2 md:col-span-2"><Label htmlFor="location">Localização</Label><Input id="location" value={formData.location ?? ''} onChange={(e) => handleChange('location', e.target.value)} placeholder="Cidade/UF ou endereço de referência" /></div>
-          <div className="space-y-2"><Label htmlFor="tutorName">Nome do tutor/responsável</Label><Input id="tutorName" value={formData.tutorName ?? ''} onChange={(e) => handleChange('tutorName', e.target.value)} /></div>
-          <div className="space-y-2"><Label htmlFor="tutorContact">Contato do tutor/responsável</Label><Input id="tutorContact" value={formData.tutorContact ?? ''} onChange={(e) => handleChange('tutorContact', e.target.value)} /></div>
-          <div className="space-y-2"><Label htmlFor="responsibleName">Responsável pelo cadastro</Label><Input id="responsibleName" value={formData.responsibleName ?? ''} onChange={(e) => handleChange('responsibleName', e.target.value)} /></div>
-          <div className="space-y-2"><Label htmlFor="responsibleContact">Contato do responsável</Label><Input id="responsibleContact" value={formData.responsibleContact ?? ''} onChange={(e) => handleChange('responsibleContact', e.target.value)} /></div>
-          <div className="space-y-2 md:col-span-2"><Label htmlFor="additionalInfo">Informações complementares</Label><Textarea id="additionalInfo" value={formData.additionalInfo ?? ''} onChange={(e) => handleChange('additionalInfo', e.target.value)} /></div>
-        </div>
-      </section>
-
-      {/* Imagens atuais */}
-      <div className="space-y-2">
+      <div className="pt-6 border-t">
+        <h4 className="text-sm font-semibold mb-3">Fotos do animal</h4>
         <input
           ref={imageInputRef}
           type="file"
@@ -388,7 +313,7 @@ const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCompl
           onChange={handleImportImages}
           disabled={isSubmitting}
         />
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-3">
           <Label>Imagens do animal</Label>
           <Button
             type="button"
@@ -448,10 +373,72 @@ const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCompl
             Nenhuma imagem cadastrada para este animal.
           </div>
         )}
-        <p className="text-xs text-muted-foreground">
+        <p className="mt-2 text-xs text-muted-foreground">
           Máximo de 2 imagens por animal.
         </p>
       </div>
+
+      <div className="pt-6 border-t">
+        <AnimalHealthInfo formData={basicFormData} onFormChange={handleFormDataChange} />
+      </div>
+
+      <div className="pt-6 border-t">
+        <AnimalCharacteristics formData={basicFormData} onFormChange={handleFormDataChange} />
+      </div>
+
+      <section className="space-y-4 rounded-lg border p-4">
+        <div>
+          <h3 className="font-semibold">Saúde complementar</h3>
+          <p className="text-sm text-muted-foreground">Dados de acompanhamento veterinário disponíveis apenas na edição.</p>
+        </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="vaccinationStatus">Status de vacinação</Label>
+            <Input id="vaccinationStatus" value={formData.vaccinationStatus ?? ''} onChange={(e) => handleChange('vaccinationStatus', e.target.value)} placeholder="Ex.: vacinação em dia" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="energyLevel">Nível de energia</Label>
+            <Input id="energyLevel" value={formData.energyLevel ?? ''} onChange={(e) => handleChange('energyLevel', e.target.value)} placeholder="Ex.: alto, moderado" />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="veterinaryInfo">Informações veterinárias</Label>
+            <Textarea id="veterinaryInfo" value={formData.veterinaryInfo ?? ''} onChange={(e) => handleChange('veterinaryInfo', e.target.value)} placeholder="Consultas, tratamentos ou observações veterinárias" />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="healthConditions">Condições de saúde</Label>
+            <Textarea id="healthConditions" value={formData.healthConditions ?? ''} onChange={(e) => handleChange('healthConditions', e.target.value)} placeholder="Ex.: alergias, doenças crônicas ou restrições" />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label htmlFor="trainability">Treinabilidade</Label>
+            <Textarea id="trainability" value={formData.trainability ?? ''} onChange={(e) => handleChange('trainability', e.target.value)} placeholder="Ex.: responde bem a comandos básicos" />
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Traços de temperamento</Label>
+            <div className="grid gap-2 rounded-md border p-3 sm:grid-cols-2">
+              {traits.map((trait) => <div key={trait.id} className="flex items-start gap-2"><Checkbox id={`trait-${trait.id}`} checked={(formData.temperamentTraitIds ?? []).includes(trait.id)} onCheckedChange={(checked) => handleCatalogToggle('temperamentTraitIds', trait.id, checked === true)} /><Label htmlFor={`trait-${trait.id}`} className="leading-snug">{trait.description}</Label></div>)}
+              {traits.length === 0 && <p className="text-sm text-muted-foreground">Nenhum traço de temperamento cadastrado.</p>}
+            </div>
+          </div>
+          <div className="space-y-2 md:col-span-2">
+            <Label>Requisitos para adoção</Label>
+            <div className="grid gap-2 rounded-md border p-3 sm:grid-cols-2">
+              {requirements.map((requirement) => <div key={requirement.id} className="flex items-start gap-2"><Checkbox id={`requirement-${requirement.id}`} checked={(formData.requirementIds ?? []).includes(requirement.id)} onCheckedChange={(checked) => handleCatalogToggle('requirementIds', requirement.id, checked === true)} /><Label htmlFor={`requirement-${requirement.id}`} className="leading-snug">{requirement.name}</Label></div>)}
+              {requirements.length === 0 && <p className="text-sm text-muted-foreground">Nenhum requisito cadastrado.</p>}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-4 rounded-lg border p-4">
+        <h3 className="font-semibold">Localização e responsáveis</h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="space-y-2 md:col-span-2"><Label htmlFor="location">Localização</Label><Input id="location" value={formData.location ?? ''} onChange={(e) => handleChange('location', e.target.value)} placeholder="Cidade/UF ou endereço de referência" /></div>
+          <div className="space-y-2"><Label htmlFor="tutorName">Nome do tutor/responsável</Label><Input id="tutorName" value={formData.tutorName ?? ''} onChange={(e) => handleChange('tutorName', e.target.value)} /></div>
+          <div className="space-y-2"><Label htmlFor="tutorContact">Contato do tutor/responsável</Label><Input id="tutorContact" value={formData.tutorContact ?? ''} onChange={(e) => handleChange('tutorContact', e.target.value)} /></div>
+          <div className="space-y-2"><Label htmlFor="responsibleName">Responsável pelo cadastro</Label><Input id="responsibleName" value={formData.responsibleName ?? ''} onChange={(e) => handleChange('responsibleName', e.target.value)} /></div>
+          <div className="space-y-2"><Label htmlFor="responsibleContact">Contato do responsável</Label><Input id="responsibleContact" value={formData.responsibleContact ?? ''} onChange={(e) => handleChange('responsibleContact', e.target.value)} /></div>
+        </div>
+      </section>
 
       <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting} className="w-full sm:w-auto">

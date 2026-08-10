@@ -14,6 +14,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -53,6 +54,13 @@ public class ApiExceptionHandler {
         log.warn("Violacao de integridade de dados", ex);
         return ResponseEntity.status(HttpStatus.CONFLICT)
             .body(payload(HttpStatus.CONFLICT, "Operacao nao permitida: violacao de integridade"));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, Object>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        log.warn("Upload acima do limite", ex);
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+            .body(payload(HttpStatus.PAYLOAD_TOO_LARGE, "Imagem acima do limite de 5MB. Reduza o tamanho e tente novamente."));
     }
 
     @ExceptionHandler(Exception.class)
