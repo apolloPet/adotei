@@ -129,11 +129,9 @@ public class AnimalService {
     }
 
     @Transactional(readOnly = true)
-    public ImageBinary getImageBinary(UUID imageId, String requesterAuthSubject) {
-        AppUser requester = loadRequester(requesterAuthSubject);
+    public ImageBinary getImageBinary(UUID imageId) {
         AnimalImage image = imageRepository.findById(Objects.requireNonNull(imageId))
             .orElseThrow(() -> new NotFoundException("Imagem nao encontrada"));
-        assertVolunteerCanManageAnimal(requester, image.getAnimal());
 
         if (image.getS3Key() != null && image.getS3Key().startsWith("local-inline/")) {
             String fileUrl = image.getFileUrl();

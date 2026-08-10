@@ -7,9 +7,11 @@ import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalRequest;
 import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalResponse;
 import com.apollopet.adotei.backend.web.dto.AnimalDtos.AnimalStatusUpdateRequest;
 import jakarta.validation.Valid;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
@@ -49,16 +51,23 @@ public class AnimalController {
         return animalService.get(id);
     }
 
+    /**
+     * Publico e cacheavel: a URL carrega o UUID imutavel da imagem, entao o CDN
+     * (e o browser) podem guardar o binario e o request nem chega no backend.
+     * Endpoint autenticado nao e cacheado pela borda — era o gargalo do carregamento.
+     */
     @GetMapping("/images/{imageId}")
-    @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO','ADOTANTE')")
-    public ResponseEntity<byte[]> getImage(@PathVariable UUID imageId, Authentication authentication) {
-        ImageBinary image = animalService.getImageBinary(imageId, authentication.getName());
+    public ResponseEntity<byte[]> getImage(@PathVariable UUID imageId) {
+        ImageBinary image = animalService.getImageBinary(imageId);
         String contentType = image.contentType();
         MediaType mediaType = (contentType == null || contentType.isBlank())
             ? MediaType.APPLICATION_OCTET_STREAM
             : MediaType.parseMediaType(Objects.requireNonNull(contentType));
+        CacheControl cacheControl = CacheControl.maxAge(Duration.ofDays(365)).cachePublic().immutable();
         return ResponseEntity.ok()
             .contentType(Objects.requireNonNull(mediaType))
+            .cacheControl(cacheControl)
+            .header("CDN-Cache-Control", cacheControl.getHeaderValue())
             .body(image.data());
     }
 
