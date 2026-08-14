@@ -25,6 +25,7 @@ const EMPTY_FORM: AnimalFormData = {
   gender: 'macho',
   size: 'medio',
   personalityId: '',
+  shelterEntryDate: '',
   pendingPersonality: null,
   vaccineIds: [],
   specialNeeds: false,
@@ -47,6 +48,7 @@ interface AnimalCreateData {
   sexo: 'macho' | 'femea';
   castrado: boolean;
   personalityId: string;
+  data_entrada_abrigo?: string;
   vaccineIds: string[];
   specialNeeds: boolean;
   specialNeedsDescription?: string;
@@ -146,6 +148,7 @@ const AnimalRegistrationForm = () => {
     porte: formData.size as "pequeno" | "medio" | "grande",
     sexo: formData.gender as "macho" | "femea",
     castrado: formData.sterilized,
+    data_entrada_abrigo: formData.shelterEntryDate || undefined,
     personalityId,
     vaccineIds: formData.vaccineIds,
     specialNeeds: formData.specialNeeds,

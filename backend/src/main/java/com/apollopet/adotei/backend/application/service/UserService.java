@@ -171,11 +171,7 @@ public class UserService {
     @Transactional
     public UserResponse create(UpsertUserRequest request, String requesterAuthSubject) {
         UserType userType = parseUserType(request.userType());
-        if (userType == UserType.ADMIN) {
-            adminPermissionGuard.requireAdminPermission(requesterAuthSubject, AdminPermission.MANAGE_ADMINS);
-        } else if (userType == UserType.VOLUNTARIO) {
-            adminPermissionGuard.require(requesterAuthSubject, AdminPermission.MANAGE_SETTINGS);
-        }
+        assertCanManageTarget(requesterAuthSubject, userType, request.organizationId());
 
         AppUser user = new AppUser();
         apply(user, request);
@@ -188,11 +184,13 @@ public class UserService {
     public UserResponse update(UUID id, UpsertUserRequest request, String requesterAuthSubject) {
         AppUser user = loadUser(id);
         UserType requestedType = parseUserType(request.userType());
-        if (user.getUserType() == UserType.ADMIN || requestedType == UserType.ADMIN) {
-            adminPermissionGuard.requireAdminPermission(requesterAuthSubject, AdminPermission.MANAGE_ADMINS);
-        } else if (user.getUserType() == UserType.VOLUNTARIO || requestedType == UserType.VOLUNTARIO) {
-            adminPermissionGuard.require(requesterAuthSubject, AdminPermission.MANAGE_SETTINGS);
-        }
+        Organization currentOrganization = user.getOrganization();
+        assertCanManageTarget(
+            requesterAuthSubject,
+            user.getUserType(),
+            currentOrganization != null ? currentOrganization.getId() : null
+        );
+        assertCanManageTarget(requesterAuthSubject, requestedType, request.organizationId());
 
         apply(user, request);
         AppUser saved = appUserRepository.save(user);
@@ -207,11 +205,12 @@ public class UserService {
         if (requester.getId() != null && requester.getId().equals(user.getId())) {
             throw new BadRequestException("Nao e permitido excluir a propria conta.");
         }
-        if (user.getUserType() == UserType.ADMIN) {
-            adminPermissionGuard.requireAdminPermission(requesterAuthSubject, AdminPermission.MANAGE_ADMINS);
-        } else {
-            adminPermissionGuard.require(requesterAuthSubject, AdminPermission.MANAGE_SETTINGS);
-        }
+        Organization organization = user.getOrganization();
+        assertCanManageTarget(
+            requesterAuthSubject,
+            user.getUserType(),
+            organization != null ? organization.getId() : null
+        );
         appUserRepository.delete(user);
     }
 
@@ -287,6 +286,32 @@ public class UserService {
         adopterProfileRepository.save(profile);
     }
 
+    /**
+     * Administradores usam MANAGE_ADMINS para contas admin e MANAGE_USERS para as demais.
+     * Voluntarios com MANAGE_USERS gerenciam apenas voluntarios da propria ONG.
+     */
+    private void assertCanManageTarget(String requesterAuthSubject, UserType targetType, UUID targetOrganizationId) {
+        if (targetType == UserType.ADMIN) {
+            adminPermissionGuard.requireAdminPermission(requesterAuthSubject, AdminPermission.MANAGE_ADMINS);
+            return;
+        }
+
+        AppUser requester = adminPermissionGuard.require(requesterAuthSubject, AdminPermission.MANAGE_USERS);
+        if (requester.getUserType() != UserType.VOLUNTARIO) {
+            return;
+        }
+
+        Organization requesterOrganization = requester.getOrganization();
+        if (
+            targetType != UserType.VOLUNTARIO ||
+            requesterOrganization == null ||
+            targetOrganizationId == null ||
+            !requesterOrganization.getId().equals(targetOrganizationId)
+        ) {
+            throw new AccessDeniedException("Voluntario so pode gerenciar voluntarios da propria ONG.");
+        }
+    }
+
     private AppUser loadRequester(String authSubject) {
         return appUserRepository.findByAuthSubject(authSubject)
             .orElseThrow(() -> new NotFoundException("Usuario autenticado nao encontrado"));
@@ -320,37 +345,43 @@ public class UserService {
         validateRolesByType(userType, roles);
         validateOrganizationByType(userType, user.getOrganization());
         user.setRoles(roles);
-        user.setAdminPermissions(resolveAdminPermissions(userType, request.permissions()));
+        user.setAdminPermissions(resolveAdminPermissions(user, userType, request.permissions()));
     }
 
-    private AdminPermissions resolveAdminPermissions(UserType userType, AdminPermissionsDto dto) {
-        if (userType != UserType.ADMIN) {
+    private AdminPermissions resolveAdminPermissions(AppUser user, UserType userType, AdminPermissionsDto dto) {
+        if (userType != UserType.ADMIN && userType != UserType.VOLUNTARIO) {
             return null;
         }
         if (dto == null) {
-            return AdminPermissions.defaultsForNewAdmin();
+            // requisicao sem permissoes (ex.: edicao de dados cadastrais) preserva o que ja estava salvo
+            if (user.getAdminPermissions() != null && user.getUserType() == userType) {
+                return user.getAdminPermissions();
+            }
+            return userType == UserType.ADMIN
+                ? AdminPermissions.defaultsForNewAdmin()
+                : AdminPermissions.defaultsForVolunteer();
         }
+        boolean isAdmin = userType == UserType.ADMIN;
         return new AdminPermissions(
             Boolean.TRUE.equals(dto.manageAnimals()),
             Boolean.TRUE.equals(dto.approveAdoptions()),
-            Boolean.TRUE.equals(dto.manageSettings()),
-            Boolean.TRUE.equals(dto.manageAdmins())
+            isAdmin && Boolean.TRUE.equals(dto.manageSettings()),
+            isAdmin && Boolean.TRUE.equals(dto.manageAdmins()),
+            Boolean.TRUE.equals(dto.manageUsers())
         );
     }
 
     private AdminPermissionsDto toPermissionsDto(AppUser user) {
-        if (user.getUserType() != UserType.ADMIN) {
+        if (user.getUserType() != UserType.ADMIN && user.getUserType() != UserType.VOLUNTARIO) {
             return null;
         }
-        AdminPermissions permissions = user.getAdminPermissions();
-        if (permissions == null) {
-            permissions = AdminPermissions.fullAccess();
-        }
+        AdminPermissions permissions = AdminPermissions.effectiveFor(user);
         return new AdminPermissionsDto(
             permissions.isManageAnimals(),
             permissions.isApproveAdoptions(),
             permissions.isManageSettings(),
-            permissions.isManageAdmins()
+            permissions.isManageAdmins(),
+            permissions.isManageUsers()
         );
     }
 

@@ -4,5 +4,6 @@ public enum AdminPermission {
     MANAGE_ANIMALS,
     APPROVE_ADOPTIONS,
     MANAGE_SETTINGS,
-    MANAGE_ADMINS
+    MANAGE_ADMINS,
+    MANAGE_USERS
 }

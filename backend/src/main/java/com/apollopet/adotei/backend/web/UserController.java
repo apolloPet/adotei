@@ -84,13 +84,13 @@ public class UserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
     public UserResponse create(Authentication authentication, @Valid @RequestBody UpsertUserRequest request) {
         return userService.create(request, authentication.getName());
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
     public UserResponse update(
         @PathVariable UUID id,
         Authentication authentication,
@@ -118,7 +118,7 @@ public class UserController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','VOLUNTARIO')")
     public void delete(@PathVariable UUID id, Authentication authentication) {
         userService.delete(id, authentication.getName());
     }

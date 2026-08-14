@@ -180,6 +180,21 @@ const AnimalBasicInfo = ({
             </div>
           </RadioGroup>
         </div>
+
+        <div className="space-y-2 min-w-0">
+          <Label htmlFor="shelterEntryDate">Entrada no abrigo</Label>
+          <Input
+            id="shelterEntryDate"
+            name="shelterEntryDate"
+            type="date"
+            value={formData.shelterEntryDate ?? ''}
+            onChange={handleInputChange}
+            max={new Date().toISOString().slice(0, 10)}
+          />
+          <p className="text-sm text-muted-foreground">
+            Usada para calcular o tempo de abrigo. Em branco, vale a data de cadastro.
+          </p>
+        </div>
       </div>
       
       <PersonalitySelect

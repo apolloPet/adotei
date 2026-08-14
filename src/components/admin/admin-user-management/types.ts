@@ -11,6 +11,7 @@ export interface NewAdminState {
     approveAdoptions: boolean;
     manageSettings: boolean;
     manageAdmins: boolean;
+    manageUsers: boolean;
   };
 }
 

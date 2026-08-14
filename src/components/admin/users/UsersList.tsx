@@ -7,11 +7,14 @@ import { useUsersData } from './hooks/useUsersData';
 import { UserListHeader } from './components/UserListHeader';
 import { UserListContent } from './components/UserListContent';
 import { NoPermissionView } from './components/NoPermissionView';
+import { UserEditDialog } from './UserEditDialog';
+import { User } from './types';
 
 const UsersList = () => {
   const [hasPermission, setHasPermission] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
-  const { isAdmin } = useAuth();
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const { isAdmin, adminPermissions } = useAuth();
   const { 
     users,
     isLoading,
@@ -24,13 +27,14 @@ const UsersList = () => {
     setFilters,
     setSearchTerm,
     setViewMode,
-    setCurrentPage
+    setCurrentPage,
+    reload
   } = useUsersData();
 
   useEffect(() => {
-    setHasPermission(isAdmin);
+    setHasPermission(isAdmin || Boolean(adminPermissions?.manageUsers));
     setIsVerifying(false);
-  }, [isAdmin]);
+  }, [isAdmin, adminPermissions]);
 
   if (isVerifying) {
     return (
@@ -79,6 +83,12 @@ const UsersList = () => {
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
         totalItems={users.length}
+        onEdit={setEditingUser}
+      />
+      <UserEditDialog
+        user={editingUser}
+        onClose={() => setEditingUser(null)}
+        onSaved={reload}
       />
     </Card>
   );

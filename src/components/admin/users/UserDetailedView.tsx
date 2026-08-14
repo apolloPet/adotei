@@ -1,9 +1,12 @@
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Pencil } from 'lucide-react';
 import { User } from './types';
 
 interface UserDetailedViewProps {
   users: User[];
   formatDate: (dateString: string) => string;
+  onEdit?: (user: User) => void;
 }
 
 const yesNo = (value?: boolean) => value === undefined ? 'Não informado' : value ? 'Sim' : 'Não';
@@ -27,7 +30,7 @@ const Detail = ({ label, value }: { label: string; value: string | number }) => 
   <p className="text-sm"><span className="text-muted-foreground">{label}:</span> {value}</p>
 );
 
-const UserDetailedView = ({ users, formatDate }: UserDetailedViewProps) => {
+const UserDetailedView = ({ users, formatDate, onEdit }: UserDetailedViewProps) => {
   if (users.length === 0) {
     return <div className="py-8 text-center text-muted-foreground">Nenhum usuário encontrado com os critérios de busca.</div>;
   }
@@ -41,7 +44,15 @@ const UserDetailedView = ({ users, formatDate }: UserDetailedViewProps) => {
             <div className="bg-muted/30 p-4">
               <div className="flex flex-col justify-between gap-1 sm:flex-row">
                 <h3 className="text-lg font-medium">{user.name}</h3>
-                <span className="text-sm text-muted-foreground">Cadastro: {formatDate(user.registrationDate)}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground">Cadastro: {formatDate(user.registrationDate)}</span>
+                  {onEdit && (
+                    <Button variant="outline" size="sm" onClick={() => onEdit(user)}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Editar
+                    </Button>
+                  )}
+                </div>
               </div>
               <div className="mt-1 text-sm text-muted-foreground">{user.email} {user.phone ? `• ${user.phone}` : ''}</div>
             </div>

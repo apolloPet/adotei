@@ -168,6 +168,11 @@ const AnimalDetailView: React.FC<AnimalDetailViewProps> = ({ animal, onClose }) 
         Data de cadastro: {formatDate(animal.data_cadastro)}
       </div>
 
+      <div className="text-sm text-muted-foreground flex items-center">
+        <CalendarIcon className="w-4 h-4 mr-1" />
+        Entrada no abrigo: {animal.data_entrada_abrigo ? formatDate(animal.data_entrada_abrigo) : 'não informada'}
+      </div>
+
       <div className="flex justify-end">
         <Button onClick={onClose}>Fechar</Button>
       </div>

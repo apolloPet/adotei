@@ -15,6 +15,8 @@ export interface AnimalFormData {
   gender: string;
   size: string;
   personalityId: string;
+  /** Data de entrada no abrigo (YYYY-MM-DD); vazio usa a data de cadastro. */
+  shelterEntryDate: string;
   personalityDescription?: string;
   /** Rascunho de personalidade/temperamento; só é enviado à API no submit do animal. */
   pendingPersonality?: PendingPersonalityDraft | null;

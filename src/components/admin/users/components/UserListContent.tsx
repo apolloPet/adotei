@@ -13,6 +13,7 @@ interface UserListContentProps {
   currentPage: number;
   setCurrentPage: (page: number) => void;
   totalItems: number;
+  onEdit?: (user: User) => void;
 }
 
 const ITEMS_PER_PAGE = 10;
@@ -24,6 +25,7 @@ export const UserListContent = ({
   currentPage,
   setCurrentPage,
   totalItems,
+  onEdit,
 }: UserListContentProps) => {
   const formatDate = (dateString: string) => {
     try {
@@ -57,9 +59,9 @@ export const UserListContent = ({
   return (
     <CardContent className="p-3 sm:p-6">
       {viewMode === 'simple' ? (
-        <UserSimpleView users={paginatedUsers} formatDate={formatDate} />
+        <UserSimpleView users={paginatedUsers} formatDate={formatDate} onEdit={onEdit} />
       ) : (
-        <UserDetailedView users={paginatedUsers} formatDate={formatDate} />
+        <UserDetailedView users={paginatedUsers} formatDate={formatDate} onEdit={onEdit} />
       )}
       
       {totalPages > 1 && (

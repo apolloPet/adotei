@@ -367,6 +367,7 @@ public class AnimalService {
         animal.setSex(request.sex());
         animal.setSize(request.size());
         animal.setSterilized(request.sterilized());
+        animal.setShelterEntryDate(request.shelterEntryDate());
         animal.setVaccinationStatus(request.vaccinationStatus());
         animal.setVeterinaryInfo(request.veterinaryInfo());
         animal.setHealthConditions(request.healthConditions());
@@ -468,15 +469,8 @@ public class AnimalService {
     }
 
     private void assertCanManageAnimals(AppUser requester) {
-        if (requester.getUserType() != UserType.ADMIN) {
-            return;
-        }
-        AdminPermissions permissions = requester.getAdminPermissions();
-        if (permissions == null) {
-            permissions = AdminPermissions.fullAccess();
-        }
-        if (!permissions.allows(AdminPermission.MANAGE_ANIMALS)) {
-            throw new AccessDeniedException("Administrador sem permissao: MANAGE_ANIMALS");
+        if (!AdminPermissions.effectiveFor(requester).allows(AdminPermission.MANAGE_ANIMALS)) {
+            throw new AccessDeniedException("Usuario sem permissao: MANAGE_ANIMALS");
         }
     }
 
@@ -534,6 +528,7 @@ public class AnimalService {
             animal.getSize(),
             animal.getDescription(),
             animal.isSterilized(),
+            animal.getShelterEntryDate(),
             animal.getVaccinationStatus(),
             animal.getVeterinaryInfo(),
             animal.getHealthConditions(),

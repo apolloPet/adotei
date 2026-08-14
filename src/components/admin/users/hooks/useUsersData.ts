@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { User, FilterType } from '../types';
 import { fetchUsers } from '@/services/userService';
 
@@ -21,22 +21,22 @@ export const useUsersData = () => {
   const [viewMode, setViewMode] = useState<'simple' | 'detailed'>('simple');
   const [currentPage, setCurrentPage] = useState(1);
 
-  useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const data = await fetchUsers();
-        setUsers(data);
-      } catch (err) {
-        setError('Erro ao carregar usuários');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadUsers();
+  const loadUsers = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const data = await fetchUsers();
+      setUsers(data);
+    } catch (err) {
+      setError('Erro ao carregar usuários');
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadUsers();
+  }, [loadUsers]);
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
@@ -88,5 +88,6 @@ export const useUsersData = () => {
     setSearchTerm,
     setViewMode,
     setCurrentPage,
+    reload: loadUsers,
   };
 };

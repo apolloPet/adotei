@@ -23,6 +23,7 @@ const INITIAL_PERMISSIONS = {
   approveAdoptions: true,
   manageSettings: false,
   manageAdmins: false,
+  manageUsers: false,
 };
 
 export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
@@ -252,10 +253,19 @@ export const NewAdminDialog = ({ isOpen, setIsOpen, onSuccess }: Props) => {
             
             <div className="flex items-center justify-between">
               <Label htmlFor="manage-admins" className="cursor-pointer">Admins</Label>
-              <Switch 
+              <Switch
                 id="manage-admins"
                 checked={newAdmin.permissions.manageAdmins}
                 onCheckedChange={() => handlePermissionChange("manageAdmins")}
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Label htmlFor="manage-users" className="cursor-pointer">Usuários</Label>
+              <Switch
+                id="manage-users"
+                checked={newAdmin.permissions.manageUsers}
+                onCheckedChange={() => handlePermissionChange("manageUsers")}
               />
             </div>
           </div>

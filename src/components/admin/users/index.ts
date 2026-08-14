@@ -7,3 +7,4 @@ export { default as UserFilterDropdown } from './UserFilterDropdown';
 export { default as UserSearchBar } from './UserSearchBar';
 export { default as UserViewToggle } from './UserViewToggle';
 export { default as UserPagination } from './UserPagination';
+export { default as UserEditDialog } from './UserEditDialog';

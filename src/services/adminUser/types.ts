@@ -8,5 +8,6 @@ export interface AdminUser {
     approveAdoptions: boolean;
     manageSettings: boolean;
     manageAdmins: boolean;
+    manageUsers: boolean;
   };
 }

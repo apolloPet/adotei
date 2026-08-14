@@ -11,6 +11,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { isValidCNPJ, isValidEmail, isValidPhoneBR, maskCNPJ, maskPhoneBR, normalizeEmail } from '@/utils/brMasks';
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import {
+  DEFAULT_VOLUNTEER_PERMISSIONS,
+  VolunteerPermissionBadges,
+  VolunteerPermissionFields,
+  VolunteerPermissions,
+  readVolunteerPermissions,
+} from '../volunteer-management/permissions';
 
 type OrganizationFormState = {
   name: string;
@@ -38,6 +45,7 @@ type BackendVolunteer = {
   organizationId?: string;
   roles: string[];
   organizationResponsible?: boolean;
+  permissions?: Partial<VolunteerPermissions> | null;
 };
 
 type VolunteerFormState = {
@@ -48,6 +56,7 @@ type VolunteerFormState = {
   phone: string;
   organizationResponsible: boolean;
   password: string;
+  permissions: VolunteerPermissions;
 };
 
 const INITIAL_VOLUNTEER_FORM: VolunteerFormState = {
@@ -56,6 +65,7 @@ const INITIAL_VOLUNTEER_FORM: VolunteerFormState = {
   phone: '',
   organizationResponsible: false,
   password: '',
+  permissions: DEFAULT_VOLUNTEER_PERMISSIONS,
 };
 
 const PAGE_SIZE = 8;
@@ -244,6 +254,7 @@ const OrganizationManagement = () => {
       phone: volunteer.phone || '',
       organizationResponsible: volunteer.organizationResponsible === true,
       password: '',
+      permissions: readVolunteerPermissions(volunteer.permissions),
     });
   };
 
@@ -295,6 +306,7 @@ const OrganizationManagement = () => {
         organizationId: editingId,
         organizationResponsible: volunteerForm.organizationResponsible,
         password: volunteerForm.password.trim() || null,
+        permissions: volunteerForm.permissions,
         roles: ['VOLUNTARIO'],
       };
 
@@ -570,6 +582,13 @@ const OrganizationManagement = () => {
                         />
                       </div>
                     </div>
+                    <div className="md:col-span-4">
+                      <VolunteerPermissionFields
+                        value={volunteerForm.permissions}
+                        onChange={(permissions) => setVolunteerForm((prev) => ({ ...prev, permissions }))}
+                        disabled={isVolunteerSubmitting}
+                      />
+                    </div>
                     <div className="md:col-span-4 flex justify-end gap-2">
                       {editingVolunteerId && (
                         <Button type="button" variant="outline" onClick={cancelVolunteerEdit} disabled={isVolunteerSubmitting}>
@@ -599,6 +618,7 @@ const OrganizationManagement = () => {
                             <TableHead>Email</TableHead>
                             <TableHead>Telefone</TableHead>
                             <TableHead>Responsável</TableHead>
+                            <TableHead>Permissões</TableHead>
                             <TableHead className="text-right">Ações</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -609,6 +629,9 @@ const OrganizationManagement = () => {
                               <TableCell>{volunteer.email}</TableCell>
                               <TableCell>{volunteer.phone || '—'}</TableCell>
                               <TableCell>{volunteer.organizationResponsible ? 'Sim' : 'Não'}</TableCell>
+                              <TableCell>
+                                <VolunteerPermissionBadges permissions={volunteer.permissions} />
+                              </TableCell>
                               <TableCell className="text-right">
                                 <div className="flex justify-end gap-2">
                                   <Button variant="outline" size="sm" onClick={() => startVolunteerEdit(volunteer)}>

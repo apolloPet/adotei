@@ -48,6 +48,7 @@ const FIELD_MAP: Record<string, keyof Animal> = {
   gender: 'sexo',
   size: 'porte',
   sterilized: 'castrado',
+  shelterEntryDate: 'data_entrada_abrigo',
 };
 
 const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onComplete, onCancel }) => {
@@ -86,6 +87,7 @@ const AnimalEditForm: React.FC<AnimalEditFormProps> = ({ animal, onSave, onCompl
     gender: formData.sexo,
     size: formData.porte,
     personalityId: formData.personalityId ?? '',
+    shelterEntryDate: formData.data_entrada_abrigo ?? '',
     pendingPersonality: null,
     vaccineIds: formData.vaccineIds ?? [],
     specialNeeds: formData.specialNeeds ?? false,
