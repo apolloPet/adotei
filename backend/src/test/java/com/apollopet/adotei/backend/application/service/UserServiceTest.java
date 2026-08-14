@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
@@ -117,15 +118,20 @@ class UserServiceTest {
         role.setCode("ADOTANTE");
         when(roleRepository.findByCode("ADOTANTE")).thenReturn(Optional.of(role));
 
+        when(adminPermissionGuard.require(eq(REQUESTER), eq(AdminPermission.MANAGE_USERS)))
+            .thenReturn(adminRequester());
+
         var response = userService.create(request("ADOTANTE", List.of("ADOTANTE")), REQUESTER);
 
         assertEquals("ADOTANTE", response.userType());
         assertEquals(List.of("ADOTANTE"), response.roles());
-        verifyNoInteractions(adminPermissionGuard);
+        verify(adminPermissionGuard).require(REQUESTER, AdminPermission.MANAGE_USERS);
     }
 
     @Test
     void deveFalharQuandoTipoNaoCombinaComPapel() {
+        when(adminPermissionGuard.require(eq(REQUESTER), eq(AdminPermission.MANAGE_USERS)))
+            .thenReturn(adminRequester());
         Role role = new Role();
         role.setCode("VOLUNTARIO");
         when(roleRepository.findByCode("VOLUNTARIO")).thenReturn(Optional.of(role));
@@ -177,7 +183,7 @@ class UserServiceTest {
 
     @Test
     void deveFalharQuandoVoluntarioNaoTemOng() {
-        when(adminPermissionGuard.require(eq(REQUESTER), eq(AdminPermission.MANAGE_SETTINGS)))
+        when(adminPermissionGuard.require(eq(REQUESTER), eq(AdminPermission.MANAGE_USERS)))
             .thenReturn(new AppUser());
         Role role = new Role();
         role.setCode("VOLUNTARIO");
@@ -192,7 +198,7 @@ class UserServiceTest {
     @Test
     void deveCriarVoluntarioComOng() {
         mockSaveAndReload();
-        when(adminPermissionGuard.require(eq(REQUESTER), eq(AdminPermission.MANAGE_SETTINGS)))
+        when(adminPermissionGuard.require(eq(REQUESTER), eq(AdminPermission.MANAGE_USERS)))
             .thenReturn(new AppUser());
         Role role = new Role();
         role.setCode("VOLUNTARIO");
@@ -229,7 +235,7 @@ class UserServiceTest {
                 List.of("ADMIN"),
                 null,
                 "senhaAdmin",
-                new AdminPermissionsDto(true, false, true, false)
+                new AdminPermissionsDto(true, false, true, false, true)
             ),
             REQUESTER
         );
@@ -295,6 +301,64 @@ class UserServiceTest {
 
         assertThrows(BadRequestException.class, () -> userService.upsertOwnAdopterProfile("voluntario-auth", request));
         verifyNoInteractions(adopterProfileRepository);
+    }
+
+    @Test
+    void deveImpedirVoluntarioDeGerenciarUsuarioDeOutraOng() {
+        UUID ownOrganizationId = UUID.randomUUID();
+        Organization ownOrganization = new Organization();
+        ownOrganization.prePersist();
+        AppUser volunteerRequester = new AppUser();
+        volunteerRequester.setUserType(UserType.VOLUNTARIO);
+        volunteerRequester.setOrganization(ownOrganization);
+
+        when(adminPermissionGuard.require(eq(REQUESTER), eq(AdminPermission.MANAGE_USERS)))
+            .thenReturn(volunteerRequester);
+
+        assertThrows(
+            AccessDeniedException.class,
+            () -> userService.create(request("VOLUNTARIO", List.of("VOLUNTARIO"), ownOrganizationId, "senha123"), REQUESTER)
+        );
+        verifyNoInteractions(appUserRepository);
+    }
+
+    @Test
+    void devePersistirPermissoesDoVoluntario() {
+        mockSaveAndReload();
+        when(adminPermissionGuard.require(eq(REQUESTER), eq(AdminPermission.MANAGE_USERS)))
+            .thenReturn(adminRequester());
+        Role role = new Role();
+        role.setCode("VOLUNTARIO");
+        when(roleRepository.findByCode("VOLUNTARIO")).thenReturn(Optional.of(role));
+        UUID organizationId = UUID.randomUUID();
+        when(organizationRepository.findById(organizationId)).thenReturn(Optional.of(new Organization()));
+        when(passwordEncoder.encode("senha123")).thenReturn("encoded-hash");
+        when(userCredentialRepository.findByUserId(nullable(UUID.class))).thenReturn(Optional.empty());
+
+        var response = userService.create(
+            request(
+                "VOLUNTARIO",
+                List.of("VOLUNTARIO"),
+                organizationId,
+                "senha123",
+                new AdminPermissionsDto(true, false, true, true, true)
+            ),
+            REQUESTER
+        );
+
+        assertNotNull(response.permissions());
+        assertEquals(true, response.permissions().manageAnimals());
+        assertEquals(false, response.permissions().approveAdoptions());
+        assertEquals(true, response.permissions().manageUsers());
+        // voluntario nunca recebe permissoes exclusivas de administrador
+        assertEquals(false, response.permissions().manageSettings());
+        assertEquals(false, response.permissions().manageAdmins());
+    }
+
+    private AppUser adminRequester() {
+        AppUser admin = new AppUser();
+        admin.setUserType(UserType.ADMIN);
+        return admin;
     }
 
     private UpsertUserRequest request(String userType, List<String> roles) {

@@ -30,6 +30,9 @@ export const AdminTable = ({
       {admin.permissions.manageAdmins && (
         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Admins</span>
       )}
+      {admin.permissions.manageUsers && (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">Usuários</span>
+      )}
     </div>
   );
 

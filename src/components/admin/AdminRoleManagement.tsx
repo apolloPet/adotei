@@ -32,7 +32,8 @@ const AdminRoleManagement = () => {
       manageAnimals: true,
       approveAdoptions: true,
       manageSettings: false,
-      manageAdmins: false
+      manageAdmins: false,
+      manageUsers: false
     }
   });
   const [formErrors, setFormErrors] = useState({
@@ -163,7 +164,8 @@ const AdminRoleManagement = () => {
           manageAnimals: true,
           approveAdoptions: true,
           manageSettings: false,
-          manageAdmins: false
+          manageAdmins: false,
+          manageUsers: false
         }
       });
 

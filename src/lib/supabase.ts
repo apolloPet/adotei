@@ -14,6 +14,7 @@ type AdminPermissions = {
   approveAdoptions: boolean;
   manageSettings: boolean;
   manageAdmins: boolean;
+  manageUsers: boolean;
 };
 
 type BackendUserSession = {
@@ -383,6 +384,7 @@ export const supabase = {
                   approveAdoptions: true,
                   manageSettings: false,
                   manageAdmins: false,
+                  manageUsers: false,
                 },
                 roles: ['ADMIN'],
               },

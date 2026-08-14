@@ -7,6 +7,7 @@ const DEFAULT_PERMISSIONS: AdminUser['permissions'] = {
   approveAdoptions: true,
   manageSettings: true,
   manageAdmins: true,
+  manageUsers: true,
 };
 
 export const getAdminUsers = async (): Promise<AdminUser[]> => {

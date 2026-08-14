@@ -17,6 +17,7 @@ import { UsersList } from './admin/users';
 import AdminUserManagement from './admin/AdminUserManagement';
 import AnimalRegistrationForm from './admin/animal-registration';
 import OrganizationManagement from './admin/organization-management/OrganizationManagement';
+import VolunteerManagement from './admin/volunteer-management/VolunteerManagement';
 import { signOut } from '@/services/auth';
 import { useAuth } from '@/hooks/auth';
 
@@ -25,11 +26,12 @@ const AdminPanel = ({ onLogout }) => {
   const { isAdmin, isVolunteer, isAuthenticated, fetchUserData, adminPermissions } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
 
-  const canManageAdoptions = isVolunteer || Boolean(adminPermissions?.approveAdoptions);
-  const canManageAnimals = isVolunteer || Boolean(adminPermissions?.manageAnimals);
-  const canManageSettings = Boolean(adminPermissions?.manageSettings);
-  const canManageAdmins = Boolean(adminPermissions?.manageAdmins);
-  const canOpenSettings = canManageSettings || canManageAdmins;
+  const canManageAdoptions = Boolean(adminPermissions?.approveAdoptions);
+  const canManageAnimals = Boolean(adminPermissions?.manageAnimals);
+  const canManageSettings = isAdmin && Boolean(adminPermissions?.manageSettings);
+  const canManageAdmins = isAdmin && Boolean(adminPermissions?.manageAdmins);
+  const canManageUsers = Boolean(adminPermissions?.manageUsers);
+  const canOpenSettings = canManageSettings || canManageAdmins || canManageUsers;
 
   const defaultTab = useMemo(() => {
     if (canManageAdoptions) return 'adoption';
@@ -38,7 +40,13 @@ const AdminPanel = ({ onLogout }) => {
     return 'adoption';
   }, [canManageAdoptions, canManageAnimals, canOpenSettings]);
 
-  const settingsDefaultTab = canManageAdmins ? 'administrators' : canManageSettings ? 'users' : 'administrators';
+  const settingsDefaultTab = canManageAdmins
+    ? 'administrators'
+    : canManageSettings
+      ? 'users'
+      : canManageUsers
+        ? (isVolunteer ? 'ong-users' : 'users')
+        : 'administrators';
 
   useEffect(() => {
     const checkAuthStatus = async () => {
@@ -173,17 +181,23 @@ const AdminPanel = ({ onLogout }) => {
                         <span className="hidden sm:inline">Administradores</span>
                       </TabsTrigger>
                     )}
+                    {canManageUsers && (
+                      <TabsTrigger value="users" className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        <span className="hidden sm:inline">Usuários</span>
+                      </TabsTrigger>
+                    )}
+                    {canManageUsers && isVolunteer && (
+                      <TabsTrigger value="ong-users" className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        <span className="hidden sm:inline">Usuários da ONG</span>
+                      </TabsTrigger>
+                    )}
                     {canManageSettings && (
-                      <>
-                        <TabsTrigger value="users" className="flex items-center gap-1">
-                          <Users className="h-4 w-4" />
-                          <span className="hidden sm:inline">Usuários</span>
-                        </TabsTrigger>
-                        <TabsTrigger value="organizations" className="flex items-center gap-1">
-                          <Building2 className="h-4 w-4" />
-                          <span className="hidden sm:inline">ONGs</span>
-                        </TabsTrigger>
-                      </>
+                      <TabsTrigger value="organizations" className="flex items-center gap-1">
+                        <Building2 className="h-4 w-4" />
+                        <span className="hidden sm:inline">ONGs</span>
+                      </TabsTrigger>
                     )}
                   </TabsList>
 
@@ -193,16 +207,22 @@ const AdminPanel = ({ onLogout }) => {
                     </TabsContent>
                   )}
 
-                  {canManageSettings && (
-                    <>
-                      <TabsContent value="users">
-                        <UsersList />
-                      </TabsContent>
+                  {canManageUsers && (
+                    <TabsContent value="users">
+                      <UsersList />
+                    </TabsContent>
+                  )}
 
-                      <TabsContent value="organizations">
-                        <OrganizationManagement />
-                      </TabsContent>
-                    </>
+                  {canManageUsers && isVolunteer && (
+                    <TabsContent value="ong-users">
+                      <VolunteerManagement />
+                    </TabsContent>
+                  )}
+
+                  {canManageSettings && (
+                    <TabsContent value="organizations">
+                      <OrganizationManagement />
+                    </TabsContent>
                   )}
                 </Tabs>
               </TabsContent>

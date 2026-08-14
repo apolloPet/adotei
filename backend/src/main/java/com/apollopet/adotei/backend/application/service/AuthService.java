@@ -177,18 +177,16 @@ public class AuthService {
     }
 
     private AdminPermissionsDto toPermissionsDto(AppUser user) {
-        if (user.getUserType() != UserType.ADMIN) {
+        if (user.getUserType() != UserType.ADMIN && user.getUserType() != UserType.VOLUNTARIO) {
             return null;
         }
-        AdminPermissions permissions = user.getAdminPermissions();
-        if (permissions == null) {
-            permissions = AdminPermissions.fullAccess();
-        }
+        AdminPermissions permissions = AdminPermissions.effectiveFor(user);
         return new AdminPermissionsDto(
             permissions.isManageAnimals(),
             permissions.isApproveAdoptions(),
             permissions.isManageSettings(),
-            permissions.isManageAdmins()
+            permissions.isManageAdmins(),
+            permissions.isManageUsers()
         );
     }
 

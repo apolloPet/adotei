@@ -7,6 +7,7 @@ export type AdminPermissions = {
   approveAdoptions: boolean;
   manageSettings: boolean;
   manageAdmins: boolean;
+  manageUsers: boolean;
 };
 
 export interface AuthContextType {

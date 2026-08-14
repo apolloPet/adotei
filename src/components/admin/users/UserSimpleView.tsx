@@ -1,14 +1,17 @@
 
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Pencil } from "lucide-react";
 import { User } from './types';
 
 interface UserSimpleViewProps {
   users: User[];
   formatDate: (dateString: string) => string;
+  onEdit?: (user: User) => void;
 }
 
-const UserSimpleView = ({ users, formatDate }: UserSimpleViewProps) => {
+const UserSimpleView = ({ users, formatDate, onEdit }: UserSimpleViewProps) => {
   if (users.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -23,7 +26,14 @@ const UserSimpleView = ({ users, formatDate }: UserSimpleViewProps) => {
       <div className="md:hidden space-y-2">
         {users.map((user) => (
           <div key={user.id} className="border rounded-lg p-3 bg-card">
-            <p className="font-medium text-sm truncate">{user.name}</p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="font-medium text-sm truncate">{user.name}</p>
+              {onEdit && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => onEdit(user)}>
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground truncate">{user.email}</p>
             <div className="grid grid-cols-2 gap-x-3 gap-y-1 mt-2 text-xs">
               <div>
@@ -53,6 +63,7 @@ const UserSimpleView = ({ users, formatDate }: UserSimpleViewProps) => {
               <TableHead>Telefone</TableHead>
               <TableHead>Cidade/Bairro</TableHead>
               <TableHead>Data de Cadastro</TableHead>
+              {onEdit && <TableHead className="text-right">Ações</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -65,6 +76,14 @@ const UserSimpleView = ({ users, formatDate }: UserSimpleViewProps) => {
                   {user.address?.city || '-'}/{user.address?.neighborhood || '-'}
                 </TableCell>
                 <TableCell>{formatDate(user.registrationDate)}</TableCell>
+                {onEdit && (
+                  <TableCell className="text-right">
+                    <Button variant="outline" size="sm" onClick={() => onEdit(user)}>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Editar
+                    </Button>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

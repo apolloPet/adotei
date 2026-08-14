@@ -18,45 +18,37 @@ public class AdminPermissionGuard {
         this.appUserRepository = appUserRepository;
     }
 
+    /** Exige a permissao de um administrador ou voluntario de ONG. */
     public AppUser require(String authSubject, AdminPermission permission) {
-        AppUser requester = appUserRepository.findByAuthSubject(authSubject)
-            .orElseThrow(() -> new NotFoundException("Usuario autenticado nao encontrado"));
+        AppUser requester = loadRequester(authSubject);
 
-        if (requester.getUserType() == UserType.VOLUNTARIO) {
-            return requester;
-        }
-
-        if (requester.getUserType() != UserType.ADMIN) {
+        if (requester.getUserType() != UserType.ADMIN && requester.getUserType() != UserType.VOLUNTARIO) {
             throw new AccessDeniedException("Apenas administradores ou voluntarios podem executar esta acao.");
         }
 
-        AdminPermissions permissions = requester.getAdminPermissions();
-        if (permissions == null) {
-            permissions = AdminPermissions.fullAccess();
-        }
-
-        if (!permissions.allows(permission)) {
-            throw new AccessDeniedException("Administrador sem permissao: " + permission.name());
-        }
-
+        assertAllows(requester, permission);
         return requester;
     }
 
+    /** Exige a permissao de um administrador da plataforma. */
     public void requireAdminPermission(String authSubject, AdminPermission permission) {
-        AppUser requester = appUserRepository.findByAuthSubject(authSubject)
-            .orElseThrow(() -> new NotFoundException("Usuario autenticado nao encontrado"));
+        AppUser requester = loadRequester(authSubject);
 
         if (requester.getUserType() != UserType.ADMIN) {
             throw new AccessDeniedException("Apenas administradores podem executar esta acao.");
         }
 
-        AdminPermissions permissions = requester.getAdminPermissions();
-        if (permissions == null) {
-            permissions = AdminPermissions.fullAccess();
-        }
+        assertAllows(requester, permission);
+    }
 
-        if (!permissions.allows(permission)) {
-            throw new AccessDeniedException("Administrador sem permissao: " + permission.name());
+    private void assertAllows(AppUser requester, AdminPermission permission) {
+        if (!AdminPermissions.effectiveFor(requester).allows(permission)) {
+            throw new AccessDeniedException("Usuario sem permissao: " + permission.name());
         }
+    }
+
+    private AppUser loadRequester(String authSubject) {
+        return appUserRepository.findByAuthSubject(authSubject)
+            .orElseThrow(() -> new NotFoundException("Usuario autenticado nao encontrado"));
     }
 }

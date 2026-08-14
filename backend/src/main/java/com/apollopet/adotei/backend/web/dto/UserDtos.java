@@ -48,7 +48,8 @@ public class UserDtos {
         Boolean manageAnimals,
         Boolean approveAdoptions,
         Boolean manageSettings,
-        Boolean manageAdmins
+        Boolean manageAdmins,
+        Boolean manageUsers
     ) {}
 
     public record UpsertAdopterProfileRequest(

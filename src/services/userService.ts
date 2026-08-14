@@ -19,6 +19,7 @@ type BackendUser = {
   zipCode?: string;
   organizationId?: string;
   organizationName?: string;
+  organizationResponsible?: boolean;
   roles: string[];
   createdAt?: string;
   adopterProfile?: BackendAdopterProfile;
@@ -131,6 +132,7 @@ export const updateUser = async (id: string, updates: Partial<User>): Promise<Us
         state: updates.address?.state ?? existing.state,
         zipCode: updates.address?.cep ?? existing.zipCode,
         organizationId: existing.organizationId ?? null,
+        organizationResponsible: existing.organizationResponsible ?? false,
         roles: existing.roles.length ? existing.roles : ['ADOTANTE'],
       },
     });

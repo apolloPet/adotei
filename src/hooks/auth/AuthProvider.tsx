@@ -8,6 +8,16 @@ const FULL_ADMIN_PERMISSIONS: AdminPermissions = {
   approveAdoptions: true,
   manageSettings: true,
   manageAdmins: true,
+  manageUsers: true,
+};
+
+// voluntário sem permissões salvas mantém o comportamento anterior (animais + adoções)
+const DEFAULT_VOLUNTEER_PERMISSIONS: AdminPermissions = {
+  manageAnimals: true,
+  approveAdoptions: true,
+  manageSettings: false,
+  manageAdmins: false,
+  manageUsers: false,
 };
 
 const INITIAL_AUTH_STATE: AuthContextType = {
@@ -86,20 +96,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, [fetchUserData]);
 
   const adminPermissions = useMemo<AdminPermissions | null>(() => {
-    if (!isAdmin) {
+    if (!isAdmin && !isVolunteer) {
       return null;
     }
+    const fallback = isAdmin ? FULL_ADMIN_PERMISSIONS : DEFAULT_VOLUNTEER_PERMISSIONS;
     const raw = user?.user_metadata?.permissions as Partial<AdminPermissions> | null | undefined;
     if (!raw || typeof raw !== 'object') {
-      return FULL_ADMIN_PERMISSIONS;
+      return fallback;
     }
     return {
       manageAnimals: Boolean(raw.manageAnimals),
       approveAdoptions: Boolean(raw.approveAdoptions),
       manageSettings: Boolean(raw.manageSettings),
       manageAdmins: Boolean(raw.manageAdmins),
+      // sessões antigas não trazem manageUsers: admin herda de manageSettings
+      manageUsers: raw.manageUsers === undefined ? Boolean(raw.manageSettings) : Boolean(raw.manageUsers),
     };
-  }, [isAdmin, user]);
+  }, [isAdmin, isVolunteer, user]);
 
   const value = useMemo(() => ({
     user,

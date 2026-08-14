@@ -69,6 +69,7 @@ public class AdoptionInterestService {
             return adoptionInterestRepository.findDistinctAnimalIdsWithInterests();
         }
         if (requester.getUserType() == UserType.VOLUNTARIO) {
+            assertCanApproveAdoptions(requester);
             Organization volunteerOrganization = requester.getOrganization();
             if (volunteerOrganization == null) {
                 throw new BadRequestException("Voluntario precisa estar vinculado a uma ONG.");
@@ -101,6 +102,7 @@ public class AdoptionInterestService {
                 .toList();
         }
         if (requester.getUserType() == UserType.VOLUNTARIO) {
+            assertCanApproveAdoptions(requester);
             Organization volunteerOrganization = requester.getOrganization();
             if (volunteerOrganization == null) {
                 throw new BadRequestException("Voluntario precisa estar vinculado a uma ONG.");
@@ -120,6 +122,7 @@ public class AdoptionInterestService {
         if (requester.getUserType() != UserType.VOLUNTARIO) {
             throw new AccessDeniedException("Apenas voluntarios da ONG podem consultar interessados.");
         }
+        assertCanApproveAdoptions(requester);
 
         Animal animal = loadAnimal(animalId);
         Organization volunteerOrganization = requester.getOrganization();
@@ -143,12 +146,8 @@ public class AdoptionInterestService {
     }
 
     private void assertCanApproveAdoptions(AppUser requester) {
-        AdminPermissions permissions = requester.getAdminPermissions();
-        if (permissions == null) {
-            permissions = AdminPermissions.fullAccess();
-        }
-        if (!permissions.allows(AdminPermission.APPROVE_ADOPTIONS)) {
-            throw new AccessDeniedException("Administrador sem permissao: APPROVE_ADOPTIONS");
+        if (!AdminPermissions.effectiveFor(requester).allows(AdminPermission.APPROVE_ADOPTIONS)) {
+            throw new AccessDeniedException("Usuario sem permissao: APPROVE_ADOPTIONS");
         }
     }
 
