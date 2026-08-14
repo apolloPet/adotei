@@ -44,6 +44,8 @@ export interface Animal {
   tutorContact?: string;
   responsavel_id?: string | null;
   data_cadastro: string;
+  /** Data de entrada no abrigo informada no cadastro (YYYY-MM-DD). */
+  data_entrada_abrigo?: string;
   descricao?: string;
   personalityId?: string;
   personalityName?: string;
@@ -81,6 +83,7 @@ export interface AnimalCreateData {
   castrado: boolean;
   vacinas?: string[];
   vaccineIds?: string[];
+  data_entrada_abrigo?: string;
   responsavel_id?: string;
   personalityId: string;
   organizationId?: string;
@@ -108,6 +111,7 @@ type BackendAnimal = {
   sex: 'macho' | 'femea';
   size: 'pequeno' | 'medio' | 'grande';
   description?: string;
+  shelterEntryDate?: string;
   vaccinationStatus?: string;
   veterinaryInfo?: string;
   healthConditions?: string;
@@ -186,6 +190,7 @@ const backendAnimalToAnimal = (animal: BackendAnimal): Animal => {
     tutorContact: animal.tutorContact,
     responsavel_id: null,
     data_cadastro: animal.createdAt || '',
+    data_entrada_abrigo: animal.shelterEntryDate,
     descricao: animal.description,
     personalityId: animal.personalityId,
     personalityName: animal.personalityName,
@@ -319,6 +324,7 @@ export const createAnimal = async (animalData: AnimalCreateData): Promise<Animal
         size: animalData.porte,
         personalityId: animalData.personalityId,
         sterilized: animalData.castrado,
+        shelterEntryDate: animalData.data_entrada_abrigo || null,
         vaccineIds: animalData.vaccineIds ?? [],
         specialNeeds: animalData.specialNeeds ?? false,
         specialNeedsDescription: animalData.specialNeedsDescription,
@@ -444,6 +450,7 @@ export const updateAnimal = async (id: string, animalData: Partial<Animal>): Pro
         organizationId: animalData.organizationId ?? current.organizationId,
         personalityId: animalData.personalityId ?? current.personalityId,
         sterilized: animalData.castrado ?? current.sterilized,
+        shelterEntryDate: animalData.data_entrada_abrigo ?? current.shelterEntryDate ?? null,
         vaccineIds: animalData.vaccineIds ?? current.vaccineIds,
         vaccinationStatus: animalData.vaccinationStatus ?? current.vaccinationStatus,
         veterinaryInfo: animalData.veterinaryInfo ?? current.veterinaryInfo,

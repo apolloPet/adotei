@@ -6,6 +6,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -49,6 +51,8 @@ public class AnimalDtos {
         @NotBlank String size,
         String description,
         boolean sterilized,
+        @PastOrPresent(message = "data de entrada no abrigo nao pode ser futura")
+        LocalDate shelterEntryDate,
         String vaccinationStatus,
         String veterinaryInfo,
         String healthConditions,
@@ -89,6 +93,7 @@ public class AnimalDtos {
         String size,
         String description,
         boolean sterilized,
+        LocalDate shelterEntryDate,
         String vaccinationStatus,
         String veterinaryInfo,
         String healthConditions,

@@ -11,6 +11,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -44,6 +45,10 @@ public class Animal extends BaseEntity {
 
     @Column(nullable = false)
     private String description;
+
+    /** Data de entrada no abrigo; quando nula, usa-se a data de cadastro. */
+    @Column(name = "shelter_entry_date")
+    private LocalDate shelterEntryDate;
 
     @Column(nullable = false)
     private boolean sterilized;

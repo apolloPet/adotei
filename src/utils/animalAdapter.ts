@@ -24,12 +24,13 @@ export const animalToPet = (animal: Animal): Pet => {
     (v) => v === 'complete' || v === 'partial' || (v && v !== 'none' && v !== 'unknown')
   );
 
-  // Days waiting from data_cadastro
+  // Tempo de abrigo: usa a data de entrada informada e cai para a data de cadastro
   let daysWaiting: number | undefined;
-  if (animal.data_cadastro) {
-    const created = new Date(animal.data_cadastro).getTime();
-    if (!Number.isNaN(created)) {
-      daysWaiting = Math.max(0, Math.floor((Date.now() - created) / (1000 * 60 * 60 * 24)));
+  const shelterSince = animal.data_entrada_abrigo || animal.data_cadastro;
+  if (shelterSince) {
+    const since = new Date(shelterSince).getTime();
+    if (!Number.isNaN(since)) {
+      daysWaiting = Math.max(0, Math.floor((Date.now() - since) / (1000 * 60 * 60 * 24)));
     }
   }
 
