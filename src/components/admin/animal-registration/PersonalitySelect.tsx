@@ -17,13 +17,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
-import { AlertCircle, Loader2, Plus } from 'lucide-react';
+import { AlertCircle, Loader2, Pencil, Plus } from 'lucide-react';
 import { toast } from '@/hooks/use-sonner';
 import {
   createPersonality,
   listPersonalities,
+  updatePersonality,
   type Personality,
 } from '@/services/personalityService';
 import {
@@ -63,6 +63,7 @@ const PersonalitySelect = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
 
   const loadPersonalities = async () => {
@@ -112,6 +113,8 @@ const PersonalitySelect = ({
     return [draft, ...personalities];
   }, [personalities, pendingPersonality, organizationId]);
 
+  const selectedPersonality = selectablePersonalities.find((p) => p.id === value);
+
   const validateDraftForm = (): PendingPersonalityDraft | null => {
     const name = form.name.trim();
     const description = form.description.trim();
@@ -138,9 +141,47 @@ const PersonalitySelect = ({
     return { name, description };
   };
 
-  const handleCreate = async () => {
+  const openCreateDialog = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setDialogOpen(true);
+  };
+
+  const openEditDialog = () => {
+    if (!selectedPersonality) return;
+    setEditingId(selectedPersonality.id);
+    const isDraft = selectedPersonality.id === DRAFT_PERSONALITY_ID;
+    setForm({
+      name: isDraft && pendingPersonality ? pendingPersonality.name : selectedPersonality.name,
+      description: selectedPersonality.description,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSave = async () => {
     const draft = validateDraftForm();
     if (!draft) return;
+
+    if (editingId && editingId !== DRAFT_PERSONALITY_ID) {
+      setIsSaving(true);
+      try {
+        const updated = await updatePersonality(editingId, { ...draft, active: true });
+        setPersonalities((prev) =>
+          prev.map((p) => (p.id === updated.id ? updated : p)).sort((a, b) => a.name.localeCompare(b.name)),
+        );
+        onChange(updated.id, updated);
+        setForm(EMPTY_FORM);
+        setEditingId(null);
+        setDialogOpen(false);
+        toast.success('Personalidade atualizada com sucesso.');
+      } catch (error) {
+        console.error('Erro ao atualizar personalidade:', error);
+        toast.error(error instanceof Error ? error.message : 'Erro ao atualizar personalidade.');
+      } finally {
+        setIsSaving(false);
+      }
+      return;
+    }
 
     if (deferCreateUntilAnimalSubmit) {
       onPendingPersonalityChange?.(draft);
@@ -152,6 +193,7 @@ const PersonalitySelect = ({
         active: true,
       });
       setForm(EMPTY_FORM);
+      setEditingId(null);
       setDialogOpen(false);
       toast.success('Personalidade e temperamento prontos. Serão salvos ao cadastrar o animal.');
       return;
@@ -163,6 +205,7 @@ const PersonalitySelect = ({
       setPersonalities((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
       onChange(created.id, created);
       setForm(EMPTY_FORM);
+      setEditingId(null);
       setDialogOpen(false);
       toast.success('Personalidade cadastrada com sucesso.');
     } catch (error) {
@@ -172,8 +215,6 @@ const PersonalitySelect = ({
       setIsSaving(false);
     }
   };
-
-  const selectedPersonality = selectablePersonalities.find((p) => p.id === value);
 
   return (
     <div className="space-y-2 min-w-0">
@@ -219,20 +260,39 @@ const PersonalitySelect = ({
             </SelectContent>
           </Select>
 
+          <Button
+            type="button"
+            variant="outline"
+            onClick={openEditDialog}
+            disabled={disabled || !organizationId || !selectedPersonality}
+            className="w-full sm:w-auto shrink-0"
+          >
+            <Pencil className="h-4 w-4 mr-1" />
+            Editar
+          </Button>
+
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button type="button" variant="outline" disabled={disabled || !organizationId} className="w-full sm:w-auto shrink-0">
-                <Plus className="h-4 w-4 mr-1" />
-                Nova
-              </Button>
-            </DialogTrigger>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={openCreateDialog}
+              disabled={disabled || !organizationId}
+              className="w-full sm:w-auto shrink-0"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Nova
+            </Button>
             <DialogContent className="w-[calc(100vw-2rem)] max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>Cadastrar personalidade e temperamento</DialogTitle>
+                <DialogTitle>
+                  {editingId ? 'Editar personalidade e temperamento' : 'Cadastrar personalidade e temperamento'}
+                </DialogTitle>
                 <DialogDescription>
-                  {deferCreateUntilAnimalSubmit
-                    ? 'Preencha os dados agora. Eles só serão salvos no servidor quando você cadastrar o animal.'
-                    : 'Crie uma personalidade reutilizável para os animais da sua ONG.'}
+                  {editingId
+                    ? 'As alterações valem para todos os animais que usam esta personalidade.'
+                    : deferCreateUntilAnimalSubmit
+                      ? 'Preencha os dados agora. Eles só serão salvos no servidor quando você cadastrar o animal.'
+                      : 'Crie uma personalidade reutilizável para os animais da sua ONG.'}
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-2">
@@ -271,12 +331,14 @@ const PersonalitySelect = ({
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="button" onClick={handleCreate} disabled={isSaving}>
+                <Button type="button" onClick={handleSave} disabled={isSaving}>
                   {isSaving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Salvando...
                     </>
+                  ) : editingId ? (
+                    'Salvar alterações'
                   ) : deferCreateUntilAnimalSubmit ? (
                     'Usar no cadastro'
                   ) : (
